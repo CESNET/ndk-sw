@@ -1,0 +1,58 @@
+def projectpath = "ndk/swbase"
+def osreleasevers = [
+		["centos", "centos7", "7.9.2009", "rpm"],
+		["oraclelinux", "oraclelinux8", "8", "rpm"],
+		["ubuntu", "ubuntu", "focal", "deb"]
+	]
+def dockertarget = "default"
+
+node('docker') {
+    cleanWs()
+    checkout scm
+
+    for (int i = 0; i < osreleasevers.size(); ++i) {
+        def osname = osreleasevers[i][0];
+        def dockerfile = osreleasevers[i][1];
+        def osreleasever = osreleasevers[i][2];
+        def pkg = osreleasevers[i][3];
+
+        stage("Prepare docker for ${osname}:${osreleasever}") {
+            buildImage = docker.build("swbase-${osname}-${osreleasever}-${dockertarget}", "-f jenkins/${dockerfile}.Dockerfile --target ${dockertarget} --build-arg OSRELEASEVER=${osreleasever} --build-arg OSNAME=${osname} .")
+        }
+
+        buildImage.inside {
+            stage("Build RPMs") {
+                sh './build.sh --purge'
+                sh './build.sh --prepare'
+                sh "./build.sh --${pkg}"
+            }
+
+            stage("Test to install package") {
+                dir('cmake-build') {
+					if (pkg == 'rpm') {
+						sh 'sudo yum install -y *.rpm'
+					} else if (pkg == 'deb') {
+						/* Commented out due to missing specific kernel-headers */
+						//sh 'sudo apt-get install -y -f ./*.deb'
+					}
+					sh "mkdir -p ${osname}-${osreleasever}"
+					sh "mv *.${pkg} ${osname}-${osreleasever}/"
+					archiveArtifacts artifacts: "${osname}-${osreleasever}/*.${pkg}"
+                    sh 'find . -maxdepth 1 -type f -delete'
+                }
+            }
+        }
+    }
+}
+
+node {
+    stage("Deploy RPMs") {
+        cleanWs()
+        copyArtifacts projectName: '${JOB_NAME}', selector: specific('${BUILD_NUMBER}'), target: 'artifacts/'
+        sh """
+            umask 0002
+            mkdir -p ${CI_SNAPSHOTS_PATH}/${projectpath}/${BRANCH_NAME}
+            rsync -ur --chmod=g+w artifacts/* ${CI_SNAPSHOTS_PATH}/${projectpath}/${BRANCH_NAME}
+        """
+    }
+}

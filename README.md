@@ -1,3 +1,10 @@
-Content of this repository is being prepared for the publication.
-For now you can download the latest RPM package for RHEL7 in the Releases section:
-https://github.com/CESNET/ndk-sw/releases
+## Repository content
+
+This repository contains software framework for NDK based cards. It includes
+- Linux kernel driver
+- libnfb userspace library
+- nfb & ndp tools for basic usage
+
+## Repository Maintainer
+
+- Martin Spinler <spinler AT cesnet.cz>

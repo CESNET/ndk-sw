@@ -1,0 +1,12 @@
+PACKAGE_NAME="@PACKAGE_NAME@-dkms"
+PACKAGE_VERSION=@PACKAGE_VERSION@-@RELEASE@
+
+CLEAN="make DKMS_BUILD=yes KDIR=/lib/modules/${kernelver}/build clean"
+MAKE[0]="./configure && make DKMS_BUILD=yes KDIR=/lib/modules/${kernelver}/build"
+
+AUTOINSTALL="yes"
+NO_WEAK_MODULES="yes"
+
+BUILT_MODULE_NAME[0]="nfb"
+BUILT_MODULE_LOCATION[0]="kernel/drivers/nfb"
+DEST_MODULE_LOCATION[0]="/extra"

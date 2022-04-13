@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e # exit on any error
+
+PACKAGE_NAME=nfb-dkms
+PACKAGE_VERSION=@PACKAGE_VERSION@-@RELEASE@
+PLATFORM=@PLATFORM@
+
+#echo >&2 "Running nfb-framework prerm, parameters: $@"
+
+# ----[ Remove drivers, ignore potential errors ]----------------------------- #
+rmmod nfb || :
+rmmod nfb_xvc || :
+
+# ----[ Remove drivers from DKMS ]-------------------------------------------- #
+DKMS_STATUS=$(dkms status "$PACKAGE_NAME/$PACKAGE_VERSION") || {
+    echo >&2 "Cannot find DKMS binary!";
+    exit 1;
+}
+
+[ ! -z "$DKMS_STATUS" ] || {
+    echo >&2 "DKMS package $PACKAGE_NAME $PACKAGE_VERSION not found, assuming it is removed already";
+    exit 0;
+}
+
+dkms_opts=""
+if [ "x$PLATFORM" = "xCentos" ]; then
+    dkms_opts="--rpm_safe_upgrade"
+fi
+dkms remove  -m "$PACKAGE_NAME" -v "$PACKAGE_VERSION" --all $dkms_opts

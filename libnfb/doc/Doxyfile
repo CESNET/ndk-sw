@@ -1,0 +1,25 @@
+# Doxyfile 1.9.3
+PROJECT_NAME           = libnfb
+PROJECT_NUMBER         = 6.16.0
+OUTPUT_DIRECTORY       = .
+ALWAYS_DETAILED_SEC    = YES
+TAB_SIZE               = 8
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_METHODS  = YES
+CASE_SENSE_NAMES       = YES
+SORT_BRIEF_DOCS        = YES
+INPUT                  = ../
+FILE_PATTERNS          = src/*.h \
+                         *include/nfb/nfb.h \
+                         *include/nfb/ndp.h
+RECURSIVE              = YES
+EXCLUDE                = doc
+SOURCE_BROWSER         = YES
+HTML_TIMESTAMP         = YES
+GENERATE_LATEX         = NO
+LATEX_CMD_NAME         = latex
+RTF_HYPERLINKS         = YES
+GENERATE_XML           = YES
+GENERATE_AUTOGEN_DEF   = YES
+PREDEFINED             = DOC_BREATHE

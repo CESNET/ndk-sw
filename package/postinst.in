@@ -1,0 +1,41 @@
+#!/bin/sh
+set -e # exit on any error
+
+PACKAGE_NAME=nfb-dkms
+PACKAGE_VERSION=@PACKAGE_VERSION@-@RELEASE@
+PLATFORM=@PLATFORM@
+
+#echo >&2 "Running nfb-framework postinst, parameters: $@"
+
+# ----[ Build drivers with DKMS ]--------------------------------------------- #
+DKMS_STATUS=$(dkms status "$PACKAGE_NAME") || {
+    echo >&2 "Cannot find DKMS binary!";
+    exit 1;
+}
+
+if [ "x$PLATFORM" != "xCentos" ]; then
+    [ -z "$DKMS_STATUS" ] || {
+        echo >&2 "Some version of DKMS package already installed!";
+        exit 1;
+    }
+fi
+
+dkms_opts=""
+if [ "x$PLATFORM" = "xCentos" ]; then
+    dkms_opts="--rpm_safe_upgrade"
+fi
+
+dkms add     -m "$PACKAGE_NAME" -v "$PACKAGE_VERSION" $dkms_opts
+dkms build   -m "$PACKAGE_NAME" -v "$PACKAGE_VERSION"
+dkms install -m "$PACKAGE_NAME" -v "$PACKAGE_VERSION" --force
+# ----[ On Ubuntu, old DKMS will not load the drivers, so do it manually ]---- #
+
+# Look at line 1570 in DKMS 2.7.1 (on CentOS 7), this is what is missing in
+# DKMS 2.3 (on Ubuntu 18.04)
+if [ "x$PLATFORM" = "xDebian" ]; then
+    modprobe nfb
+fi
+
+# ----[ Rescan devices with UDEV so that symlinks are created properly ]------ #
+udevadm control -R
+udevadm trigger

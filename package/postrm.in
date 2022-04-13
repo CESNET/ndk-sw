@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# This script runs after the uninstallation of a package.
+# Due to the differences between ordering of scripts between CentOS and Ubuntu,
+# it must be used with caution.
+#
+# Ubuntu:
+# - Runs BEFORE the new package was installed
+#
+# CentOS:
+# - Runs AFTER the new package has been installed (in case of upgrade)
+# - On upgrade, $1 == 1
+# - On removal, $1 == 0
+
+set -e # exit on any error
+
+PLATFORM=@PLATFORM@
+
+echo >&2 "Running nfb-framework postrm, parameters: $@"
+
+# ----[ On upgrade, rescan devices with UDEV ]-------------------------------- #
+if [ "x$PLATFORM" != "xCentos" ]; then
+    # this is handled by 'postinst' script on Ubuntu, nothing to do here
+    exit 0
+fi
+
+if [ "x$1" = "x1" ]; then
+    udevadm control -R
+    udevadm trigger
+fi

@@ -1,0 +1,54 @@
+# nfb-framework .gitignore
+
+3rdparty.tar.gz
+
+# Ignore `foo' files produced by Autoconf from their `foo.in' templates
+drivers/Makefile
+drivers/dkms.conf
+mk/common.mk
+spec/netcope-common.spec
+utils/netcope-common.pc
+/config*
+autom4te.cache
+
+# Ignore libraries
+libnfb.a
+libnfb.so*
+
+# Ignore tools
+nfb-info
+nfb-bus
+nfb-boot
+nfb-eth
+nfb-dma
+nfb-tsu
+ndp-tool
+
+# Ignore debug tools
+nfb-busdump
+nfb-busdebugctl
+nfb-busreplay
+
+nfb-mdio
+
+nfb-xvc
+
+# Ignore temporary build files
+*.o
+
+# Ignore kernel temporary build files
+*.o.d
+*.o.cmd
+*.ko.cmd
+*.mod.o
+*.mod.c
+*.ko
+modules.order
+Module.symvers
+.tmp_versions
+
+# Ignore any build/ directory
+build/
+
+# Ignore files with Git version information
+.gitversion

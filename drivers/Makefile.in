@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: GPL-2.0
+#
+# NFB driver Makefile
+#
+# Copyright (C) 2022 CESNET
+#
+# Author(s):
+#     Martin Spinler <spinler@cesnet.cz>
+
+TOPDIR := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+
+PACKAGE_NAME        = @PACKAGE_NAME@
+PACKAGE_VERSION     = @PACKAGE_VERSION@-@RELEASE@
+
+ifeq ($(DKMS_BUILD),yes)
+	LIBNFB_CFLAGS   = -I/usr/include
+else
+	LIBNFB_CFLAGS   = -I$(TOPDIR)/../libnfb/include
+	KDIR            = @KDIR@
+endif
+
+CONFIG = dkms.conf.in Makefile.conf Makefile.in config.h.in
+SRCS = $(shell find kernel -name '*.c')
+HDRS = $(shell find kernel -name '*.h')
+CONFIG += $(shell find kernel -name Makefile)
+
+KBUILD = $(MAKE) -C $(KDIR) \
+		 M=$(TOPDIR)/kernel/drivers \
+		 DRIVER_TOPDIR=$(TOPDIR) \
+		 EXTRA_CFLAGS="\
+			-I$(TOPDIR) \
+			-I$(TOPDIR)/kernel/include \
+			-I$(TOPDIR)/kernel/drivers/fdt \
+			$(LIBNFB_CFLAGS) $(EXTRA_CFLAGS) \
+		"
+
+INSTALL_HEADERS = nfb.h ndp.h boot.h
+
+DKMS_DIRNAME = $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+DKMS_FILES = dkms.conf Makefile Makefile.conf
+
+.PHONY: all clean
+
+all:
+	$(KBUILD) modules
+
+clean:
+	$(KBUILD) clean
+	rm -f config.h
+
+.PHONY: install modules_install headers_install
+
+install: modules_install headers_install
+
+modules_install:
+	$(KBUILD) modules_install
+	depmod
+
+headers_install:
+	for header in $(INSTALL_HEADERS); do \
+		install -D -m 644 kernel/include/linux/nfb/$$header \
+			"$(DESTDIR)$(includedir)/linux/nfb/$$header"; \
+		sed -i 's/\<__user\>//g' \
+			"$(DESTDIR)$(includedir)/linux/nfb/$$header"; \
+	done

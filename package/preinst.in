@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e # exit on any error
+
+#echo >&2 "Running nfb-framework preinst, parameters: $@"
+
+#
+# Create user group "nfb" unless it already exists.
+# When creating the group, use GID in system range (<1000) allocated by the system.
+#
+if ! getent group nfb >/dev/null; then
+    # nfb group will be created
+    groupadd --system nfb
+fi
