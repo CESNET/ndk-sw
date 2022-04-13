@@ -1,0 +1,24 @@
+name: documentation
+
+on:
+  push:
+    branches: [pages]
+
+jobs:
+  build:
+    name: NFB Framework User Guide
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup and build
+        run: |
+          sudo apt-get install python3-pip doxygen
+          pip3 install sphinx sphinx_rtd_theme breathe
+          sphinx-build -M html doc public
+          touch public/html/.nojekyll
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@4.1.4
+        with:
+          branch: gh-pages
+          folder: public/html
