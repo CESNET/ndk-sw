@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NDP tools &mdash; NFB Software User Guide 6.16.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ndp-read" href="ndp-read.html" />
+    <link rel="prev" title="nfb-tsu" href="nfb-tsu.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> NFB Software User Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Common info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">NDP tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ndp-read.html">ndp-read</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ndp-generate.html">ndp-generate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ndp-receive.html">ndp-receive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ndp-transmit.html">ndp-transmit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ndp-loopback.html">ndp-loopback</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">libnfb examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">NFB Software User Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>NDP tools</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/tools/ndp-tools.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ndp-tools">
+<h1>NDP tools<a class="headerlink" href="#ndp-tools" title="Permalink to this headline"></a></h1>
+<p>This group of tools can be used to transfer data from host to card and back via high speed DMA queues.</p>
+<p>It is implemented as one binary tool into which the various modules are embedded.</p>
+<p>The ndp-tool can use more queues at once (all available by default),
+in this case each queue (or queue pair in case of loopback mode) is started in own thread.</p>
+<p>The NDP queues are concurrent, there can be more readers on one RX queue,
+so it is safe to run multiple instances on the same queue in parallel (all instances will get the same data).
+On TX queue, multiple writers competing for one write lock.</p>
+<p>Amount of transfered packets can be limited by argument <strong>-p</strong>,
+similarly for byte-aware limit use <strong>-b</strong>. These limits are applied for each queue.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In RX modes (read, receive) the limit is applied by the tool, not by the DMA queue.
+The DMA queue can process more packet until receives the stop command.</p>
+</div>
+<p>Internally the data are transfered in bursts to overcome function call overhead, similarly to DPDK.
+Number of packets in one burst can be overrided in <strong>-B</strong> argument.</p>
+<p>For a single queue run the content of packet can be printed with argument <strong>-D</strong>.
+User can choose header part, data part or both parts.
+There is a special mode, in which the packet is only indicated with single character.
+Also there is argument <strong>-I</strong> for sampling each Nth packet.</p>
+<p>For multi queue run program shows statistic table with values for each queue and summary values.
+The table is displayed and refreshed with ncurses library.
+It can be disabled with <strong>-I</strong> argument set to 0, which otherwise sets interval of update.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Multi queue run can be forced even for single queue, if an extra invalid queue index is entered (e.g. -i 0,-1).</p>
+</div>
+<p>The tool can be stopped manually for example by SIGINT generated by Ctrl+C.
+At the end shows summary statistics, which can be disabled with quiet <strong>-q</strong> argument.</p>
+<div class="toctree-wrapper compound">
+</div>
+<p class="rubric"><a class="reference internal" href="ndp-read.html#ndp-read"><span class="std std-ref">ndp-read</span></a></p>
+<p>Read packets from RX queue.</p>
+<p class="rubric"><a class="reference internal" href="ndp-generate.html#ndp-generate"><span class="std std-ref">ndp-generate</span></a></p>
+<p>Generate packets to the TX queue.</p>
+<p class="rubric"><a class="reference internal" href="ndp-receive.html#ndp-receive"><span class="std std-ref">ndp-receive</span></a></p>
+<p>Read packets from RX queue and write them to PCAP file.</p>
+<p class="rubric"><a class="reference internal" href="ndp-transmit.html#ndp-transmit"><span class="std std-ref">ndp-transmit</span></a></p>
+<p>Read packets from PCAP file and send them to TX queue.</p>
+<p class="rubric"><a class="reference internal" href="ndp-loopback.html#ndp-loopback"><span class="std std-ref">ndp-loopback</span></a></p>
+<p>Read packets from RX queue and send them back to TX queue.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="nfb-tsu.html" class="btn btn-neutral float-left" title="nfb-tsu" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ndp-read.html" class="btn btn-neutral float-right" title="ndp-read" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

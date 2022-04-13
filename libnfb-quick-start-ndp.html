@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>libnfb packet transmission &mdash; NFB Software User Guide 6.16.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Common info" href="tools/index.html" />
+    <link rel="prev" title="libnfb register access" href="libnfb-quick-start-registers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> NFB Software User Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="quick-start.html">Quick start</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="libnfb-quick-start-registers.html">libnfb register access</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">libnfb packet transmission</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tools/index.html">Common info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools/nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools/ndp-tools.html">NDP tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="libnfb-example.html">libnfb examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="libnfb-api-base.html">Base API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="libnfb-api-ndp.html">NDP API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">NFB Software User Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="quick-start.html">Quick start</a> &raquo;</li>
+      <li>libnfb packet transmission</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/libnfb-quick-start-ndp.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="libnfb-packet-transmission">
+<h1>libnfb packet transmission<a class="headerlink" href="#libnfb-packet-transmission" title="Permalink to this headline"></a></h1>
+<p>Let see how to transfer single packet to the Ethernet port with C API.</p>
+<p>We will need again the common NFB header and newly the NDP header.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;nfb/nfb.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;nfb/ndp.h&gt;</span><span class="cp"></span>
+</pre></div>
+</div>
+<p>We need a handle to the NFB device.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">nfb_device</span> <span class="o">*</span><span class="n">dev</span> <span class="o">=</span> <span class="n">nfb_open</span><span class="p">(</span><span class="s">&quot;0&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>First, we need to open a transmit queue and start it.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">ndp_queue</span> <span class="o">*</span><span class="n">q</span> <span class="o">=</span> <span class="n">ndp_open_tx_queue</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">ndp_queue_start</span><span class="p">(</span><span class="n">q</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The NDP API uses a precreated buffer for data (in both RX and TX direction).
+Thus we firstly do a request for packet placeholder.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">ndp_packet</span> <span class="n">packet</span> <span class="o">=</span> <span class="p">{.</span><span class="n">data_length</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="p">.</span><span class="n">header_length</span> <span class="o">=</span> <span class="mi">0</span><span class="p">};</span>
+<span class="kt">int</span> <span class="n">cnt</span> <span class="o">=</span> <span class="n">ndp_tx_burst_get</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">packet</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The returned value from the <code class="xref c c-func docutils literal notranslate"><span class="pre">ndp_tx_burst_get()</span></code> indicates, how much packets are sucessfully reserved.
+We should ensure, that the <cite>cnt</cite> value is currently 1. Oh, we should check all of the return values by the way!
+Let’s say, that we did it.</p>
+<p>Then we can fill the data pointer with some real values. For simplicity, pretend the IPv4 packet header.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">packet</span><span class="p">.</span><span class="n">data</span><span class="p">[</span><span class="mi">14</span><span class="p">]</span> <span class="o">=</span> <span class="mh">0x08</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Finally, we can hand over the requested burst (of size 1) to the library.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">ndp_tx_burst_flush</span><span class="p">(</span><span class="n">q</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Of course, you should enable the TX MAC.
+And check if the packet is really transmitted.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nfb-eth -i0 -t -e1
+nfb-dma -i0 -t
+nfb-eth -i0 -q tx_transmitted
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="libnfb-quick-start-registers.html" class="btn btn-neutral float-left" title="libnfb register access" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tools/index.html" class="btn btn-neutral float-right" title="Common info" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
