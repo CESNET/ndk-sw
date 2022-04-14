@@ -27,7 +27,7 @@
 #include "boot.h"
 #include "../pci.h"
 
-static bool boot_linkdown_enable = 1;
+static bool boot_linkdown_enable = 0;
 
 
 void nfb_boot_mtd_destroy(struct nfb_boot *nfb_boot);
