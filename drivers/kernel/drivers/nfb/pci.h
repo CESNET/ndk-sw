@@ -10,8 +10,10 @@
 #ifndef NFB_PCI_H
 #define NFB_PCI_H
 
-#define PCI_VENDOR_ID_NETCOPE 0x1b26
-#define PCI_VENDOR_ID_CESNET  0x18ec
+#define PCI_VENDOR_ID_CESNET            0x18ec
+#define PCI_VENDOR_ID_NETCOPE           0x1b26
+#define PCI_VENDOR_ID_REFLEXCES         0x1bad
+#define PCI_VENDOR_ID_FIBERBLAZE        0x1c2c
 
 enum nfb_devices {
 	NFB_CARD_NFB40G2,
@@ -28,6 +30,7 @@ enum nfb_devices {
 	NFB_CARD_TIVOLI,
 	NFB_CARD_COMBO_GENERIC,
 	NFB_CARD_COMBO400G1,
+	NFB_CARD_AGI_FH400G,
 };
 /*
  * struct nfb_pci_dev - Device-specific information

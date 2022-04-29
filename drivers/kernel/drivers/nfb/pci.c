@@ -60,6 +60,7 @@ const struct nfb_pci_dev nfb_device_infos [] = {
         
 	[NFB_CARD_COMBO_GENERIC]= { "COMBO-GENERIC"    -1,      -1,             -1,             0x0C },
 	[NFB_CARD_COMBO400G1]	= { "COMBO-400G1"      -1,      -1,             -1,             0x0D },
+	[NFB_CARD_AGI_FH400G]	= { "AGI-FH400G"       -1,      -1,             -1,             0x0E },
 
 	/* Last item */		  { NULL,	       -1,	-1,	 	-1,		0x00 },
 };
@@ -69,28 +70,29 @@ const struct nfb_pci_dev nfb_device_infos [] = {
  */
 const struct pci_device_id nfb_ids [] = {
 	/* NFB-40G */
-	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE, 0xcb40), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_NFB40G]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE,     0xcb40), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_NFB40G]},
 	/* NFB-80G */
-	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE, 0xcb80), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_NFB40G2]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE,     0xcb80), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_NFB40G2]},
 	/* NFB-100G */
-	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE, 0xc1c0), .driver_data = (unsigned long)NULL},
-	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE, 0xc1c1), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_NFB100G]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE,     0xc1c0), .driver_data = (unsigned long)NULL},
+	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE,     0xc1c1), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_NFB100G]},
 	/* NFB-100G2 */
-	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE, 0xc2c0), .driver_data = (unsigned long)NULL},
-	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE, 0xc2c1), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_NFB100G2]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE,     0xc2c0), .driver_data = (unsigned long)NULL},
+	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE,     0xc2c1), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_NFB100G2]},
 	/* NFB-200G2QL */
-	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE, 0xc250), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_NFB200G2QL]},
-	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE, 0xc251), .driver_data = (unsigned long)NULL},
+	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE,     0xc250), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_NFB200G2QL]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_NETCOPE,     0xc251), .driver_data = (unsigned long)NULL},
 	/* FB1CGG */
-	{ PCI_DEVICE(0x1c2c,                0xc240), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_FB1CGG]},
-	{ PCI_DEVICE(0x1c2c,                0x00d0), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_FB1CGG]},
-	{ PCI_DEVICE(0x1c2c,                0x00d1), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_FB1CGG]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_FIBERBLAZE,  0xc240), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_FB1CGG]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_FIBERBLAZE,  0x00d0), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_FB1CGG]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_FIBERBLAZE,  0x00d1), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_FB1CGG]},
+	/* FB2CGHH */
+	{ PCI_DEVICE(PCI_VENDOR_ID_FIBERBLAZE,  0x00d2), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_TIVOLI]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_FIBERBLAZE,  0x00d3), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_TIVOLI]},
 
-	{ PCI_DEVICE(0x1c2c,                0x00d2), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_TIVOLI]},
-	{ PCI_DEVICE(0x1c2c,                0x00d3), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_TIVOLI]},
-
-	{ PCI_DEVICE(PCI_VENDOR_ID_CESNET,  0xc000), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_COMBO_GENERIC]},
-	{ PCI_DEVICE(PCI_VENDOR_ID_CESNET,  0xc400), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_COMBO400G1]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_CESNET,      0xc000), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_COMBO_GENERIC]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_CESNET,      0xc400), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_COMBO400G1]},
+	{ PCI_DEVICE(PCI_VENDOR_ID_REFLEXCES,   0xd001), .driver_data = (unsigned long)&nfb_device_infos[NFB_CARD_AGI_FH400G]},
 	{ 0, }
 };
 
