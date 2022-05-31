@@ -76,6 +76,12 @@ KERNEL_TRY_COMPILE([[
 struct timespec ts;
 ]],[AC_DEFINE([CONFIG_HAVE_TIMESPEC], [1], [Define if kernel have struct timespec]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
+# Tests for symbols
+AC_MSG_CHECKING([whether kernel has netif_rx_ni])
+KERNEL_TRY_COMPILE([[
+#include <linux/netdevice.h>
+void test(void) {netif_rx_ni(NULL);}
+]],[AC_DEFINE([CONFIG_HAVE_NETIF_RX_NI], [1], [Define if kernel have netif_rx_ni]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_SUBST(KDIR)
 AC_SUBST(KSRC)

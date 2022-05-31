@@ -70,7 +70,11 @@ static int nfb_ndp_netdev_rx_thread(void *data)
 		skb->protocol = eth_type_trans(skb, dev);
 
 		/* send packet to the kernel network stack */
+#ifdef CONFIG_HAVE_NETIF_RX_NI
 		if (netif_rx_ni(skb) != NET_RX_DROP) {
+#else
+		if (netif_rx(skb) != NET_RX_DROP) {
+#endif
 			ethdev->ndev_stats.rx_packets++;
 			ethdev->ndev_stats.rx_bytes += packet.data_length;
 		} else {
