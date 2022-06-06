@@ -224,7 +224,7 @@ static int nfb_net_get_module_eeprom(struct net_device *netdev, struct ethtool_e
 {
 	struct nfb_net_device *priv = netdev_priv(netdev);
 	struct nc_i2c_ctrl *comp_i2c = priv->nc_tri2c;
-	u32 databyte = 0xFF;
+	u8 databyte = 0xFF;
 	int status, i;
 
 	if (ee->len == 0)
@@ -245,11 +245,10 @@ static int nfb_net_get_module_eeprom(struct net_device *netdev, struct ethtool_e
 	if (!priv->nc_tri2c)
 		return -EIO;
 
-	i2c_set_addr(comp_i2c, 0xA0);
-	i2c_set_data_bytes(comp_i2c, 1);
+	nc_i2c_set_addr(comp_i2c, 0xA0);
 	for (i = ee->offset; i < ee->offset + ee->len; i++) {
-		status = nc_i2c_read(comp_i2c, i, &databyte);
-		if (status != 0)
+		status = nc_i2c_read_reg(comp_i2c, i, &databyte, 1);
+		if (status != 1)
 			return -EIO;
 
 		data[i-ee->offset] = databyte;
