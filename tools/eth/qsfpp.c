@@ -116,6 +116,56 @@ const char *sff8024_get_ext_compliance(uint8_t reg)
 	case 0x18: return "100G AOC or 25GAUI C2M AOC";
 	case 0x19: return "100G ACC or 25GAUI C2M ACC";
 	case 0x1A: return "100GE-DWDM2";
+	case 0x1B: return "100G 1550nm WDM";
+	case 0x1C: return "10GBASE-T Short Reach";
+	case 0x1D: return "5GBASE-T";
+	case 0x1E: return "2.5GBASE-T";
+	case 0x1F: return "40G SWDM4";
+	case 0x20: return "100G SWDM4";
+	case 0x21: return "100G PAM4 BiDi";
+	case 0x37: return "10GBASE-BR (Clause 158)";
+	case 0x38: return "25GBASE-BR (Clause 159)";
+	case 0x39: return "50GBASE-BR (Clause 160)";
+	case 0x22: return "4WDM-10 MSA (10km version of 100G CWDM4 with same RS(528,514) FEC in host system)";
+	case 0x23: return "4WDM-20 MSA (20km version of 100GBASE-LR4 with RS(528,514) FEC in host system)";
+	case 0x24: return "4WDM-40 MSA (40km reach with APD receiver and RS(528,514) FEC in host system)";
+	case 0x25: return "100GBASE-DR (Clause 140), CAUI-4 (no FEC)";
+	case 0x26: return "100G-FR or 100GBASE-FR1 (Clause 140), CAUI-4 (no FEC)";
+	case 0x27: return "100G-LR or 100GBASE-LR1 (Clause 140), CAUI-4 (no FEC)";
+	case 0x28: return "100GBASE-SR (P802.3db, Clause 167), CAUI-4 (no FEC)";
+	case 0x3A: return "100GBASE-VR (P802.3db, Clause 167), CAUI-4 (no FEC)";
+	case 0x29: return "100GBASE-SR, 200GBASE-SR2 or 400GBASE-SR4 (P802.3db, Clause 167)";
+	case 0x36: return "100GBASE-VR, 200GBASE-VR2 or 400GBASE-VR4 (P802.3db, Clause 167)";
+	case 0x2A: return "100GBASE-FR1 (P802.3cu, Clause 140)";
+	case 0x2B: return "100GBASE-LR1 (P802.3cu, Clause 140)";
+	case 0x2C: return "100G-LR1-20 MSA, CAUI-4 (no FEC)";
+	case 0x2D: return "100G-ER1-30 MSA, CAUI-4 (no FEC)";
+	case 0x2E: return "100G-ER1-40 MSA, CAUI-4 (no FEC)";
+	case 0x2F: return "100G-LR1-20 MSA";
+	case 0x34: return "100G-ER1-30 MSA";
+	case 0x35: return "100G-ER1-40 MSA";
+	case 0x30: return "Active Copper Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER of 10-6 or below";
+	case 0x31: return "Active Optical Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER f 10-6 or below";
+	case 0x32: return "Active Copper Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER of 2.6x10-4 for ACC, 10-5 for AUI, or below";
+	case 0x33: return "Active Optical Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER f 2.6x10-4 for AOC, 10-5 for AUI, or below";
+	case 0x3F: return "100GBASE-CR1, 200GBASE-CR2 or 400GBASE-CR4 (P802.3ck, Clause 162)";
+	case 0x40: return "50GBASE-CR, 100GBASE-CR2, or 200GBASE-CR4";
+	case 0x41: return "50GBASE-SR, 100GBASE-SR2, or 200GBASE-SR4";
+	case 0x42: return "50GBASE-FR or 200GBASE-DR4";
+	case 0x4A: return "50GBASE-ER (IEEE 802.3cn, Clause 139)";
+	case 0x43: return "200GBASE-FR4";
+	case 0x44: return "200G 1550 nm PSM4";
+	case 0x45: return "50GBASE-LR";
+	case 0x46: return "200GBASE-LR4";
+	case 0x47: return "400GBASE-DR4 (802.3, Clause 124), 100GAUI-1 C2M (Annex 120G)";
+	case 0x48: return "400GBASE-FR4 (802.3cu, Clause 151)";
+	case 0x49: return "400GBASE-LR4-6 (802.3cu, Clause 151)";
+	case 0x4B: return "400G-LR4-10";
+	case 0x4C: return "400GBASE-ZR (802.3cw, Clause 156)";
+	case 0x7F: return "256GFC-SW4 (FC-PI-7P)";
+	case 0x80: return "64GFC (FC-PI-7)";
+	case 0x81: return "128GFC (FC-PI-8)";
+
 	default: return "Reserved";
 	}
 }
@@ -139,11 +189,17 @@ const char *sff8024_get_connector(uint8_t reg)
 	case 0x09: return "MU";
 	case 0x0A: return "SG";
 	case 0x0B: return "Optical Pigtail";
-	case 0x0C: return "MPO";
+	case 0x0C: return "MPO 1x12";
+	case 0x0D: return "MPO 2x16";
 	case 0x20: return "HSSDC II";
 	case 0x21: return "Copper pigtail";
 	case 0x22: return "RJ45";
 	case 0x23: return "No separable connector";
+	case 0x24: return "MXC 2x16";
+	case 0x25: return "CS optical connector";
+	case 0x26: return "SN optical connector";
+	case 0x27: return "MPO 2x12";
+	case 0x28: return "MPO 1x16";
 	default:   return "Unknown or unspecified";
 	}
 }
