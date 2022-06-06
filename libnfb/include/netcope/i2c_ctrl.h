@@ -90,11 +90,12 @@ static inline struct nc_i2c_ctrl *nc_i2c_open(const struct nfb_device *dev, int 
 
 	ctrl->addr = 0xAC;
 	ctrl->bytes = 2;
+	ctrl->prescale = 0x00f9;
 
-	/* Init HW controller */
-	nfb_comp_lock(comp, I2C_COMP_LOCK);
-	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, 0x8000f9);
-	nfb_comp_unlock(comp, I2C_COMP_LOCK);
+	/* INFO: The first opener should init the controller and the last shutter should deinit it.
+	 * Unfornatelly there is currently not a counted-semaphore-like mechanism in nfb lock API.
+	 * The workaround is to init and deinit the controller in each read / write access. */
+//	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, 0x800000 | ctrl->prescale);
 
 	return ctrl;
 }
@@ -105,7 +106,7 @@ static inline void nc_i2c_close(struct nc_i2c_ctrl *ctrl)
 
 	comp = nfb_user_to_comp(ctrl);
 
-	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, 0x0);
+//	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, 0x0);
 	nfb_comp_close(comp);
 }
 
@@ -184,6 +185,8 @@ static inline int nc_i2c_read_reg(struct nc_i2c_ctrl *ctrl, uint8_t reg, uint8_t
 	if (!nfb_comp_lock(comp, I2C_COMP_LOCK))
 		return -EAGAIN;
 
+	/* Init HW controller */
+	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, 0x800000 | ctrl->prescale);
 
 retry:
 	_nc_i2c_wait_for_ready(ctrl);
@@ -210,6 +213,9 @@ retry:
 		goto retry;
 	}
 
+	/* Deinit HW controller */
+	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, 0x0);
+
 	nfb_comp_unlock(comp, I2C_COMP_LOCK);
 
 	if (ret)
@@ -234,6 +240,8 @@ static inline int nc_i2c_write_reg(struct nc_i2c_ctrl *ctrl, uint8_t reg, const 
 	if (!nfb_comp_lock(comp, I2C_COMP_LOCK))
 		return -EAGAIN;
 
+	/* Init HW controller */
+	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, 0x800000 | ctrl->prescale);
 
 	_nc_i2c_wait_for_ready(ctrl);
 
@@ -247,6 +255,9 @@ static inline int nc_i2c_write_reg(struct nc_i2c_ctrl *ctrl, uint8_t reg, const 
 
 		ret |= _nc_i2c_write_byte(ctrl, data[i], flags);
 	}
+
+	/* Deinit HW controller */
+	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, 0x0);
 
 	nfb_comp_unlock(comp, I2C_COMP_LOCK);
 
