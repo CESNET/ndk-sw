@@ -31,6 +31,23 @@
 #define SFF8636_LINK_CODES      192
 #define SFF8636_VENDOR_SN       196
 
+#define CMIS_REVISION             1
+#define CMIS_GLOBAL_STATUS        3
+#define CMIS_TEMPERATURE         14
+#define CMIS_MEDIA_TYPE          85
+#define CMIS_HOST_LANE_COUNT     88
+
+#define CMIS_BANK_SELECT        126
+#define CMIS_PAGE_SELECT        127
+
+/* PAGE 0x00 */
+#define CMIS_VENDOR_NAME        129
+#define CMIS_VENDOR_PN          148
+#define CMIS_VENDOR_SN          166
+#define CMIS_MEDIA_INTERFACE_T  212
+
+/* PAGE 0x11 */
+#define CMIS_OPTICAL_POWER_RX   186
 
 static inline uint16_t qsfp_i2c_read16(struct nc_i2c_ctrl *ctrl, uint8_t reg)
 {
@@ -131,6 +148,88 @@ const char *sff8024_get_connector(uint8_t reg)
 	}
 }
 
+const char *qsfp_get_identifier(uint32_t reg)
+{
+	switch (reg) {
+	case 0x00: return "Unknown or unspecified";
+	case 0x01: return "GBIC";
+	case 0x02: return "Module/connector soldered to motherboard";
+	case 0x03: return "SFP/SFP+/SFP28";
+	case 0x04: return "300 pin XBI";
+	case 0x05: return "XENPAK";
+	case 0x06: return "XFP";
+	case 0x07: return "XFF";
+	case 0x08: return "XFP-E";
+	case 0x09: return "XPAK";
+	case 0x0A: return "X2";
+	case 0x0B: return "DWDM-SFP/SFP+";
+	case 0x0C: return "QSFP";
+	case 0x0D: return "QSFP+";
+	case 0x0E: return "CXP";
+	case 0x0F: return "Shielded Mini Multilane HD 4X";
+	case 0x10: return "Shielded Mini Multilane HD 8X";
+	case 0x11: return "QSFP28";
+	case 0x12: return "CXP2";
+	case 0x13: return "CDFP (Style 1/Style2)";
+	case 0x14: return "Shielded Mini Multilane HD 4X Fanout Cable";
+	case 0x15: return "Shielded Mini Multilane HD 8X Fanout Cable";
+	case 0x16: return "CDFP (Style 3)";
+	case 0x17: return "microQSFP";
+	case 0x18: return "QSFP-DD";
+	default:   return "Unknown or unspecified";
+	}
+}
+
+const char *cmis_module_state(uint8_t reg)
+{
+	switch (reg) {
+	case 1: return "ModuleLowPwr";
+	case 2: return "ModulePwrUp";
+	case 3: return "ModuleReady";
+	case 4: return "ModulePwrDn";
+	case 5: return "ModuleFault";
+	default: return "Unknown";
+	}
+}
+
+const char *cmis_mtf(uint8_t reg)
+{
+	switch (reg) {
+	case 0x00: return "Undefined";
+	case 0x01: return "Optical Interfaces: MMF";
+	case 0x02: return "Optical Interfaces: SMF";
+	case 0x03: return "Passive Copper Cables";
+	case 0x04: return "Active Cables";
+	case 0x05: return "BASE-T";
+	default: return "Reserved";
+	}
+}
+
+const char *cmis_mit(uint8_t reg)
+{
+	switch (reg) {
+	case 0x00: return "850 nm VCSEL";
+	case 0x01: return "1310 nm VCSEL";
+	case 0x02: return "1550 nm VCSEL";
+	case 0x03: return "1310 nm FP";
+	case 0x04: return "1310 nm DFB";
+	case 0x05: return "1550 nm DFB";
+	case 0x06: return "1310 nm EML";
+	case 0x07: return "1550 nm EML";
+	case 0x08: return "Others";
+	case 0x09: return "1490 nm DFB";
+	case 0x0A: return "Copper cable unequalized";
+	case 0x0B: return "Copper cable passive equalized";
+	case 0x0C: return "Copper cable, near and far end limiting active equalizers";
+	case 0x0D: return "Copper cable, far end limiting active equalizers";
+	case 0x0E: return "Copper cable, near end limiting active equalizers";
+	case 0x0F: return "Copper cable, linear active equalizers";
+	case 0x10: return "C-band tunable laser";
+	case 0x11: return "L-band tunable laser";
+	default:   return "Reserved";
+	}
+}
+
 /**
  * \brief Print ASCII text stored in QSFP registers
  *
@@ -185,6 +284,7 @@ int qsfp_present(struct nc_i2c_ctrl *i2c, int mdev __attribute__((unused)) )
 }
 
 void sff8636_print(struct nc_i2c_ctrl *ctrl);
+void cmis_print(struct nc_i2c_ctrl *ctrl);
 
 /**
  * \brief Print informations about transceiver
@@ -194,6 +294,7 @@ void sff8636_print(struct nc_i2c_ctrl *ctrl);
  */
 void qsfpp_print(struct nfb_device *dev, int nodeoffset, int node_params)
 {
+	uint8_t reg = 0xFF;
 	uint32_t i2c_addr;
 
 	struct nc_i2c_ctrl *ctrl;
@@ -220,7 +321,14 @@ void qsfpp_print(struct nfb_device *dev, int nodeoffset, int node_params)
 
 	nc_i2c_set_addr(ctrl, i2c_addr);
 
-	sff8636_print(ctrl);
+	nc_i2c_read_reg(ctrl, SFF8636_IDENTIFIER, &reg, 1);
+	printf("Module identifier          : %s\n", qsfp_get_identifier(reg));
+
+	if (reg == 0x18) {
+		cmis_print(ctrl);
+	} else {
+		sff8636_print(ctrl);
+	}
 
 	nc_i2c_close(ctrl);
 }
@@ -279,6 +387,54 @@ void sff8636_print(struct nc_i2c_ctrl *ctrl)
 	printf("\nSoftware TX disable\n");
 	for (i = 0; i < CHANNELS; i++) {
 		printf(" * Lane %d                  : %sactive\n", i + 1, (reg & (1 << i)) ? "" : "in");
+	}
+}
+
+void cmis_print(struct nc_i2c_ctrl *ctrl)
+{
+	int channel_cnt = 8;
+
+	uint8_t i;
+	uint8_t reg = 0;
+	uint16_t reg16 = 0;
+
+	nc_i2c_write_reg(ctrl, CMIS_PAGE_SELECT, &reg, 1);
+
+	nc_i2c_read_reg(ctrl, CMIS_REVISION, &reg, 1);
+	printf("CMIS version               : %d.%d\n", reg >> 4, reg & 0xF);
+
+	nc_i2c_read_reg(ctrl, CMIS_GLOBAL_STATUS, &reg, 1);
+	printf("Module state               : %s\n", cmis_module_state((reg >> 1) & 0x7));
+
+	reg16 = qsfp_i2c_read16(ctrl, CMIS_TEMPERATURE);
+	printf("Temperature                : %.2f C\n", ((float) reg16) / 256);
+
+	printf("Vendor name                : ");
+	qsfp_i2c_text_print(ctrl, CMIS_VENDOR_NAME, 16);
+
+	printf("Vendor serial number       : ");
+	qsfp_i2c_text_print(ctrl, CMIS_VENDOR_SN, 16);
+
+	printf("Vendor PN                  : ");
+	qsfp_i2c_text_print(ctrl, CMIS_VENDOR_PN, 16);
+
+	nc_i2c_read_reg(ctrl, CMIS_MEDIA_TYPE, &reg, 1);
+	printf("Media Type                 : %s\n", cmis_mtf(reg));
+
+	nc_i2c_read_reg(ctrl, CMIS_MEDIA_INTERFACE_T, &reg, 1);
+	printf("Media Interface Technology : %s\n", cmis_mit(reg));
+
+	if (nc_i2c_read_reg(ctrl, CMIS_HOST_LANE_COUNT, &reg, 1) == 1) {
+		channel_cnt = reg & 0x0F;
+	}
+
+	printf("RX input power\n");
+	for (i = 0; i < channel_cnt; i++) {
+		reg = 0x11; nc_i2c_write_reg(ctrl, CMIS_PAGE_SELECT, &reg, 1);
+		reg16 = qsfp_i2c_read16(ctrl, CMIS_OPTICAL_POWER_RX + i * 2);
+		printf(" * Lane %d                  : %.2f %s (%.2f dBm)\n", i + 1,
+			(reg16 < 10000) ? ((float)reg16) / 10 : ((float) reg16) / 10000 ,
+			(reg16 < 10000) ? "uW" : "mW", 10 * log10(((float) reg16) / 10000));
 	}
 }
 
