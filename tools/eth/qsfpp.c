@@ -266,6 +266,7 @@ void qsfp_i2c_text_print(struct nc_i2c_ctrl *i2c, uint8_t reg, unsigned count)
 	printf("\n");
 }
 
+#if 0
 /**
  * \brief Fallback mode - determine plugged transceiver by reading first register
  *
@@ -282,6 +283,7 @@ int qsfp_present(struct nc_i2c_ctrl *i2c, int mdev __attribute__((unused)) )
 		return 0;
 	return 1;
 }
+#endif
 
 void sff8636_print(struct nc_i2c_ctrl *ctrl);
 void cmis_print(struct nc_i2c_ctrl *ctrl);
@@ -438,6 +440,7 @@ void cmis_print(struct nc_i2c_ctrl *ctrl)
 	}
 }
 
+#if 0
 /**
  * \brief Software disable over i2c
  *
@@ -451,3 +454,4 @@ void qsfpp_stxdisable(struct nc_i2c_ctrl *ctrl)
 	nc_i2c_set_addr(ctrl, 0xA0);
 	nc_i2c_write_reg(ctrl, SFF8636_STXDISABLE, &reg, 1);
 }
+#endif
