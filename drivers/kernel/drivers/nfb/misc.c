@@ -8,6 +8,7 @@
  */
 
 #include <linux/netdevice.h>
+#include <linux/etherdevice.h>
 #include "nfb.h"
 
 uint64_t reverse(const uint64_t n, const uint64_t k)
@@ -21,17 +22,20 @@ uint64_t reverse(const uint64_t n, const uint64_t k)
 int nfb_net_set_dev_addr(struct nfb_device *nfb, struct net_device *dev, int index)
 {
 	int snshift = 4;
+	u8 addr[ETH_ALEN];
 
 	if (dev->addr_len != ETH_ALEN)
 		return -1;
 
-	dev->dev_addr[0] = 0x00;
-	dev->dev_addr[1] = 0x11;
-	dev->dev_addr[2] = 0x17;
+	addr[0] = 0x00;
+	addr[1] = 0x11;
+	addr[2] = 0x17;
 
-	dev->dev_addr[3] = reverse(nfb->nfb_pci_dev->card_type_id, 8);
-	dev->dev_addr[4] = (nfb->serial << snshift) >> 8;
-	dev->dev_addr[5] = ((nfb->serial << snshift) & 0xF0) | (index & 0x0F);
+	addr[3] = reverse(nfb->nfb_pci_dev->card_type_id, 8);
+	addr[4] = (nfb->serial << snshift) >> 8;
+	addr[5] = ((nfb->serial << snshift) & 0xF0) | (index & 0x0F);
+
+	eth_hw_addr_set(dev, addr);
 
 	return 0;
 }

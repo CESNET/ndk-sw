@@ -663,12 +663,12 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		dev_err(&pci->dev, "unable to enable PCI device: %d\n", ret);
 		goto err_pci_enable_device;
 	}
-	ret = pci_set_dma_mask(pci, DMA_BIT_MASK(64));
+	ret = dma_set_mask(&pci->dev, DMA_BIT_MASK(64));
 	if (ret) {
 		dev_err(&pci->dev, "unable to set DMA mask: %d\n", ret);
 		goto err_pci_set_dma_mask;
 	}
-	ret = pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(64));
+	ret = dma_set_coherent_mask(&pci->dev, DMA_BIT_MASK(64));
 	if (ret) {
 		dev_err(&pci->dev, "unable to set DMA consistent mask: %d\n", ret);
 		goto err_pci_set_consistent_dma_mask;

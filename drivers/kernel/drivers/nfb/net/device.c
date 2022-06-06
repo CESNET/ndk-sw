@@ -442,7 +442,11 @@ static int nfb_net_rx_thread(void *rxqptr)
 		skb_record_rx_queue(skb, rxq->index);
 
 		// Send packet to the kernel network stack
+#ifdef CONFIG_HAVE_NETIF_RX_NI
 		if (netif_rx_ni(skb) != NET_RX_DROP) {
+#else
+		if (netif_rx(skb) != NET_RX_DROP) {
+#endif
 			u64_stats_update_begin(&rxq->sync);
 			rxq->packets++;
 			rxq->bytes += packet.data_length;
