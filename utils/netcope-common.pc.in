@@ -1,0 +1,12 @@
+prefix = @prefix@
+includedir = @includedir@
+libdir =  @libdir@
+datarootdir = @datarootdir@
+datadir = @datadir@
+
+Name: netcope-common
+Version: @PACKAGE_VERSION@
+Description: Software bundle for CESNET NDK firmware platform
+Libs: -L${libdir} -lnfb -lfdt
+Libs.private: -lnuma
+Cflags: -I${includedir}

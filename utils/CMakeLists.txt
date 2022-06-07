@@ -25,6 +25,7 @@ set(datadir         "\${datarootdir}")
 set(PACKAGE_VERSION "${GIT_VERSION}")
 
 configure_file(nfb-framework.pc.in nfb-framework.pc @ONLY)
+configure_file(netcope-common.pc.in netcope-common.pc @ONLY)
 
 install(
 	FILES nfb.udev.rules
@@ -33,7 +34,9 @@ install(
 )
 
 install(
-	FILES ${CMAKE_CURRENT_BINARY_DIR}/nfb-framework.pc
+	FILES
+		${CMAKE_CURRENT_BINARY_DIR}/nfb-framework.pc
+		${CMAKE_CURRENT_BINARY_DIR}/netcope-common.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 

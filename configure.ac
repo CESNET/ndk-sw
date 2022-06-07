@@ -91,6 +91,6 @@ libdir='${prefix}/lib64'
 
 
 # ----[ SECTION: Generate output ]---- #
-AC_CONFIG_FILES(mk/common.mk spec/nfb-framework.spec drivers/dkms.conf drivers/Makefile utils/nfb-framework.pc)
+AC_CONFIG_FILES(drivers/dkms.conf drivers/Makefile utils/nfb-framework.pc utils/netcope-common.pc)
 AC_CONFIG_SUBDIRS([drivers])
 AC_OUTPUT
