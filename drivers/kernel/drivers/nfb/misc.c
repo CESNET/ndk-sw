@@ -34,8 +34,11 @@ int nfb_net_set_dev_addr(struct nfb_device *nfb, struct net_device *dev, int ind
 	addr[3] = reverse(nfb->nfb_pci_dev->card_type_id, 8);
 	addr[4] = (nfb->serial << snshift) >> 8;
 	addr[5] = ((nfb->serial << snshift) & 0xF0) | (index & 0x0F);
-
+#ifdef CONFIG_HAVE_ETH_HW_ADDR_SET 
 	eth_hw_addr_set(dev, addr);
+#else
+	memcpy(dev->dev_addr, addr, sizeof(addr));
+#endif
 
 	return 0;
 }

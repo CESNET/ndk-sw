@@ -37,8 +37,8 @@ cat Makefile >&AS_MESSAGE_LOG_FD
 make >&AS_MESSAGE_LOG_FD 2>&1
 retval=$?
 cd ..
+rm -rf .test/ >/dev/null 2>/dev/null
 if test $retval -eq 0; then
-	rm -rf .test/ >/dev/null 2>/dev/null
 	$2
 else
 	$3
@@ -53,7 +53,7 @@ AC_ARG_WITH([kernel], AS_HELP_STRING([--with-kernel=DIR],[use this kernel build 
 	[test "$withval" = "yes" && AC_MSG_FAILURE(no path passed in --with-kernel);
 		KDIR=$withval],
 	[KDIR=/lib/modules/`uname -r`/build/ KSRC=/lib/modules/`uname -r`/source/])
-test -d $KDIR || AC_MSG_FAILURE($KDIR doesn't exist)
+test -d $KDIR || AC_MSG_FAILURE($KDIR does not exist)
 AC_MSG_RESULT($KDIR)
 
 # Is kernel build dir usable?
@@ -76,12 +76,17 @@ KERNEL_TRY_COMPILE([[
 struct timespec ts;
 ]],[AC_DEFINE([CONFIG_HAVE_TIMESPEC], [1], [Define if kernel have struct timespec]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
-# Tests for symbols
 AC_MSG_CHECKING([whether kernel has netif_rx_ni])
 KERNEL_TRY_COMPILE([[
 #include <linux/netdevice.h>
 void test(void) {netif_rx_ni(NULL);}
 ]],[AC_DEFINE([CONFIG_HAVE_NETIF_RX_NI], [1], [Define if kernel have netif_rx_ni]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
+AC_MSG_CHECKING([whether kernel has eth_hw_addr_set])
+KERNEL_TRY_COMPILE([[
+#include <linux/etherdevice.h>
+void test(void) {eth_hw_addr_set(NULL, NULL);}
+]],[AC_DEFINE([CONFIG_HAVE_ETH_HW_ADDR_SET], [1], [Define if kernel have eth_hw_addr_set]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_SUBST(KDIR)
 AC_SUBST(KSRC)
