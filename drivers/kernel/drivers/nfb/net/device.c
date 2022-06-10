@@ -87,10 +87,11 @@ static void nfb_net_link_status(struct net_device *netdev)
 }
 
 
+static const int SFF8636_STXDISABLE = 86;
 static void nfb_net_transceiver_on(struct net_device *netdev)
 {
 	struct nfb_net_device *priv = netdev_priv(netdev);
-	unsigned currval;
+	uint8_t currval;
 
 	if (!net_transceiver_control)
 		return;
@@ -107,18 +108,18 @@ static void nfb_net_transceiver_on(struct net_device *netdev)
 	if (!priv->nc_tri2c)
 		return;
 
-	i2c_set_addr(priv->nc_tri2c, 0xA0);
-	i2c_set_data_bytes(priv->nc_tri2c, 1);
+	nc_i2c_set_addr(priv->nc_tri2c, 0xA0);
 
-	nc_i2c_read(priv->nc_tri2c, 86, &currval);
-	nc_i2c_write(priv->nc_tri2c, 86, currval & ~priv->trlanes);
+	nc_i2c_read_reg(priv->nc_tri2c, SFF8636_STXDISABLE, &currval, 1);
+	currval &= ~priv->trlanes;
+	nc_i2c_write_reg(priv->nc_tri2c, SFF8636_STXDISABLE, &currval, 1);
 }
 
 
 static void nfb_net_transceiver_off(struct net_device *netdev)
 {
 	struct nfb_net_device *priv = netdev_priv(netdev);
-	unsigned currval;
+	uint8_t currval;
 
 	// Empty operation if transceiver control not enabled
 	if (!net_transceiver_control)
@@ -136,11 +137,11 @@ static void nfb_net_transceiver_off(struct net_device *netdev)
 	if (!priv->nc_tri2c)
 		return;
 
-	i2c_set_addr(priv->nc_tri2c, 0xA0);
-	i2c_set_data_bytes(priv->nc_tri2c, 1);
+	nc_i2c_set_addr(priv->nc_tri2c, 0xA0);
 
-	nc_i2c_read(priv->nc_tri2c, 86, &currval);
-	nc_i2c_write(priv->nc_tri2c, 86, currval | priv->trlanes);
+	nc_i2c_read_reg(priv->nc_tri2c, SFF8636_STXDISABLE, &currval, 1);
+	currval |= priv->trlanes;
+	nc_i2c_write_reg(priv->nc_tri2c, SFF8636_STXDISABLE, &currval, 1);
 }
 
 
