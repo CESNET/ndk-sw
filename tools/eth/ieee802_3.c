@@ -5,6 +5,7 @@
  * Copyright (C) 2018-2022 CESNET
  * Author(s):
  *   Martin Spinler <spinler@cesnet.cz>
+ *   Jakub Cabal <cabal@cesnet.cz>
  */
 
 #include <stdlib.h>
@@ -153,6 +154,30 @@ static const struct pma_pmd_type_t ieee802_3_pma_pmd_25g_extended_ability_list[]
 	{-1, NULL,                     -1, 0},
 };
 
+static const struct pma_pmd_type_t ieee802_3_pma_pmd_200g_extended_ability_list[] = {
+	{3, "200GBASE-DR4",            ET(200000baseDR4_Full), 0},
+	{4, "200GBASE-FR4",            ET(200000baseLR4_ER4_FR4_Full), 0},
+	{5, "200GBASE-LR4",            ET(200000baseLR4_ER4_FR4_Full), 0},
+	{-1, NULL,                     -1, 0},
+};
+
+static const struct pma_pmd_type_t ieee802_3_pma_pmd_400g_extended_ability_list[] = {
+	{2, "400GBASE-SR16",           -1, 0},
+	{3, "400GBASE-DR4",            -1, 0},
+	{4, "400GBASE-FR8",            -1, 0},
+	{5, "400GBASE-LR8",            -1, 0},
+	{-1, NULL,                     -1, 0},
+};
+
+static const struct pma_pmd_type_t ieee802_3_pma_pmd_50g_extended_ability_list[] = {
+	{0, "50GBASE-KR",              ET(50000baseKR_Full), 0},
+	{1, "50GBASE-CR",              ET(50000baseCR_Full), 0},
+	{2, "50GBASE-SR",              ET(50000baseSR_Full), 2 | IEEE802_3_FLAG_FEC_MANDATORY},
+	{3, "50GBASE-FR",              ET(50000baseLR_ER_FR_Full), 0},
+	{4, "50GBASE-LR",              ET(50000baseLR_ER_FR_Full), 0},
+	{-1, NULL,                     -1, 0},
+};
+
 static inline struct pma_pmd_type_t const *_find_pma_pmd_type_by_string(struct pma_pmd_type_t const *table, const char *string)
 {
 	if (string == NULL)
@@ -188,7 +213,7 @@ const char *ieee802_3_get_pma_pmd_type_string(struct mdio_if_info *if_info)
 	reg200_r = 0;
 
 	reg = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 7);
-	reg &= 0x3f;
+	reg &= 0x7f;
 
 	while ((table = _find_pma_pmd_type_by_nr(table, reg))) {
 		if (table->flags & IEEE802_3_FLAG_FEC_VARIANT) {
@@ -234,16 +259,20 @@ int ieee802_3_set_pma_pmd_type_string(struct mdio_if_info *if_info, const char *
 
 void ieee802_3_get_supported_pma_pmd_types_string(struct mdio_if_info *if_info, string_cb_t cb, void *cb_priv)
 {
-	#define ST_TABLES_COUNT 4
+	#define ST_TABLES_COUNT 7
 	const int ext_abilities_hotfix = 1;
 
-	uint16_t reg[ST_TABLES_COUNT] = {0, 0, 0, 0,};
-	int have_caps[ST_TABLES_COUNT] = {0, 0, 0, 0,};
+	uint16_t reg[ST_TABLES_COUNT] = {0, 0, 0, 0, 0, 0, 0,};
+	uint16_t reg_pma_ea2 = 0;
+	int have_caps[ST_TABLES_COUNT] = {0, 0, 0, 0, 0, 0, 0,};
 	const struct pma_pmd_type_t *tables[ST_TABLES_COUNT] = {
 		ieee802_3_pma_pmd_ability_list,
 		ieee802_3_pma_pmd_extended_ability_list,
 		ieee802_3_pma_pmd_40g_100g_extended_ability_list,
-		ieee802_3_pma_pmd_25g_extended_ability_list
+		ieee802_3_pma_pmd_25g_extended_ability_list,
+		ieee802_3_pma_pmd_200g_extended_ability_list,
+		ieee802_3_pma_pmd_400g_extended_ability_list,
+		ieee802_3_pma_pmd_50g_extended_ability_list
 	};
 
 	const struct pma_pmd_type_t *table;
@@ -258,12 +287,26 @@ void ieee802_3_get_supported_pma_pmd_types_string(struct mdio_if_info *if_info, 
 		reg[1] = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 11);
 		have_caps[2] = reg[1] & (1 << 10);
 		have_caps[3] = reg[1] & (1 << 12);
+		have_caps[4] = reg[1] & (1 << 13);
+		have_caps[5] = reg[1] & (1 << 13);
+		// read PMA/PMD extended ability 2
+		reg_pma_ea2 = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 25);
+		have_caps[6] = reg_pma_ea2 & (1 << 0);
 
 		if (have_caps[2] || ext_abilities_hotfix) {
 			reg[2] = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 13);
 		}
 		if (have_caps[3] || ext_abilities_hotfix) {
 			reg[3] = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 19);
+		}
+		if (have_caps[4] || ext_abilities_hotfix) {
+			reg[4] = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 23);
+		}
+		if (have_caps[5] || ext_abilities_hotfix) {
+			reg[5] = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 24);
+		}
+		if (have_caps[6] || ext_abilities_hotfix) {
+			reg[6] = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 20);
 		}
 	}
 
@@ -289,6 +332,8 @@ const char *ieee802_3_get_speed_string(int val)
 	case 40000:     return "40 Gb/s";
 	case 50000:     return "50 Gb/s";
 	case 100000:    return "100 Gb/s";
+	case 200000:    return "200 Gb/s";
+	case 400000:    return "400 Gb/s";
 	default:        return "Unknown";
 	}
 }
@@ -310,6 +355,9 @@ int ieee802_3_get_pma_speed_value(struct mdio_if_info *if_info)
 		case 2: return 40000;
 		case 3: return 100000;
 		case 4: return 25000;
+		case 5: return 50000;
+		case 8: return 200000;
+		case 9: return 400000;
 		default: return SPEED_UNKNOWN;
 		}
 	}
@@ -345,6 +393,8 @@ int ieee802_3_get_pcs_speed_value(struct mdio_if_info *if_info)
 		case 4: return 100000;
 		case 5: return 25000;
 		case 6: return 50000;
+		case 9: return 200000;
+		case 10: return 400000;
 		default: return SPEED_UNKNOWN;
 		}
 	} else {
@@ -373,6 +423,8 @@ int ieee802_3_get_pcs_lines(struct mdio_if_info *if_info)
 			case 4: return 20;
 			case 5: return 1;
 			case 6: return 4;
+			case 9: return 4;
+			case 10: return 8;
 			default: return -1;
 		}
 	} else {
