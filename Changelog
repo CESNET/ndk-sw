@@ -1,2 +1,6 @@
+* Fri Jun 10 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.1-1
+- [FEATURE] added base support for QSFP-DD modules (CMIS memory layout)
+- [MAINTENANCE] added kernel 5.18 support
+
 * Mon Apr 14 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.0-1
 - [MAINTENANCE] Public release
