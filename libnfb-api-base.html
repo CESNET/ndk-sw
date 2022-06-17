@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Base API &mdash; NFB Software User Guide 6.16.0 documentation</title>
@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -87,10 +88,10 @@
            <div itemprop="articleBody">
              
   <section id="base-api">
-<h1>Base API<a class="headerlink" href="#base-api" title="Permalink to this headline"></a></h1>
+<h1>Base API<a class="headerlink" href="#base-api" title="Permalink to this heading"></a></h1>
 <p>The libnfb is userspace library, which allows to do the basic operations over NFB cards.</p>
 <section id="init-and-deinit-functions">
-<h2>Init and deinit functions<a class="headerlink" href="#init-and-deinit-functions" title="Permalink to this headline"></a></h2>
+<h2>Init and deinit functions<a class="headerlink" href="#init-and-deinit-functions" title="Permalink to this heading"></a></h2>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv48nfb_openPKc">
 <span id="_CPPv38nfb_openPKc"></span><span id="_CPPv28nfb_openPKc"></span><span id="nfb_open__cCP"></span><span class="target" id="nfb_8h_1a9bfa3c09b0ddcf8628f4fe82b68b5ba7"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">nfb_open</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">path</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv48nfb_openPKc" title="Permalink to this definition"></a><br /></dt>
@@ -98,10 +99,10 @@
 <p>
 This is the initialization function, which must be called before other library functions. Upon successful completion, the returned value is a NFB device handle to be passed to other functions. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>path</strong> – <strong>[in]</strong> Path to the NFB device file </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p>NFB device handle on success</p></li>
 <li><p>NULL on error (errno is set)</p></li>
@@ -118,7 +119,7 @@ This is the initialization function, which must be called before other library f
 <p>
 Call this function to finish the work with NFB device and cleanup. The handle passed to this function can not be used further and you must ensure to close that all other opened subhandles (e.g. by <a class="reference internal" href="#nfb_8h_1a78770bf515eef3384b8cf057cf2a7e32"><span class="std std-ref">nfb_comp_open</span></a>) are closed. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>dev</strong> – <strong>[in]</strong> NFB device handle</p>
 </dd>
 </dl>
@@ -126,16 +127,16 @@ Call this function to finish the work with NFB device and cleanup. The handle pa
 
 </section>
 <section id="device-tree-functions">
-<h2>Device tree functions<a class="headerlink" href="#device-tree-functions" title="Permalink to this headline"></a></h2>
+<h2>Device tree functions<a class="headerlink" href="#device-tree-functions" title="Permalink to this heading"></a></h2>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv411nfb_get_fdtPK10nfb_device">
 <span id="_CPPv311nfb_get_fdtPK10nfb_device"></span><span id="_CPPv211nfb_get_fdtPK10nfb_device"></span><span id="nfb_get_fdt__nfb_deviceCP"></span><span class="target" id="nfb_8h_1ad0461db0085b2c20922a0b95fd165d66"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">nfb_get_fdt</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv411nfb_get_fdtPK10nfb_device" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Retrieve NFB device Device Tree description. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>dev</strong> – <strong>[in]</strong> NFB device handle </p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p>Device Tree (in FDT format) on success</p></li>
 <li><p>NULL on error </p></li>
@@ -152,13 +153,13 @@ Call this function to finish the work with NFB device and cleanup. The handle pa
 <p>
 This function goes through FDT and counts all nodes with matching ‘compatible’ property. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dev</strong> – <strong>[in]</strong> NFB device handle </p></li>
 <li><p><strong>compatible</strong> – <strong>[in]</strong> Component ‘compatible’ string </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p>Non-negative number of components on success</p></li>
 <li><p>Negative error code on error</p></li>
@@ -175,14 +176,14 @@ This function goes through FDT and counts all nodes with matching ‘compatible�
 <p>
 This function goes through FDT and finds N-th node with matching ‘compatible’ property. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dev</strong> – <strong>[in]</strong> NFB device handle </p></li>
 <li><p><strong>compatible</strong> – <strong>[in]</strong> Component ‘compatible’ string </p></li>
 <li><p><strong>index</strong> – <strong>[in]</strong> Component index </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p>Non-negative FDT offset of the component on success</p></li>
 <li><p>Negative error code on error</p></li>
@@ -199,7 +200,7 @@ This function goes through FDT and finds N-th node with matching ‘compatible�
 <p>
 This function goes through FDT and finds N-th node with matching ‘compatible’ property, but search only nodes in specific parent. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dev</strong> – <strong>[in]</strong> NFB device handle </p></li>
 <li><p><strong>compatible</strong> – <strong>[in]</strong> Component ‘compatible’ string </p></li>
@@ -207,7 +208,7 @@ This function goes through FDT and finds N-th node with matching ‘compatible�
 <li><p><strong>parent_offset</strong> – <strong>[in]</strong> FDT offset of the parent component </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p>Non-negative FDT offset of the component on success</p></li>
 <li><p>Negative error code on error</p></li>
@@ -219,19 +220,19 @@ This function goes through FDT and finds N-th node with matching ‘compatible�
 
 </section>
 <section id="component-functions">
-<h2>Component functions<a class="headerlink" href="#component-functions" title="Permalink to this headline"></a></h2>
+<h2>Component functions<a class="headerlink" href="#component-functions" title="Permalink to this heading"></a></h2>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv413nfb_comp_openPK10nfb_devicei">
 <span id="_CPPv313nfb_comp_openPK10nfb_devicei"></span><span id="_CPPv213nfb_comp_openPK10nfb_devicei"></span><span id="nfb_comp_open__nfb_deviceCP.i"></span><span class="target" id="nfb_8h_1a78770bf515eef3384b8cf057cf2a7e32"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_open</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fdt_offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv413nfb_comp_openPK10nfb_devicei" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Open component specified by <code class="docutils literal notranslate"><span class="pre">offset</span></code>. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dev</strong> – <strong>[in]</strong> NFB device handle </p></li>
 <li><p><strong>fdt_offset</strong> – <strong>[in]</strong> FDT offset of the component </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p>Component handle on success</p></li>
 <li><p>NULL on error (errno is set) </p></li>
@@ -248,7 +249,7 @@ This function goes through FDT and finds N-th node with matching ‘compatible�
 <p>
 Call this function when your work with the component is finished. After it returns, the component handle must not be used again. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>component</strong> – <strong>[in]</strong> Component handle</p>
 </dd>
 </dl>
@@ -263,7 +264,7 @@ Call this function when your work with the component is finished. After it retur
 <p>See man 2 pread on Linux </p>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>comp</strong> – <strong>[in]</strong> Component handle </p></li>
 <li><p><strong>buf</strong> – <strong>[in]</strong> Buffer to store the data to </p></li>
@@ -271,7 +272,7 @@ Call this function when your work with the component is finished. After it retur
 <li><p><strong>offset</strong> – <strong>[in]</strong> Offset in the component </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p>The amount of bytes successfully read on success</p></li>
 <li><p>Negative error code on error (errno is set)</p></li>
@@ -286,7 +287,7 @@ Call this function when your work with the component is finished. After it retur
 <span id="_CPPv314nfb_comp_writePK8nfb_compPKv6size_t5off_t"></span><span id="_CPPv214nfb_comp_writePK8nfb_compPKv6size_t5off_t"></span><span id="nfb_comp_write__nfb_compCP.voidCP.s.off_t"></span><span class="target" id="nfb_8h_1ac0124581d1e1b7ff50a6df15eaac541e"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_write</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">comp</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">buf</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nbyte</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414nfb_comp_writePK8nfb_compPKv6size_t5off_t" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Write data to a specific offset in the component. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>comp</strong> – <strong>[in]</strong> Component handle </p></li>
 <li><p><strong>buf</strong> – <strong>[in]</strong> Buffer containing the data to be written </p></li>
@@ -294,7 +295,7 @@ Call this function when your work with the component is finished. After it retur
 <li><p><strong>offset</strong> – <strong>[in]</strong> Offset in the component </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p>The amount of bytes successfully written on success</p></li>
 <li><p>Negative error code on error (errno is set) </p></li>
@@ -309,13 +310,13 @@ Call this function when your work with the component is finished. After it retur
 <span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_read32</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">comp</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.nfb_comp_read32" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Read a 32 bit value from component.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>comp</strong> – component</p></li>
 <li><p><strong>offset</strong> – offset inside component to read from</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>Readen 32 bit value</p>
 </dd>
 </dl>
@@ -334,7 +335,7 @@ Call this function when your work with the component is finished. After it retur
 <span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_write32</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">comp</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n"><span class="pre">offset</span></span>, <span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="n"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.nfb_comp_write32" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Write a 32 bit value to component.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>comp</strong> – component</p></li>
 <li><p><strong>offset</strong> – offset inside component to read from</p></li>
@@ -368,13 +369,13 @@ When a feature of the component is locked, no other lock() to the same feature o
 </div>
  </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>component</strong> – <strong>[in]</strong> Component handle </p></li>
 <li><p><strong>features</strong> – <strong>[in]</strong> Bitmask of user-defined features to lock </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p>1 on successful lock</p></li>
 <li><p>0 on unsuccessful lock</p></li>
@@ -394,7 +395,7 @@ When a feature of the component is locked, no other lock() to the same feature o
 </div>
 </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>component</strong> – <strong>[in]</strong> Component handle </p></li>
 <li><p><strong>features</strong> – <strong>[in]</strong> Bitmask of user-defined features to unlock</p></li>

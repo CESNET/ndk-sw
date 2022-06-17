@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>nfb-eth &mdash; NFB Software User Guide 6.16.0 documentation</title>
@@ -14,6 +14,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -97,11 +98,11 @@
            <div itemprop="articleBody">
              
   <section id="nfb-eth">
-<span id="id1"></span><h1>nfb-eth<a class="headerlink" href="#nfb-eth" title="Permalink to this headline"></a></h1>
+<span id="id1"></span><h1>nfb-eth<a class="headerlink" href="#nfb-eth" title="Permalink to this heading"></a></h1>
 <p>Tool for configuring network interfaces (TX/RX MACs), displaying statistics and parameters of TX/RX lines.</p>
 <p>It consists from three sections:</p>
 <section id="mac-section">
-<h2>MAC section<a class="headerlink" href="#mac-section" title="Permalink to this headline"></a></h2>
+<h2>MAC section<a class="headerlink" href="#mac-section" title="Permalink to this heading"></a></h2>
 <p>As a default action, the packet statistics and link status are reported for both RX and TX MAC.
 Specific direction (RX/TX) can be selected with the <strong>-r</strong> or <strong>-t</strong> argument.</p>
 <p>MAC components must be enabled before use (<strong>-e 1</strong>), otherwise the network traffic doesn’t pass through.
@@ -110,7 +111,7 @@ This is necessary especially for TX as the DMA/application core typically get st
 and MAC address based filtration (<strong>-M</strong>: <em>add</em>, <em>remove</em>, <em>show</em>, <em>clear, *fill</em> commands operates on MAC address table, <em>normal</em> (unicast), <em>broadcast</em>, <em>multicast</em>, and <em>promiscuous</em> sets the required mode).</p>
 </section>
 <section id="pma-section">
-<h2>PMA section<a class="headerlink" href="#pma-section" title="Permalink to this headline"></a></h2>
+<h2>PMA section<a class="headerlink" href="#pma-section" title="Permalink to this heading"></a></h2>
 <p>The <strong>-P</strong> argument is intended to configure Ethernet modes.
 If no command is entered, PCS/PMA status is printed, including PMA type, speed and link status.</p>
 <p>Currently used PMA type can be configured with <strong>-c</strong> argument whereas the exact PMA identification string must be entered.
@@ -126,7 +127,7 @@ However the feature can be activated and deactivated with <em>+</em> or <em>-</e
 </ul>
 </section>
 <section id="transceiver-section">
-<h2>Transceiver section<a class="headerlink" href="#transceiver-section" title="Permalink to this headline"></a></h2>
+<h2>Transceiver section<a class="headerlink" href="#transceiver-section" title="Permalink to this heading"></a></h2>
 <p>Prints transceiver information (if plugged) obtained from port management interface (MDIO or I2C),
 including vendor, compliance, temperature, signal strength and more.</p>
 </section>
