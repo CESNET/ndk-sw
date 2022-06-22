@@ -10,6 +10,8 @@
 #ifndef LIBNFB_BOOT_H
 #define LIBNFB_BOOT_H
 
+#include <linux/nfb/boot.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,6 +41,8 @@ ssize_t nfb_fw_read_bit(FILE *fp, void **data);
 void nfb_fw_close(void *data);
 
 void nfb_fw_print_slots(const struct nfb_device *dev);
+
+int nfb_sensor_get(struct nfb_device *dev, struct nfb_boot_ioc_sensor *s);
 
 #ifdef __cplusplus
 } // extern "C"

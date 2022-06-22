@@ -68,6 +68,8 @@
 #define SDM_QSPI_WRITE_OP                 0x39
 #define SDM_QSPI_WRITE_DEVICE_REG_OP      0x36
 #define SDM_QSPI_ERASE_OP                 0x38
+// sensors commands
+#define SDM_GET_TEMPERATURE_OP            0x19
 
 // auxiliary macros
 #define WORD_WIDTH                           4
@@ -495,4 +497,33 @@ int sdm_qspi_erase(struct spi_nor *nor, loff_t off)
 		return ret;
 
 	return 0;
+}
+
+int sdm_get_temperature(struct sdm *sdm, int32_t *temperature)
+{
+	const uint32_t bitmask = 0x1;
+	int ret;
+
+	ret = sdm_try_lock(sdm->comp);
+	if (ret < 0)
+		return -EAGAIN;
+
+	ret = sdm_send_header(sdm, SDM_GET_TEMPERATURE_OP, 1);
+	if (ret < 0)
+		goto err_send_header;
+
+	sdm_send_data(sdm, &bitmask, WORD_WIDTH, 1);
+
+	ret = sdm_get_data(sdm, temperature, sizeof(*temperature));
+	if (ret < 0)
+		goto err_get_data;
+
+	sdm_unlock(sdm->comp);
+	return 0;
+
+err_get_data:
+err_send_header:
+	sdm_unlock(sdm->comp);
+
+	return ret;
 }

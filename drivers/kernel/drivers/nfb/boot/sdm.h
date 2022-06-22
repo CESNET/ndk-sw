@@ -115,4 +115,15 @@ int sdm_qspi_write_reg(struct spi_nor *nor, u8 opcode, u8 *buf, int len);
  */
 int sdm_qspi_erase(struct spi_nor *nor, loff_t off);
 
+/** @brief Read FPGA core temperature from SDM.
+ *
+ *  @param sdm Pointer to SDM struct.
+ *  @param temperature obtained temperature in millicelsius.
+ *
+ *  @return Returns temperature read or negative number indicating error.
+ *
+ */
+int sdm_get_temperature(struct sdm *sdm, int32_t *temperature);
+
+
 #endif

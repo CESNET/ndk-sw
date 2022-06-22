@@ -173,6 +173,36 @@ long nfb_boot_ioctl_reload(struct nfb_boot *boot, int * __user _image)
 	return nfb_char_set_lr_callback(boot->nfb, nfb_boot_reload, boot);
 }
 
+int nfb_boot_get_sensor_ioc(struct nfb_boot *boot, struct nfb_boot_ioc_sensor __user *_ioc_sensor)
+{
+	int ret;
+	int32_t temperature;
+	struct nfb_boot_ioc_sensor ioc_sensor;
+	struct sdm *sdm = boot->sdm;
+
+	if (_ioc_sensor == NULL)
+		return -EINVAL;
+
+	if (copy_from_user(&ioc_sensor, _ioc_sensor, sizeof(ioc_sensor)))
+		return -EFAULT;
+
+	/* Currently only temperature sensor through SDM is implemented */
+	if (sdm == NULL)
+		return -ENODEV;
+
+	ret = sdm_get_temperature(sdm, &temperature);
+	if (ret)
+		return ret;
+
+	/* temperature in millicelsius */
+	ioc_sensor.value = temperature * 1000 / 256;
+
+	if (copy_to_user(_ioc_sensor, &ioc_sensor, sizeof(ioc_sensor)))
+		return -EFAULT;
+
+	return 0;
+}
+
 long nfb_boot_ioctl(void *priv, void *app_priv, struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct nfb_boot *nfb_boot = priv;
@@ -194,6 +224,8 @@ long nfb_boot_ioctl(void *priv, void *app_priv, struct file *file, unsigned int 
 		return nfb_boot_ioctl_mtd_write(nfb_boot, argp);
 	case NFB_BOOT_IOC_MTD_ERASE:
 		return nfb_boot_ioctl_mtd_erase(nfb_boot, argp);
+	case NFB_BOOT_IOC_SENSOR_READ:
+		return nfb_boot_get_sensor_ioc(nfb_boot, argp);
 	default:
 		return -ENOTTY;
 	}

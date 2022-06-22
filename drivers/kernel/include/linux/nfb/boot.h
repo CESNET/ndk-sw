@@ -11,8 +11,11 @@
 #ifndef _LINUX_NFB_BOOT_H_
 #define _LINUX_NFB_BOOT_H_
 
+#include <linux/ioctl.h>
+#include <linux/types.h>
+
 /**
- * struct combov3_ioc_mtd_info - argument for NFB_BOOT_IOC_MTD_INFO
+ * struct nfb_boot_ioc_mtd_info - argument for NFB_BOOT_IOC_MTD_INFO
  * @mtd:  W: Index of MTD on card. Typically is available only MTD with index 0.
  * @size: R: Total size of selected MTD.
  * @erasesize: R: Erase size of selected MTD.
@@ -25,7 +28,7 @@ struct nfb_boot_ioc_mtd_info
 };
 
 /**
- * struct combov3_ioc_mtd
+ * struct nfb_boot_ioc_mtd
  * @mtd:  W: Index of MTD on card.
  * @addr: W: Address passed to MTD.
  * @size: W: Size of data
@@ -42,6 +45,18 @@ struct nfb_boot_ioc_mtd
         char *data;
 };
 
+/**
+ * struct nfb_boot_ioc_sensor
+ * @sensor_id:  W: Index of the requested sensor.
+ * @flags:     WR: Additional parameter for sensor access. Currently not used.
+ * @value:      R: Readen sensor value.
+ */
+struct nfb_boot_ioc_sensor {
+	__u32 sensor_id;
+	__u32 flags;
+	long value;
+};
+
 /*
  * Ioctl definitions
  */
@@ -53,5 +68,7 @@ struct nfb_boot_ioc_mtd
 #define NFB_BOOT_IOC_MTD_READ   _IOR (NFB_BOOT_IOC, 2, struct nfb_boot_ioc_mtd)
 #define NFB_BOOT_IOC_MTD_WRITE  _IOW (NFB_BOOT_IOC, 3, struct nfb_boot_ioc_mtd)
 #define NFB_BOOT_IOC_MTD_ERASE  _IOW (NFB_BOOT_IOC, 4, struct nfb_boot_ioc_mtd)
+
+#define NFB_BOOT_IOC_SENSOR_READ _IOR(NFB_BOOT_IOC, 5, struct nfb_boot_ioc_sensor)
 
 #endif /* _LINUX_NFB_BOOT_H_ */

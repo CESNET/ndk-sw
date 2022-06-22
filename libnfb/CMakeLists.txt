@@ -37,7 +37,7 @@ if (NOT NFB_DRIVER_INCLUDE_DIRS)
 endif ()
 
 set(LIBNFB_SOURCES
-	src/bus/mi.c src/nfb.c src/ndp/ndp.c
+	src/bus/mi.c src/nfb.c src/ndp/ndp.c src/info.c
 	src/boot/mtd.c src/boot/boot.c src/boot/filetype_mcs.c src/boot/filetype_bit.c
 )
 
