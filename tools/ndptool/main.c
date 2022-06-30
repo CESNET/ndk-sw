@@ -281,7 +281,6 @@ int main(int argc, char *argv[])
 						list_range_add_number(&queue_range, i);
 					break;
 				case NDP_MODULE_GENERATE:
-				case NDP_MODULE_GENERATE_STATIC:
 				case NDP_MODULE_TRANSMIT:
 					if (ndp_tx_queue_is_available(dev, i))
 						list_range_add_number(&queue_range, i);
