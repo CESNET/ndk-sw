@@ -472,6 +472,47 @@ static inline void nc_destroy_map_info(struct nc_ifc_queue_map_info *info)
 	free(info->rxq_map);
 }
 
+static inline const char *nc_info_get_fw_prop_string(struct nfb_device *dev, const char *propname, int *len)
+{
+        int proplen;
+        const char *prop;
+	const void *fdt = nfb_get_fdt(dev);
+        int node = fdt_path_offset(fdt, "/firmware/");
+
+        prop = (const char *) fdt_getprop(fdt, node, propname, &proplen);
+	if (len)
+		*len = prop ? proplen : 0;
+	return prop;
+}
+
+static inline const char *nc_info_get_fw_project_name(struct nfb_device *dev, int *len)
+{
+	return nc_info_get_fw_prop_string(dev, "project-name", len);
+}
+
+static inline const char *nc_info_get_fw_project_version(struct nfb_device *dev, int *len)
+{
+	return nc_info_get_fw_prop_string(dev, "project-version", len);
+}
+
+static inline const char *nc_info_get_fw_project_revision(struct nfb_device *dev, int *len)
+{
+	return nc_info_get_fw_prop_string(dev, "build-revision", len);
+}
+
+static inline time_t nc_info_get_fw_build_time(struct nfb_device *dev)
+{
+	int len;
+	uint32_t val;
+	const void *fdt = nfb_get_fdt(dev);
+        int node = fdt_path_offset(fdt, "/firmware/");
+	
+	val = fdt_getprop_u32(fdt, node, "build-time", &len);
+	if (len <= 0)
+		return 0;
+	return (time_t) val;
+}
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
