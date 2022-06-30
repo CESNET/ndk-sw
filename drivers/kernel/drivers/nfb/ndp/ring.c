@@ -26,13 +26,10 @@ ssize_t ndp_channel_set_ring_size(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
 	int ret;
-	char *end;
-	unsigned long value = simple_strtoul(buf, &end, 0);
+	unsigned long long value;
 	struct ndp_channel *channel = dev_get_drvdata(dev);
 
-	if (end == buf)
-		return -EINVAL;
-
+	value = memparse(buf, NULL);
 	ret = ndp_channel_ring_resize(channel, value);
 	if (ret)
 		return ret;
@@ -334,7 +331,19 @@ err_started:
 	return ret;
 }
 
-module_param(ndp_ring_size, ulong, S_IRUGO);
+static int ndp_param_size_set(const char *val, const struct kernel_param *kp)
+{
+	unsigned long long value = memparse(val, NULL);
+	*((unsigned long*)kp->arg) = value;
+	return 0;
+}
+
+static const struct kernel_param_ops ndp_param_size_ops = {
+	.set	= ndp_param_size_set,
+	.get	= param_get_int,
+};
+
+module_param_cb(ndp_ring_size, &ndp_param_size_ops, &ndp_ring_size, S_IRUGO);
 MODULE_PARM_DESC(ndp_ring_size, "Default size for new ring [4 MiB]");
-module_param(ndp_ring_block_size, ulong, S_IRUGO);
+module_param_cb(ndp_ring_block_size, &ndp_param_size_ops, &ndp_ring_block_size, S_IRUGO);
 MODULE_PARM_DESC(ndp_ring_block_size, "Default size of block in new ring [4 MiB]");
