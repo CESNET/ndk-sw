@@ -31,13 +31,14 @@
 /*! -R reset counters */
 /*! -h print help; -v verbose mode; -V version */
 
-#define ARGUMENTS			"d:i:q:rtRvh"
+#define ARGUMENTS			"d:i:q:rtRS:vh"
 
 enum commands {
 	CMD_PRINT_STATUS,
 	CMD_USAGE,
 	CMD_COUNTER_RESET,
 	CMD_COUNTER_READ_AND_RESET,
+	CMD_SET_RING_SIZE,
 	CMD_QUERY,
 };
 
@@ -80,6 +81,7 @@ void usage(const char *me, int verbose)
 	printf("-r              Use RX DMA controllers\n");
 	printf("-t              Use TX DMA controllers\n");
 	printf("-R              Resets packet counters (use -RR for read & reset)\n");
+	printf("-S size         Set kernel ring buffer size (can be with K/M/G suffix)\n");
 	printf("-q query        Get specific informations%s\n", verbose ? "" : " (-v for more info)");
 	if (verbose) {
 		for (unsigned i = 0; i < NC_ARRAY_SIZE(queries); i++) {
@@ -90,6 +92,23 @@ void usage(const char *me, int verbose)
 
 	printf("-v              Increase verbosity\n");
 	printf("-h              Show this text\n");
+}
+
+int set_ring_size(struct nfb_device *dev, int dir, int index, const char* csize)
+{
+	FILE *f;
+	char path_buffer[128];
+
+	snprintf(path_buffer, sizeof(path_buffer),
+		"/sys/class/nfb/nfb%d/ndp/%cx%d/ring_size",
+		nfb_get_system_id(dev), dir == 0 ? 'r' : 't', index);
+
+	f = fopen(path_buffer, "wb");
+	if (f == NULL)
+		err(errno, "Can't set ring size");
+	fwrite(csize, 1, strlen(csize) + 1, f);
+	fclose(f);
+	return 0;
 }
 
 /*!
@@ -361,6 +380,7 @@ int main(int argc, char *argv[])
 
 	int ret;
 	const char *query = NULL;
+	const char *csize = NULL;
 	char *queries_index;
 	int size;
 
@@ -404,6 +424,10 @@ int main(int argc, char *argv[])
 			break;
 		case 'r':
 			dir = 0;
+			break;
+		case 'S':
+			cmd = CMD_SET_RING_SIZE;
+			csize = optarg;
 			break;
 		default:
 			err(-EINVAL, "Unknown argument -%c", optopt);
@@ -462,6 +486,9 @@ int main(int argc, char *argv[])
 							rxqueue_print_status(rxq, rx_ctrl_name[ctrl], i, verbose, cmd);
 							printf("\n");
 							break;
+						case CMD_SET_RING_SIZE:
+							set_ring_size(dev, 0, i, csize);
+							break;
 
 						default:
 							break;
@@ -490,6 +517,9 @@ int main(int argc, char *argv[])
 						case CMD_PRINT_STATUS:
 							txqueue_print_status(txq, tx_ctrl_name[ctrl], i, verbose, cmd);
 							printf("\n");
+							break;
+						case CMD_SET_RING_SIZE:
+							set_ring_size(dev, 1, i, csize);
 							break;
 						default:
 							break;
