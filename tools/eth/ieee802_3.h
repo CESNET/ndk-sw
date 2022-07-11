@@ -11,23 +11,7 @@
 #define IEEE802_3_H
 
 #include <stdint.h>
-
-#ifdef __KERNEL__
-/* TODO: include */
-#else
-struct mdio_if_info {
-	int prtad;
-	uint32_t mmds;
-	unsigned mode_support;
-	struct net_device *dev;
-	int (*mdio_read)(struct net_device *dev, int prtad, int devad, uint16_t addr);
-	int (*mdio_write)(struct net_device *dev, int prtad, int devad, uint16_t addr, uint16_t val);
-};
-
-struct net_device {
-	struct nc_mdio *mdio;
-};
-#endif
+#include "mdio.h"
 
 typedef void (string_cb_t)(void *priv, const char *str);
 typedef void (ethtool_cb_t)(void *priv, int ethtool_link_mode, int flags);

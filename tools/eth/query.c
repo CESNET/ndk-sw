@@ -14,8 +14,6 @@
 #include <nfb/nfb.h>
 #include <libfdt.h>
 
-#include <netcope/rxmac.h>
-#include <netcope/txmac.h>
 #include <netcope/eth.h>
 #include <netcope/idcomp.h>
 #include <netcope/nccommon.h>
@@ -110,12 +108,12 @@ int query_print(const void *fdt, int node, char *queries, int size,
 		case TX_TRANSMITTED:
 			printf("%llu\n", ct.cnt_sent); break;
 		case PMA_TYPE: {
-				create_mdio_if_info(mdio_info, mdio, portaddr);
+				struct mdio_if_info mdio_info = nfb_eth_create_mdio_info(mdio, portaddr);
 				printf("%s\n", ieee802_3_get_pma_pmd_type_string(&mdio_info));
 				break;
 			}
 		case PMA_SPEED: {
-				create_mdio_if_info(mdio_info, mdio, portaddr);
+				struct mdio_if_info mdio_info = nfb_eth_create_mdio_info(mdio, portaddr);
 				printf("%s\n", ieee802_3_get_pma_speed_string(&mdio_info));
 				break;
 			}

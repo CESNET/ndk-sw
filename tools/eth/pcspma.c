@@ -36,19 +36,9 @@ struct pma_feature_t {
 	{NULL,                              0,  0,     0,  0},
 };
 
-int mdio_read(struct net_device *dev, int prtad, int devad, uint16_t addr)
-{
-	return nc_mdio_read(dev->mdio, prtad, devad, addr);
-}
-
-int mdio_write(struct net_device *dev, int prtad, int devad, uint16_t addr, uint16_t val)
-{
-	return nc_mdio_write(dev->mdio, prtad, devad, addr, val);
-}
-
 void pcspma_print_speed(struct nc_mdio *mdio, int portaddr, uint8_t mdev)
 {
-	create_mdio_if_info(mdio_info, mdio, portaddr);
+	struct mdio_if_info mdio_info = nfb_eth_create_mdio_info(mdio, portaddr);
 	printf("Speed                      : %s\n",
 		mdev == 1 ? ieee802_3_get_pma_speed_string(&mdio_info) : ieee802_3_get_pcs_speed_string(&mdio_info));
 }
@@ -56,7 +46,7 @@ void pcspma_print_speed(struct nc_mdio *mdio, int portaddr, uint8_t mdev)
 void print_pcspma_common(struct nc_mdio *mdio, int portaddr, uint8_t mdev)
 {
 	uint32_t reg;
-	create_mdio_if_info(mdio_info, mdio, portaddr);
+	struct mdio_if_info mdio_info = nfb_eth_create_mdio_info(mdio, portaddr);
 
 	printf("Link status                : %s | %s\n",
 		ieee802_3_get_pcs_pma_link_status_string(&mdio_info, mdev),
@@ -72,7 +62,7 @@ void print_pcspma_common(struct nc_mdio *mdio, int portaddr, uint8_t mdev)
 
 int pcspma_set_type(struct nc_mdio *mdio, int portaddr, struct eth_params *p)
 {
-	create_mdio_if_info(mdio_info, mdio, portaddr);
+	struct mdio_if_info mdio_info = nfb_eth_create_mdio_info(mdio, portaddr);
 	return ieee802_3_set_pma_pmd_type_string(&mdio_info, p->string);
 }
 
@@ -123,7 +113,7 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 
 	const char *active;
 
-	create_mdio_if_info(mdio_info, mdio, portaddr);
+	struct mdio_if_info mdio_info = nfb_eth_create_mdio_info(mdio, portaddr);
 
 	//printf("--------------------------------------- PMA %d regs ----\n", p->index);
 	printf("----------------------------------------- PMA regs ----\n");

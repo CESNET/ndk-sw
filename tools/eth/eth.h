@@ -12,8 +12,11 @@
 
 #include <stdbool.h>
 
+#include <nfb/boot.h>
 #include <netcope/rxmac.h>
 #include <netcope/txmac.h>
+
+#include "mdio.h"
 
 // this enum need to corespond with queries[] array
 enum queries {
@@ -91,19 +94,14 @@ void transceiver_print_short_info(struct nfb_device *dev, int node, struct eth_p
 int query_print(const void *fdt, int node, char *queries, int size,
 	struct nfb_device *dev, int index);
 
-struct net_device;
-struct mdio_if_info;
-
-int mdio_read(struct net_device *dev, int prtad, int devad, uint16_t addr);
-int mdio_write(struct net_device *dev, int prtad, int devad, uint16_t addr, uint16_t val);
-
-#define create_mdio_if_info(name, device, port_address) \
-	struct net_device _ ##name## _mdio_if_info_dev = {.mdio = device}; \
-	struct mdio_if_info name = { \
-		.mdio_read = mdio_read, \
-		.mdio_write = mdio_write, \
-		.dev = &_ ##name## _mdio_if_info_dev, \
-		.prtad = port_address, \
+static inline struct mdio_if_info nfb_eth_create_mdio_info(struct nc_mdio *mdio, int port_address)
+{
+	return (struct mdio_if_info) {
+		.mdio_read = (mdio_read_t) nc_mdio_read,
+		.mdio_write = (mdio_write_t) nc_mdio_write,
+		.dev = (mdio_if_info_priv_t) mdio,
+		.prtad = port_address,
 	};
+}
 
 #endif /* NFBTOOL_ETH_H */

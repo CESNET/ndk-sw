@@ -13,8 +13,6 @@
 #include <stdbool.h>
 
 #include <nfb/nfb.h>
-#include <netcope/rxmac.h>
-
 #include "eth.h"
 
 #define CNT_FMT "20llu"

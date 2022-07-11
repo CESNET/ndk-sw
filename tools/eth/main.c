@@ -14,9 +14,6 @@
 #include <nfb/nfb.h>
 #include <libfdt.h>
 
-#include <netcope/rxmac.h>
-#include <netcope/txmac.h>
-#include <netcope/eth.h>
 #include <netcope/idcomp.h>
 #include <netcope/nccommon.h>
 
