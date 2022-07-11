@@ -2,6 +2,8 @@
 
 3rdparty.tar.gz
 
+cmake-build/
+
 # Ignore `foo' files produced by Autoconf from their `foo.in' templates
 drivers/Makefile
 drivers/dkms.conf
