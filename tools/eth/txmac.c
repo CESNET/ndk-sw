@@ -12,7 +12,6 @@
 #include <stdio.h>
 
 #include <nfb/nfb.h>
-#include <netcope/txmac.h>
 
 #include "eth.h"
 
