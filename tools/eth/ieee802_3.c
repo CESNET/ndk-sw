@@ -13,6 +13,7 @@
 
 #include <linux/ethtool.h>
 
+#include <netcope/ieee802_3.h>
 #include "ieee802_3.h"
 
 
@@ -338,68 +339,10 @@ const char *ieee802_3_get_speed_string(int val)
 	}
 }
 
-#define SS_LSB 0x2000
-#define SS_MSB 0x0040
-
-int ieee802_3_get_pma_speed_value(struct mdio_if_info *if_info)
-{
-	int reg;
-	reg = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 0);
-	if (reg < 0)
-		return SPEED_UNKNOWN;
-
-	if ((reg & (SS_LSB | SS_MSB)) == (SS_LSB | SS_MSB)) {
-		switch ((reg >> 2) & 0xF) {
-		case 0: return 10000;
-		case 1: return 10;
-		case 2: return 40000;
-		case 3: return 100000;
-		case 4: return 25000;
-		case 5: return 50000;
-		case 8: return 200000;
-		case 9: return 400000;
-		default: return SPEED_UNKNOWN;
-		}
-	}
-
-	if (reg & SS_MSB)
-		return 1000;
-	else if (reg & SS_LSB)
-		return 100;
-	else
-		return 10;
-	return SPEED_UNKNOWN;
-}
-
 const char *ieee802_3_get_pma_speed_string(struct mdio_if_info *if_info)
 {
 	int val = ieee802_3_get_pma_speed_value(if_info);
 	return ieee802_3_get_speed_string(val);
-}
-
-int ieee802_3_get_pcs_speed_value(struct mdio_if_info *if_info)
-{
-	int reg;
-	reg = if_info->mdio_read(if_info->dev, if_info->prtad, 3, 0);
-	if (reg < 0)
-		return SPEED_UNKNOWN;
-
-	if ((reg & (SS_LSB | SS_MSB)) == (SS_LSB | SS_MSB)) {
-		switch ((reg >> 2) & 0xF) {
-		case 0: return 10000;
-		case 1: return 10;
-		case 2: return 1000;
-		case 3: return 40000;
-		case 4: return 100000;
-		case 5: return 25000;
-		case 6: return 50000;
-		case 9: return 200000;
-		case 10: return 400000;
-		default: return SPEED_UNKNOWN;
-		}
-	} else {
-		return SPEED_UNKNOWN;
-	}
 }
 
 const char *ieee802_3_get_pcs_speed_string(struct mdio_if_info *if_info)
@@ -412,11 +355,13 @@ const char *ieee802_3_get_pcs_speed_string(struct mdio_if_info *if_info)
 int ieee802_3_get_pcs_lines(struct mdio_if_info *if_info)
 {
 	int reg;
+	const int mask = IEEE802_3_SS_MSB | IEEE802_3_SS_LSB;
+
 	reg = if_info->mdio_read(if_info->dev, if_info->prtad, 3, 0);
 	if (reg < 0)
 		return -1;
 
-	if ((reg & (SS_LSB | SS_MSB)) == (SS_LSB | SS_MSB)) {
+	if ((reg & mask) == mask) {
 		switch ((reg >> 2) & 0xF) {
 			case 0: return 1;
 			case 3: return 4;
