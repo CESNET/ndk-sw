@@ -135,6 +135,9 @@ struct nfb_device {
 #define NFB_IS_SILICOM(nfb) ((nfb)->pci->vendor == 0x1c2c)
 #define NFB_IS_TIVOLI(nfb) (NFB_IS_SILICOM(nfb) && ((nfb)->pci->device == 0x00d2 || (nfb)->pci->device == 0x00d3))
 
+void *nfb_get_priv_for_attach_fn(struct nfb_device *nfb,
+	int (*attach)(struct nfb_device *nfb, void **priv));
+
 void nfb_bus_register(struct nfb_device *nfb, struct nfb_bus *bus);
 void nfb_bus_unregister(struct nfb_device *nfb, struct nfb_bus *bus);
 
