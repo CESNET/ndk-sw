@@ -7,6 +7,9 @@
  *   Martin Spinler <spinler@cesnet.cz>
  */
 
+#ifndef NFB_BOOT_H
+#define NFB_BOOT_H
+
 #include <linux/pci.h>
 
 #include <linux/spi/spi.h>
@@ -56,6 +59,7 @@ int nfb_boot_ioctl_mtd_erase(struct nfb_boot *nfb_boot,
 int nfb_boot_ioctl_mtd_info(struct nfb_boot *nfb_boot,
 		struct nfb_boot_ioc_mtd_info __user *_ioc_mtd_info);
 
+int nfb_mtd_read(struct nfb_device *dev, int index, size_t addr, void *data, size_t size);
 
 int nfb_boot_attach(struct nfb_device* nfb, void **priv);
 void nfb_boot_detach(struct nfb_device* nfb, void *priv);
@@ -70,3 +74,5 @@ int nfb_boot_get_sensor_ioc(struct nfb_boot *boot, struct nfb_boot_ioc_sensor __
 
 #define NFB_BOOT_FLAG_FB_SELECT_FLASH 1
 #define NFB_BOOT_FLAG_FLASH_SET_ASYNC 2
+
+#endif /* NFB_BOOT_H */

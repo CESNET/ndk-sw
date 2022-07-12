@@ -220,6 +220,31 @@ int nfb_boot_ioctl_mtd_write(struct nfb_boot *nfb_boot,
 	return res;
 }
 
+int nfb_mtd_read(struct nfb_device *dev, int index, size_t addr, void *data, size_t size)
+{
+	struct nfb_boot *nfb_boot;
+	size_t ret_size;
+	int ret;
+
+	nfb_boot = nfb_get_priv_for_attach_fn(dev, nfb_boot_attach);
+
+	if (IS_ERR(nfb_boot)) {
+		return PTR_ERR(nfb_boot);
+	}
+
+	if (index >= nfb_boot->num_flash || !nfb_boot->mtd[index])
+		return -ENODEV;
+
+	ret = mtd_read(nfb_boot->mtd[index], addr, size, &ret_size, data);
+	if (ret)
+		return ret;
+
+	if (ret_size != size)
+		return -ENOMEM;
+
+	return 0;
+}
+
 int nfb_boot_ioctl_mtd_read(struct nfb_boot *nfb_boot,
 		struct nfb_boot_ioc_mtd __user *_ioc_mtd)
 {
