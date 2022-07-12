@@ -14,6 +14,8 @@
 #include "compat.h"
 
 #include "../ndp/kndp.h"
+#include "../boot/boot.h"
+
 #include <netcope/ndp_priv.h>
 
 #include <linux/mdio.h>
