@@ -35,6 +35,17 @@ struct nfb_device *nfb_devices[NFB_CARD_COUNT_MAX] = {NULL};
 struct nfb_driver_ops nfb_registered_drivers[NFB_DRIVERS_MAX] = {};
 struct mutex nfb_driver_register_mutex;
 
+void *nfb_get_priv_for_attach_fn(struct nfb_device *nfb, nfb_driver_ops_attach_t attach)
+{
+	int i;
+        for (i = 0; i < NFB_DRIVERS_MAX; i++) {
+                if (nfb->list_drivers[i].status == NFB_DRIVER_STATUS_OK && nfb_registered_drivers[i].attach == attach) {
+                        return nfb->list_drivers[i].priv;
+		}
+	}
+	return ERR_PTR(-ENODEV);
+}
+
 /*
  * nfb_attach_drivers - attach embedded drivers to NFB device
  * @nfb: NFB device structure
@@ -66,6 +77,7 @@ void nfb_attach_drivers_early(struct nfb_device* nfb)
 	}
 	mutex_unlock(&nfb_driver_register_mutex);
 }
+
 void nfb_attach_drivers(struct nfb_device* nfb)
 {
 	int i;

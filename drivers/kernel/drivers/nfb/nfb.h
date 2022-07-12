@@ -35,8 +35,10 @@
 enum nfb_device_status {NFB_DEVICE_STATUS_INIT, NFB_DEVICE_STATUS_OK, NFB_DEVICE_STATUS_RELEASE};
 enum nfb_driver_status {NFB_DRIVER_STATUS_NONE, NFB_DRIVER_STATUS_OK, NFB_DRIVER_STATUS_ERROR};
 
+typedef int (*nfb_driver_ops_attach_t)(struct nfb_device *nfb, void **priv);
+
 struct nfb_driver_ops {
-	int (*attach)(struct nfb_device *nfb, void **priv);
+	nfb_driver_ops_attach_t attach;
 	void (*detach)(struct nfb_device *nfb, void *priv);
 	int (*open)(void *priv, void **app_priv, struct file *file);
 	void (*release)(void *priv, void *app_priv, struct file *file);
@@ -134,6 +136,8 @@ struct nfb_device {
 
 #define NFB_IS_SILICOM(nfb) ((nfb)->pci->vendor == 0x1c2c)
 #define NFB_IS_TIVOLI(nfb) (NFB_IS_SILICOM(nfb) && ((nfb)->pci->device == 0x00d2 || (nfb)->pci->device == 0x00d3))
+
+void *nfb_get_priv_for_attach_fn(struct nfb_device *nfb, nfb_driver_ops_attach_t attach);
 
 void nfb_bus_register(struct nfb_device *nfb, struct nfb_bus *bus);
 void nfb_bus_unregister(struct nfb_device *nfb, struct nfb_bus *bus);
