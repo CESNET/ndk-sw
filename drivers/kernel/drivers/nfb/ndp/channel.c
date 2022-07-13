@@ -70,6 +70,8 @@ int ndp_channel_add(struct ndp_channel *channel, struct ndp *ndp)
 				"/drivers/ndp/tx_queues" : "/drivers/ndp/rx_queues");
 	node_offset = fdt_add_subnode(ndp->nfb->fdt, node_offset, dev_name(&channel->dev));
 
+	if (ndp_ring_size < ndp_ring_block_size)
+		ndp_ring_block_size = ndp_ring_size;
 	ndp_channel_ring_create(channel, channel->ring.dev, ndp_ring_size / ndp_ring_block_size, ndp_ring_block_size);
 
 	ret = device_add(&channel->dev);
