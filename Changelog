@@ -1,3 +1,8 @@
+* Thu Jul 14 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.2-1
+- [FEATURE] allow to enter kernel NDP ring size with K/G/M suffix
+- [FEATURE] allow to set kernel NDP ring size with dma tool
+- [BUGFIX] make available all modes in ndp-tool
+
 * Fri Jun 10 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.1-1
 - [FEATURE] added base support for QSFP-DD modules (CMIS memory layout)
 - [MAINTENANCE] added kernel 5.18 support
