@@ -38,7 +38,7 @@ endif ()
 
 set(LIBNFB_SOURCES
 	src/bus/mi.c src/nfb.c src/ndp/ndp.c src/info.c
-	src/boot/mtd.c src/boot/boot.c src/boot/filetype_mcs.c src/boot/filetype_bit.c
+	src/boot/mtd.c src/boot/boot.c src/boot/filetype_mcs.c src/boot/filetype_bit.c src/boot/filetype_rpd.c src/boot/bit_reverse_table.c
 )
 
 add_library(nfb SHARED ${LIBNFB_SOURCES})
