@@ -42,7 +42,7 @@ usage()
 
 get_os_version()
 {
-    supported_os=(ubuntu centos scientific arch fedora ol)
+    supported_os=(ubuntu centos scientific arch fedora ol manjaro)
 
     . /etc/os-release
 
@@ -70,7 +70,7 @@ get_install_command()
         echo "apt-get -qy install"
     elif [ "$os" = "centos" ] || [ "$os" = "scientific" ] || [ "$os" = "fedora" ] || [ "$os" = "ol" ]; then
         echo "yum -y install"
-    elif [ "$os" = "arch" ]; then
+    elif [ "$os" = "arch" ] || [ "$os" = "manjaro" ]; then
         echo "pacman -S --needed"
     fi
 }
@@ -96,7 +96,7 @@ get_prerequisities()
         ret="$ret make"
         ret="$ret gcc"
         ret="$ret rpm-build"
-    elif [ "$os" = "arch" ]; then
+    elif [ "$os" = "arch" ] || [ "$os" = "manjaro" ]; then
         ret="$ret cmake"
     fi
 
@@ -123,11 +123,12 @@ get_dependencies()
         ret="$ret libarchive-devel"
         ret="$ret libconfig"
         ret="$ret libconfig-devel"
-    elif [ "$os" = "arch" ]; then
+    elif [ "$os" = "arch" ] || [ "$os" = "manjaro" ]; then
         ret="$ret dtc"
         ret="$ret numactl"
         ret="$ret ncurses"
         ret="$ret libarchive"
+        ret="$ret libconfig"
     fi
 
     echo $ret
