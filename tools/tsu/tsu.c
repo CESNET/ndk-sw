@@ -18,6 +18,7 @@
 #include <signal.h>
 #include <math.h>
 
+#include <netcope/nccommon.h>
 #include <libfdt.h>
 #include <nfb/nfb.h>
 #include <netcope/tsu.h>
@@ -424,13 +425,14 @@ void tsu_stop(int signum)
 	signal(signum, tsu_stop);
 }
 
-#define ARGUMENTS              "c:d:Dh"
+#define ARGUMENTS              "c:d:i:Dh"
 
 void usage()
 {
-	printf("Usage: %s [-DhVw] [-d path] [-l<file>] [-x file]\n", PROGNAME);
+	printf("Usage: %s [-DhVw] [-d path] [-l<file>] [-x file] [-i index]\n", PROGNAME);
 	printf("-c source    Select CLK source (higher the number -> more accurate CLK source)\n");
 	printf("-d path      Use device file, instead of default %s\n", NFB_DEFAULT_DEV_PATH);
+	printf("-i index     Set index of the TSU component [default: 0]\n");
 	printf("-D           Debug mode (run in foreground)\n");
 	printf("-h           Show this text\n");
 }
@@ -440,6 +442,8 @@ int main(int argc, char *argv[])
 	char *path = NFB_DEFAULT_DEV_PATH;
 	int tmp;
 	char c;
+	long param;
+	int index = 0;
 
 	while ((c = getopt(argc, argv, ARGUMENTS)) != -1) {
 		switch (c) {
@@ -454,6 +458,13 @@ int main(int argc, char *argv[])
 				path = optarg;
 				break;
 
+			case 'i':
+				if (nc_strtol(optarg, &param) || param < 0)  {
+					errx(EXIT_FAILURE, "Wrong index.");
+				}
+				index = param;
+				break;
+
 			case 'D': /* Set debug mode */
 				arg_debug = 1;
 				break;
@@ -461,6 +472,9 @@ int main(int argc, char *argv[])
 			case 'h':
 				usage();
 				return 0;
+
+			default:
+				errx(1, "unknown argument -%c", optopt);
 		}
 	}
 	argc -= optind;
@@ -484,12 +498,12 @@ int main(int argc, char *argv[])
 		errx(1, "nfb_open failed");
 	}
 
-	int fdt_offset = fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, COMP_NETCOPE_TSU);
-	if (fdt_offset < 0) {
+	int node = nfb_comp_find(dev, COMP_NETCOPE_TSU, index);
+	if (node < 0) {
 		errx(1, "cannot find TSU in DeviceTree");
 	}
 
-	tsu_comp = nc_tsu_open(dev, fdt_offset);
+	tsu_comp = nc_tsu_open(dev, node);
 	if (tsu_comp == NULL) {
 		errx(1, "cannot open TSU");
 	}
