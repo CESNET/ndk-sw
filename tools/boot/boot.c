@@ -222,11 +222,18 @@ int print_info(const char *filename, int verbose)
 
 int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, const void *fdt, int flags)
 {
+	unsigned int i;
 	int ret;
 	FILE *fd;
 	void *fdata = NULL;
 	void *data;
 	ssize_t size;
+
+	static const char *binary_suffixes[] = {
+		".bit",
+		".rbf",
+		".rpd",
+	};
 
 	if (fdt == NULL) {
 		/* RAW bitsream is supplied */
@@ -250,7 +257,12 @@ int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, co
 		}
 	}
 
-	size = archive_read_first_file_with_extension(filename, ".bit", &fdata);
+	for (i = 0; i < NC_ARRAY_SIZE(binary_suffixes); i++) {
+		size = archive_read_first_file_with_extension(filename, binary_suffixes[i], &fdata);
+		if (size >= 0)
+			break;
+	}
+
 	if (fdata != NULL) {
 		fd = fmemopen(fdata, size, "rb");
 	} else {
