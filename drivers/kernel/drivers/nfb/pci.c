@@ -58,9 +58,9 @@ const struct nfb_pci_dev nfb_device_infos [] = {
 
 	[NFB_CARD_TIVOLI]	= { "TIVOLI",	       -1,      -1,             -1,             0x0B },
         
-	[NFB_CARD_COMBO_GENERIC]= { "COMBO-GENERIC"    -1,      -1,             -1,             0x0C },
-	[NFB_CARD_COMBO400G1]	= { "COMBO-400G1"      -1,      -1,             -1,             0x0D },
-	[NFB_CARD_AGI_FH400G]	= { "AGI-FH400G"       -1,      -1,             -1,             0x0E },
+	[NFB_CARD_COMBO_GENERIC]= { "COMBO-GENERIC",   -1,      -1,             -1,             0x0C },
+	[NFB_CARD_COMBO400G1]	= { "COMBO-400G1",     -1,      -1,             -1,             0x0D },
+	[NFB_CARD_AGI_FH400G]	= { "AGI-FH400G",      -1,      -1,             -1,             0x0E },
 
 	/* Last item */		  { NULL,	       -1,	-1,	 	-1,		0x00 },
 };
