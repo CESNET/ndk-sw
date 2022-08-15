@@ -224,12 +224,24 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 		nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 0, 0x00020000, 0x02000000-0x20000);
 		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 0, 0x02000000, 0x02000000);
+	} else if (!strcmp(name, "COMBO-400G1")) {
+		prop32 = cpu_to_fdt32(2);
+		fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
+		prop32 = cpu_to_fdt32(256 * 1024 * 1024);
+		fdt_appendprop(fdt, node, "mtd_size", &prop32, sizeof(prop32));
+		prop32 = cpu_to_fdt32(28);
+		fdt_appendprop(fdt, node, "mtd_bit", &prop32, sizeof(prop32));
+
+		nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 1, 0x00000000, 0x02000000);
+		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 0, 0x00000000, 0x02000000);
 	}
 
 	subnode = fdt_add_subnode(fdt, node, "control-param");
 	if (!strcmp(name, "TIVOLI")) {
 		fdt_setprop_string(fdt, subnode, "boot-interface-type", "SPI");
 		fdt_setprop_u32(fdt, subnode, "boot-interface-width", 4);
+	} else if (!strcmp(name, "COMBO-400G1")) {
+		fdt_setprop_string(fdt, subnode, "boot-interface-type", "INTEL-AVST");
 	} else {
 		/* TODO: mango is SMAPx32, but this works too */
 		fdt_setprop_string(fdt, subnode, "boot-interface-type", "BPI");
