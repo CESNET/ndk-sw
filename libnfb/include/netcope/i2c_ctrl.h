@@ -90,7 +90,9 @@ static inline struct nc_i2c_ctrl *nc_i2c_open(const struct nfb_device *dev, int 
 
 	ctrl->addr = 0xAC;
 	ctrl->bytes = 2;
-	ctrl->prescale = 0x00f9;
+	ctrl->prescale = nfb_comp_read16(comp, I2C_CTRL_REG_CONTROL);
+	if (ctrl->prescale == 0)
+		ctrl->prescale = 0x00f9;
 
 	/* INFO: The first opener should init the controller and the last shutter should deinit it.
 	 * Unfornatelly there is currently not a counted-semaphore-like mechanism in nfb lock API.
@@ -214,7 +216,7 @@ retry:
 	}
 
 	/* Deinit HW controller */
-	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, 0x0);
+	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, ctrl->prescale);
 
 	nfb_comp_unlock(comp, I2C_COMP_LOCK);
 
@@ -257,7 +259,7 @@ static inline int nc_i2c_write_reg(struct nc_i2c_ctrl *ctrl, uint8_t reg, const 
 	}
 
 	/* Deinit HW controller */
-	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, 0x0);
+	nfb_comp_write32(comp, I2C_CTRL_REG_CONTROL, ctrl->prescale);
 
 	nfb_comp_unlock(comp, I2C_COMP_LOCK);
 
