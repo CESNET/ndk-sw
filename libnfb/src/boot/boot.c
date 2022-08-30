@@ -140,6 +140,73 @@ ssize_t nfb_fw_open(const char *path, void **data)
 	return ret;
 }
 
+ssize_t nfb_fw_open_rbf(FILE *fd, void **pdata, enum bitstream_format f)
+{
+	const uint16_t FLAGS_HEADER_UNKNOWN = 0xFF05;
+	const uint16_t FLAGS_BLOCK_UNKNOWN = 0x0401;
+	const size_t START_ADDR = 0x20000;
+	const size_t BLOCK_SIZE = 0x1000;
+
+	uint16_t block_size;
+	uint8_t *data8;
+	uint16_t *data16;
+
+	int i, readen;
+	size_t offset, size_file, block_count, size_total;
+
+	(void) f;
+
+	/* get size of whole bitstream file in bytes */
+	fseek(fd, 0, SEEK_END);
+	size_file = ftell(fd);
+	rewind(fd);
+
+	block_count = (size_file + BLOCK_SIZE-1) / BLOCK_SIZE;
+
+	/* total size in bytes aligned to block */
+	size_total = START_ADDR + size_file + 4 * block_count;
+	/* padding */
+	size_total += BLOCK_SIZE - (size_total % BLOCK_SIZE);
+	data8 = malloc(size_total);
+	if (data8 == NULL)
+		return -ENOMEM;
+
+	data16 = (uint16_t*)data8;
+
+	/* Fill header: start and end address */
+	memset(data8, 0xFF, START_ADDR);
+	data16[0] = (START_ADDR >> 2) >>  0;
+	data16[1] = (START_ADDR >> 2) >> 16;
+	data16[2] = (size_total >> 2) >>  0;
+	data16[3] = (size_total >> 2) >> 16;
+	data16[64] = FLAGS_HEADER_UNKNOWN;
+
+	i = START_ADDR;
+	offset = 0;
+	block_size = BLOCK_SIZE;
+	while (offset < size_file) {
+		if (block_size > size_file - offset) {
+			block_size = size_file - offset;
+		}
+
+		data16[(i >> 1) + 0] = FLAGS_BLOCK_UNKNOWN;
+		data16[(i >> 1) + 1] = block_size;
+		i += 4;
+
+		readen = fread(data8 + i, block_size, 1, fd);
+		if (readen != 1) {
+			free(data8);
+			return -ENOBUFS;
+		}
+		offset += block_size;
+		i += block_size;
+	}
+
+	memset(data8 + i, 0xFF, size_total - i);
+	*pdata = data8;
+	return i;
+}
+
 ssize_t nfb_fw_read_for_dev(const struct nfb_device *dev, FILE *fd, void **data)
 {
 	ssize_t ret;
@@ -161,15 +228,22 @@ ssize_t nfb_fw_read_for_dev(const struct nfb_device *dev, FILE *fd, void **data)
 			if (proplen > 0) {
 				if (!strcmp(bi_type, "SPI")) {
 					format = BITSTREAM_FORMAT_SPI4;
+				} else if (!strcmp(bi_type, "INTEL-AVST")) {
+					format = BITSTREAM_FORMAT_INTEL_AVST;
 				}
 			}
 		}
 	}
 
-	/* Try load as MCS first */
-	ret = nfb_fw_open_mcs(fd, data);
-	if (ret < 0) {
-		ret = nfb_fw_open_bit(fd, data, format);
+	if (format == BITSTREAM_FORMAT_INTEL_AVST) {
+		ret = nfb_fw_open_rbf(fd, data, format);
+	} else {
+
+		/* Try load as MCS first */
+		ret = nfb_fw_open_mcs(fd, data);
+		if (ret < 0) {
+			ret = nfb_fw_open_bit(fd, data, format);
+		}
 	}
 
 	return ret;
