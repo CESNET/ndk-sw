@@ -283,24 +283,6 @@ static void nfb_pci_create_fallback_fdt(struct nfb_device *nfb)
 }
 
 /*
- * nfb_pci_read_dsn - Read DSN from PCI device
- * @pci: PCI device
- * return: DSN value or 0 when DSN record not exists
- */
-static u64 nfb_pci_read_dsn(struct pci_dev *pci)
-{
-	u64 dsn;
-	int cap_dsn;
-
-	cap_dsn = pci_find_ext_capability(pci, PCI_EXT_CAP_ID_DSN);
-	if (!cap_dsn)
-		return 0;
-	pci_read_config_dword(pci, cap_dsn+4, ((u32*) &dsn)+0);
-	pci_read_config_dword(pci, cap_dsn+8, ((u32*) &dsn)+1);
-	return dsn;
-}
-
-/*
  * nfb_pci_find_vsec - locate a VSEC in PCI extended capability space
  * @pci: PCI device
  * @vsec_header: VSEC header
@@ -326,6 +308,41 @@ static int nfb_pci_find_vsec(struct pci_dev *pci, u32 vsec_header)
 				cap_vendor, PCI_EXT_CAP_ID_VNDR);
 	}
 	return -ENODEV;
+}
+
+/*
+ * nfb_pci_read_dsn - Read DSN from PCI device
+ * @pci: PCI device
+ * return: DSN value or 0 when DSN record not exists
+ */
+static uint64_t nfb_pci_read_dsn(struct pci_dev *pci)
+{
+	int i;
+	int ret;
+	u32 reg;
+	int cap_dsn;
+	int cap_dtb;
+	uint64_t dsn = 0;
+
+	cap_dtb = nfb_pci_find_vsec(pci, 0x02010D7B);
+	if (cap_dtb >= 0) {
+		ret = pci_read_config_dword(pci, cap_dtb + 0x08, &reg);
+		/* Check for Card ID capatibility */
+		if (ret == PCIBIOS_SUCCESSFUL && reg & 0x40000000) {
+			for (i = 0; i < sizeof(dsn) / 4; i++) {
+				pci_write_config_dword(pci, cap_dtb + 0x18, i);
+				pci_read_config_dword(pci, cap_dtb + 0x1C, ((u32*) &dsn) + i);
+			}
+			return dsn;
+		}
+	}
+
+	cap_dsn = pci_find_ext_capability(pci, PCI_EXT_CAP_ID_DSN);
+	if (cap_dsn) {
+		pci_read_config_dword(pci, cap_dsn+4, ((u32*) &dsn) + 0);
+		pci_read_config_dword(pci, cap_dsn+8, ((u32*) &dsn) + 1);
+	}
+	return dsn;
 }
 
 static int nfb_pci_read_enpoint_id(struct pci_dev *pci)
@@ -615,7 +632,7 @@ void nfb_pci_detach_endpoint(struct nfb_device *nfb, struct pci_dev *pci)
 void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
 {
 	int ret;
-	u64 slave_dsn;
+	uint64_t slave_dsn;
 	struct pci_bus *child_bus;
 	struct pci_dev *slave;
 
