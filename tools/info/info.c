@@ -253,6 +253,10 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	if (len > 0)
 		printf("Project name               : %s\n", (const char *)prop);
 
+	prop = fdt_getprop(fdt, fdt_offset, "project-variant", &len);
+	if (len > 0)
+		printf("Project variant            : %s\n", (const char *)prop);
+
 	prop32 = fdt_getprop(fdt, fdt_offset, "build-time", &len);
 	if (len == sizeof(*prop32)) {
 		build_time = fdt32_to_cpu(*prop32);
