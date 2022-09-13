@@ -232,8 +232,8 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 		prop32 = cpu_to_fdt32(28);
 		fdt_appendprop(fdt, node, "mtd_bit", &prop32, sizeof(prop32));
 
-		nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 1, 0x00000000, 0x02000000);
-		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 0, 0x00000000, 0x02000000);
+		nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 1, 0x00000000, 0x08000000);
+		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 0, 0x00000000, 0x08000000);
 	}
 
 	subnode = fdt_add_subnode(fdt, node, "control-param");
