@@ -14,6 +14,7 @@
 #include <err.h>
 #include <stdio.h>
 #include <time.h>
+#include <inttypes.h>
 
 #include <libfdt.h>
 #include <nfb/nfb.h>
@@ -209,6 +210,7 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	int count1, count2;
 	const void *prop;
 	const uint32_t *prop32;
+	const uint64_t *prop64;
 	const void *fdt;
 
 	char buffer[BUFFER_SIZE];
@@ -225,6 +227,10 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
 	if (len == sizeof(*prop32))
 		printf("Serial number              : %d\n", fdt32_to_cpu(*prop32));
+
+	prop64 = fdt_getprop(fdt, fdt_offset, "fpga-uid", &len);
+	if (verbose > 1 && len == sizeof(*prop64))
+		printf("FPGA unique ID             : 0x%" PRIx64 "\n", fdt64_to_cpu(*prop64));
 
 	i = 0;
 	fdt_for_each_compatible_node(fdt, node, "netcope,transceiver") {
