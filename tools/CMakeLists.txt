@@ -29,6 +29,7 @@ ndk_check_build_dependency(NUMA_LIBRARIES numa NUMA_INCLUDE_DIRS numa.h)
 link_libraries(nfb ${FDT_LIBRARIES})
 
 add_executable(nfb-info info/info.c)
+target_compile_definitions(nfb-info PRIVATE PACKAGE_VERSION="${PACKAGE_VERSION}-${GIT_VERSION_RELEASE}")
 
 add_executable(nfb-boot boot/boot.c)
 target_link_libraries(nfb-boot PRIVATE ${ARCHIVE_LIBRARIES})
