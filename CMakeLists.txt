@@ -29,16 +29,16 @@ else ()
 	set(CPACK_GENERATOR   "Invalid" )
 endif ()
 
+set(PACKAGE_NAME "${PROJECT_NAME}")
+set(PACKAGE_VERSION "${GIT_VERSION}")
+set(RELEASE "${GIT_VERSION_RELEASE}")
+
 add_subdirectory(drivers)
 add_subdirectory(libnfb)
 add_subdirectory(tools)
 add_subdirectory(tools-debug)
 add_subdirectory(tools-misc)
 add_subdirectory(utils)
-
-set(PACKAGE_NAME "${PROJECT_NAME}")
-set(PACKAGE_VERSION "${GIT_VERSION}")
-set(RELEASE "${GIT_VERSION_RELEASE}")
 
 configure_file(package/preinst.in package/preinst @ONLY)
 configure_file(package/postinst.in package/postinst @ONLY)

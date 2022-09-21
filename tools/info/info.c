@@ -14,6 +14,7 @@
 #include <err.h>
 #include <stdio.h>
 #include <time.h>
+#include <inttypes.h>
 
 #include <libfdt.h>
 #include <nfb/nfb.h>
@@ -23,13 +24,14 @@
 #include <netcope/eth.h>
 #include <netcope/nccommon.h>
 
-#define ARGUMENTS "d:q:hv"
+#define ARGUMENTS "d:q:hvV"
 
 #define BUFFER_SIZE 64
 
 enum commands {
 	CMD_PRINT_STATUS,
 	CMD_USAGE,
+	CMD_VERSION,
 };
 
 // this enum need to corespond with queries[] array
@@ -71,7 +73,17 @@ void usage(const char *progname, int verbose)
 		printf(" example of usage: '-q project,build,card'\n");
 	}
 	printf("-v              Increase verbosity\n");
+	printf("-V              Show version\n");
 	printf("-h              Show this text\n");
+}
+
+void print_version()
+{
+#ifdef PACKAGE_VERSION
+	printf(PACKAGE_VERSION "\n");
+#else
+	printf("Unknown\n");
+#endif
 }
 
 int print_specific_info(struct nfb_device *dev, int query)
@@ -209,6 +221,7 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	int count1, count2;
 	const void *prop;
 	const uint32_t *prop32;
+	const uint64_t *prop64;
 	const void *fdt;
 
 	char buffer[BUFFER_SIZE];
@@ -225,6 +238,10 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
 	if (len == sizeof(*prop32))
 		printf("Serial number              : %d\n", fdt32_to_cpu(*prop32));
+
+	prop64 = fdt_getprop(fdt, fdt_offset, "fpga-uid", &len);
+	if (verbose > 1 && len == sizeof(*prop64))
+		printf("FPGA unique ID             : 0x%" PRIx64 "\n", fdt64_to_cpu(*prop64));
 
 	i = 0;
 	fdt_for_each_compatible_node(fdt, node, "netcope,transceiver") {
@@ -339,6 +356,9 @@ int main(int argc, char *argv[])
 		case 'q':
 			query = optarg;
 			break;
+		case 'V':
+			command = CMD_VERSION;
+			break;
 		default:
 			errx(1, "unknown argument -%c", optopt);
 		}
@@ -346,6 +366,9 @@ int main(int argc, char *argv[])
 
 	if (command == CMD_USAGE) {
 		usage(argv[0], verbose);
+		return 0;
+	} else if (command == CMD_VERSION) {
+		print_version();
 		return 0;
 	}
 	argc -= optind;

@@ -292,6 +292,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 
 	fdt_setprop_string(nfb->fdt, fdt_offset, "card-name", nfb->nfb_pci_dev->name);
 	fdt_setprop_u32(nfb->fdt, fdt_offset, "serial-number", nfb->serial);
+	fdt_setprop_u64(nfb->fdt, fdt_offset, "fpga-uid", nfb->dsn);
 
 	dev_info(&nfb->pci->dev, "nfb_boot: Attached successfully\n");
 
