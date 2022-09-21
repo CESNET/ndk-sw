@@ -114,25 +114,24 @@ static inline void nfb_bus_mi_memcopy(void *dst, const void *src, size_t nbyte, 
 	}
 }
 
-ssize_t nfb_bus_mi_read(void *p, void *buf, size_t nbyte, off_t offset)
+ssize_t nfb_bus_mi_read(void *bus_priv, void *buf, size_t nbyte, off_t offset)
 {
-	struct nfb_bus_mi_priv *priv = p;
-	nfb_bus_mi_memcopy(buf, (uint8_t*) priv->space + offset, nbyte, offset);
+	struct nfb_bus_mi_priv *bus = bus_priv;
+	nfb_bus_mi_memcopy(buf, (uint8_t*) bus->space + offset, nbyte, offset);
 	return nbyte;
 }
 
-ssize_t nfb_bus_mi_write(void *p, const void *buf, size_t nbyte, off_t offset)
+ssize_t nfb_bus_mi_write(void *bus_priv, const void *buf, size_t nbyte, off_t offset)
 {
-	struct nfb_bus_mi_priv *priv = p;
-	nfb_bus_mi_memcopy((uint8_t*) priv->space + offset, buf, nbyte, offset);
+	struct nfb_bus_mi_priv *bus = bus_priv;
+	nfb_bus_mi_memcopy((uint8_t*) bus->space + offset, buf, nbyte, offset);
 	return nbyte;
 }
 
 #define DRIVER_MI_PATH "/drivers/mi/"
 
-int nfb_bus_open_mi(struct nfb_bus *bus, int node_offset)
+int nfb_bus_open_mi(void *dev_priv, int bus_node, int comp_node, void **bus_priv, struct libnfb_bus_ext_ops* ops)
 {
-	const struct nfb_device * dev;
 	const void *fdt;
 	int fdt_offset;
 	int proplen;
@@ -141,21 +140,22 @@ int nfb_bus_open_mi(struct nfb_bus *bus, int node_offset)
 	const void *prop;
 	const fdt64_t *prop64;
 
-	struct nfb_bus_mi_priv * priv;
+	struct nfb_base_priv *dev = dev_priv;
+	struct nfb_bus_mi_priv * bus;
 
-	dev = bus->dev;
+	(void) comp_node;
 
-	fdt = nfb_get_fdt(dev);
+	fdt = dev->fdt;
 
-	prop = fdt_getprop(fdt, node_offset, "resource", NULL);
+	prop = fdt_getprop(fdt, bus_node, "resource", NULL);
 	if (prop == NULL)
 		return -EINVAL;
 
 	strcpy(path, DRIVER_MI_PATH);
 	strcpy(path + sizeof(DRIVER_MI_PATH) - 1, prop);
 
-	priv = malloc(sizeof(*priv));
-	if (priv == NULL) {
+	bus = malloc(sizeof(*bus));
+	if (bus == NULL) {
 		goto err_priv_alloc;
 	}
 
@@ -172,30 +172,31 @@ int nfb_bus_open_mi(struct nfb_bus *bus, int node_offset)
 	}
 
 	/* Get mmap size */
-	prop64 = fdt_getprop(nfb_get_fdt(dev), fdt_offset, "mmap_size", &proplen);
+	prop64 = fdt_getprop(fdt, fdt_offset, "mmap_size", &proplen);
 	if (proplen != sizeof(*prop64)) {
 		errno = EBADFD;
 		goto err_fdt_getprop;
 	}
-	priv->mmap_size = fdt64_to_cpu(*prop64);
+	bus->mmap_size = fdt64_to_cpu(*prop64);
 
 	/* Get mmap offset */
-	prop64 = fdt_getprop(nfb_get_fdt(dev), fdt_offset, "mmap_base", &proplen);
+	prop64 = fdt_getprop(fdt, fdt_offset, "mmap_base", &proplen);
 	if (proplen != sizeof(*prop64)) {
 		errno = EBADFD;
 		goto err_fdt_getprop;
 	}
-	priv->mmap_offset = fdt64_to_cpu(*prop64);
+	bus->mmap_offset = fdt64_to_cpu(*prop64);
 
 	/* Map the memory for MI address space */
-	priv->space = mmap(NULL, priv->mmap_size,
-		PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, dev->fd, priv->mmap_offset);
-	if (priv->space == MAP_FAILED) {
+	bus->space = mmap(NULL, bus->mmap_size,
+		PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, dev->fd, bus->mmap_offset);
+	if (bus->space == MAP_FAILED) {
 		goto err_mmap;
 	}
-	bus->priv = priv;
-	bus->read = nfb_bus_mi_read;
-	bus->write = nfb_bus_mi_write;
+
+	*bus_priv = bus;
+	ops->read = nfb_bus_mi_read;
+	ops->write = nfb_bus_mi_write;
 
 	return 0;
 
@@ -203,16 +204,15 @@ int nfb_bus_open_mi(struct nfb_bus *bus, int node_offset)
 err_mmap:
 err_fdt_getprop:
 err_fdt_path:
-	free(priv);
+	free(bus);
 err_priv_alloc:
 	return errno;
 }
 
-void nfb_bus_close_mi(struct nfb_bus *bus)
+void nfb_bus_close_mi(void *bus_priv)
 {
-	struct nfb_bus_mi_priv * priv;
+	struct nfb_bus_mi_priv * bus =  bus_priv;
 
-	priv = bus->priv;
-	munmap((void*)priv->space, priv->mmap_size);
-	free(bus->priv);
+	munmap((void*)bus->space, bus->mmap_size);
+	free(bus);
 }

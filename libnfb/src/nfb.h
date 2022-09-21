@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include <nfb/nfb.h>
+#include <nfb/ext.h>
 
 struct ndp_queue;
 
@@ -22,16 +23,12 @@ struct ndp_queue;
 struct nfb_device {
 	int fd;                         /*!< NFB chardev file descriptor */
 	void *fdt;                      /*!< NFB device Device Tree description */
+	void *priv;
 
 	int queue_count;                /*!< Number of opened NDP queues */
 	struct ndp_queue **queues;      /*!< Opened NDP queues pointers for poll function */
+	struct libnfb_ext_ops ops;
 };
-
-
-struct nfb_bus;
-
-typedef ssize_t nfb_bus_read_func(void *p, void *buf, size_t nbyte, off_t offset);
-typedef ssize_t nfb_bus_write_func(void *p, const void *buf, size_t nbyte, off_t offset);
 
 /*!
  * \brief Structure for the NFB bus
@@ -41,9 +38,7 @@ struct nfb_bus {
 	void *priv;                     /*!< Bus's private data */
 	int state;                      /*!< Bus's state e.g. in case of error */
 	int type;
-
-	nfb_bus_read_func *read;
-	nfb_bus_write_func *write;
+	struct libnfb_bus_ext_ops ops;
 };
 
 
@@ -61,11 +56,15 @@ struct nfb_comp {
 
 struct nfb_device *nfb_open_ext(const char *devname, int oflags);
 
-int nfb_bus_open_mi(struct nfb_bus *bus, int node_offset);
-int nfb_bus_open(struct nfb_comp *comp, int fdt_offset);
+int nfb_bus_open_mi(void *dev_priv, int bus_node, int comp_node, void ** bus_priv, struct libnfb_bus_ext_ops* ops);
+int nfb_bus_open(struct nfb_comp *comp, int fdt_offset, int comp_offset);
+
+struct nfb_base_priv {
+	int fd;
+	void *fdt;
+};
 
 #define NFB_BUS_TYPE_MI 1
-
 
 #define __nfb_fdt_getprop(bits) \
 static inline int fdt_getprop##bits(const void *fdt, int fdt_offset, const char *name, void *prop) \
