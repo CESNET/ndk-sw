@@ -103,6 +103,7 @@ int nfb_boot_ioctl_error_disable(struct nfb_boot *nfb_boot)
 
 int nfb_boot_reload(void *arg)
 {
+	int i;
 	int ret;
 	struct nfb_boot *boot;
 	struct nfb_device *nfb;
@@ -179,12 +180,17 @@ int nfb_boot_reload(void *arg)
 	msleep(600);
 
 	/* Rescan PCIe slaves */
-	list_for_each_entry_safe(slave, temp, &slaves, reload_list) {
-		ret = nfb_boot_reload_rescan(slave);
-		if (ret)
-			dev_warn(mbus_dev, "unable to find slave PCI device after FW reload!\n");
+	for (i = 0; i < 2; i++) {
+		list_for_each_entry_safe(slave, temp, &slaves, reload_list) {
+			/* In first pass skip all secondary endpoints sharing bus parent with master */
+			if (i == 0 && slave->bus->parent == master->bus->parent)
+				continue;
+			ret = nfb_boot_reload_rescan(slave);
+			if (ret)
+				dev_warn(mbus_dev, "unable to find slave PCI device after FW reload!\n");
 
-		list_del_init(&slave->reload_list);
+			list_del_init(&slave->reload_list);
+		}
 	}
 
 	ret = nfb_boot_reload_rescan(master);
