@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <dlfcn.h>
+
 #include <libfdt.h>
 #include <nfb/nfb.h>
 #include <linux/nfb/nfb.h>
@@ -64,6 +66,13 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 	char path[PATH_LEN];
 	unsigned index;
 
+	char *ext_name;
+
+	struct libnfb_ext_abi_version *ext_abi_version;
+	struct libnfb_ext_abi_version current_abi_version = libnfb_ext_abi_version_current;
+
+	libnfb_ext_get_ops_t* get_ops;
+
 	if (sscanf(devname, "%u", &index) == 1) {
 		ret = snprintf(path, PATH_LEN, "/dev/nfb%u", index);
 		if (ret >= PATH_LEN || ret < 0) {
@@ -84,6 +93,32 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 
 	dev->ops = nfb_base_ops;
 
+	ext_name = strchr(devname, ':');
+	if (ext_name && strstr(devname, "libnfb-ext-")) {
+		ext_name = strndup(devname, (ext_name - devname));
+		devname = strchr(devname, ':') + 1;
+		dev->ext_lib = dlopen(ext_name, RTLD_NOW);
+		if (dev->ext_lib) {
+			*(void**)(&get_ops) = dlsym(dev->ext_lib, "libnfb_ext_get_ops");
+			*(void**)(&ext_abi_version) = dlsym(dev->ext_lib, "libnfb_ext_abi_version");
+			if (ext_abi_version == NULL) {
+				fprintf(stderr, "libnfb fatal: extension doesn't have libnfb_ext_abi_version symbol.\n");
+			} else {
+				if (ext_abi_version->major != current_abi_version.major) {
+					fprintf(stderr, "libnfb fatal: extension ABI major version doesn't match.\n");
+				} else {
+					if (ext_abi_version->minor != current_abi_version.minor) {
+						fprintf(stderr, "libnfb warning: extension ABI minor version doesn't match.\n");
+					}
+
+					if (get_ops) {
+						ret = get_ops(devname, &dev->ops);
+					}
+				}
+			}
+		}
+		free(ext_name);
+	}
 	ret = dev->ops.open(devname, oflag, &dev->priv, &dev->fdt);
 	if (ret) {
 		//errno = ret;
@@ -181,6 +216,10 @@ void nfb_close(struct nfb_device *dev)
 	dev->ops.close(dev->priv);
 	if (dev->queues)
 		free(dev->queues);
+
+	if (dev->ext_lib)
+		dlclose(dev->ext_lib);
+
 	free(dev->fdt);
 	free(dev);
 	dev = NULL;

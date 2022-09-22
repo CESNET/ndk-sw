@@ -28,6 +28,7 @@ struct nfb_device {
 	int queue_count;                /*!< Number of opened NDP queues */
 	struct ndp_queue **queues;      /*!< Opened NDP queues pointers for poll function */
 	struct libnfb_ext_ops ops;
+	void *ext_lib;
 };
 
 /*!
