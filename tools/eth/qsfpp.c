@@ -344,17 +344,9 @@ int qsfp_present(struct nc_i2c_ctrl *i2c, int mdev __attribute__((unused)) )
 void sff8636_print(struct nc_i2c_ctrl *ctrl);
 void cmis_print(struct nc_i2c_ctrl *ctrl);
 
-/**
- * \brief Print informations about transceiver
- *
- * @param ifc Interface device
- * @param space Interface space
- */
-void qsfpp_print(struct nfb_device *dev, int nodeoffset, int node_params)
+struct nc_i2c_ctrl *qsfpp_i2c_open(struct nfb_device *dev, int nodeoffset, int node_params)
 {
-	uint8_t reg = 0xFF;
 	uint32_t i2c_addr;
-
 	struct nc_i2c_ctrl *ctrl;
 
 	const void *fdt;
@@ -374,10 +366,29 @@ void qsfpp_print(struct nfb_device *dev, int nodeoffset, int node_params)
 	ctrl = nc_i2c_open(dev, node_ctrl);
 	if (ctrl == NULL) {
 		warnx("Cannot open I2C ctrl for transceiver");
-		return;
+		return NULL;
 	}
 
 	nc_i2c_set_addr(ctrl, i2c_addr);
+	return ctrl;
+}
+
+/**
+ * \brief Print informations about transceiver
+ *
+ * @param ifc Interface device
+ * @param space Interface space
+ */
+void qsfpp_print(struct nfb_device *dev, int nodeoffset, int node_params)
+{
+	uint8_t reg = 0xFF;
+	struct nc_i2c_ctrl *ctrl;
+
+	ctrl = qsfpp_i2c_open(dev, nodeoffset, node_params);
+	if (ctrl == NULL) {
+		warnx("Cannot open I2C ctrl for transceiver");
+		return;
+	}
 
 	nc_i2c_read_reg(ctrl, SFF8636_IDENTIFIER, &reg, 1);
 	printf("Module identifier          : %s\n", qsfp_get_identifier(reg));
@@ -496,18 +507,33 @@ void cmis_print(struct nc_i2c_ctrl *ctrl)
 	}
 }
 
-#if 0
 /**
  * \brief Software disable over i2c
  *
  * @param ifc Interface device
  * @param ifc_space Interface space
  */
-void qsfpp_stxdisable(struct nc_i2c_ctrl *ctrl)
+
+int qsfpp_stxdisable(struct nfb_device *dev, int nodeoffset, int node_params, int disable, int channels)
 {
-	/* FIXME: get correct i2c address and check for SFF8636 type! */
-	uint8_t reg = 0xFF;
-	nc_i2c_set_addr(ctrl, 0xA0);
-	nc_i2c_write_reg(ctrl, SFF8636_STXDISABLE, &reg, 1);
+	int ret = 0;
+	uint8_t reg = 0x18;
+	struct nc_i2c_ctrl *ctrl = qsfpp_i2c_open(dev, nodeoffset, node_params);
+
+	if (ctrl == NULL)
+		return -ENODEV;
+
+	nc_i2c_read_reg(ctrl, SFF8636_IDENTIFIER, &reg, 1);
+	if (reg == 0x18) {
+		ret = -ENOTSUP;
+	} else {
+		channels &= 0x0F;
+
+		nc_i2c_read_reg(ctrl, SFF8636_STXDISABLE, &reg, 1);
+		reg = disable ? (reg | channels) : (reg & ~channels);
+		nc_i2c_write_reg(ctrl, SFF8636_STXDISABLE, &reg, 1);
+	}
+
+	nc_i2c_close(ctrl);
+	return ret;
 }
-#endif

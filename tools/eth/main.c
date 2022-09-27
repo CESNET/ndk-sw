@@ -224,8 +224,7 @@ int main(int argc, char *argv[])
 			cmds++;
 			break;
 		case 'c':
-			use = PCSPMA;
-			if(optarg[0] == '+' || optarg[0] == '-') {
+			if (optarg[0] == '+' || optarg[0] == '-') {
 				p.command = CMD_SET_PMA_FEATURE;
 				p.string = optarg + 1;
 				p.param = optarg[0] == '+' ? 1 : 0;
@@ -300,19 +299,23 @@ int main(int argc, char *argv[])
 			nfb_close(dev);
 			return -1;
 		}
+	} else {
+		if (use == 0)
+			use = RXMAC | TXMAC;
+		else if (use & TRANSCEIVER)
+			use &= TRANSCEIVER;
 	}
 
-	if (use == 0 && p.command != CMD_QUERY)
-		use = RXMAC | TXMAC;
-
 	fdt_for_each_compatible_node(fdt, node, COMP_NETCOPE_ETH) {
-		if (list_range_empty(&index_range) || list_range_contains(&index_range, p.index)) {
+		if (use & TRANSCEIVER)
+			continue;
 
+		if (list_range_empty(&index_range) || list_range_contains(&index_range, p.index)) {
 			if (p.command == CMD_SET_REPEATER) {
 				used++;
 				nc_idcomp_repeater_set(dev, p.index, repeater_status);
 			} else {
-				if (p.command == CMD_PRINT_STATUS && (use & ~TRANSCEIVER)) {
+				if (p.command == CMD_PRINT_STATUS) {
 					if (used++)
 						printf("\n");
 					printf("----------------------------- Ethernet interface %d ----\n", p.index);
@@ -345,6 +348,7 @@ int main(int argc, char *argv[])
 						nc_rxmac_close(rxmac);
 					}
 				}
+
 				if (use & TXMAC) {
 					used++;
 					fdt_offset = nc_eth_get_txmac_node(fdt, node);
@@ -370,7 +374,7 @@ int main(int argc, char *argv[])
 					printf("Repeater status            : %s\n", repeater_str);
 				}
 
-				if (p.command == CMD_PRINT_STATUS && (use & ~TRANSCEIVER)) {
+				if (p.command == CMD_PRINT_STATUS) {
 					used++;
 					if (use & PCSPMA)
 						pcspma_execute_operation(dev, node, &p);
@@ -386,16 +390,26 @@ int main(int argc, char *argv[])
 		p.index++;
 	}
 
-	if (p.command == CMD_PRINT_STATUS) {
-		if (use & TRANSCEIVER) {
-			if (used++)
-				printf("\n");
-			transceivers_print(dev);
+	if (use & TRANSCEIVER) {
+		fdt_for_each_compatible_node(fdt, node, "netcope,transceiver") {
+			if (list_range_empty(&index_range) || list_range_contains(&index_range, p.index)) {
+				if (p.command == CMD_PRINT_STATUS) {
+					if (used++)
+						printf("\n");
+					transceiver_print(dev, node, p.index);
+				} else {
+					used++;
+					ret = transceiver_execute_operation(dev, node, &p);
+					if (ret)
+						warnx("Transceiver command failed");
+				}
+			}
+			p.index++;
 		}
 	}
 
 	if (!used) {
-		warnx("No such ethernet interface");
+		warnx("No such interface");
 	}
 
 	if (query)
