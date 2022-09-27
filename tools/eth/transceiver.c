@@ -39,7 +39,7 @@ static const struct transceiver_t transc_printing[] = {
 	{ NULL },
 };
 
-int transciever_is_present(struct nfb_device *dev, int node)
+int transceiver_is_present(struct nfb_device *dev, int node)
 {
 	int ret;
 	int node_statusreg;
@@ -56,7 +56,7 @@ int transciever_is_present(struct nfb_device *dev, int node)
 	return ret;
 }
 
-void transciever_print_short_info(struct nfb_device *dev, int node, struct eth_params *p)
+void transceiver_print_short_info(struct nfb_device *dev, int node, struct eth_params *p)
 {
 	int node_transceiver_by_phandle;
 	int node_transceiver;
@@ -76,7 +76,7 @@ void transciever_print_short_info(struct nfb_device *dev, int node, struct eth_p
 	index = 0;
 	fdt_for_each_compatible_node(fdt, node_transceiver, "netcope,transceiver") {
 		if (node_transceiver == node_transceiver_by_phandle) {
-			present = transciever_is_present(dev, node_transceiver);
+			present = transceiver_is_present(dev, node_transceiver);
 
 			prop = fdt_getprop(fdt, node_transceiver, "type", &proplen);
 			if (proplen < 0)
@@ -140,7 +140,7 @@ int transceivers_print(struct nfb_device *dev)
                        printf("-");
 		printf(" %s-%d ----\n", property, index++);
 
-		present = transciever_is_present(dev, node_transceiver);
+		present = transceiver_is_present(dev, node_transceiver);
 		printf("Transceiver status         : %s\n",
 				(present < 0 ? "Unknown" :
 				(present > 0 ? "OK" : "Not plugged")));

@@ -42,7 +42,7 @@ void usage(const char *progname, int verbose)
 	printf("-r              Use RXMAC [default]\n");
 	printf("-t              Use TXMAC [default]\n");
 	printf("-P              Use PCS/PMA\n");
-	printf("-T              Use transciever\n");
+	printf("-T              Use transceiver\n");
 	printf("-e 1|0          Enable [1] / disable [0] interface\n");
 	printf("-R              Reset frame counters\n");
 	printf("-S              Show etherStats counters\n");
@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
 					p2 = p;
 					p2.command = CMD_PRINT_SPEED;
 					pcspma_execute_operation(dev, node, &p2);
-					transciever_print_short_info(dev, node, &p);
+					transceiver_print_short_info(dev, node, &p);
 				}
 
 				if (p.command == CMD_QUERY) {
@@ -378,7 +378,7 @@ int main(int argc, char *argv[])
 					used++;
 					ret = pcspma_execute_operation(dev, node, &p);
 					if (ret)
-						warnx("PCS/PMA Command failed");
+						warnx("PCS/PMA command failed");
 				}
 			}
 

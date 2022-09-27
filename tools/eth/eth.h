@@ -84,7 +84,7 @@ int rxmac_execute_operation(struct nc_rxmac *rxmac, struct eth_params *p);
 int txmac_execute_operation(struct nc_txmac *txmac, struct eth_params *p);
 int pcspma_execute_operation(struct nfb_device *dev, int eth_node, struct eth_params *p);
 int transceivers_print(struct nfb_device *dev);
-void transciever_print_short_info(struct nfb_device *dev, int node, struct eth_params *p);
+void transceiver_print_short_info(struct nfb_device *dev, int node, struct eth_params *p);
 
 int query_print(const void *fdt, int node, char *queries, int size,
 	struct nfb_device *dev, int index);
