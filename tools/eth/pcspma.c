@@ -303,7 +303,11 @@ int pcspma_execute_operation(struct nfb_device *dev, int eth_node, struct eth_pa
 		ret = pcspma_set_type(mdio, portaddr, p);
 		break;
 	case CMD_SET_PMA_FEATURE:
-		ret = pcspma_set_feature(mdio, portaddr, p);
+		if (!strcmp(p->string, "Software TX disable")) {
+			ret = transceiver_execute_operation_for_eth(dev, eth_node, p);
+		} else {
+			ret = pcspma_set_feature(mdio, portaddr, p);
+		}
 		break;
 	default:
 		warnx("PCS/PMA: Command not implemented");

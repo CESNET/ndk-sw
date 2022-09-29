@@ -83,8 +83,10 @@ struct eth_params {
 int rxmac_execute_operation(struct nc_rxmac *rxmac, struct eth_params *p);
 int txmac_execute_operation(struct nc_txmac *txmac, struct eth_params *p);
 int pcspma_execute_operation(struct nfb_device *dev, int eth_node, struct eth_params *p);
-int transceivers_print(struct nfb_device *dev);
-void transciever_print_short_info(struct nfb_device *dev, int node, struct eth_params *p);
+int transceiver_execute_operation(struct nfb_device *dev, int node_transceiver, struct eth_params *p);
+int transceiver_execute_operation_for_eth(struct nfb_device *dev, int node_eth, struct eth_params *p);
+int transceiver_print(struct nfb_device *dev, int transceiver_node, int index);
+void transceiver_print_short_info(struct nfb_device *dev, int node, struct eth_params *p);
 
 int query_print(const void *fdt, int node, char *queries, int size,
 	struct nfb_device *dev, int index);

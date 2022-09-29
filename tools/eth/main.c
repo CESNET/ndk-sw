@@ -42,7 +42,7 @@ void usage(const char *progname, int verbose)
 	printf("-r              Use RXMAC [default]\n");
 	printf("-t              Use TXMAC [default]\n");
 	printf("-P              Use PCS/PMA\n");
-	printf("-T              Use transciever\n");
+	printf("-T              Use transceiver\n");
 	printf("-e 1|0          Enable [1] / disable [0] interface\n");
 	printf("-R              Reset frame counters\n");
 	printf("-S              Show etherStats counters\n");
@@ -224,8 +224,7 @@ int main(int argc, char *argv[])
 			cmds++;
 			break;
 		case 'c':
-			use = PCSPMA;
-			if(optarg[0] == '+' || optarg[0] == '-') {
+			if (optarg[0] == '+' || optarg[0] == '-') {
 				p.command = CMD_SET_PMA_FEATURE;
 				p.string = optarg + 1;
 				p.param = optarg[0] == '+' ? 1 : 0;
@@ -300,26 +299,30 @@ int main(int argc, char *argv[])
 			nfb_close(dev);
 			return -1;
 		}
+	} else {
+		if (use == 0)
+			use = RXMAC | TXMAC;
+		else if (use & TRANSCEIVER)
+			use &= TRANSCEIVER;
 	}
 
-	if (use == 0 && p.command != CMD_QUERY)
-		use = RXMAC | TXMAC;
-
 	fdt_for_each_compatible_node(fdt, node, COMP_NETCOPE_ETH) {
-		if (list_range_empty(&index_range) || list_range_contains(&index_range, p.index)) {
+		if (use & TRANSCEIVER)
+			continue;
 
+		if (list_range_empty(&index_range) || list_range_contains(&index_range, p.index)) {
 			if (p.command == CMD_SET_REPEATER) {
 				used++;
 				nc_idcomp_repeater_set(dev, p.index, repeater_status);
 			} else {
-				if (p.command == CMD_PRINT_STATUS && (use & ~TRANSCEIVER)) {
+				if (p.command == CMD_PRINT_STATUS) {
 					if (used++)
 						printf("\n");
 					printf("----------------------------- Ethernet interface %d ----\n", p.index);
 					p2 = p;
 					p2.command = CMD_PRINT_SPEED;
 					pcspma_execute_operation(dev, node, &p2);
-					transciever_print_short_info(dev, node, &p);
+					transceiver_print_short_info(dev, node, &p);
 				}
 
 				if (p.command == CMD_QUERY) {
@@ -345,6 +348,7 @@ int main(int argc, char *argv[])
 						nc_rxmac_close(rxmac);
 					}
 				}
+
 				if (use & TXMAC) {
 					used++;
 					fdt_offset = nc_eth_get_txmac_node(fdt, node);
@@ -370,7 +374,7 @@ int main(int argc, char *argv[])
 					printf("Repeater status            : %s\n", repeater_str);
 				}
 
-				if (p.command == CMD_PRINT_STATUS && (use & ~TRANSCEIVER)) {
+				if (p.command == CMD_PRINT_STATUS) {
 					used++;
 					if (use & PCSPMA)
 						pcspma_execute_operation(dev, node, &p);
@@ -378,7 +382,7 @@ int main(int argc, char *argv[])
 					used++;
 					ret = pcspma_execute_operation(dev, node, &p);
 					if (ret)
-						warnx("PCS/PMA Command failed");
+						warnx("PCS/PMA command failed");
 				}
 			}
 
@@ -386,16 +390,26 @@ int main(int argc, char *argv[])
 		p.index++;
 	}
 
-	if (p.command == CMD_PRINT_STATUS) {
-		if (use & TRANSCEIVER) {
-			if (used++)
-				printf("\n");
-			transceivers_print(dev);
+	if (use & TRANSCEIVER) {
+		fdt_for_each_compatible_node(fdt, node, "netcope,transceiver") {
+			if (list_range_empty(&index_range) || list_range_contains(&index_range, p.index)) {
+				if (p.command == CMD_PRINT_STATUS) {
+					if (used++)
+						printf("\n");
+					transceiver_print(dev, node, p.index);
+				} else {
+					used++;
+					ret = transceiver_execute_operation(dev, node, &p);
+					if (ret)
+						warnx("Transceiver command failed");
+				}
+			}
+			p.index++;
 		}
 	}
 
 	if (!used) {
-		warnx("No such ethernet interface");
+		warnx("No such interface");
 	}
 
 	if (query)
