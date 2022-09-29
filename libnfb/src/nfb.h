@@ -72,7 +72,7 @@ static inline int fdt_getprop##bits(const void *fdt, int fdt_offset, const char 
 { \
 	const fdt##bits##_t *p; \
 	int proplen; \
-	p = fdt_getprop(fdt, fdt_offset, name, &proplen); \
+	p = (const fdt##bits##_t *) fdt_getprop(fdt, fdt_offset, name, &proplen); \
 	if (proplen != sizeof(*p)) \
 		return -1; \
 	if (prop) \

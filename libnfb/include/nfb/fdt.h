@@ -86,7 +86,7 @@ static inline struct nfb_fdt_packed_item nfb_fdt_packed_item_by_name(const void 
 	err.offset = -1;
 
 	cnt = 0;
-	fdt_prop = fdt_getprop(fdt, fdt_offset, "item-name", &proplen);
+	fdt_prop = (const char*) fdt_getprop(fdt, fdt_offset, "item-name", &proplen);
 	while (stroff < proplen) {
 		if (!strcmp(name, fdt_prop + stroff)) {
 			index = cnt;
@@ -99,13 +99,13 @@ static inline struct nfb_fdt_packed_item nfb_fdt_packed_item_by_name(const void 
 	if (index == -1)
 		return err;
 
-	fdt_prop16 = fdt_getprop(fdt, fdt_offset, "item-offset", &proplen);
+	fdt_prop16 = (const fdt16_t*) fdt_getprop(fdt, fdt_offset, "item-offset", &proplen);
 	if (proplen != cnt * (signed)sizeof(uint16_t))
 		return err;
 
 	ret.offset = fdt16_to_cpu(fdt_prop16[index]);
 
-	fdt_prop16 = fdt_getprop(fdt, fdt_offset, "item-width", &proplen);
+	fdt_prop16 = (const fdt16_t*) fdt_getprop(fdt, fdt_offset, "item-width", &proplen);
 	if (proplen != cnt * (signed)sizeof(uint16_t))
 		return err;
 
