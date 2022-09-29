@@ -9,7 +9,11 @@
 
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
+
 #include "nfb.h"
+#include "boot/boot.h"
+
+#include <netcope/mac.h>
 
 uint64_t reverse(const uint64_t n, const uint64_t k)
 {
@@ -21,11 +25,15 @@ uint64_t reverse(const uint64_t n, const uint64_t k)
 
 int nfb_net_set_dev_addr(struct nfb_device *nfb, struct net_device *dev, int index)
 {
+	int ret;
 	int snshift = 4;
 	u8 addr[ETH_ALEN];
 
 	if (dev->addr_len != ETH_ALEN)
 		return -1;
+
+	ret = nc_get_default_mac_for_channel(nfb, addr, 6, index);
+	return 0;
 
 	addr[0] = 0x00;
 	addr[1] = 0x11;

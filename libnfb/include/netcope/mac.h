@@ -43,6 +43,8 @@ nc_get_default_mac_for_channel(struct nfb_device *dev, uint8_t *addr_bytes,
 		{"NFB-100G1", 0x40},
 		{"NFB-100G2Q", 0xA0},
 		{"NFB-200G2QL", 0x60},
+
+		{"TIVOLI", 0x70},
 		{NULL, 0},
 	};
 
