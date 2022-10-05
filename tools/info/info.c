@@ -41,6 +41,7 @@ enum queries {
 	QUERY_RX,
 	QUERY_TX,
 	QUERY_ETHERNET,
+	QUERY_PORT,
 	QUERY_CARD,
 	QUERY_PCI,
 	QUERY_NUMA,
@@ -51,6 +52,7 @@ static const char * const queries[] = {
 	"rx",
 	"tx",
 	"ethernet",
+	"port",
 	"card",
 	"pci",
 	"numa"
@@ -67,6 +69,7 @@ void usage(const char *progname, int verbose)
 		printf(" * rx               RX queues\n");
 		printf(" * tx               TX queues\n");
 		printf(" * ethernet         Ethernet channels\n");
+		printf(" * port             Ethernet ports\n");
 		printf(" * card             Card name\n");
 		printf(" * pci              PCI slot\n");
 		printf(" * numa             NUMA node\n");
@@ -152,6 +155,13 @@ int print_specific_info(struct nfb_device *dev, int query)
 	case QUERY_RX: printf("%d", ndp_get_rx_queue_count(dev)); break;
 	case QUERY_TX: printf("%d", ndp_get_tx_queue_count(dev)); break;
 	case QUERY_ETHERNET: printf("%d", nc_eth_get_count(dev)); break;
+	case QUERY_PORT:
+		len = 0;
+		fdt_for_each_compatible_node(fdt, fdt_offset, "netcope,transceiver") {
+			len++;
+		}
+		printf("%d", len);
+		break;
 	default: return -1;
 	}
 
