@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>libnfb examples &mdash; NFB Software User Guide 6.16.0 documentation</title>
@@ -16,6 +16,7 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -91,7 +92,7 @@
 <section id="simple-access-to-the-control-registers">
 <h2>Simple access to the control registers<a class="headerlink" href="#simple-access-to-the-control-registers" title="Permalink to this heading"></a></h2>
 <p>This example will perform some writes and reads to the user component in the firmware.</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;nfb/nfb.h&gt;</span><span class="cp"></span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nfb/nfb.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#define SUPERCORE_REG_CMD           0x00</span>
 <span class="cp">#define SUPERCORE_REG_CMD_ADD       (1 &lt;&lt; 0)</span>
@@ -100,134 +101,134 @@
 <span class="cp">#define SUPERCORE_REG_STATUS        0x04</span>
 <span class="cp">#define SUPERCORE_REG_DATA          0x08</span>
 
-<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
-<span class="p">{</span>
-    <span class="kt">int</span> <span class="n">node</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">argv</span><span class="p">[])</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">node</span><span class="p">;</span><span class="w"></span>
 
-    <span class="cm">/* This is the path to device node, you can use</span>
+<span class="w">    </span><span class="cm">/* This is the path to device node, you can use</span>
 <span class="cm">       - #define macro:   NFB_DEFAULT_DEV_PATH</span>
 <span class="cm">       - full path:       &quot;/dev/nfb0&quot;</span>
 <span class="cm">         or its shortcut: &quot;0&quot;</span>
 <span class="cm">       - persistent path: &quot;/dev/nfb/by-pci-slot/0000:03:00.0&quot;</span>
 <span class="cm">                          &quot;/dev/nfb/by-serial-no/COMBO-400G1/15432&quot;</span>
-<span class="cm">    */</span>
-    <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">path</span> <span class="o">=</span> <span class="n">NFB_DEFAULT_DEV_PATH</span><span class="p">;</span>
+<span class="cm">    */</span><span class="w"></span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NFB_DEFAULT_DEV_PATH</span><span class="p">;</span><span class="w"></span>
 
-    <span class="k">struct</span> <span class="n">nfb_device</span> <span class="o">*</span><span class="n">dev</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="n">nfb_comp</span> <span class="o">*</span><span class="n">comp</span><span class="p">;</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">nfb_device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">nfb_comp</span><span class="w"> </span><span class="o">*</span><span class="n">comp</span><span class="p">;</span><span class="w"></span>
 
-    <span class="cm">/* Get handle to NFB device for futher operation */</span>
-    <span class="n">dev</span> <span class="o">=</span> <span class="n">nfb_open</span><span class="p">(</span><span class="n">path</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">dev</span><span class="p">)</span>
-        <span class="n">errx</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;Can&#39;t open device file&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="cm">/* Get handle to NFB device for futher operation */</span><span class="w"></span>
+<span class="w">    </span><span class="n">dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nfb_open</span><span class="p">(</span><span class="n">path</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">errx</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Can&#39;t open device file&quot;</span><span class="p">);</span><span class="w"></span>
 
-    <span class="cm">/* Find first supercore unit in Device Tree and get its FDT node offset */</span>
-    <span class="n">node</span> <span class="o">=</span> <span class="n">nfb_comp_find</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span> <span class="s">&quot;mycompany,supercore&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="cm">/* Find first supercore unit in Device Tree and get its FDT node offset */</span><span class="w"></span>
+<span class="w">    </span><span class="n">node</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nfb_comp_find</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mycompany,supercore&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
 
-    <span class="cm">/* Get access to the component described with Device Tree node */</span>
-    <span class="n">comp</span> <span class="o">=</span> <span class="n">nfb_comp_open</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span> <span class="n">node</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">comp</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span>
-        <span class="n">errx</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s">&quot;Can&#39;t open component&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="cm">/* Get access to the component described with Device Tree node */</span><span class="w"></span>
+<span class="w">    </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nfb_comp_open</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">comp</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">errx</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Can&#39;t open component&quot;</span><span class="p">);</span><span class="w"></span>
 
-    <span class="cm">/* Perform some writes and reads to the acceleration core */</span>
-    <span class="n">nfb_comp_write64</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">SUPERCORE_REG_DATA</span><span class="p">,</span> <span class="mh">0xBEEFBEEFBEEFBEEFll</span><span class="p">);</span>
-    <span class="n">nfb_comp_write32</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">SUPERCORE_REG_CMD</span><span class="p">,</span> <span class="n">SUPERCORE_REG_CMD_ADD</span><span class="p">);</span>
+<span class="w">    </span><span class="cm">/* Perform some writes and reads to the acceleration core */</span><span class="w"></span>
+<span class="w">    </span><span class="n">nfb_comp_write64</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">SUPERCORE_REG_DATA</span><span class="p">,</span><span class="w"> </span><span class="mh">0xBEEFBEEFBEEFBEEFll</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">nfb_comp_write32</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">SUPERCORE_REG_CMD</span><span class="p">,</span><span class="w"> </span><span class="n">SUPERCORE_REG_CMD_ADD</span><span class="p">);</span><span class="w"></span>
 
-    <span class="k">if</span> <span class="p">(</span><span class="n">nfb_comp_read8</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">SUPERCORE_REG_STATUS</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> 
-        <span class="n">errx</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s">&quot;Operation ADD failed&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nfb_comp_read8</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">SUPERCORE_REG_STATUS</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span>
+<span class="w">        </span><span class="n">errx</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Operation ADD failed&quot;</span><span class="p">);</span><span class="w"></span>
 
-    <span class="cm">/* Cleanup */</span>
-    <span class="n">nfb_comp_close</span><span class="p">(</span><span class="n">comp</span><span class="p">);</span>
-    <span class="n">nfb_close</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span>
-    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
+<span class="w">    </span><span class="cm">/* Cleanup */</span><span class="w"></span>
+<span class="w">    </span><span class="n">nfb_comp_close</span><span class="p">(</span><span class="n">comp</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">nfb_close</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p>Do not forget to compile with <cite>-lnfb</cite> switch.</p>
 </section>
 <section id="ndp-data-transmit-example">
 <h2>NDP data transmit example<a class="headerlink" href="#ndp-data-transmit-example" title="Permalink to this heading"></a></h2>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;nfb/nfb.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;nfb/ndp.h&gt;</span><span class="cp"></span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nfb/nfb.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nfb/ndp.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#define NDP_PACKET_COUNT 16</span>
 
-<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
-<span class="p">{</span>
-    <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">ret</span><span class="p">,</span> <span class="n">bursts</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="n">nfb_device</span> <span class="o">*</span><span class="n">dev</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="n">ndp_queue</span> <span class="o">*</span><span class="n">rxq</span><span class="p">,</span> <span class="o">*</span><span class="n">txq</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="n">ndp_packet</span> <span class="n">pkts</span><span class="p">[</span><span class="n">NDP_PACKET_COUNT</span><span class="p">];</span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">argv</span><span class="p">[])</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">,</span><span class="w"> </span><span class="n">bursts</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">nfb_device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">ndp_queue</span><span class="w"> </span><span class="o">*</span><span class="n">rxq</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">txq</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">ndp_packet</span><span class="w"> </span><span class="n">pkts</span><span class="p">[</span><span class="n">NDP_PACKET_COUNT</span><span class="p">];</span><span class="w"></span>
 
-    <span class="cm">/* Get handle to NFB device for futher operation */</span>
-    <span class="k">if</span> <span class="p">((</span><span class="n">dev</span> <span class="o">=</span> <span class="n">nfb_open</span><span class="p">(</span><span class="s">&quot;0&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span>
-        <span class="n">errx</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;Can&#39;t open device file&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="cm">/* Get handle to NFB device for futher operation */</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nfb_open</span><span class="p">(</span><span class="s">&quot;0&quot;</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">errx</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Can&#39;t open device file&quot;</span><span class="p">);</span><span class="w"></span>
 
-    <span class="cm">/* Open one RX and one TX NDP queue for data transmit */</span>
-    <span class="n">rxq</span> <span class="o">=</span> <span class="n">ndp_open_rx_queue</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-    <span class="n">txq</span> <span class="o">=</span> <span class="n">ndp_open_tx_queue</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="cm">/* Open one RX and one TX NDP queue for data transmit */</span><span class="w"></span>
+<span class="w">    </span><span class="n">rxq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ndp_open_rx_queue</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">txq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ndp_open_tx_queue</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
 
-    <span class="k">if</span> <span class="p">(</span><span class="n">rxq</span> <span class="o">==</span> <span class="nb">NULL</span> <span class="o">||</span> <span class="n">txq</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span>
-        <span class="n">errx</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;Can&#39;t open queue&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rxq</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">txq</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">errx</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Can&#39;t open queue&quot;</span><span class="p">);</span><span class="w"></span>
 
-    <span class="cm">/* Start transmission on both queues */</span> 
-    <span class="n">ndp_queue_start</span><span class="p">(</span><span class="n">rxq</span><span class="p">);</span>
-    <span class="n">ndp_queue_start</span><span class="p">(</span><span class="n">txq</span><span class="p">);</span>
+<span class="w">    </span><span class="cm">/* Start transmission on both queues */</span><span class="w"> </span>
+<span class="w">    </span><span class="n">ndp_queue_start</span><span class="p">(</span><span class="n">rxq</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">ndp_queue_start</span><span class="p">(</span><span class="n">txq</span><span class="p">);</span><span class="w"></span>
 
-    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">NDP_PACKET_COUNT</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-        <span class="cm">/* Request space for some packets */</span>
-        <span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data_length</span> <span class="o">=</span> <span class="mi">64</span> <span class="o">+</span> <span class="n">i</span><span class="p">;</span>
-        <span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">header_length</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="p">}</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NDP_PACKET_COUNT</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="cm">/* Request space for some packets */</span><span class="w"></span>
+<span class="w">        </span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">64</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">header_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
 
-    <span class="cm">/* Request placeholders for packets with specified length */</span>
-    <span class="n">ret</span> <span class="o">=</span> <span class="n">ndp_tx_burst_get</span><span class="p">(</span><span class="n">txq</span><span class="p">,</span> <span class="n">pkts</span><span class="p">,</span> <span class="n">NDP_PACKET_COUNT</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">!=</span> <span class="n">NDP_PACKET_COUNT</span><span class="p">)</span>
-        <span class="n">warnx</span><span class="p">(</span><span class="s">&quot;Requested %d packet placeholders to send, got %d&quot;</span><span class="p">,</span> <span class="n">NDP_PACKET_COUNT</span><span class="p">,</span> <span class="n">ret</span><span class="p">);</span>
+<span class="w">    </span><span class="cm">/* Request placeholders for packets with specified length */</span><span class="w"></span>
+<span class="w">    </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ndp_tx_burst_get</span><span class="p">(</span><span class="n">txq</span><span class="p">,</span><span class="w"> </span><span class="n">pkts</span><span class="p">,</span><span class="w"> </span><span class="n">NDP_PACKET_COUNT</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">NDP_PACKET_COUNT</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">warnx</span><span class="p">(</span><span class="s">&quot;Requested %d packet placeholders to send, got %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">NDP_PACKET_COUNT</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
 
-    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">ret</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-        <span class="cm">/* Fill data space with some values */</span>
-        <span class="n">memset</span><span class="p">(</span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data_length</span><span class="p">);</span>
-        <span class="cm">/* Pretend IPv4 */</span>
-        <span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span> <span class="o">=</span> <span class="mh">0x08</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="cm">/* Optional PUT (rather just for symmetricity)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="cm">/* Fill data space with some values */</span><span class="w"></span>
+<span class="w">        </span><span class="n">memset</span><span class="p">(</span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data_length</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="cm">/* Pretend IPv4 */</span><span class="w"></span>
+<span class="w">        </span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x08</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* Optional PUT (rather just for symmetricity)</span>
 <span class="cm">       Beware the PUT operation may not send immediately,</span>
-<span class="cm">       it can wait for more packets to be PUTed for best throughput */</span>
-    <span class="c1">// ndp_tx_burst_put(txq);</span>
+<span class="cm">       it can wait for more packets to be PUTed for best throughput */</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// ndp_tx_burst_put(txq);</span>
 
-    <span class="cm">/* Force send immediately (implies PUT) */</span>
-    <span class="n">ndp_tx_burst_flush</span><span class="p">(</span><span class="n">txq</span><span class="p">);</span>
+<span class="w">    </span><span class="cm">/* Force send immediately (implies PUT) */</span><span class="w"></span>
+<span class="w">    </span><span class="n">ndp_tx_burst_flush</span><span class="p">(</span><span class="n">txq</span><span class="p">);</span><span class="w"></span>
 
-    <span class="cm">/* Let try to receive some packets */</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">bursts</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">bursts</span> <span class="o">&lt;</span> <span class="mi">32</span><span class="p">;</span> <span class="n">bursts</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-        <span class="cm">/* Let the library fill at most NDP_PACKET_COUNT, but it may be less */</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">ndp_rx_burst_get</span><span class="p">(</span><span class="n">rxq</span><span class="p">,</span> <span class="n">pkts</span><span class="p">,</span> <span class="n">NDP_PACKET_COUNT</span><span class="p">);</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-            <span class="n">usleep</span><span class="p">(</span><span class="mi">10000</span><span class="p">);</span>
-            <span class="k">continue</span><span class="p">;</span>
-        <span class="p">}</span>
+<span class="w">    </span><span class="cm">/* Let try to receive some packets */</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">bursts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">bursts</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span><span class="w"> </span><span class="n">bursts</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="cm">/* Let the library fill at most NDP_PACKET_COUNT, but it may be less */</span><span class="w"></span>
+<span class="w">        </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ndp_rx_burst_get</span><span class="p">(</span><span class="n">rxq</span><span class="p">,</span><span class="w"> </span><span class="n">pkts</span><span class="p">,</span><span class="w"> </span><span class="n">NDP_PACKET_COUNT</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">usleep</span><span class="p">(</span><span class="mi">10000</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
 
-        <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">ret</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-            <span class="cm">/* If the metadata is present, it typically holds packet timestamp at offset 0 */</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">header_length</span> <span class="o">&gt;=</span> <span class="mi">8</span><span class="p">)</span>
-                <span class="n">printf</span><span class="p">(</span><span class="s">&quot;Timestamp: %lld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="o">*</span><span class="p">((</span><span class="kt">uint64_t</span><span class="o">*</span><span class="p">)</span> <span class="p">(</span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">header</span> <span class="o">+</span> <span class="mi">0</span><span class="p">)));</span>
-        <span class="p">}</span>
-        <span class="cm">/* We must ensure the return of the processed packets </span>
-<span class="cm">           (although this doesn&#39;t have to be done for every GET) */</span>
-        <span class="k">if</span> <span class="p">((</span><span class="n">bursts</span> <span class="o">%</span> <span class="mi">5</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>
-            <span class="n">ndp_rx_burst_put</span><span class="p">(</span><span class="n">rxq</span><span class="p">);</span>
-    <span class="p">}</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="cm">/* If the metadata is present, it typically holds packet timestamp at offset 0 */</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">header_length</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Timestamp: %lld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">((</span><span class="kt">uint64_t</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">header</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">0</span><span class="p">)));</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="cm">/* We must ensure the return of the processed packets </span>
+<span class="cm">           (although this doesn&#39;t have to be done for every GET) */</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">bursts</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">ndp_rx_burst_put</span><span class="p">(</span><span class="n">rxq</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
 
-    <span class="n">ndp_rx_burst_put</span><span class="p">(</span><span class="n">rxq</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ndp_rx_burst_put</span><span class="p">(</span><span class="n">rxq</span><span class="p">);</span><span class="w"></span>
 
-    <span class="cm">/* Cleanup */</span>
-    <span class="n">ndp_close_tx_queue</span><span class="p">(</span><span class="n">txq</span><span class="p">);</span>
-    <span class="n">ndp_close_rx_queue</span><span class="p">(</span><span class="n">rxq</span><span class="p">);</span>
-    <span class="n">nfb_close</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span>
-    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
+<span class="w">    </span><span class="cm">/* Cleanup */</span><span class="w"></span>
+<span class="w">    </span><span class="n">ndp_close_tx_queue</span><span class="p">(</span><span class="n">txq</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">ndp_close_rx_queue</span><span class="p">(</span><span class="n">rxq</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">nfb_close</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 </section>
