@@ -1,3 +1,6 @@
+* Wed Oct 5 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.3-1
+- [FEATURE] added support for 400G1 card
+
 * Thu Jul 14 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.2-1
 - [FEATURE] allow to enter kernel NDP ring size with K/G/M suffix
 - [FEATURE] allow to set kernel NDP ring size with dma tool
