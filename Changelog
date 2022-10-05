@@ -1,3 +1,6 @@
+* Wed Oct 5 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.4-1
+- [FEATURE] added support for build with Copr
+
 * Wed Oct 5 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.3-1
 - [FEATURE] added support for 400G1 card
 
@@ -10,5 +13,5 @@
 - [FEATURE] added base support for QSFP-DD modules (CMIS memory layout)
 - [MAINTENANCE] added kernel 5.18 support
 
-* Mon Apr 14 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.0-1
+* Wed Apr 13 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.0-1
 - [MAINTENANCE] Public release
