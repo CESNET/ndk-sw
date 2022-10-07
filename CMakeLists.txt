@@ -64,6 +64,8 @@ set(CPACK_PACKAGE_CONTACT               "spinler@cesnet.cz")
 set(CPACK_PACKAGE_RELOCATABLE           OFF)
 set(CPACK_PACKAGE_DESCRIPTION_FILE      "${CMAKE_CURRENT_LIST_DIR}/package/description.txt")
 
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/")
+
 # RPM (CentOS) package settings
 set(CPACK_RPM_FILE_NAME                 RPM-DEFAULT)
 set(CPACK_RPM_Main_PACKAGE_NAME         "${CPACK_PACKAGE_NAME}")

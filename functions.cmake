@@ -25,6 +25,7 @@ endfunction()
 function(get_git_version)
 	execute_process(
 		COMMAND git describe --tags --dirty
+		WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
 		RESULT_VARIABLE GIT_RETVAL
 		OUTPUT_VARIABLE GIT_VERSION
 		OUTPUT_STRIP_TRAILING_WHITESPACE
