@@ -41,6 +41,7 @@
 
 #include "gecko.h"
 #include "boot.h"
+#include "sdm.h"
 #include "../nfb.h"
 #include "../pci.h"
 
@@ -217,6 +218,17 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 
 	boot->nfb = nfb;
 
+	/* Cards with Intel FPGA (Stratix10, Agilex) use Secure Device Manager for QSPI Flash access and Boot */
+	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,intel_sdm_controller");
+	if (fdt_offset >= 0) {
+		boot->sdm = sdm_init(nfb, fdt_offset, nfb->nfb_pci_dev->name);
+
+		prop32 = fdt_getprop(nfb->fdt, fdt_offset, "boot_en", &len);
+		if (boot->sdm && len == sizeof(*prop) && fdt32_to_cpu(*prop32) != 0) {
+			boot->sdm_boot_en = 1;
+		}
+	}
+
 	/* Tivoli card has separate QSPI controller for Flash access */
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "xlnx,axi-quad-spi");
 	spi_master = nfb_xilinx_spi_probe(nfb, fdt_offset);
@@ -226,7 +238,6 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 		boot->spi = spi_alloc_device(spi_master);
 
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,boot_controller");
-
 	if (fdt_offset < 0) {
 		ret = -ENODEV;
 		dev_warn(&nfb->pci->dev, "nfb_boot: No boot_controller found in FDT.\n");
@@ -297,6 +308,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	dev_info(&nfb->pci->dev, "nfb_boot: Attached successfully\n");
 
 	return 0;
+
 err_comp_open:
 err_nocomp:
 	kfree(boot);
@@ -318,6 +330,7 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 	}
 
 	nfb_comp_close(boot->comp);
+	sdm_free(boot->sdm);
 	kfree(boot);
 }
 

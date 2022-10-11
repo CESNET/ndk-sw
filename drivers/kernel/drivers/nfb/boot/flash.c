@@ -33,6 +33,7 @@
 #include "boot.h"
 #include "../nfb.h"
 
+#include "sdm.h"
 
 #define QSPI_OVERRIDE_COMMANDS
 
@@ -416,7 +417,7 @@ int nfb_boot_mtd_init(struct nfb_boot *nfb_boot)
 
 	nfb_boot->fb_active_flash = -1;
 
-	if (nfb_boot->spi) {
+	if (nfb_boot->spi || (nfb_boot->sdm && nfb_boot->sdm_boot_en)) {
 		nfb_boot->nor = kzalloc(sizeof(struct spi_nor) * nfb_boot->num_flash, GFP_KERNEL);
 		if (nfb_boot->nor == NULL) {
 			return -ENOMEM;
@@ -437,24 +438,35 @@ int nfb_boot_mtd_init(struct nfb_boot *nfb_boot)
 	/* TODO: Check for flash_names size */
 	for (i = 0; i < nfb_boot->num_flash; i++) {
 		/* If exist QSPI controller for Flash, use it */
-		if (nfb_boot->spi) {
+		if (nfb_boot->spi || (nfb_boot->sdm && nfb_boot->sdm_boot_en)) {
 			nor = &nfb_boot->nor[i];
 
 			nor->dev = &nfb_boot->nfb->pci->dev;
 			nor->priv = nfb_boot;
 
-			nor->read = axi_qspi_read;
-			nor->read_reg = axi_qspi_read_reg;
-			nor->write = axi_qspi_write;
-			nor->write_reg = axi_qspi_write_reg;
+			if (nfb_boot->sdm && nfb_boot->sdm_boot_en) {
+				nor->prepare = sdm_qspi_prepare;
+				nor->unprepare = sdm_qspi_unprepare;
+				nor->read = sdm_qspi_read;
+				nor->read_reg = sdm_qspi_read_reg;
+				nor->write = sdm_qspi_write;
+				nor->write_reg = sdm_qspi_write_reg;
+				nor->erase = sdm_qspi_erase;
+				nor->mtd.name = "sdm_qspi_nor";
+			} else {
+				nor->read = axi_qspi_read;
+				nor->read_reg = axi_qspi_read_reg;
+				nor->write = axi_qspi_write;
+				nor->write_reg = axi_qspi_write_reg;
 #ifdef QSPI_OVERRIDE_COMMANDS
-			nor->erase = axi_qspi_erase;
+				nor->erase = axi_qspi_erase;
 #endif
 
-			nor->mtd.name = "axi_qspi_nor";
+				nor->mtd.name = "axi_qspi_nor";
 
-			/* Workaround for HW bug? Dummy read */
-			axi_qspi_read_reg(nor, SPINOR_OP_RDFSR, (uint8_t*)&ret, 1);
+				/* Workaround for HW bug? Dummy read */
+				axi_qspi_read_reg(nor, SPINOR_OP_RDFSR, (uint8_t*)&ret, 1);
+			}
 
 			ret = spi_nor_scan(nor, NULL, &hwcaps);
 			if (ret) {

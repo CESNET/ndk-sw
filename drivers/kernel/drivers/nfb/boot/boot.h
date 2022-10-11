@@ -17,6 +17,8 @@
 
 #include "../nfb.h"
 
+#include "sdm.h"
+
 struct nfb_boot {
 	struct nfb_comp *comp;
 	struct spi_device *spi;
@@ -30,6 +32,8 @@ struct nfb_boot {
 	struct mtd_info **mtd;
 	int flags;
 	int controller_type;
+	struct sdm *sdm;
+	int sdm_boot_en;
 
 	int mtd_bit;
 	unsigned long mtd_size;
