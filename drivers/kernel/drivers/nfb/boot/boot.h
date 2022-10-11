@@ -64,15 +64,3 @@ int nfb_boot_reload(void *arg);
 
 #define NFB_BOOT_FLAG_FB_SELECT_FLASH 1
 #define NFB_BOOT_FLAG_FLASH_SET_ASYNC 2
-
-/*
- * Ioctl definitions
- */
-#define NFB_BOOT_IOC		'b'
-#define NFB_BOOT_IOC_RELOAD    	_IOR(NFB_BOOT_IOC, 192, int)
-
-#define NFB_BOOT_IOC_MTD_INFO  _IOWR(NFB_BOOT_IOC, 1, struct nfb_boot_ioc_mtd_info)
-#define NFB_BOOT_IOC_MTD_READ  _IOR (NFB_BOOT_IOC, 2, struct nfb_boot_ioc_mtd)
-#define NFB_BOOT_IOC_MTD_WRITE _IOW (NFB_BOOT_IOC, 3, struct nfb_boot_ioc_mtd)
-#define NFB_BOOT_IOC_MTD_ERASE _IOW (NFB_BOOT_IOC, 4, struct nfb_boot_ioc_mtd)
-
