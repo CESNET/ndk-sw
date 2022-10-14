@@ -67,6 +67,7 @@ struct stats_info {
 struct ndp_mode_generate_params {
 	struct list_range range;
 	int srand;
+	bool clear_data;
 	fwmode_t mode;
 };
 

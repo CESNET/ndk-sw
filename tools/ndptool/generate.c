@@ -124,6 +124,7 @@ static int ndp_mode_generate_loop(struct ndp_tool_params *p)
 	unsigned long long bytes_cnt = 0;
 	unsigned long long packets_rem = p->limit_packets;
 
+	const bool clear_data    = p->mode.generate.clear_data;
 	const bool limit_bytes   = p->limit_bytes > 0 ? true : false;
 	const bool limit_packets = p->limit_packets > 0 ? true : false;
 
@@ -178,6 +179,13 @@ static int ndp_mode_generate_loop(struct ndp_tool_params *p)
 			cnt = ndp_tx_burst_get(tx, packets, burst_size);
 		}
 
+		if (clear_data) {
+			for (i = 0; i < cnt; i++) {
+				memset(packets[i].data, 0, packets[i].data_length);
+				memset(packets[i].header, 0, packets[i].header_length);
+			}
+		}
+
 		/* Update limits */
 		packets_rem -= cnt;
 		if (limit_bytes) {
@@ -206,6 +214,7 @@ void ndp_mode_generate_print_help()
 {
 	printf("Generate parameters:\n");
 	printf("  -s size       Packet size - list or random from range, e.g \"64,128-256\"\n");
+	printf("  -C            Clear packet data before send\n");
 /*	printf("  -T content    Packet content [george, dns]\n"); */
 }
 
@@ -215,6 +224,9 @@ int ndp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, const char *o
 	case 's':
 		if (list_range_parse(&p->mode.generate.range, optarg) < 0)
 			errx(-1, "Cannot parse size range");
+		break;
+	case 'C':
+		p->mode.generate.clear_data = 1;
 		break;
 	default:
 		return -1;
