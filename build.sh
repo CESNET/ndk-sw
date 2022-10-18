@@ -197,9 +197,9 @@ for opt in "$@"; do
             $install_cmd $prereqs
             echo ">> Installing package build dependencies ..."
             $install_cmd $deps
-            get_3rdparty_code
             ;;
         --prepare)
+            echo ">> Downloading and extractiong 3rd party code ..."
             get_3rdparty_code
             ;;
         --make)
