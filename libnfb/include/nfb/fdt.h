@@ -51,6 +51,68 @@ static inline uint32_t fdt_getprop_u32(const void *fdt, int nodeoffset, const ch
         return 0;
 }
 
+static inline int fdt_ndp_header_id_get_offset(const void *fdt, int dir, int id)
+{
+	int ret;
+	int node;
+	int proplen;
+	const char * compatible = dir == 0 ? "cesnet,ofm,ndp-header-rx" : "cesnet,ofm,ndp-header-tx";
+	fdt_for_each_compatible_node(fdt, node, compatible) {
+		ret = fdt_getprop_u32(fdt, node, "header_id", &proplen);
+		if (proplen == sizeof(uint32_t) && ret == id)
+			return node;
+	}
+	return -1;
+}
+
+struct nfb_fdt_packed_item {
+	const char *name;
+	int16_t width;
+	int16_t offset;
+};
+
+static inline struct nfb_fdt_packed_item nfb_fdt_packed_item_by_name(const void *fdt, int fdt_offset, const char *name)
+{
+	struct nfb_fdt_packed_item ret, err;
+	int stroff = 0;
+	int cnt, index = -1;
+	int proplen;
+	const char *fdt_prop;
+
+	const fdt16_t *fdt_prop16;
+
+	err.name = NULL;
+	err.width = -1;
+	err.offset = -1;
+
+	cnt = 0;
+	fdt_prop = fdt_getprop(fdt, fdt_offset, "item-name", &proplen);
+	while (stroff < proplen) {
+		if (!strcmp(name, fdt_prop + stroff)) {
+			index = cnt;
+			ret.name = fdt_prop + stroff;
+		}
+		stroff += strlen(fdt_prop + stroff) + 1;
+		cnt++;
+	}
+
+	if (index == -1)
+		return err;
+
+	fdt_prop16 = fdt_getprop(fdt, fdt_offset, "item-offset", &proplen);
+	if (proplen != cnt * (signed)sizeof(uint16_t))
+		return err;
+
+	ret.offset = fdt16_to_cpu(fdt_prop16[index]);
+
+	fdt_prop16 = fdt_getprop(fdt, fdt_offset, "item-width", &proplen);
+	if (proplen != cnt * (signed)sizeof(uint16_t))
+		return err;
+
+	ret.width = fdt16_to_cpu(fdt_prop16[index]);
+	return ret;
+}
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
