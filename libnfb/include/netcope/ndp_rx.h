@@ -101,6 +101,8 @@ static inline unsigned nc_ndp_v1_rx_burst_get(struct ndp_queue *q, struct ndp_pa
 #endif
 		}
 
+		packets->flags = 0;
+
 		/* Assign pointer and length of data */
 		packets->header = data + NDP_PACKET_HEADER_SIZE;
 		packets->header_length = header_size;
@@ -184,6 +186,7 @@ static inline unsigned nc_ndp_v2_rx_burst_get(struct ndp_queue *q, struct ndp_pa
 		/* Assign pointer and length of data */
 		packets[i].header = data_base + off->offset;
 		packets[i].header_length = header_size;
+		packets[i].flags = hdr->flags & 0xF;
 
 		//header_size = ALIGN(header_size + NDP_PACKET_HEADER_SIZE, 8);
 
