@@ -7,6 +7,8 @@
  *   Martin Spinler <spinler@cesnet.cz>
  */
 
+#define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <sys/param.h>
 #include <err.h>
