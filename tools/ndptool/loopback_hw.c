@@ -213,6 +213,7 @@ static int generate_burst(struct ndp_mode_loopback_hw_params *p, struct ndp_pack
 
 		ptr++;
 
+		pkt->flags = 0;
 		pkt->header_length = 0;
 		pkt->data_length   = size;
 

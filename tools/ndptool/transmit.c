@@ -184,8 +184,10 @@ static int ndp_mode_transmit_loop(struct ndp_tool_params *p, struct pcap_src *sr
 
 	update_stats_t update_stats = p->update_stats;
 
-	for (i = 0; i < burst_size; i++)
+	for (i = 0; i < burst_size; i++) {
+		packets[i].flags = 0;
 		packets[i].header_length = 0;
+	}
 
 	si->thread_total_bytes_cnt = 0;
 	while (!stop) {
