@@ -138,6 +138,7 @@ static int ndp_mode_loopback_loop(struct ndp_tool_params *p)
 
 	unsigned i;
 	for (i = 0; i < burst_size; i++) {
+		packets_tx[i].flags = 0;
 		packets_tx[i].header_length = 0;
 	}
 
