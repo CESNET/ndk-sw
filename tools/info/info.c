@@ -20,6 +20,7 @@
 #include <nfb/nfb.h>
 #include <nfb/ndp.h>
 
+#include <nfb/boot.h>
 #include <netcope/adc_sensors.h>
 #include <netcope/eth.h>
 #include <netcope/nccommon.h>

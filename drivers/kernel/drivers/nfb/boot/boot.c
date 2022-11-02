@@ -41,6 +41,7 @@
 
 #include "gecko.h"
 #include "boot.h"
+#include "sdm.h"
 #include "../nfb.h"
 #include "../pci.h"
 
@@ -172,6 +173,36 @@ long nfb_boot_ioctl_reload(struct nfb_boot *boot, int * __user _image)
 	return nfb_char_set_lr_callback(boot->nfb, nfb_boot_reload, boot);
 }
 
+int nfb_boot_get_sensor_ioc(struct nfb_boot *boot, struct nfb_boot_ioc_sensor __user *_ioc_sensor)
+{
+	int ret;
+	int32_t temperature;
+	struct nfb_boot_ioc_sensor ioc_sensor;
+	struct sdm *sdm = boot->sdm;
+
+	if (_ioc_sensor == NULL)
+		return -EINVAL;
+
+	if (copy_from_user(&ioc_sensor, _ioc_sensor, sizeof(ioc_sensor)))
+		return -EFAULT;
+
+	/* Currently only temperature sensor through SDM is implemented */
+	if (sdm == NULL)
+		return -ENODEV;
+
+	ret = sdm_get_temperature(sdm, &temperature);
+	if (ret)
+		return ret;
+
+	/* temperature in millicelsius */
+	ioc_sensor.value = temperature * 1000 / 256;
+
+	if (copy_to_user(_ioc_sensor, &ioc_sensor, sizeof(ioc_sensor)))
+		return -EFAULT;
+
+	return 0;
+}
+
 long nfb_boot_ioctl(void *priv, void *app_priv, struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct nfb_boot *nfb_boot = priv;
@@ -193,6 +224,8 @@ long nfb_boot_ioctl(void *priv, void *app_priv, struct file *file, unsigned int 
 		return nfb_boot_ioctl_mtd_write(nfb_boot, argp);
 	case NFB_BOOT_IOC_MTD_ERASE:
 		return nfb_boot_ioctl_mtd_erase(nfb_boot, argp);
+	case NFB_BOOT_IOC_SENSOR_READ:
+		return nfb_boot_get_sensor_ioc(nfb_boot, argp);
 	default:
 		return -ENOTTY;
 	}
@@ -217,6 +250,17 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 
 	boot->nfb = nfb;
 
+	/* Cards with Intel FPGA (Stratix10, Agilex) use Secure Device Manager for QSPI Flash access and Boot */
+	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,intel_sdm_controller");
+	if (fdt_offset >= 0) {
+		boot->sdm = sdm_init(nfb, fdt_offset, nfb->nfb_pci_dev->name);
+
+		prop32 = fdt_getprop(nfb->fdt, fdt_offset, "boot_en", &len);
+		if (boot->sdm && len == sizeof(*prop) && fdt32_to_cpu(*prop32) != 0) {
+			boot->sdm_boot_en = 1;
+		}
+	}
+
 	/* Tivoli card has separate QSPI controller for Flash access */
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "xlnx,axi-quad-spi");
 	spi_master = nfb_xilinx_spi_probe(nfb, fdt_offset);
@@ -226,7 +270,6 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 		boot->spi = spi_alloc_device(spi_master);
 
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,boot_controller");
-
 	if (fdt_offset < 0) {
 		ret = -ENODEV;
 		dev_warn(&nfb->pci->dev, "nfb_boot: No boot_controller found in FDT.\n");
@@ -297,6 +340,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	dev_info(&nfb->pci->dev, "nfb_boot: Attached successfully\n");
 
 	return 0;
+
 err_comp_open:
 err_nocomp:
 	kfree(boot);
@@ -318,6 +362,7 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 	}
 
 	nfb_comp_close(boot->comp);
+	sdm_free(boot->sdm);
 	kfree(boot);
 }
 

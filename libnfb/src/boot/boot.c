@@ -220,6 +220,14 @@ ssize_t nfb_fw_read_for_dev(const struct nfb_device *dev, FILE *fd, void **data)
 
 	enum bitstream_format format = BITSTREAM_FORMAT_BPI16;
 
+	/* For Intel Stratix 10 and Agilex FPGAs */
+	fdt_for_each_compatible_node(fdt, node, "netcope,intel_sdm_controller") {
+		// TODO: figure out if bitswap needs to be used (currently YES by default)
+		format = BITSTREAM_FORMAT_INTEL_AS;
+		ret = nfb_fw_open_rpd(fd, data, format);
+		return ret;
+	}
+
 	fdt_for_each_compatible_node(fdt, node, "netcope,boot_controller") {
 		fdt_offset = fdt_subnode_offset(fdt, node, "control-param");
 		if (fdt_offset >= 0) {

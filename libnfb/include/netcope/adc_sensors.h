@@ -30,6 +30,7 @@ extern "C"
 #define ADC_CTRL_REG  0x04
 #define ADC_STAT_REG  0x08
 
+
 /**
  * Internal function used to get a value from any of the DATA registers inside the ADC_SENSOR on a Stratix FPGA.
  * This function is not meant to be accessed directly by the user. Instead, the user should access the data values
@@ -124,10 +125,34 @@ static inline float nc_get_adc_temp_stratix(struct nfb_device *dev, uint8_t chan
 	return (float)ans;
 }
 
+/**
+ * Function used to get temperature from Intel FPGA devices via their Secure Device Manager component.
+ */
+static inline float nc_get_adc_temp_sdm(struct nfb_device *dev)
+{
+	int ret;
+	struct nfb_boot_ioc_sensor sensor_ioc;
+
+	sensor_ioc.sensor_id = 0;
+	sensor_ioc.flags = 0;
+#ifdef __KERNEL__
+	ret = -ENOSYS;
+	//ret = nfb_boot_get_sensor_ioc(dev, &sensor_ioc);
+#else
+	ret = nfb_sensor_get(dev, &sensor_ioc);
+#endif
+
+	if (ret)
+		return NAN;
+
+	return sensor_ioc.value / 1000.0f;
+}
 
 static inline float nc_adc_sensors_get_temp(struct nfb_device *dev)
 {
-	if (fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, "netcope,stratix_adc_sensors") >= 0) {
+	if (fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, "netcope,intel_sdm_controller") >= 0) {
+		return nc_get_adc_temp_sdm(dev);
+	} else if (fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, "netcope,stratix_adc_sensors") >= 0) {
 		return nc_get_adc_temp_stratix(dev, 0);
 	} else if (fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, "netcope,idcomp") >= 0) {
 		return nc_idcomp_sysmon_get_temp(dev);
