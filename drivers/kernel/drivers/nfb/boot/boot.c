@@ -241,6 +241,11 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	struct nfb_boot *boot;
 	struct spi_master *spi_master;
 
+	fdt_offset = fdt_path_offset(nfb->fdt, "/");
+	fdt_offset = fdt_add_subnode(nfb->fdt, fdt_offset, "board");
+	if (nfb->dsn)
+		fdt_setprop_u64(nfb->fdt, fdt_offset, "fpga-uid", nfb->dsn);
+
 	boot = kzalloc(sizeof(*boot), GFP_KERNEL);
 	if (boot == NULL) {
 		ret = -ENOMEM;
@@ -330,12 +335,9 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	if (fdt_getprop(nfb->fdt, fdt_offset, "card-name", &len) == NULL)
 		fdt_setprop_string(nfb->fdt, fdt_offset, "card-name", nfb->nfb_pci_dev->name);
 
-	fdt_offset = fdt_path_offset(nfb->fdt, "/");
-	fdt_offset = fdt_add_subnode(nfb->fdt, fdt_offset, "board");
-
+	fdt_offset = fdt_path_offset(nfb->fdt, "/board");
 	fdt_setprop_string(nfb->fdt, fdt_offset, "card-name", nfb->nfb_pci_dev->name);
 	fdt_setprop_u32(nfb->fdt, fdt_offset, "serial-number", nfb->serial);
-	fdt_setprop_u64(nfb->fdt, fdt_offset, "fpga-uid", nfb->dsn);
 
 	dev_info(&nfb->pci->dev, "nfb_boot: Attached successfully\n");
 
