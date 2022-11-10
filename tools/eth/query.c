@@ -68,7 +68,7 @@ int query_print(const void *fdt, int node, char *queries, int size,
 	nc_txmac_close(txmac);
 
 	fdt_offset = nc_eth_get_pcspma_control_node(fdt, node, &node_ctrlparam);
-	mdio = nc_mdio_open(dev, fdt_offset);
+	mdio = nc_mdio_open(dev, fdt_offset, node_ctrlparam);
 	if (mdio == NULL) {
 		warnx("PCS/PMA: Cannot open MDIO for Eth %d", index);
 		return -1;

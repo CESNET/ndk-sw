@@ -56,6 +56,38 @@ static inline int nc_mdio_dmap_write(struct nfb_comp *comp, int prtad __attribut
 	return 0;
 }
 
+static inline void __nc_mdio_dmap_drp_access(struct nfb_comp *comp, int prtad __attribute__((unused)), uint32_t page, uint32_t addr, uint32_t *data, int rw)
+{
+	/* Vendor specific registers for DRP (dev 1 is on MI offset 0x10000) */
+	/* INFO: DMAP doesn't have enough dataspace, VS registers moved from 32768 to 16384 */
+	const int VS = 0x10000 + (16384 << 1);
+
+	/* 32b registers */
+	const int VS_DRP_DATA = VS + 0x10;
+	const int VS_DRP_ADDR = VS + 0x14;
+	const int VS_DRP_CTRL = VS + 0x18;
+
+	addr >>= 2;
+	nfb_comp_write32(comp, VS_DRP_ADDR, addr);
+	if (rw)
+		nfb_comp_write32(comp, VS_DRP_DATA, *data);
+	nfb_comp_write32(comp, VS_DRP_CTRL, (page << 4) | rw);
+	if (!rw)
+		*data = nfb_comp_read32(comp, VS_DRP_DATA);
+}
+
+static inline uint32_t nc_mdio_dmap_drp_read(struct nfb_comp *comp, int prtad, uint32_t page, uint32_t addr)
+{
+	uint32_t data;
+	__nc_mdio_dmap_drp_access(comp, prtad, page, addr, &data, 0);
+	return data;
+}
+
+static inline void nc_mdio_dmap_drp_write(struct nfb_comp *comp, int prtad __attribute__((unused)), uint32_t page, uint32_t addr, uint32_t data)
+{
+	__nc_mdio_dmap_drp_access(comp, prtad, page, addr, &data, 1);
+}
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
