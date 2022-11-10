@@ -312,7 +312,7 @@ void qsfp_i2c_text_print(struct nc_i2c_ctrl *i2c, uint8_t reg, unsigned count)
 			break;
 		text[ret] = 0;
 
-		printf(text);
+		printf("%s", text);
 		count -= cnt;
 		i += cnt;
 

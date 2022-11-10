@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 	int do_write = 0;
 	int port_addr = 0, dev_addr, reg_addr;
 	char *path = NFB_DEFAULT_DEV_PATH;
-	uint16_t val;
+	uint16_t val = 0;
 
 	int node;
 	struct nfb_device *dev;
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
 		errx(1, "Can't open device file");
 
 	node = mdio_list(nfb_get_fdt(dev), fdt_path_offset(nfb_get_fdt(dev), "/firmware"), &index);
-	mdio = nc_mdio_open(dev, node);
+	mdio = nc_mdio_open(dev, node, -1);
 	if (mdio == NULL) {
 		errx(1, "Can't open MDIO");
 	}

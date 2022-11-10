@@ -156,7 +156,7 @@ void cfp2_print(struct nfb_device *dev, int nodeoffset, int control_params_node)
 		//warnx("Couldn't find control param property in Device Tree");
 	}
 
-	mdio = nc_mdio_open(dev, node_ctrl);
+	mdio = nc_mdio_open(dev, node_ctrl, node_ctrlparam);
 	if (mdio == NULL) {
 		//warnx("Cannot open MDIO for Eth %d", p->index);
 		return;

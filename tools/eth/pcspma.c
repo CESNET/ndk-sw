@@ -269,7 +269,7 @@ int pcspma_execute_operation(struct nfb_device *dev, int eth_node, struct eth_pa
 
 	node_ctrl = nc_eth_get_pcspma_control_node(nfb_get_fdt(dev), eth_node, &node_ctrlparam);
 
-	mdio = nc_mdio_open(dev, node_ctrl);
+	mdio = nc_mdio_open(dev, node_ctrl, node_ctrlparam);
 	if (mdio == NULL) {
 		warnx("PCS/PMA: Cannot open MDIO for Eth %d", p->index);
 		return -1;
