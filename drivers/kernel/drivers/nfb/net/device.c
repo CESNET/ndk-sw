@@ -878,9 +878,9 @@ struct nfb_net_device *nfb_net_device_create(struct nfb_net *module, int fdt_off
 	device->mdio.mode_support = MDIO_SUPPORTS_C45;
 	fdt_node = fdt_node_offset_by_phandle_ref(nfbdev->fdt, fdt_offset, "pcspma");
 	fdt_comp = fdt_node_offset_by_phandle_ref(nfbdev->fdt, fdt_node, "control");
-	device->nc_mdio = nc_mdio_open(nfbdev, fdt_comp);
+	fdt_node = fdt_subnode_offset(nfbdev->fdt, fdt_node, "control-param");
+	device->nc_mdio = nc_mdio_open(nfbdev, fdt_comp, fdt_node);
 	if (device->nc_mdio) {
-		fdt_node = fdt_subnode_offset(nfbdev->fdt, fdt_node, "control-param");
 		fdt_prop = fdt_getprop(nfbdev->fdt, fdt_node, "dev", &fdt_plen);
 		if (fdt_plen == sizeof(*fdt_prop)) {
 			device->mdio.prtad = fdt32_to_cpu(*fdt_prop);
