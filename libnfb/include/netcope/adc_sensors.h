@@ -51,6 +51,8 @@ static inline uint32_t _nc_get_adc_value_stratix(struct nfb_device *dev, uint32_
 	// Get card address space
 	nodeoffset = fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, "netcope,stratix_adc_sensors");
 	comp = nfb_comp_open(dev, nodeoffset);
+	if (comp == NULL)
+		return -1;
 
 	// Write the relevant CONF and CTRL registers
 	nfb_comp_write32(comp, ADC_CONF_REG, conf_reg);
@@ -62,7 +64,11 @@ static inline uint32_t _nc_get_adc_value_stratix(struct nfb_device *dev, uint32_
 	} while (stat_reg_readout != conf_reg);
 
 	// Read it and return it
-	return nfb_comp_read32(comp, channel_address);
+	conf_reg = nfb_comp_read32(comp, channel_address);
+
+	nfb_comp_close(comp);
+	
+	return conf_reg;
 }
 
 /**
