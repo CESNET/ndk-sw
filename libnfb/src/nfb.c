@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <dlfcn.h>
+
 #include <libfdt.h>
 #include <nfb/nfb.h>
 #include <linux/nfb/nfb.h>
@@ -25,6 +27,22 @@
 //#include "mi.c"
 
 #define PATH_LEN (32)
+
+int nfb_base_open(const char *devname, int oflag, void **priv, void **fdt);
+void nfb_base_close(void *priv);
+int nfb_bus_open_mi(void *dev_priv, int bus_node, int comp_node, void ** bus_priv, struct libnfb_bus_ext_ops* ops);
+void nfb_bus_close_mi(void *bus_priv);
+int nfb_base_comp_lock(const struct nfb_comp *comp, uint32_t features);
+void nfb_base_comp_unlock(const struct nfb_comp *comp, uint32_t features);
+
+struct libnfb_ext_ops nfb_base_ops = {
+	.open = nfb_base_open,
+	.close = nfb_base_close,
+	.bus_open_mi = nfb_bus_open_mi,
+	.bus_close_mi = nfb_bus_close_mi,
+	.comp_lock = nfb_base_comp_lock,
+	.comp_unlock = nfb_base_comp_unlock,
+};
 
 const void *nfb_get_fdt(const struct nfb_device *dev)
 {
@@ -43,12 +61,17 @@ void *nfb_comp_to_user(struct nfb_comp *ptr)
 
 struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 {
-	off_t size;
-	int fd;
 	int ret;
 	struct nfb_device *dev;
 	char path[PATH_LEN];
 	unsigned index;
+
+	char *ext_name;
+
+	struct libnfb_ext_abi_version *ext_abi_version;
+	struct libnfb_ext_abi_version current_abi_version = libnfb_ext_abi_version_current;
+
+	libnfb_ext_get_ops_t* get_ops;
 
 	if (sscanf(devname, "%u", &index) == 1) {
 		ret = snprintf(path, PATH_LEN, "/dev/nfb%u", index);
@@ -59,38 +82,52 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 		devname = (const char *)path;
 	}
 
-	/* Open device */
-	fd = open(devname, O_RDWR | oflag, 0);
-	if (fd == -1) {
-		goto err_open;
-	}
-
 	/* Allocate structure */
 	dev = (struct nfb_device*) malloc(sizeof(struct nfb_device));
 	if (dev == 0) {
 		goto err_malloc_dev;
 	}
 
-	dev->fd = fd;
-	dev->queue_count = 0;
-	dev->queues = NULL;
+	memset(dev, 0, sizeof(struct nfb_device));
+	dev->fd = -1;
 
-	/* Read FDT from driver */
-	size = lseek(fd, 0, SEEK_END);
-	lseek(fd, 0, SEEK_SET);
-	if (size == 0) {
-		errno = ENODEV;
-		fprintf(stderr, "FDT size is zero\n");
-		goto err_fdt_size;
+	dev->ops = nfb_base_ops;
+
+	ext_name = strchr(devname, ':');
+	if (ext_name && strstr(devname, "libnfb-ext-")) {
+		ext_name = strndup(devname, (ext_name - devname));
+		devname = strchr(devname, ':') + 1;
+		dev->ext_lib = dlopen(ext_name, RTLD_NOW);
+		if (dev->ext_lib) {
+			*(void**)(&get_ops) = dlsym(dev->ext_lib, "libnfb_ext_get_ops");
+			*(void**)(&ext_abi_version) = dlsym(dev->ext_lib, "libnfb_ext_abi_version");
+			if (ext_abi_version == NULL) {
+				fprintf(stderr, "libnfb fatal: extension doesn't have libnfb_ext_abi_version symbol.\n");
+			} else {
+				if (ext_abi_version->major != current_abi_version.major) {
+					fprintf(stderr, "libnfb fatal: extension ABI major version doesn't match.\n");
+				} else {
+					if (ext_abi_version->minor != current_abi_version.minor) {
+						fprintf(stderr, "libnfb warning: extension ABI minor version doesn't match.\n");
+					}
+
+					if (get_ops) {
+						ret = get_ops(devname, &dev->ops);
+					}
+				}
+			}
+		}
+		free(ext_name);
 	}
-	dev->fdt = malloc(size);
-	if (dev->fdt == NULL) {
-		goto err_malloc_fdt;
+	ret = dev->ops.open(devname, oflag, &dev->priv, &dev->fdt);
+	if (ret) {
+		//errno = ret;
+		goto err_open;
 	}
-	ret = read(fd, dev->fdt, size);
-	if (ret != size) {
-		errno = ENODEV;
-		goto err_read_fdt;
+
+	/* TODO */
+	if (dev->ops.open == nfb_base_open) {
+		dev->fd = ((struct nfb_base_priv*) dev->priv)->fd;
 	}
 
 	/* Check for valid FDT */
@@ -103,15 +140,70 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 	return dev;
 
 err_fdt_check_header:
-err_read_fdt:
+	dev->ops.close(dev->priv);
 	free(dev->fdt);
-err_fdt_size:
-err_malloc_fdt:
+err_open:
 	free(dev);
 err_malloc_dev:
+	return NULL;
+}
+
+int nfb_base_open(const char *devname, int oflag, void **priv, void **fdt)
+{
+	int fd;
+	int ret;
+	off_t size;
+	struct nfb_base_priv *dev;
+
+	dev = malloc(sizeof(struct nfb_base_priv));
+	if (dev == NULL)
+		return -ENOMEM;
+
+	/* Open device */
+	fd = open(devname, O_RDWR | oflag, 0);
+	if (fd == -1) {
+		goto err_open;
+	}
+
+	/* Read FDT from driver */
+	size = lseek(fd, 0, SEEK_END);
+	lseek(fd, 0, SEEK_SET);
+	if (size == 0) {
+		errno = ENODEV;
+		fprintf(stderr, "FDT size is zero\n");
+		goto err_fdt_size;
+	}
+	dev->fdt = malloc(size);
+	if (dev->fdt == NULL) {
+		errno = ENOMEM;
+		goto err_malloc_fdt;
+	}
+	ret = read(fd, dev->fdt, size);
+	if (ret != size) {
+		errno = ENODEV;
+		goto err_read_fdt;
+	}
+
+	dev->fd = fd;
+
+	*fdt = dev->fdt;
+	*priv = dev;
+	return 0;
+
+err_read_fdt:
+	free(dev->fdt);
+err_malloc_fdt:
+err_fdt_size:
 	close(fd);
 err_open:
-	return NULL;
+	return errno;
+}
+
+void nfb_base_close(void *priv)
+{
+	struct nfb_base_priv *dev = priv;
+	close(dev->fd);
+	free(dev);
 }
 
 struct nfb_device *nfb_open(const char *devname)
@@ -121,9 +213,13 @@ struct nfb_device *nfb_open(const char *devname)
 
 void nfb_close(struct nfb_device *dev)
 {
-	close(dev->fd);
+	dev->ops.close(dev->priv);
 	if (dev->queues)
 		free(dev->queues);
+
+	if (dev->ext_lib)
+		dlclose(dev->ext_lib);
+
 	free(dev->fdt);
 	free(dev);
 	dev = NULL;
@@ -225,18 +321,16 @@ int nfb_comp_find_in_parent(const struct nfb_device *dev, const char *compatible
 	return find_in_subtree(fdt, parent_offset, compatible, index, &subtree_index);
 }
 
-int nfb_bus_open_mi(struct nfb_bus *bus, int node_offset);
-void nfb_bus_close_mi(struct nfb_bus *bus);
-
 int nfb_bus_open_for_comp(struct nfb_comp *comp, int nodeoffset)
 {
 	int compatible_offset;
+	int comp_offset = nodeoffset;
 
 	do {
 		compatible_offset = -1;
 		while ((compatible_offset = fdt_node_offset_by_compatible(comp->dev->fdt, compatible_offset, "netcope,bus,mi")) >= 0) {
 			if (compatible_offset == nodeoffset) {
-				return nfb_bus_open(comp, nodeoffset);
+				return nfb_bus_open(comp, nodeoffset, comp_offset);
 			}
 		}
 	} while ((nodeoffset = fdt_parent_offset(comp->dev->fdt, nodeoffset)) >= 0);
@@ -244,28 +338,27 @@ int nfb_bus_open_for_comp(struct nfb_comp *comp, int nodeoffset)
 	return ENODEV;
 }
 
-int nfb_bus_open(struct nfb_comp *comp, int fdt_offset)
+ssize_t nfb_bus_mi_read(void *p, void *buf, size_t nbyte, off_t offset);
+ssize_t nfb_bus_mi_write(void *p, const void *buf, size_t nbyte, off_t offset);
+
+int nfb_bus_open(struct nfb_comp *comp, int fdt_offset, int comp_offset)
 {
 	int ret;
-
 	comp->bus.dev = comp->dev;
-	comp->bus.type = NFB_BUS_TYPE_MI;
+	comp->bus.type = 0;
 
-	ret = nfb_bus_open_mi(&comp->bus, fdt_offset);
-	if (ret != 0) {
-		printf("open MI error, %d\n", ret);
-		goto err_bus_open;
-	}
+	ret = comp->dev->ops.bus_open_mi(comp->dev->priv, fdt_offset, comp_offset, &comp->bus.priv, &comp->bus.ops);
+	/* INFO: Shortcut only for direct access MI bus (into PCI BAR): speed optimization
+	 * uses direct call to nfb_bus_mi_read/write in nfb_comp_read/write */
+	if (comp->bus.ops.read == nfb_bus_mi_read)
+		comp->bus.type = NFB_BUS_TYPE_MI;
 
-	return 0;
-
-err_bus_open:
 	return ret;
 }
 
 void nfb_bus_close(struct nfb_comp * comp)
 {
-	nfb_bus_close_mi(&comp->bus);
+	comp->dev->ops.bus_close_mi(comp->bus.priv);
 }
 
 struct nfb_comp *nfb_comp_open(const struct nfb_device *dev, int fdt_offset)
@@ -332,11 +425,16 @@ void nfb_comp_close(struct nfb_comp *comp)
 
 int nfb_comp_lock(const struct nfb_comp *comp, uint32_t features)
 {
-	struct nfb_lock lock;
-	int ret;
-
 	if (!comp)
 		return -1;
+
+	return comp->dev->ops.comp_lock(comp, features);
+}
+
+int nfb_base_comp_lock(const struct nfb_comp *comp, uint32_t features)
+{
+	struct nfb_lock lock;
+	int ret;
 
 	lock.path = comp->path;
 	lock.features = features;
@@ -353,10 +451,14 @@ int nfb_comp_lock(const struct nfb_comp *comp, uint32_t features)
 
 void nfb_comp_unlock(const struct nfb_comp *comp, uint32_t features)
 {
-	struct nfb_lock lock;
-
 	if (!comp)
 		return;
+	comp->dev->ops.comp_unlock(comp, features);
+}
+
+void nfb_base_comp_unlock(const struct nfb_comp *comp, uint32_t features)
+{
+	struct nfb_lock lock;
 
 	lock.path = comp->path;
 	lock.features = features;
@@ -382,8 +484,6 @@ int nfb_comp_get_version(const struct nfb_comp *comp)
 	return fdt32_to_cpu(*prop);
 }
 
-ssize_t nfb_bus_mi_read(void *p, void *buf, size_t nbyte, off_t offset);
-ssize_t nfb_bus_mi_write(void *p, const void *buf, size_t nbyte, off_t offset);
 
 ssize_t nfb_comp_read(const struct nfb_comp *comp, void *buf, size_t nbyte, off_t offset)
 {
@@ -393,7 +493,7 @@ ssize_t nfb_comp_read(const struct nfb_comp *comp, void *buf, size_t nbyte, off_
 	if (comp->bus.type == NFB_BUS_TYPE_MI) {
 		return nfb_bus_mi_read(comp->bus.priv, buf, nbyte, offset + comp->base);
 	} else {
-		return comp->bus.read(comp->bus.priv, buf, nbyte, offset + comp->base);
+		return comp->bus.ops.read(comp->bus.priv, buf, nbyte, offset + comp->base);
 	}
 }
 
@@ -405,6 +505,6 @@ ssize_t nfb_comp_write(const struct nfb_comp *comp, const void *buf, size_t nbyt
 	if (comp->bus.type == NFB_BUS_TYPE_MI) {
 		return nfb_bus_mi_write(comp->bus.priv, buf, nbyte, offset + comp->base);
 	} else {
-		return comp->bus.write(comp->bus.priv, buf, nbyte, offset + comp->base);
+		return comp->bus.ops.write(comp->bus.priv, buf, nbyte, offset + comp->base);
 	}
 }

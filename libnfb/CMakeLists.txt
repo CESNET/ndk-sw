@@ -45,7 +45,7 @@ add_library(nfb SHARED ${LIBNFB_SOURCES})
 add_library(nfb_static STATIC ${LIBNFB_SOURCES})
 foreach(NFB IN ITEMS nfb nfb_static)
 	target_link_libraries(${NFB}
-		PRIVATE ${FDT_LIBRARIES} ${NUMA_LIBRARIES}
+		PRIVATE ${FDT_LIBRARIES} ${NUMA_LIBRARIES} dl
 	)
 	target_include_directories(${NFB}
 		PUBLIC include
