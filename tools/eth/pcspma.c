@@ -303,5 +303,8 @@ int pcspma_execute_operation(struct nfb_device *dev, int eth_node, struct eth_pa
 		warnx("PCS/PMA: Command not implemented");
 		break;
 	}
+
+	nc_mdio_close(mdio);
+
 	return ret;
 }
