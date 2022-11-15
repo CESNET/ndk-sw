@@ -249,8 +249,6 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 			printf("\n");
 		}
 	}
-
-	nc_mdio_close(mdio);
 }
 
 int pcspma_execute_operation(struct nfb_device *dev, int eth_node, struct eth_params *p)
