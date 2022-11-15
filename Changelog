@@ -1,3 +1,9 @@
+* Tue Nov 15 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.5-1
+- [FEATURE] added base support Intel FPGA Secure Device Manager
+- [FEATURE] added API for libnfb extensions
+- [FEATURE] added fixups for Intel F-Tile ethernet with MDIO
+- [FEATURE] ndp-generate can clear (-C) data before send
+
 * Wed Oct 5 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.4-1
 - [FEATURE] added support for build with Copr
 
