@@ -12,9 +12,9 @@ programs using hardcoded names for cmake.
 %install
 mkdir %{buildroot}%{_bindir} -p
 
-ln -s cmake %{buildroot}%{_bindir}/cmake3
-ln -s cpack %{buildroot}%{_bindir}/cpack3
+ln -s cmake3 %{buildroot}%{_bindir}/cmake
+ln -s cpack3 %{buildroot}%{_bindir}/cpack
 
 %files
-%{_bindir}/cmake3
-%{_bindir}/cpack3
+%{_bindir}/cmake
+%{_bindir}/cpack
