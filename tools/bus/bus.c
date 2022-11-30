@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
 
 	comp = nfb_comp_open(dev, node);
 	if (comp == NULL) {
-		if (compatible == compatible_mi)
+		if (dtpath == NULL && compatible == compatible_mi)
 			errx(1, "Can't open MI bus, enable debug mode in driver");
 		else
 			errx(1, "Can't open component, check for valid FDT");
