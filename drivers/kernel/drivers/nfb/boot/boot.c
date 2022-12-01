@@ -261,7 +261,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 		boot->sdm = sdm_init(nfb, fdt_offset, nfb->nfb_pci_dev->name);
 
 		prop32 = fdt_getprop(nfb->fdt, fdt_offset, "boot_en", &len);
-		if (boot->sdm && len == sizeof(*prop) && fdt32_to_cpu(*prop32) != 0) {
+		if (boot->sdm && len == sizeof(*prop32) && fdt32_to_cpu(*prop32) != 0) {
 			boot->sdm_boot_en = 1;
 		}
 	}
