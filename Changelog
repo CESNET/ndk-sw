@@ -1,3 +1,6 @@
+* Mon Dec 5 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.7-1
+- [BUGFIX] fixed flashing of the firmware into 400G1 card.
+
 * Tue Nov 15 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.5-1
 - [FEATURE] added base support Intel FPGA Secure Device Manager
 - [FEATURE] added API for libnfb extensions
