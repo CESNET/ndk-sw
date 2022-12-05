@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NDP API &mdash; NFB Software User Guide 6.16.0 documentation</title>
@@ -139,13 +139,13 @@
 <span id="_CPPv317ndp_open_rx_queueP10nfb_devicej"></span><span id="_CPPv217ndp_open_rx_queueP10nfb_devicej"></span><span id="ndp_open_rx_queue__nfb_deviceP.unsigned"></span><span class="target" id="group__queue__fn_1ga7325e496ac6cc6d71fe6ffaf52e23371"></span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">ndp_open_rx_queue</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">nfb</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">queue_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_open_rx_queueP10nfb_devicej" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Open (subscribe) NDP RX queue. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>nfb</strong> – <strong>[in]</strong> NFB device </p></li>
 <li><p><strong>queue_id</strong> – <strong>[in]</strong> Queue ID </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>NDP RX queue datatype on success, NULL on error </p>
 </dd>
 </dl>
@@ -156,13 +156,13 @@
 <span id="_CPPv317ndp_open_tx_queueP10nfb_devicej"></span><span id="_CPPv217ndp_open_tx_queueP10nfb_devicej"></span><span id="ndp_open_tx_queue__nfb_deviceP.unsigned"></span><span class="target" id="group__queue__fn_1gab5c53da19812201db78a21569084959d"></span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">ndp_open_tx_queue</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">nfb</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">queue_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_open_tx_queueP10nfb_devicej" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Open (subscribe) NDP TX queue. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>nfb</strong> – <strong>[in]</strong> NFB device </p></li>
 <li><p><strong>queue_id</strong> – <strong>[in]</strong> Queue ID </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>NDP TX queue datatype on success, NULL on error </p>
 </dd>
 </dl>
@@ -175,7 +175,7 @@
 <p>
 The queue must not be used after this function is called and should be set to NULL by the application. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP RX queue</p>
 </dd>
 </dl>
@@ -188,7 +188,7 @@ The queue must not be used after this function is called and should be set to NU
 <p>
 The queue must not be used after this function is called and should be set to NULL by the application. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP TX queue</p>
 </dd>
 </dl>
@@ -204,10 +204,10 @@ The queue must not be used after this function is called and should be set to NU
 <p>
 When this function is called, RX queue become able to receive packets (don’t mistake this with RXMAC control), or TX queue become able to transmit packets. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP queue </p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>NDP_OK on success, nonzero error code otherwise</p>
 </dd>
 </dl>
@@ -220,10 +220,10 @@ When this function is called, RX queue become able to receive packets (don’t m
 <p>
 When this function is called, it stops the delivery of packets to the queue. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP queue </p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>NDP_OK on success, nonzero error code otherwise</p>
 </dd>
 </dl>
@@ -258,14 +258,14 @@ while (!STOPPED) {
 <p>Traffic must be started (see <a class="reference internal" href="#group__queue__fn_1ga23ce29ef7e099abb6909626b36ecf0f0"><span class="std std-ref">ndp_queue_start</span></a>)</p>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>queue</strong> – <strong>[in]</strong> NDP RX queue </p></li>
 <li><p><strong>packets</strong> – <strong>[out]</strong> Array of NDP packet structs </p></li>
 <li><p><strong>count</strong> – <strong>[in]</strong> Maximal count of packets to read (length of <code class="docutils literal notranslate"><span class="pre">packets</span></code>) </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Count of actually read packets</p>
 </dd>
 </dl>
@@ -283,7 +283,7 @@ This function should be called when the application has finished processing the 
 </div>
 </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP RX queue</p>
 </dd>
 </dl>
@@ -322,14 +322,14 @@ while (!STOPPED) {
 </div>
  </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>queue</strong> – <strong>[in]</strong> NDP TX queue </p></li>
 <li><p><strong>packets</strong> – <strong>[inout]</strong> NDP packet structs with <strong>only sizes filled</strong> </p></li>
 <li><p><strong>count</strong> – <strong>[in]</strong> Maximal count of retrieved placeholders (length of <code class="docutils literal notranslate"><span class="pre">packets</span></code>) </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Count of actually retrieved placeholders</p>
 </dd>
 </dl>
@@ -344,7 +344,7 @@ This function must be called after (1 or more) call to <a class="reference inter
 <p>See <a class="reference internal" href="#group__rx__functions_1gace0138339566803fc51e2e331055caa7"><span class="std std-ref">ndp_rx_burst_put</span></a> for the API usage and caveats.</p>
 <p>Also be aware, that the library tries to hold NDP packets for best performance, thus they doesn’t have to be send immediately. See ndp_tx_burst_flush. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP TX queue</p>
 </dd>
 </dl>
@@ -368,14 +368,14 @@ while (!STOPPED) {
 </div>
  </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>queue</strong> – <strong>[in]</strong> NDP TX queue </p></li>
 <li><p><strong>packets</strong> – <strong>[in]</strong> NDP packet structs filled with packet data </p></li>
 <li><p><strong>count</strong> – <strong>[in]</strong> Count of packets to write </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Count of actually written packets</p>
 </dd>
 </dl>
@@ -389,10 +389,10 @@ while (!STOPPED) {
 <span id="_CPPv323ndp_queue_get_numa_nodePK9ndp_queue"></span><span id="_CPPv223ndp_queue_get_numa_nodePK9ndp_queue"></span><span id="ndp_queue_get_numa_node__ndp_queueCP"></span><span class="target" id="group__info__functions_1gae089ffa674a01ce0ebb440a1f1bd4de2"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_queue_get_numa_node</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">ndp_queue</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv423ndp_queue_get_numa_nodePK9ndp_queue" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Get number of NDP queue NUMA node. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP queue </p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>NUMA node number on success, negative error code otherwise </p>
 </dd>
 </dl>
