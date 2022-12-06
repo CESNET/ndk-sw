@@ -12,6 +12,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct nfb_device;
 struct nfb_bus;
 struct nfb_comp;
@@ -44,5 +48,9 @@ struct libnfb_ext_ops {
 };
 
 typedef int libnfb_ext_get_ops_t(const char *devname, struct libnfb_ext_ops *ops);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* LIBNFB_EXTENSION_H */ 

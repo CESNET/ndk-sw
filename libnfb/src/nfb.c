@@ -116,6 +116,8 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 					}
 				}
 			}
+		} else {
+			fprintf(stderr, "libnfb fatal: can't open extension library '%s': %s\n", ext_name, dlerror());
 		}
 		free(ext_name);
 	}
