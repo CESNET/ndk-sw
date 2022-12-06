@@ -35,6 +35,7 @@ set(RELEASE "${GIT_VERSION_RELEASE}")
 
 add_subdirectory(drivers)
 add_subdirectory(libnfb)
+add_subdirectory(ext)
 add_subdirectory(tools)
 add_subdirectory(tools-debug)
 add_subdirectory(tools-misc)
