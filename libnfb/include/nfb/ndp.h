@@ -10,6 +10,10 @@
 #ifndef LIBNFB_NDP_H
 #define LIBNFB_NDP_H
 
+#ifndef __KERNEL__
+#include <stdint.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -47,9 +51,21 @@ typedef struct ndp_queue ndp_tx_queue_t;
 struct ndp_packet {
 	unsigned char *data;        //!< Packet data location
 	unsigned char *header;      //!< Packet metadata location
-	unsigned data_length;       //!< Packet data length
-	unsigned header_length;     //!< Packet metadata length
+	uint32_t data_length;       //!< Packet data length
+	uint16_t header_length;     //!< Packet metadata length
+	uint16_t flags;             //!< Packet specific flags
 };
+
+/* For TX must be called before ndp_tx_burst_get is issued */
+static inline void ndp_packet_flag_header_id_set(struct ndp_packet *p, uint8_t id)
+{
+	p->flags = (p->flags & ~0x3) | (id & 0x3);
+}
+
+static inline uint8_t ndp_packet_flag_header_id_get(struct ndp_packet *p)
+{
+	return p->flags & 0x3;
+}
 
 /*!
  * \brief Library error codes

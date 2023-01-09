@@ -214,6 +214,7 @@ static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 		/* Write NDP TX header */
 		hdr->packet_size = cpu_to_le16(packet_size);
 		hdr->header_size = header_size;
+		hdr->flags = packets[i].flags & 0xF;
 
 		if (modify_hdr_off) {
 			/* INFO: packet header must be right before packet data in NO_BUFFER mode */
