@@ -242,9 +242,9 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	printf("--------------------------------------- Board info ----\n");
 
 	fdt_offset = fdt_path_offset(fdt, "/board/");
-	prop = fdt_getprop(fdt, fdt_offset, "card-name", &len);
+	prop = fdt_getprop(fdt, fdt_offset, "board-name", &len);
 	if (len > 0)
-		printf("Card name                  : %s\n", (const char *)prop);
+		printf("Board name                 : %s\n", (const char *)prop);
 
 	prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
 	if (len == sizeof(*prop32))
@@ -276,6 +276,10 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	printf("------------------------------------ Firmware info ----\n");
 
 	fdt_offset = fdt_path_offset(fdt, "/firmware/");
+
+	prop = fdt_getprop(fdt, fdt_offset, "card-name", &len);
+	if (len > 0)
+		printf("Card name                  : %s\n", (const char *)prop);
 
 	prop = fdt_getprop(fdt, fdt_offset, "project-name", &len);
 	if (len > 0)
