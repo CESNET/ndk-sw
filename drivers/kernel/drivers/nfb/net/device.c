@@ -91,7 +91,7 @@ static const int SFF8636_STXDISABLE = 86;
 static void nfb_net_transceiver_on(struct net_device *netdev)
 {
 	struct nfb_net_device *priv = netdev_priv(netdev);
-	uint8_t currval;
+	uint8_t currval = 0;
 
 	if (!net_transceiver_control)
 		return;
@@ -119,7 +119,7 @@ static void nfb_net_transceiver_on(struct net_device *netdev)
 static void nfb_net_transceiver_off(struct net_device *netdev)
 {
 	struct nfb_net_device *priv = netdev_priv(netdev);
-	uint8_t currval;
+	uint8_t currval = 0;
 
 	// Empty operation if transceiver control not enabled
 	if (!net_transceiver_control)
