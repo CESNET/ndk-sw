@@ -48,6 +48,48 @@ static inline int nc_strtol(char *str, long *output)
 	return 0;
 }
 
+static inline long long nc_strtoll(char *str, long long *output)
+{
+	char *end;
+
+	if (!str)
+		return -1;
+
+	*output = strtoll(str, &end, 0);
+
+	if (*end != '\0')
+		return -1;
+	return 0;
+}
+
+static inline unsigned long long int nc_strtoull(char *str, unsigned long long int *output)
+{
+	char *end;
+
+	if (!str)
+		return -1;
+
+	*output = strtoull(str, &end, 0);
+
+	if (*end != '\0')
+		return -1;
+	return 0;
+}
+
+static inline unsigned long nc_strtoul(char *str, unsigned long *output)
+{
+	char *end;
+
+	if (!str)
+		return -1;
+
+	*output = strtoul(str, &end, 0);
+
+	if (*end != '\0')
+		return -1;
+	return 0;
+}
+
 static inline unsigned long nc_xstrtoul(const char *str, int base)
 {
 	char *end;
