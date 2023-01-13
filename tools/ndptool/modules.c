@@ -20,10 +20,10 @@ void ndp_mode_transmit_print_help(void);
 void ndp_mode_loopback_hw_print_help(void);
 void ndp_mode_loopback_hw_print_latency(struct stats_info *si);
 
-int ndp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, const char *optarg);
-int ndp_mode_receive_parseopt(struct ndp_tool_params *p, int opt, const char *optarg);
-int ndp_mode_transmit_parseopt(struct ndp_tool_params *p, int opt, const char *optarg);
-int ndp_mode_loopback_hw_parseopt(struct ndp_tool_params *p, int opt, const char *optarg);
+int ndp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int ndp_mode_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int ndp_mode_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int ndp_mode_loopback_hw_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
 
 int ndp_mode_generate_check(struct ndp_tool_params *p);
 int ndp_mode_receive_check(struct ndp_tool_params *p);

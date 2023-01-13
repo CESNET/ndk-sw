@@ -219,7 +219,7 @@ void ndp_mode_generate_print_help()
 /*	printf("  -T content    Packet content [george, dns]\n"); */
 }
 
-int ndp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, const char *optarg)
+int ndp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg)
 {
 	switch (opt) {
 	case 's':

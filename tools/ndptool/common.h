@@ -146,7 +146,7 @@ struct ndptool_module {
 	void (*print_help)(void);
 	int (*init)(struct ndp_tool_params *p);
 	int (*check)(struct ndp_tool_params *p);
-	int (*parse_opt)(struct ndp_tool_params *p, int opt, const char *optarg);
+	int (*parse_opt)(struct ndp_tool_params *p, int opt, char *optarg);
 	int (*run_single)(struct ndp_tool_params *p);
 	void *(*run_thread)(void *tmp);
 	void (*destroy)(struct ndp_tool_params *p);

@@ -132,10 +132,11 @@ int main(int argc, char *argv[])
 	struct thread_data **thread_data;
 	struct list_range queue_range;
 
-	int interval = 1;
+	long long interval = 1;
 	bool quiet = 0;
 	unsigned thread_cnt = 0;
 	enum ndp_modules mode;
+	unsigned long ulparam;
 
 	void *(*thread_func) (void *);
 	const char *strmode;
@@ -216,12 +217,14 @@ int main(int argc, char *argv[])
 				errx(-1, "Cannot parse queue range");
 			break;
 		case 'I':
-			params.si.sampling = interval = atoi(optarg);
+			if (nc_strtoll(optarg, &interval))
+				errx(-1, "Cannot parse interval parameter");
+			params.si.sampling = interval;
 			break;
 		case 'B':
-			RX_BURST = TX_BURST = atoi(optarg);
-			if (RX_BURST<1 || RX_BURST>1024)
+			if (nc_strtoul(optarg, &ulparam) || ulparam < 1 || ulparam > 1024)
 				errx(-1, "Burst size must be bigger then 0 and smaller or equal then 1024");
+			RX_BURST = TX_BURST = ulparam;
 			break;
 		case 'R':
 			params.si.incremental = true;
@@ -233,10 +236,12 @@ int main(int argc, char *argv[])
 			usage(argv[0], strmode == argv[1]);
 			exit(0);
 		case 'b':
-			params.limit_bytes = atoi(optarg);
+			if (nc_strtoull(optarg, &params.limit_bytes))
+				errx(-1, "Cannot parse byte limit parameter");
 			break;
 		case 'p':
-			params.limit_packets = atoi(optarg);
+			if (nc_strtoull(optarg, &params.limit_packets))
+				errx(-1, "Cannot parse packet limit parameter");
 			break;
 		default:
 			if (module->parse_opt == NULL || module->parse_opt(&params, opt, optarg))

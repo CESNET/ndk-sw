@@ -287,14 +287,15 @@ void ndp_mode_transmit_print_help()
 	printf("  -L bytes      Minimal allowed frame length\n");
 }
 
-int ndp_mode_transmit_parseopt(struct ndp_tool_params *p, int opt, const char *optarg)
+int ndp_mode_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg)
 {
 	switch (opt) {
 	case 'f':
 		p->pcap_filename = optarg;
 		break;
 	case 'l':
-		p->mode.transmit.loops = atoi(optarg);
+		if (nc_strtoul(optarg, &p->mode.transmit.loops))
+			errx(-1, "Cannot parse loops parameter");
 		break;
 	case 'Z':
 		p->mode.transmit.do_cache = false;
@@ -303,10 +304,12 @@ int ndp_mode_transmit_parseopt(struct ndp_tool_params *p, int opt, const char *o
 		p->mode.transmit.multiple_pcaps = true;
 		break;
 	case 's':
-		p->mode.transmit.mbps = strtoull(optarg, NULL, 0);
+		if (nc_strtoull(optarg, &p->mode.transmit.mbps))
+			errx(-1, "Cannot parse mbps parameter");
 		break;
 	case 'L':
-		p->mode.transmit.min_len = atoi(optarg);
+		if (nc_strtoul(optarg, &p->mode.transmit.min_len))
+			errx(-1, "Cannot parse min_len parameter");
 		break;
 	default:
 		return -1;

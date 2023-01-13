@@ -440,7 +440,6 @@ void usage()
 int main(int argc, char *argv[])
 {
 	char *path = NFB_DEFAULT_DEV_PATH;
-	int tmp;
 	char c;
 	long param;
 	int index = 0;
@@ -448,10 +447,9 @@ int main(int argc, char *argv[])
 	while ((c = getopt(argc, argv, ARGUMENTS)) != -1) {
 		switch (c) {
 			case 'c': /* Select source CLK signal */
-				tmp = atoi(optarg);
-				if (tmp > 1 || tmp < 0)
+				if (nc_strtol(optarg, &param) || param > 1 || param < 0)
 					errx(EINVAL, "Invalid CLK source. Please specify number 0 or 1.");
-				arg_clk_source = tmp;
+				arg_clk_source = param;
 				break;
 
 			case 'd':
