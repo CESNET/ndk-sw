@@ -294,7 +294,8 @@ unsigned ndp_tx_burst_copy(ndp_tx_queue_t *queue, struct ndp_packet *packets, un
  * \param[in]    queue    NDP TX queue
  * \param[inout] packets  NDP packet structs with <b>only sizes filled</b>
  * \param[in]    count    Maximal count of retrieved placeholders (length of \p packets)
- * \return Count of actually retrieved placeholders
+ * \return Count of actually retrieved placeholders.
+ *         Current implemenation returns either requested \p count or zero; no values in between.
  *
  * This function allocates NDP frame \b placeholders in the TX queue and sets the
  * pointers to them to the structs in \p packets parameter. To do this, the
