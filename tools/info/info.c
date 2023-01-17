@@ -38,6 +38,7 @@ enum commands {
 // this enum need to corespond with queries[] array
 enum queries {
 	QUERY_PROJECT,
+	QUERY_PROJECT_VERSION,
 	QUERY_BUILD,
 	QUERY_RX,
 	QUERY_TX,
@@ -49,6 +50,7 @@ enum queries {
 };
 static const char * const queries[] = {
 	"project",
+	"project-version",
 	"build",
 	"rx",
 	"tx",
@@ -66,6 +68,7 @@ void usage(const char *progname, int verbose)
 	printf("-q query        Get specific informations%s\n", verbose ? "" : " (-v for more info)");
 	if (verbose) {
 		printf(" * project          Project name\n");
+		printf(" * project-version  Project version\n");
 		printf(" * build            Build time\n");
 		printf(" * rx               RX queues\n");
 		printf(" * tx               TX queues\n");
@@ -109,6 +112,7 @@ int print_specific_info(struct nfb_device *dev, int query)
 	/* FDT String properties */
 	switch (query) {
 	case QUERY_PROJECT: prop = fdt_getprop(fdt, fdt_offset, "project-name", &len); break;
+	case QUERY_PROJECT_VERSION: prop = fdt_getprop(fdt, fdt_offset, "project-version", &len); break;
 	case QUERY_CARD: prop = fdt_getprop(fdt, fdt_offset, "card-name", &len); break;
 	case QUERY_PCI:
 		fdt_offset = fdt_path_offset(fdt, "/system/device/endpoint0");
