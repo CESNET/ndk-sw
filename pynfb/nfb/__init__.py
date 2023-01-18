@@ -1,8 +1,9 @@
 "Software for control of the CESNET NDK based FPGA acceleration cards"
 
-__all__ = ["open"]
+__all__ = ["open", "eth"]
 
 from . import libnfb
+from . import eth
 
 def open(path: str = '0'):
     """Open a handle to NFB device in system
@@ -12,4 +13,5 @@ def open(path: str = '0'):
     """
 
     dev = libnfb.Nfb(path)
+    eth.EthManager(dev)
     return dev
