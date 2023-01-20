@@ -24,6 +24,7 @@ extern "C" {
 struct nc_mdio {
 	int (*mdio_read)(struct nfb_comp *dev, int prtad, int devad, uint16_t addr);
 	int (*mdio_write)(struct nfb_comp *dev, int prtad, int devad, uint16_t addr, uint16_t val);
+	int pcspma_is_e_tile;
 	int pcspma_is_f_tile;
 };
 
@@ -39,11 +40,16 @@ static inline struct nc_mdio *nc_mdio_open(const struct nfb_device *dev, int fdt
 	struct nc_mdio *mdio;
 	struct nfb_comp *comp;
 	const struct fdt_property *prop;
+        int e_tile = 0;
         int f_tile = 0;
 
 	prop = fdt_get_property(nfb_get_fdt(dev), fdt_offset_ctrlparam, "ip-name", NULL);
-	if (prop && (strcmp(prop->data, "F_TILE") == 0)) {
-		f_tile = 1;
+	if (prop) {
+		if (strcmp(prop->data, "E_TILE") == 0) {
+			e_tile = 1;
+		} else if (strcmp(prop->data, "F_TILE") == 0) {
+			f_tile = 1;
+		}
 	}
 
 	comp = nc_mdio_ctrl_open_ext(dev, fdt_offset, sizeof(struct nc_mdio));
@@ -51,6 +57,7 @@ static inline struct nc_mdio *nc_mdio_open(const struct nfb_device *dev, int fdt
 		mdio = (struct nc_mdio *) nfb_comp_to_user(comp);
 		mdio->mdio_read = nc_mdio_ctrl_read;
 		mdio->mdio_write = nc_mdio_ctrl_write;
+		mdio->pcspma_is_e_tile = e_tile;
 		mdio->pcspma_is_f_tile = f_tile;
 		return mdio;
 	}
@@ -60,6 +67,7 @@ static inline struct nc_mdio *nc_mdio_open(const struct nfb_device *dev, int fdt
 		mdio = (struct nc_mdio *) nfb_comp_to_user(comp);
 		mdio->mdio_read = nc_mdio_dmap_read;
 		mdio->mdio_write = nc_mdio_dmap_write;
+		mdio->pcspma_is_e_tile = e_tile;
 		mdio->pcspma_is_f_tile = f_tile;
 		return mdio;
 	}
@@ -112,6 +120,12 @@ static inline void nc_mdio_ftile_fgt_attribute_write(struct nc_mdio *mdio, int p
         page = lane + 1; // page number corresponds to lane number + 1
 	LINK_MNG_SIDE_CPI_REGS = 0x0009003c + (channel >> 2) * 0x00400000;
 	PHY_SIDE_CPI_REGS      = 0x00090040 + (channel >> 2) * 0x00400000;
+
+	/* F-Tile addresses are aligned to 4-byte boundary, thus have to be
+	 * shifted to right by 2 bits
+	 */
+	LINK_MNG_SIDE_CPI_REGS >>= 2;
+	PHY_SIDE_CPI_REGS >>= 2;
 
 	options = FGT_ATTRIBUTE_ACCESS_OPTION_SET | FGT_ATTRIBUTE_ACCESS_OPTION_SERVICE_REQ;
 	reg = fgt_attribute_access(opcode, lane, options, data);
@@ -167,6 +181,62 @@ static inline void nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int pr
 	nc_mdio_ftile_reset(mdio, prtad, 1, 0); // deassert RX reset
 }
 
+static inline void nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int prtad, uint16_t lane, uint16_t code_addr, uint16_t code_val)
+{
+	uint32_t page = lane + 1; // page number corresponds to lane number + 1
+
+	/* PMA Avalon memory-mapped interface
+	 *   See https://www.intel.com/content/www/us/en/docs/programmable/683723/current/pma-attribute-details.html
+	 *       https://www.intel.com/content/www/us/en/docs/programmable/683723/current/reconfiguring-the-duplex-pma-using-the.html
+	 */
+	uint32_t PMA_ATTR_CODE_VAL_L        = 0x84;
+	uint32_t PMA_ATTR_CODE_VAL_H        = 0x85;
+	uint32_t PMA_ATTR_CODE_ADDR_L       = 0x86;
+	uint32_t PMA_ATTR_CODE_ADDR_H       = 0x87;
+	uint32_t PMA_ATTR_CODE_REQ_STATUS_L = 0x8A;
+	uint32_t PMA_ATTR_CODE_REQ_STATUS_H = 0x8B;
+	uint32_t PMA_ATTR_CODE_REQ          = 0x90;
+
+	uint32_t code_val_l  =  code_val & 0xFF;
+	uint32_t code_val_h  = (code_val >> 8) & 0xFF;
+	uint32_t code_addr_l =  code_addr & 0xFF;
+	uint32_t code_addr_h = (code_addr >> 8) & 0xFF;
+
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+
+	uint32_t ret;
+	int retries = 0;
+
+	/* Set PMA attribute code address and data */
+	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_VAL_L, code_val_l);
+	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_VAL_H, code_val_h);
+	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_ADDR_L, code_addr_l);
+	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_ADDR_H, code_addr_h);
+	/* Issue PMA attribute code request */
+	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ, 1);
+	/* Verify that PMA attribute code request has been sent */
+	ret = nc_mdio_dmap_drp_read(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L);
+	if (((ret >> 7) & 0x01) != 1) {
+		return;
+	}
+	/* Wait until PMA attribute code request is completed */
+	do {
+		ret = nc_mdio_dmap_drp_read(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_H);
+	} while (((ret & 0x01) != 0) && (++retries < 1000));
+	/* Clear PMA attribute code request sent flag */
+	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
+}
+
+static inline void nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
+{
+	int i;
+	uint16_t data = enable ? 0x0301 : 0x0300; // enable or disable loopback?
+
+	for (i = 0; i < 4; i++) {
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, data);
+	}
+}
+
 static inline void nc_mdio_close(struct nc_mdio *m)
 {
 	nfb_comp_close(nfb_user_to_comp(m));
@@ -181,20 +251,35 @@ static inline int nc_mdio_read(struct nc_mdio *mdio, int prtad, int devad, uint1
 static inline int nc_mdio_write(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr, uint16_t val)
 {
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+	void (*nc_mdio_fixup_set_mode)(struct nc_mdio *mdio, int prtad, uint16_t val) = NULL;
+	void (*nc_mdio_fixup_set_loopback)(struct nc_mdio *mdio, int prtad, int enable) = NULL;
 
-	if ((mdio->pcspma_is_f_tile) && (mdio->mdio_write == nc_mdio_dmap_write)) {
+	/* Select correct set of FIXUP functions */
+	if (mdio->pcspma_is_e_tile) {
+		nc_mdio_fixup_set_mode = NULL;
+		nc_mdio_fixup_set_loopback = nc_mdio_fixup_etile_set_loopback;
+	} else if (mdio->pcspma_is_f_tile) {
+		nc_mdio_fixup_set_mode = nc_mdio_fixup_ftile_set_mode;
+		nc_mdio_fixup_set_loopback = nc_mdio_fixup_ftile_set_loopback;
+	}
+
+	/* If relevant, apply corresponding FIXUP function */
+	if ((mdio->pcspma_is_e_tile || mdio->pcspma_is_f_tile) &&
+	    (mdio->mdio_write == nc_mdio_dmap_write)) {
 		/* 1.0.0: PMA/PMD control 1: PMA local loopback */
 		if (devad == 1 && addr == 0) {
 			uint16_t req_state = val & 1;
 			uint16_t curr_state = mdio->mdio_read(comp, prtad, devad, addr) & 1;
 			if (req_state != curr_state) {
-				nc_mdio_fixup_ftile_set_loopback(mdio, prtad, req_state);
+				nc_mdio_fixup_set_loopback(mdio, prtad, req_state);
 			}
 		/* 1.7.6:0: PMA/PMD control 2: PMA/PMD type selection */
 		} else if (devad == 1 && addr == 7) {
-			nc_mdio_fixup_ftile_set_mode(mdio, prtad, val & 0x7F);
+			nc_mdio_fixup_set_mode(mdio, prtad, val & 0x7F);
 		}
 	}
+
+	/* Apply standard function */
 	return mdio->mdio_write(comp, prtad, devad, addr, val);
 }
 

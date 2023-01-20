@@ -67,7 +67,6 @@ static inline void __nc_mdio_dmap_drp_access(struct nfb_comp *comp, int prtad __
 	const int VS_DRP_ADDR = VS + 0x14;
 	const int VS_DRP_CTRL = VS + 0x18;
 
-	addr >>= 2;
 	nfb_comp_write32(comp, VS_DRP_ADDR, addr);
 	if (rw)
 		nfb_comp_write32(comp, VS_DRP_DATA, *data);
