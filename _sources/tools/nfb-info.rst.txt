@@ -23,3 +23,23 @@ Supported queries are:
 - *pci*:      PCI slot number of the primary endpoint
 - *numa*:     Numa node of the primary endpoint
 
+
+Board name / card name
+~~~~~~~~~~~~~~~~~~~~~~
+
+- Board name is a label assembled by the software driver
+- Card name is a label embedded in the firmware
+
+Board name can vary with specific modifications/configurations of the base hardware, for example:
+Card-name "100G2" has two variants with board-name "100G2Q", "100G2C".
+The firmware should be safe-to-use between different board-names,
+although it can have limited functionality.
+
+On the other side, card-name label should distinguish between
+hardware with non-compatible firmware, for example:
+The "400G1" card has currently two revision, but the firmware is
+incompatible between them. Therefore it is necessary to have two
+different card-name labels.
+
+:ref:`nfb-boot<nfb_boot>` compares card-name labels and ensures and refuses to flash
+firmware with unequal card-name.
