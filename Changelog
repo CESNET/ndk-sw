@@ -1,3 +1,9 @@
+* Fri Jan 27 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.0-1
+- [FEATURE] added gRPC libnfb-ext for remote operations
+- [FEATURE] added flags field to ndp_packet
+- [FEATURE] added fixups for Intel E-Tile ethernet with MDIO
+- [MAINTENANCE] DMA Medusa control functions moved to libnetcope
+
 * Mon Dec 5 2022 Martin Spinler <spinler@cesnet.cz> - 6.16.7-1
 - [BUGFIX] fixed flashing of the firmware into 400G1 card.
 
