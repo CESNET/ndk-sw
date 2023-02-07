@@ -161,6 +161,8 @@ long nfb_boot_ioctl_reload(struct nfb_boot *boot, int * __user _image)
 
 		if (fdt32_to_cpu(*prop) == image) {
 			fdt_offset = node;
+			node = fdt_subnode_offset(boot->nfb->fdt, node, "control-param");
+			prop = fdt_getprop(boot->nfb->fdt, node, "base", &proplen);
 			break;
 		}
 	}
@@ -169,6 +171,11 @@ long nfb_boot_ioctl_reload(struct nfb_boot *boot, int * __user _image)
 		return -ENODEV;
 
 	boot->num_image = image;
+
+	/* overwrite boot->num_image (boot_id) with the actual address of the image (for the purpose of RSU) */
+	if (boot->sdm && boot->sdm_boot_en && proplen == sizeof(*prop)) {
+		boot->num_image = fdt32_to_cpu(*prop);
+	}
 
 	return nfb_char_set_lr_callback(boot->nfb, nfb_boot_reload, boot);
 }
@@ -256,6 +263,8 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	boot->nfb = nfb;
 
 	/* Cards with Intel FPGA (Stratix10, Agilex) use Secure Device Manager for QSPI Flash access and Boot */
+	boot->sdm = NULL;
+	boot->sdm_boot_en = 0;
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,intel_sdm_controller");
 	if (fdt_offset >= 0) {
 		boot->sdm = sdm_init(nfb, fdt_offset, nfb->nfb_pci_dev->name);
@@ -275,10 +284,15 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 		boot->spi = spi_alloc_device(spi_master);
 
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,boot_controller");
+	// FIXME: better create some general boot controller interface
 	if (fdt_offset < 0) {
-		ret = -ENODEV;
-		dev_warn(&nfb->pci->dev, "nfb_boot: No boot_controller found in FDT.\n");
-		goto err_nocomp;
+		if (boot->sdm_boot_en == 0) {
+			ret = -ENODEV;
+			dev_warn(&nfb->pci->dev, "nfb_boot: No boot_controller found in FDT.\n");
+			goto err_nocomp;
+		} else {
+			fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,intel_sdm_controller");
+		}
 	}
 
 	boot->comp = nfb_comp_open(nfb, fdt_offset);

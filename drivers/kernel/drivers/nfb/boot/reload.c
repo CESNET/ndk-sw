@@ -152,6 +152,8 @@ int nfb_boot_reload(void *arg)
 	if (boot->controller_type == 3) {
 		uint64_t cmd = (0x7l << 60) | (7l << 48) | boot->num_image;
 		nfb_comp_write64(boot->comp, 0, cmd);
+	} else if (boot->sdm && boot->sdm_boot_en) {
+		sdm_rsu_image_update(boot->sdm, boot->num_image);
 	} else {
 		nfb_comp_write32(boot->comp, 0, boot->num_image);
 		nfb_comp_write32(boot->comp, 4, 0xE0000000);

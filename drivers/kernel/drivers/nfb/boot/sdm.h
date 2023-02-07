@@ -125,5 +125,14 @@ int sdm_qspi_erase(struct spi_nor *nor, loff_t off);
  */
 int sdm_get_temperature(struct sdm *sdm, int32_t *temperature);
 
+/** @brief Reconfigure FPGA from specified image.
+ *
+ *  @param sdm Pointer to SDM struct.
+ *  @param addr Lower 32 bits of the image address.
+ *
+ *  @return Returns 0 on success or negative number indicating error.
+ *
+ */
+int sdm_rsu_image_update(struct sdm *sdm, uint32_t addr);
 
 #endif
