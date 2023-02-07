@@ -70,6 +70,8 @@
 #define SDM_QSPI_ERASE_OP                 0x38
 // sensors commands
 #define SDM_GET_TEMPERATURE_OP            0x19
+// RSU commands
+#define SDM_RSU_IMAGE_UPDATE_OP           0x5C
 
 // auxiliary macros
 #define WORD_WIDTH                           4
@@ -82,6 +84,7 @@ struct sdm {
 	unsigned cmd_id;
 	struct nfb_comp *comp;
 	const char *card_name;
+	unsigned locked;
 };
 
 static inline unsigned int sdm_len_bytes_to_words(size_t bytes)
@@ -101,6 +104,7 @@ struct sdm *sdm_init(struct nfb_device *nfb, int fdt_offset, const char *name)
 		goto err_comp_open;
 
 	sdm->card_name = name;
+	sdm->locked = 0;
 
 	return sdm;
 
@@ -311,8 +315,6 @@ static void sdm_unlock(struct nfb_comp *comp)
 	nfb_comp_unlock(comp, SDM_COMP_LOCK);
 }
 
-/* FIXME: Ensure call sdm_qspi_prepare and sdm_qspi_unprepare when using any QSPI access.
- * Currenty the kernel API calls those functions for read/write but not for register access */
 int sdm_qspi_prepare(struct spi_nor *nor, enum spi_nor_ops ops)
 {
 	uint32_t cs = 0;
@@ -336,6 +338,7 @@ int sdm_qspi_prepare(struct spi_nor *nor, enum spi_nor_ops ops)
 	if ((ret = sdm_get_data(boot->sdm, NULL, 0)) < 0)
 		goto err_cs;
 
+	boot->sdm->locked = 1;
 	return 0;
 
 err_cs:
@@ -354,6 +357,7 @@ void sdm_qspi_unprepare(struct spi_nor *nor, enum spi_nor_ops ops)
 	sdm_send_header(boot->sdm, SDM_QSPI_CLOSE_OP, 0);
 	sdm_get_data(boot->sdm, NULL, 0);
 	sdm_unlock(boot->comp);
+	boot->sdm->locked = 0;
 }
 
 ssize_t sdm_qspi_read(struct spi_nor *nor, loff_t from, size_t len, u_char *buf)
@@ -390,20 +394,56 @@ int sdm_qspi_read_reg(struct spi_nor *nor, u8 opcode, u8 *buf, int len)
 	int ret;
 	struct nfb_boot *boot = (struct nfb_boot *)nor->priv;
 
+	// max number of bytes to read
+	int len_base = 8;
+	u8 buf_base[len_base];
+
+	int vendor_id;
+	int device_id;
+
+	int locked_before = 1;
+
+	if (boot->sdm->locked == 0) {
+		locked_before = 0;
+		ret = sdm_qspi_prepare(nor, SPI_NOR_OPS_READ);
+		if (ret < 0)
+			goto err_prep;
+	}
+
 	ret = sdm_send_header(boot->sdm, SDM_QSPI_READ_DEVICE_REG_OP, 2);
 	if (ret < 0)
-		return ret;
+		goto err_hdr;
+
+	if (opcode == 0x9f) {
+		opcode = 0x9e;
+	}
 
 	// 1. argument = opcode for the read command
 	sdm_send_data(boot->sdm, &opcode, 1, 0);
 	// 2. argument = number of bytes to read
-	sdm_send_data(boot->sdm, &len, WORD_WIDTH, 1);
+	sdm_send_data(boot->sdm, &len_base, WORD_WIDTH, 1);
 
-	ret = sdm_get_data(boot->sdm, buf, len);
+	ret = sdm_get_data(boot->sdm, buf_base, len_base);
 	if (ret < 0)
-		return ret;
+		goto err_get;
 
-	return 0;
+	// return JEDEC ID in expected format
+	if (opcode == 0x9e) {
+		vendor_id = ((int *)buf_base)[0];
+		device_id = ((int *)buf_base)[1];
+		((int *)buf_base)[0] = device_id;
+		((int *)buf_base)[1] = vendor_id;
+	}
+
+	memcpy(buf, buf_base, len);
+	ret = 0;
+
+err_get:
+err_hdr:
+	if (locked_before == 0)
+		sdm_qspi_unprepare(nor, SPI_NOR_OPS_READ);
+err_prep:
+	return ret;
 }
 
 ssize_t sdm_qspi_write(struct spi_nor *nor, loff_t to, size_t len, const u_char *buf)
@@ -447,12 +487,21 @@ int sdm_qspi_write_reg(struct spi_nor *nor, u8 opcode, u8 *buf, int len)
 	int ret;
 	struct nfb_boot *boot = (struct nfb_boot *)nor->priv;
 
+	int locked_before = 1;
+
 	// align data length to words
 	words_len = sdm_len_bytes_to_words(len);
 
+	if (boot->sdm->locked == 0) {
+		locked_before = 0;
+		ret = sdm_qspi_prepare(nor, SPI_NOR_OPS_WRITE);
+		if (ret < 0)
+			goto err_prep;
+	}
+
 	ret = sdm_send_header(boot->sdm, SDM_QSPI_WRITE_DEVICE_REG_OP, 2+words_len);
 	if (ret < 0)
-		return ret;
+		goto err_hdr;
 
 	// 1. argument = opcode for the write command
 	sdm_send_data(boot->sdm, &opcode, 1, 0);
@@ -468,9 +517,16 @@ int sdm_qspi_write_reg(struct spi_nor *nor, u8 opcode, u8 *buf, int len)
 	}
 	ret = sdm_get_data(boot->sdm, NULL, 0);
 	if (ret < 0)
-		return ret;
+		goto err_get;
 
-	return 0;
+	ret = 0;
+
+err_get:
+err_hdr:
+	if (locked_before == 0)
+		sdm_qspi_unprepare(nor, SPI_NOR_OPS_WRITE);
+err_prep:
+	return ret;
 }
 
 int sdm_qspi_erase(struct spi_nor *nor, loff_t off)
@@ -518,12 +574,41 @@ int sdm_get_temperature(struct sdm *sdm, int32_t *temperature)
 	if (ret < 0)
 		goto err_get_data;
 
-	sdm_unlock(sdm->comp);
-	return 0;
+	ret = 0;
 
 err_get_data:
 err_send_header:
 	sdm_unlock(sdm->comp);
+	return ret;
+}
 
+int sdm_rsu_image_update(struct sdm *sdm, uint32_t addr)
+{
+	int ret;
+	uint32_t addr_lower = addr;
+	uint32_t addr_upper = 0;
+
+	ret = sdm_try_lock(sdm->comp);
+	if (ret < 0)
+		return -EAGAIN;
+
+	ret = sdm_send_header(sdm, SDM_RSU_IMAGE_UPDATE_OP, 2);
+	if (ret < 0)
+		goto err_send_header;
+
+	// 1. argument = image address offset (lower 32 bits)
+	sdm_send_data(sdm, &addr_lower, WORD_WIDTH, 0);
+	// 2. argument = image address offset (upper 32 bits, write as 0)
+	sdm_send_data(sdm, &addr_upper, WORD_WIDTH, 1);
+
+	ret = sdm_get_data(sdm, NULL, 0);
+	if (ret < 0)
+		goto err_get_data;
+
+	ret = 0;
+
+err_get_data:
+err_send_header:
+	sdm_unlock(sdm->comp);
 	return ret;
 }

@@ -145,6 +145,10 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 	char node_name[NFB_FDT_FIXUP_NODE_NAME_LEN];
 
+	int proplen;
+	const uint32_t *prop32_p;
+	int boot_intel_sdm = 0;
+
 	node = fdt_path_offset(fdt, "/");
 	node = fdt_add_subnode(fdt, node, "system");
 	node = fdt_add_subnode(fdt, node, "device");
@@ -166,8 +170,19 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	}
 
 	node = fdt_node_offset_by_compatible(fdt, -1, "netcope,boot_controller");
-	if (node < 0)
-		return;
+	// FIXME: better create some general boot controller interface
+	if (node < 0) {
+		node = fdt_node_offset_by_compatible(fdt, -1, "netcope,intel_sdm_controller");
+		if (node < 0) {
+			return;
+		} else {
+			prop32_p = fdt_getprop(fdt, node, "boot_en", &proplen);
+			if (proplen != sizeof(*prop32_p) || fdt32_to_cpu(*prop32_p) == 0) {
+				return;
+			}
+			boot_intel_sdm = 1;
+		}
+	}
 
 	/* Add binary slots to DT for coresponding partitions for Flash access and booting */
 	/* TODO - move definition to firmware FDT */
@@ -234,6 +249,19 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 		nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 1, 0x00000000, 0x08000000);
 		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 0, 0x00000000, 0x08000000);
+	} else if (!strcmp(name, "COMBO-GENERIC")) {
+		/* INFO: This setting applies to IA-420F card (boot via SDM ctrl - Intel) */
+		if (boot_intel_sdm) {
+			prop32 = cpu_to_fdt32(1);
+			fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
+			prop32 = cpu_to_fdt32(256 * 1024 * 1024);
+			fdt_appendprop(fdt, node, "mtd_size", &prop32, sizeof(prop32));
+			prop32 = cpu_to_fdt32(28);
+			fdt_appendprop(fdt, node, "mtd_bit", &prop32, sizeof(prop32));
+
+			nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 0, 0, 0, 0x00210000, 0x02000000-0x210000);
+			nfb_fdt_create_binary_slot(fdt, node, "image0", "application0" , 1, 1, 0, 0x02000000, 0x04000000);
+		}
 	}
 
 	subnode = fdt_add_subnode(fdt, node, "control-param");
