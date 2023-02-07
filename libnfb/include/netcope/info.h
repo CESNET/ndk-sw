@@ -157,7 +157,7 @@ struct nc_ifc_info {
 	/* Redundant info for simpler code, can be obtained from struct nc_ifc_map_info */
 	int rxq_cnt;    /* Number of Eth channels associated with this ifc */
 	int txq_cnt;    /* Number of Rx queues associated with this ifc */
-	int eth_cnt;    /* Number of Tx queeus associated with this ifc */
+	int eth_cnt;    /* Number of Tx queues associated with this ifc */
 };
 
 struct nc_ifc_queue_map_info {
@@ -259,10 +259,12 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 		}
 
 		mi->eth = eth_info;
+		mi->eth_cnt++;
+
 		eth_info = &mi->eth[eth];
 
 		eth_info->id = eth++;
-		eth_info->ifc = mi->ifc;
+		eth_info->ifc = info->id;
 		eth_info->config = 0;
 		eth_info->flags = 0;
 
@@ -317,6 +319,7 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 
 	for (ep = 0; ep < comp_dev_info.ep_count; ep++) {
 		int ipe; /* Interfaces per endpoint */
+		int qt;
 
 		/* Get number of interfaces for this endpoint */
 		ipe = 0;
@@ -327,7 +330,7 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 		}
 
 		/* for queue type: [RxQ, TxQ] */
-		for (int qt = 0; qt < 2; qt++) {
+		for (qt = 0; qt < 2; qt++) {
 			int q_cnt = qt == 0 ? mi->rxq_cnt : mi->txq_cnt;
 			struct nc_ifc_queue_map_info *q_map = qt == 0 ? mi->rxq : mi->txq;
 
