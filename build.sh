@@ -133,6 +133,7 @@ get_dependencies()
         ret="$ret libncurses-dev"
         ret="$ret libarchive-dev"
         ret="$ret python3-dev"
+        ret="$ret python3-setuptools"
         ret="$ret cython3"
     elif item_in_list "$os" "centos scientific fedora ol rocky"; then
         ret="$ret libfdt-devel"
@@ -141,6 +142,11 @@ get_dependencies()
         ret="$ret libarchive-devel"
         ret="$ret libconfig"
         ret="$ret libconfig-devel"
+        if [ "$os_version" = "7" ]; then
+            ret="$ret python36-Cython"
+        else
+            ret="$ret python3-Cython"
+        fi
     elif item_in_list "$os" "arch manjaro"; then
         ret="$ret dtc"
         ret="$ret numactl"

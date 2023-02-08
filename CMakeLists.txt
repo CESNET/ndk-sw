@@ -40,6 +40,7 @@ add_subdirectory(tools)
 add_subdirectory(tools-debug)
 add_subdirectory(tools-misc)
 add_subdirectory(utils)
+add_subdirectory(pynfb)
 
 configure_file(package/preinst.in package/preinst @ONLY)
 configure_file(package/postinst.in package/postinst @ONLY)
@@ -71,6 +72,10 @@ set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/")
 set(CPACK_RPM_FILE_NAME                 RPM-DEFAULT)
 set(CPACK_RPM_Main_PACKAGE_NAME         "${CPACK_PACKAGE_NAME}")
 set(CPACK_RPM_DebugTools_PACKAGE_NAME   "${CPACK_PACKAGE_NAME}-debug")
+# FIXME: use real Python version
+set(CPACK_RPM_python_PACKAGE_NAME       "python3-nfb")
+set(CPACK_RPM_SPEC_MORE_DEFINE "%define __python python3")
+
 set(CPACK_RPM_PACKAGE_RELEASE           ${GIT_VERSION_RELEASE})
 set(CPACK_RPM_PACKAGE_RELEASE_DIST      ON)
 set(CPACK_RPM_PACKAGE_LICENSE           "BSD and GPLv2")
@@ -100,10 +105,16 @@ set(CPACK_RPM_Main_POST_INSTALL_SCRIPT_FILE   "${CMAKE_CURRENT_BINARY_DIR}/packa
 set(CPACK_RPM_Main_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/package/postrm")
 
 # DEB (Ubuntu) package settings
+set(CPACK_DEB_COMPONENT_INSTALL         ON)
 set(CPACK_DEBIAN_PACKAGE_NAME           "${CPACK_PACKAGE_NAME}")
 set(CPACK_DEBIAN_PACKAGE_VERSION        "${CPACK_PACKAGE_VERSION}")
 set(CPACK_DEBIAN_PACKAGE_RELEASE        "${GIT_VERSION_DEBRELEASE}")
 set(CPACK_DEBIAN_FILE_NAME              "${CPACK_DEBIAN_PACKAGE_NAME}-${CPACK_DEBIAN_PACKAGE_VERSION}-${CPACK_DEBIAN_PACKAGE_RELEASE}.deb")
+
+set(CPACK_DEBIAN_DEBUGTOOLS_PACKAGE_NAME "nfb-framework-debug")
+set(CPACK_DEBIAN_DEBUGTOOLS_FILE_NAME "nfb-framework-debug-${CPACK_DEBIAN_PACKAGE_VERSION}-${CPACK_DEBIAN_PACKAGE_RELEASE}.deb")
+set(CPACK_DEBIAN_PYTHON_PACKAGE_NAME "python3-nfb")
+set(CPACK_DEBIAN_PYTHON_FILE_NAME "python3-nfb-${CPACK_DEBIAN_PACKAGE_VERSION}-${CPACK_DEBIAN_PACKAGE_RELEASE}.deb")
 string(JOIN ", " CPACK_DEBIAN_PACKAGE_DEPENDS ${DEB_DEP_LIST})
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS      ON)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
