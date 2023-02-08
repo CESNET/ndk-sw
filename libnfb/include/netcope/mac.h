@@ -21,6 +21,8 @@ enum nc_mac_speed {
 	MAC_SPEED_100G = 0x5
 };
 
+int nfb_mtd_read(struct nfb_device *dev, int index, size_t addr, void *data, size_t size);
+
 static inline int
 nc_ifc_get_default_mac(struct nfb_device *dev, unsigned ifc_nr, uint8_t *addr_bytes, int bytes_cnt)
 {
