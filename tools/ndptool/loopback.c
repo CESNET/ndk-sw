@@ -164,7 +164,7 @@ static int ndp_mode_loopback_loop(struct ndp_tool_params *p)
 
 		if (cnt_rx == 0) {
 			ndp_tx_burst_flush(tx);
-			delay_usecs(200);
+			delay_nsecs(1);
 			continue;
 		}
 
@@ -172,7 +172,7 @@ static int ndp_mode_loopback_loop(struct ndp_tool_params *p)
 			packets_tx[i].data_length = packets_rx[i].data_length;
 		cnt_tx = ndp_tx_burst_get(tx, packets_tx, cnt_rx);
 		while (cnt_tx != cnt_rx && !stop) {
-			delay_usecs(200);
+			delay_nsecs(1);
 			cnt_tx = ndp_tx_burst_get(tx, packets_tx, cnt_rx);
 		}
 		for (i = 0; i < cnt_tx; i++)
