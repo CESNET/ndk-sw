@@ -194,7 +194,7 @@ ssize_t ndp_channel_set_ring_size(struct device *dev, struct device_attribute *a
 
 /* channel.c */
 void ndp_channel_init(struct ndp_channel *channel, struct ndp_channel_id);
-int ndp_channel_add(struct ndp_channel *channel, struct ndp *ndp);
+int ndp_channel_add(struct ndp_channel *channel, struct ndp *ndp, uint32_t phandle);
 void ndp_channel_del(struct ndp_channel *channel);
 int ndp_channel_subscribe(struct ndp_subscription *sub, uint32_t *flags);
 void ndp_channel_unsubscribe(struct ndp_subscription *sub);

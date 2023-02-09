@@ -48,16 +48,25 @@ static void ndp_create_channels_from_ctrl(struct ndp *ndp, struct ndp_ctrl_creat
 {
 	int index = 0;
 	int node_offset;
-	const void *fdt = ndp->nfb->fdt;
+	void *fdt = ndp->nfb->fdt;
 	struct ndp_channel *channel;
 
 	char path[MAX_FDT_PATH_LENGTH];
+	uint32_t phandle;
 
 	fdt_for_each_compatible_node(fdt, node_offset, ctrl->compatible) {
 		if (fdt_get_path(fdt, node_offset, path, MAX_FDT_PATH_LENGTH) >= 0) {
+			phandle = fdt_get_phandle(fdt, node_offset);
+			if (phandle == 0) {
+				if (_fdt_generate_phandle(fdt, &phandle))
+					return;
+				if (fdt_setprop_u32(fdt, node_offset, "phandle", phandle))
+					return;
+			}
+
 			channel = ctrl->create(ndp, index, node_offset);
 			if (!IS_ERR(channel))
-				ndp_channel_add(channel, ndp);
+				ndp_channel_add(channel, ndp, phandle);
 			node_offset = fdt_path_offset(fdt, path);
 		}
 		index++;
