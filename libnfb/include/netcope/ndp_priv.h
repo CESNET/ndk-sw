@@ -65,6 +65,8 @@ struct ndp_queue
 	struct nfb_device *dev;
 	struct ndp_channel_request channel;
 	enum ndp_queue_status status;
+	uint32_t frame_size_min;
+	uint32_t frame_size_max;
 
 	int numa;
 #ifdef __KERNEL__

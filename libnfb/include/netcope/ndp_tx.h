@@ -211,6 +211,20 @@ static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 		header_size = packets[i].header_length;
 		packet_size = packets[i].data_length + header_size;
 
+		if (unlikely(packet_size < q->frame_size_min)) {
+			/* Enlarge packets smaller than min size */
+			if (modify_hdr_off) {
+			} else {
+				/* Clean remaining data */
+				memset(data_base + off->offset + header_size + packet_size, 0, q->frame_size_min - packet_size);
+			}
+
+			packet_size = q->frame_size_min;
+		} else if (unlikely(packet_size > q->frame_size_max)) {
+			/* Can't handle packets larger than max size */
+			return 0;
+		}
+
 		/* Write NDP TX header */
 		hdr->packet_size = cpu_to_le16(packet_size);
 		hdr->header_size = header_size;
