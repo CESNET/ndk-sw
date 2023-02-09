@@ -50,4 +50,52 @@ __nfb_fdt_getprop(32)
 
 #undef __nfb_fdt_getprop
 
+/* For compatibility with older versions of libfdt */
+static inline int _fdt_find_max_phandle(const void *fdt, uint32_t *phandle)
+{
+	uint32_t max = 0;
+	int offset = -1;
+	uint32_t value;
+
+	while (true) {
+		offset = fdt_next_node(fdt, offset, NULL);
+		if (offset < 0) {
+			if (offset == -FDT_ERR_NOTFOUND)
+				break;
+
+			return offset;
+		}
+
+		value = fdt_get_phandle(fdt, offset);
+
+		if (value > max)
+			max = value;
+	}
+
+	if (phandle)
+		*phandle = max;
+
+	return 0;
+}
+
+#define _FDT_MAX_PHANDLE 0xfffffffe
+
+static inline int _fdt_generate_phandle(const void *fdt, uint32_t *phandle)
+{
+	uint32_t max;
+	int err;
+
+	err = _fdt_find_max_phandle(fdt, &max);
+	if (err < 0)
+		return err;
+
+	if (max == _FDT_MAX_PHANDLE)
+		return -FDT_ERR_NOPHANDLES;
+
+	if (phandle)
+		*phandle = max + 1;
+
+	return 0;
+}
+
 #endif // NFB_FDT_H
