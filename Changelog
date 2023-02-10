@@ -1,3 +1,8 @@
+* Fri Feb 10 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.1-1
+- [FEATURE] added support for boot on ia420f card in active serial mode
+- [BUGFIX] safe handling the transmission of undersized and oversized packets
+- [OPT] reduced delay when no data available in NDP tool
+
 * Fri Jan 27 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.0-1
 - [FEATURE] added gRPC libnfb-ext for remote operations
 - [FEATURE] added flags field to ndp_packet
