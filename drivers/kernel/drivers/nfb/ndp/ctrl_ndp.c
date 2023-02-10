@@ -41,7 +41,8 @@
 
 typedef uint64_t ndp_offset_t;
 
-static const int desc_size = 4096;
+/* Size of buffer for one packet in ring */
+static const int buffer_size = 4096;
 
 struct ndp_ctrl {
 	struct nc_ndp_ctrl c;
@@ -147,8 +148,8 @@ static void ndp_ctrl_mps_fill_rx_descs(struct ndp_ctrl *ctrl, uint64_t count)
 			desc[i] = nc_ndp_rx_desc0(addr);
 			continue;
 		}
-		desc[i] = nc_ndp_rx_desc2(addr, desc_size, 0);
-		ctrl->mps_last_offset += desc_size;
+		desc[i] = nc_ndp_rx_desc2(addr, buffer_size, 0);
+		ctrl->mps_last_offset += buffer_size;
 		if (ctrl->mps_last_offset >= ctrl->channel.ring.size)
 			ctrl->mps_last_offset = 0;
 	}
@@ -475,7 +476,7 @@ static int ndp_ctrl_start(struct ndp_channel *channel, uint64_t *hwptr)
 
 		/* Constant packet offsets in this mode */
 		for (i = 0, off = ctrl->off_buffer_v; i < ctrl->desc_buffer_size / NDP_CTRL_RX_DESC_SIZE; i++, off++) {
-			*off = i * desc_size;
+			*off = i * buffer_size;
 		}
 	} else if (ctrl->mode == NDP_CTRL_MODE_USER) {
 		if (channel->id.type == NDP_CHANNEL_TYPE_RX) {
@@ -606,7 +607,7 @@ static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
 	if (channel->ring.size == 0)
 		return -EINVAL;
 
-	ctrl->desc_count = channel->ring.size / desc_size;
+	ctrl->desc_count = channel->ring.size / buffer_size;
 	if (ctrl->desc_count * min(NDP_CTRL_RX_DESC_SIZE, NDP_CTRL_RX_HDR_SIZE) < PAGE_SIZE) {
 		/* Can't do shadow-map for this ring size */
 		return -EINVAL;
@@ -680,6 +681,8 @@ static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
 
 	fdt_setprop_u64(fdt, node_offset, "off_mmap_base", ctrl->off_mmap_offset);
 	fdt_setprop_u64(fdt, node_offset, "off_mmap_size", ctrl->off_buffer_size * 2);
+
+	fdt_setprop_u32(fdt, node_offset, "buffer_size", buffer_size);
 
 	return 0;
 

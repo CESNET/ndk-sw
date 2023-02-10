@@ -39,6 +39,11 @@ static inline int nfb_fdt_queue_offset(struct nfb_device *dev, unsigned index, i
 
 static inline int nc_ndp_v1_open_queue(struct ndp_queue *q)
 {
+	if (q->frame_size_min == 0)
+		q->frame_size_min = 57;
+	if (q->frame_size_max == 0)
+		q->frame_size_max = 0x3FFF;
+
 	q->u.v1.bytes = 0;
 	q->u.v1.total = 0;
 	q->u.v1.swptr = 0;
@@ -56,8 +61,18 @@ static inline int nc_ndp_v2_open_queue(struct ndp_queue *q, int fdt_offset)
 	size_t off_mmap_size = 0;
 	off_t hdr_mmap_offset = 0;
 	off_t off_mmap_offset = 0;
-	const void *fdt = nfb_get_fdt(q->dev);
 #endif
+	const void *fdt = nfb_get_fdt(q->dev);
+	/* 4096 is the default value from older version of driver. Never version have buffer_size prop in DT */
+	uint32_t buffer_size = 4096;
+
+	if (q->frame_size_min == 0)
+		q->frame_size_min = 60;
+	if (q->frame_size_max == 0)
+		q->frame_size_max = 0x3FFF;
+
+	if (fdt_getprop32(fdt, fdt_offset, "buffer_size", &buffer_size) && buffer_size < q->frame_size_max)
+		q->frame_size_max = buffer_size;
 
 	q->u.v2.rhp = 0;
 	q->u.v2.pkts_available = 0;
@@ -104,6 +119,8 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 {
 	int ret = 0;
 	int fdt_offset;
+	int ctrl_offset;
+	int ctrl_params_offset;
 	int flags = 0;
 
 	off_t mmap_offset;
@@ -112,6 +129,13 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 
 	fdt = nfb_get_fdt(dev);
 	fdt_offset = nfb_fdt_queue_offset(dev, index, type);
+
+	/* Fetch controller parameters */
+	q->frame_size_min = q->frame_size_max = 0;
+	ctrl_offset = fdt_node_offset_by_phandle_ref(fdt, fdt_offset, "ctrl");
+	ctrl_params_offset = fdt_node_offset_by_phandle_ref(fdt, ctrl_offset, "params");
+	fdt_getprop32(fdt, ctrl_params_offset, "frame_size_min", &q->frame_size_min);
+	fdt_getprop32(fdt, ctrl_params_offset, "frame_size_max", &q->frame_size_max);
 
 	flags = (ndp_flags & NDP_OPEN_FLAG_NO_BUFFER) ? (NDP_CHANNEL_FLAG_NO_BUFFER | NDP_CHANNEL_FLAG_EXCLUSIVE) : 0;
 

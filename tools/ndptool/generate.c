@@ -176,7 +176,7 @@ static int ndp_mode_generate_loop(struct ndp_tool_params *p)
 		while (cnt != burst_size) {
 			if (stop)
 				return 0;
-			delay_usecs(200);
+			delay_nsecs(1);
 			cnt = ndp_tx_burst_get(tx, packets, burst_size);
 		}
 

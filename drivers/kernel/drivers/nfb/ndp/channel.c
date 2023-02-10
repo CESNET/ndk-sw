@@ -58,7 +58,7 @@ void ndp_channel_init(struct ndp_channel *channel, struct ndp_channel_id id)
 	dev_set_drvdata(&channel->dev, channel);
 }
 
-int ndp_channel_add(struct ndp_channel *channel, struct ndp *ndp)
+int ndp_channel_add(struct ndp_channel *channel, struct ndp *ndp, uint32_t phandle)
 {
 	int ret;
 	int node_offset;
@@ -69,6 +69,7 @@ int ndp_channel_add(struct ndp_channel *channel, struct ndp *ndp)
 	node_offset = fdt_path_offset(ndp->nfb->fdt, channel->id.type == NDP_CHANNEL_TYPE_TX ?
 				"/drivers/ndp/tx_queues" : "/drivers/ndp/rx_queues");
 	node_offset = fdt_add_subnode(ndp->nfb->fdt, node_offset, dev_name(&channel->dev));
+	fdt_setprop_u32(ndp->nfb->fdt, node_offset, "ctrl", phandle);
 
 	if (ndp_ring_size < ndp_ring_block_size)
 		ndp_ring_block_size = ndp_ring_size;

@@ -161,6 +161,7 @@ extern unsigned RX_BURST;
 extern unsigned TX_BURST;
 
 void delay_usecs(unsigned int us);
+void delay_nsecs(unsigned int ns);
 
 void update_stats(struct ndp_packet *packets, int count, struct stats_info *si);
 void update_stats_thread(struct ndp_packet *packets, int count, struct stats_info *si);

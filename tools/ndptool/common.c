@@ -36,3 +36,23 @@ retry:
 	return;
 }
 
+void delay_nsecs(unsigned int ns)
+{
+	struct timespec t1;
+	struct timespec t2;
+
+	if (ns == 0)
+		return;
+
+	t1.tv_sec = (ns / 1000000000);
+	t1.tv_nsec = (ns % 1000000000);
+
+	/* NB: Other variants of sleep block whole process. */
+retry:
+	if (nanosleep((const struct timespec *)&t1, &t2) == -1)
+		if (errno == EINTR) {
+			t1 = t2; /* struct copy */
+			goto retry;
+		}
+	return;
+}

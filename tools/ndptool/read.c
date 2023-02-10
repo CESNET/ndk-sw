@@ -140,7 +140,7 @@ static int ndp_mode_read_loop(struct ndp_tool_params *p)
 		update_stats(packets, cnt, si);
 
 		if (cnt == 0) {
-			delay_usecs(200);
+			delay_nsecs(1);
 			continue;
 		}
 		ndp_rx_burst_put(rx);
