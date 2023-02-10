@@ -1,95 +1,48 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Base API &mdash; NFB Software User Guide 6.16.0 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
+    <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="NDP API" href="libnfb-api-ndp.html" />
     <link rel="prev" title="libnfb examples" href="libnfb-example.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
           
-            <a href="index.html" class="icon icon-home"> NFB Software User Guide
           
-
-          
+          <a href="index.html" class="icon icon-home">
+            NFB Software User Guide
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick start</a></li>
@@ -115,79 +68,38 @@
 <li class="toctree-l1"><a class="reference internal" href="libnfb-api-ndp.html">NDP API</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">NFB Software User Guide</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-        
-      <li>Base API</li>
-    
-    
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Base API</li>
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="_sources/libnfb-api-base.rst.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <section id="base-api">
-<h1>Base API<a class="headerlink" href="#base-api" title="Permalink to this heading">¶</a></h1>
+<h1>Base API<a class="headerlink" href="#base-api" title="Permalink to this heading"></a></h1>
 <p>The libnfb is userspace library, which allows to do the basic operations over NFB cards.</p>
 <section id="init-and-deinit-functions">
-<h2>Init and deinit functions<a class="headerlink" href="#init-and-deinit-functions" title="Permalink to this heading">¶</a></h2>
+<h2>Init and deinit functions<a class="headerlink" href="#init-and-deinit-functions" title="Permalink to this heading"></a></h2>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv48nfb_openPKc">
-<span id="_CPPv38nfb_openPKc"></span><span id="_CPPv28nfb_openPKc"></span><span id="nfb_open__cCP"></span><span class="target" id="nfb_8h_1a9bfa3c09b0ddcf8628f4fe82b68b5ba7"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">nfb_open</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">path</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv48nfb_openPKc" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv38nfb_openPKc"></span><span id="_CPPv28nfb_openPKc"></span><span id="nfb_open__cCP"></span><span class="target" id="nfb_8h_1a9bfa3c09b0ddcf8628f4fe82b68b5ba7"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">nfb_open</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">path</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv48nfb_openPKc" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Open the NFB device. </p>
 <p>
 This is the initialization function, which must be called before other library functions. Upon successful completion, the returned value is a NFB device handle to be passed to other functions. </p>
@@ -207,7 +119,7 @@ This is the initialization function, which must be called before other library f
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv49nfb_closeP10nfb_device">
-<span id="_CPPv39nfb_closeP10nfb_device"></span><span id="_CPPv29nfb_closeP10nfb_device"></span><span id="nfb_close__nfb_deviceP"></span><span class="target" id="nfb_8h_1ae07e3701bff68a5e5e0c4eac9a47a572"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_close</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv49nfb_closeP10nfb_device" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv39nfb_closeP10nfb_device"></span><span id="_CPPv29nfb_closeP10nfb_device"></span><span id="nfb_close__nfb_deviceP"></span><span class="target" id="nfb_8h_1ae07e3701bff68a5e5e0c4eac9a47a572"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_close</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv49nfb_closeP10nfb_device" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Close the NFB device. </p>
 <p>
 Call this function to finish the work with NFB device and cleanup. The handle passed to this function can not be used further and you must ensure to close that all other opened subhandles (e.g. by <a class="reference internal" href="#nfb_8h_1a78770bf515eef3384b8cf057cf2a7e32"><span class="std std-ref">nfb_comp_open</span></a>) are closed. </p>
@@ -220,10 +132,10 @@ Call this function to finish the work with NFB device and cleanup. The handle pa
 
 </section>
 <section id="device-tree-functions">
-<h2>Device tree functions<a class="headerlink" href="#device-tree-functions" title="Permalink to this heading">¶</a></h2>
+<h2>Device tree functions<a class="headerlink" href="#device-tree-functions" title="Permalink to this heading"></a></h2>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv411nfb_get_fdtPK10nfb_device">
-<span id="_CPPv311nfb_get_fdtPK10nfb_device"></span><span id="_CPPv211nfb_get_fdtPK10nfb_device"></span><span id="nfb_get_fdt__nfb_deviceCP"></span><span class="target" id="nfb_8h_1ad0461db0085b2c20922a0b95fd165d66"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">nfb_get_fdt</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv411nfb_get_fdtPK10nfb_device" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv311nfb_get_fdtPK10nfb_device"></span><span id="_CPPv211nfb_get_fdtPK10nfb_device"></span><span id="nfb_get_fdt__nfb_deviceCP"></span><span class="target" id="nfb_8h_1ad0461db0085b2c20922a0b95fd165d66"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">nfb_get_fdt</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv411nfb_get_fdtPK10nfb_device" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Retrieve NFB device Device Tree description. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -241,7 +153,7 @@ Call this function to finish the work with NFB device and cleanup. The handle pa
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv414nfb_comp_countPK10nfb_devicePKc">
-<span id="_CPPv314nfb_comp_countPK10nfb_devicePKc"></span><span id="_CPPv214nfb_comp_countPK10nfb_devicePKc"></span><span id="nfb_comp_count__nfb_deviceCP.cCP"></span><span class="target" id="nfb_8h_1a1f4abc00c30411216a27598456b86044"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_count</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">compatible</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414nfb_comp_countPK10nfb_devicePKc" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv314nfb_comp_countPK10nfb_devicePKc"></span><span id="_CPPv214nfb_comp_countPK10nfb_devicePKc"></span><span id="nfb_comp_count__nfb_deviceCP.cCP"></span><span class="target" id="nfb_8h_1a1f4abc00c30411216a27598456b86044"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_count</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">compatible</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414nfb_comp_countPK10nfb_devicePKc" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Return count of components present in firmware. </p>
 <p>
 This function goes through FDT and counts all nodes with matching ‘compatible’ property. </p>
@@ -264,7 +176,7 @@ This function goes through FDT and counts all nodes with matching ‘compatible�
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv413nfb_comp_findPK10nfb_devicePKcj">
-<span id="_CPPv313nfb_comp_findPK10nfb_devicePKcj"></span><span id="_CPPv213nfb_comp_findPK10nfb_devicePKcj"></span><span id="nfb_comp_find__nfb_deviceCP.cCP.unsigned"></span><span class="target" id="nfb_8h_1a1035222dee6cf0b293698db10155b23f"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_find</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">compatible</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">index</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv413nfb_comp_findPK10nfb_devicePKcj" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv313nfb_comp_findPK10nfb_devicePKcj"></span><span id="_CPPv213nfb_comp_findPK10nfb_devicePKcj"></span><span id="nfb_comp_find__nfb_deviceCP.cCP.unsigned"></span><span class="target" id="nfb_8h_1a1035222dee6cf0b293698db10155b23f"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_find</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">compatible</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">index</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv413nfb_comp_findPK10nfb_devicePKcj" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Return FDT offset of a specific component. </p>
 <p>
 This function goes through FDT and finds N-th node with matching ‘compatible’ property. </p>
@@ -288,7 +200,7 @@ This function goes through FDT and finds N-th node with matching ‘compatible�
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv423nfb_comp_find_in_parentPK10nfb_devicePKcji">
-<span id="_CPPv323nfb_comp_find_in_parentPK10nfb_devicePKcji"></span><span id="_CPPv223nfb_comp_find_in_parentPK10nfb_devicePKcji"></span><span id="nfb_comp_find_in_parent__nfb_deviceCP.cCP.unsigned.i"></span><span class="target" id="nfb_8h_1a1bcf729a37eec6b706c152f802d6453b"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_find_in_parent</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">compatible</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">index</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">parent_offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv423nfb_comp_find_in_parentPK10nfb_devicePKcji" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv323nfb_comp_find_in_parentPK10nfb_devicePKcji"></span><span id="_CPPv223nfb_comp_find_in_parentPK10nfb_devicePKcji"></span><span id="nfb_comp_find_in_parent__nfb_deviceCP.cCP.unsigned.i"></span><span class="target" id="nfb_8h_1a1bcf729a37eec6b706c152f802d6453b"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_find_in_parent</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">compatible</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">index</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">parent_offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv423nfb_comp_find_in_parentPK10nfb_devicePKcji" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Return FDT offset of a specific component within specific parent component. </p>
 <p>
 This function goes through FDT and finds N-th node with matching ‘compatible’ property, but search only nodes in specific parent. </p>
@@ -313,10 +225,10 @@ This function goes through FDT and finds N-th node with matching ‘compatible�
 
 </section>
 <section id="component-functions">
-<h2>Component functions<a class="headerlink" href="#component-functions" title="Permalink to this heading">¶</a></h2>
+<h2>Component functions<a class="headerlink" href="#component-functions" title="Permalink to this heading"></a></h2>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv413nfb_comp_openPK10nfb_devicei">
-<span id="_CPPv313nfb_comp_openPK10nfb_devicei"></span><span id="_CPPv213nfb_comp_openPK10nfb_devicei"></span><span id="nfb_comp_open__nfb_deviceCP.i"></span><span class="target" id="nfb_8h_1a78770bf515eef3384b8cf057cf2a7e32"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_open</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fdt_offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv413nfb_comp_openPK10nfb_devicei" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv313nfb_comp_openPK10nfb_devicei"></span><span id="_CPPv213nfb_comp_openPK10nfb_devicei"></span><span id="nfb_comp_open__nfb_deviceCP.i"></span><span class="target" id="nfb_8h_1a78770bf515eef3384b8cf057cf2a7e32"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_open</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dev</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fdt_offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv413nfb_comp_openPK10nfb_devicei" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Open component specified by <code class="docutils literal notranslate"><span class="pre">offset</span></code>. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -337,7 +249,7 @@ This function goes through FDT and finds N-th node with matching ‘compatible�
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv414nfb_comp_closeP8nfb_comp">
-<span id="_CPPv314nfb_comp_closeP8nfb_comp"></span><span id="_CPPv214nfb_comp_closeP8nfb_comp"></span><span id="nfb_comp_close__nfb_compP"></span><span class="target" id="nfb_8h_1ad9f1367e704171b0f3fde225577b8111"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_close</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">component</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414nfb_comp_closeP8nfb_comp" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv314nfb_comp_closeP8nfb_comp"></span><span id="_CPPv214nfb_comp_closeP8nfb_comp"></span><span id="nfb_comp_close__nfb_compP"></span><span class="target" id="nfb_8h_1ad9f1367e704171b0f3fde225577b8111"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_close</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">component</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414nfb_comp_closeP8nfb_comp" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Close component. </p>
 <p>
 Call this function when your work with the component is finished. After it returns, the component handle must not be used again. </p>
@@ -350,7 +262,7 @@ Call this function when your work with the component is finished. After it retur
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv413nfb_comp_readPK8nfb_compPv6size_t5off_t">
-<span id="_CPPv313nfb_comp_readPK8nfb_compPv6size_t5off_t"></span><span id="_CPPv213nfb_comp_readPK8nfb_compPv6size_t5off_t"></span><span id="nfb_comp_read__nfb_compCP.voidP.s.off_t"></span><span class="target" id="nfb_8h_1a71027db2bc45fbeaf7e8245acf3cade5"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_read</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">comp</span></span>, <span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">buf</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nbyte</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv413nfb_comp_readPK8nfb_compPv6size_t5off_t" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv313nfb_comp_readPK8nfb_compPv6size_t5off_t"></span><span id="_CPPv213nfb_comp_readPK8nfb_compPv6size_t5off_t"></span><span id="nfb_comp_read__nfb_compCP.voidP.s.off_t"></span><span class="target" id="nfb_8h_1a71027db2bc45fbeaf7e8245acf3cade5"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_read</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">comp</span></span>, <span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">buf</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nbyte</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv413nfb_comp_readPK8nfb_compPv6size_t5off_t" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Read data from specific offset in the component. </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -377,7 +289,7 @@ Call this function when your work with the component is finished. After it retur
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv414nfb_comp_writePK8nfb_compPKv6size_t5off_t">
-<span id="_CPPv314nfb_comp_writePK8nfb_compPKv6size_t5off_t"></span><span id="_CPPv214nfb_comp_writePK8nfb_compPKv6size_t5off_t"></span><span id="nfb_comp_write__nfb_compCP.voidCP.s.off_t"></span><span class="target" id="nfb_8h_1ac0124581d1e1b7ff50a6df15eaac541e"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_write</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">comp</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">buf</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nbyte</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414nfb_comp_writePK8nfb_compPKv6size_t5off_t" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv314nfb_comp_writePK8nfb_compPKv6size_t5off_t"></span><span id="_CPPv214nfb_comp_writePK8nfb_compPKv6size_t5off_t"></span><span id="nfb_comp_write__nfb_compCP.voidCP.s.off_t"></span><span class="target" id="nfb_8h_1ac0124581d1e1b7ff50a6df15eaac541e"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_write</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">comp</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">buf</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nbyte</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414nfb_comp_writePK8nfb_compPKv6size_t5off_t" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Write data to a specific offset in the component. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -400,7 +312,7 @@ Call this function when your work with the component is finished. After it retur
 
 <dl class="c function">
 <dt class="sig sig-object c" id="c.nfb_comp_read32">
-<span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_read32</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">comp</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.nfb_comp_read32" title="Permalink to this definition">¶</a><br /></dt>
+<span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_read32</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">comp</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.nfb_comp_read32" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Read a 32 bit value from component.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -425,7 +337,7 @@ Call this function when your work with the component is finished. After it retur
 </div>
 <dl class="c function">
 <dt class="sig sig-object c" id="c.nfb_comp_write32">
-<span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_write32</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">comp</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n"><span class="pre">offset</span></span>, <span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="n"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.nfb_comp_write32" title="Permalink to this definition">¶</a><br /></dt>
+<span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_write32</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">comp</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n"><span class="pre">offset</span></span>, <span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="n"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.nfb_comp_write32" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Write a 32 bit value to component.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -448,7 +360,7 @@ Call this function when your work with the component is finished. After it retur
 </div>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv413nfb_comp_lockPK8nfb_comp8uint32_t">
-<span id="_CPPv313nfb_comp_lockPK8nfb_comp8uint32_t"></span><span id="_CPPv213nfb_comp_lockPK8nfb_comp8uint32_t"></span><span id="nfb_comp_lock__nfb_compCP.uint32_t"></span><span class="target" id="nfb_8h_1a4df713dc8e0234bab0d475aa88a4a9c8"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_lock</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">component</span></span>, <span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">features</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv413nfb_comp_lockPK8nfb_comp8uint32_t" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv313nfb_comp_lockPK8nfb_comp8uint32_t"></span><span id="_CPPv213nfb_comp_lockPK8nfb_comp8uint32_t"></span><span id="nfb_comp_lock__nfb_compCP.uint32_t"></span><span class="target" id="nfb_8h_1a4df713dc8e0234bab0d475aa88a4a9c8"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_lock</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">component</span></span>, <span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">features</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv413nfb_comp_lockPK8nfb_comp8uint32_t" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Lock a component feature, prevent access in other process. </p>
 <p>
 When a feature of the component is locked, no other lock() to the same feature of the component shall succeed before the feature of the component is unlocked again. To make this work across all processes, locking is done by the driver.</p>
@@ -480,7 +392,7 @@ When a feature of the component is locked, no other lock() to the same feature o
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv415nfb_comp_unlockPK8nfb_comp8uint32_t">
-<span id="_CPPv315nfb_comp_unlockPK8nfb_comp8uint32_t"></span><span id="_CPPv215nfb_comp_unlockPK8nfb_comp8uint32_t"></span><span id="nfb_comp_unlock__nfb_compCP.uint32_t"></span><span class="target" id="nfb_8h_1a170c87ddc800c28cbcd92fea2ca1cefa"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_unlock</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">component</span></span>, <span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">features</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv415nfb_comp_unlockPK8nfb_comp8uint32_t" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv315nfb_comp_unlockPK8nfb_comp8uint32_t"></span><span id="_CPPv215nfb_comp_unlockPK8nfb_comp8uint32_t"></span><span id="nfb_comp_unlock__nfb_compCP.uint32_t"></span><span class="target" id="nfb_8h_1a170c87ddc800c28cbcd92fea2ca1cefa"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_unlock</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">component</span></span>, <span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">features</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv415nfb_comp_unlockPK8nfb_comp8uint32_t" title="Permalink to this definition"></a><br /></dt>
 <dd><p>Unlock a component feature. </p>
 <p><div class="admonition seealso">
 <p class="admonition-title">See also</p>
@@ -502,50 +414,33 @@ When a feature of the component is locked, no other lock() to the same feature o
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="libnfb-api-ndp.html" class="btn btn-neutral float-right" title="NDP API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="libnfb-example.html" class="btn btn-neutral float-left" title="libnfb examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="libnfb-api-ndp.html" class="btn btn-neutral float-right" title="NDP API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2022, CESNET z.s.p.o..
-
-    </p>
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
