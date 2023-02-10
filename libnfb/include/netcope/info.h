@@ -207,7 +207,7 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 	const void *fdt;
 	const char *prop;
 	int node, subnode, pmdnode;
-        int proplen;
+	int proplen;
 	int channel_cnt;
 
 	int ifc = 0;
@@ -230,6 +230,8 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 	mi->ifc = NULL;
 	mi->rxq = NULL;
 	mi->eth = NULL;
+
+	mi->eth_cnt = 0;
 
 	port_cnt = 0;
 
@@ -270,7 +272,7 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 
 		/* TODO */
 		eth_info->port = -1;
-		eth_info->channel = -1; 
+		eth_info->channel = -1;
 		eth_info->lane = -1;
 
 		eth_info->node_eth = node;
@@ -402,7 +404,7 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 			}
 		}
 
-//		info->flags |= NC_IFC_INFO_FLAG_VIRTUAL 
+//		info->flags |= NC_IFC_INFO_FLAG_VIRTUAL
 		info->flags |= (info->rxq_cnt + info->txq_cnt) ? NC_IFC_INFO_FLAG_ACTIVE : 0;
 	}
 
