@@ -162,13 +162,8 @@ int nfb_bus_open_mi(void *dev_priv, int bus_node, int comp_node, void **bus_priv
 	/* Find MI driver node in FDT */
 	fdt_offset = fdt_path_offset(fdt, path);
 	if (fdt_offset < 0) {
-		/* Compatibility for old driver DT layout */
-		fdt_offset = fdt_path_offset(fdt, DRIVER_MI_PATH);
-
-		if (fdt_offset < 0) {
-			errno = ENODEV;
-			goto err_fdt_path;
-		}
+		errno = ENODEV;
+		goto err_fdt_path;
 	}
 
 	/* Get mmap size */
