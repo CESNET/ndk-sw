@@ -1,0 +1,21 @@
+from setuptools import Extension, setup
+from Cython.Build import cythonize
+
+
+setup(
+    name = "nfb",
+    version='${PACKAGE_VERSION}',
+    author = "Martin Spinler",
+    author_email = "spinler@cesnet.cz",
+    ext_package = "nfb",
+    ext_modules = cythonize(
+        [
+            Extension("libnfb",     ["${CMAKE_CURRENT_SOURCE_DIR}/src/libnfb.pyx"],     libraries=["nfb", "fdt"], include_dirs=['${CMAKE_CURRENT_SOURCE_DIR}/../libnfb/include'], library_dirs=['${CMAKE_BINARY_DIR}/libnfb']),
+            Extension("libnetcope", ["${CMAKE_CURRENT_SOURCE_DIR}/src/libnetcope.pyx"], libraries=["nfb", "fdt"], include_dirs=['${CMAKE_CURRENT_SOURCE_DIR}/../libnfb/include'], library_dirs=['${CMAKE_BINARY_DIR}/libnfb']),
+        ],
+        compiler_directives={'embedsignature': True, 'binding': False},
+    ),
+    py_modules=['nfb'],
+    packages=['nfb'],
+    package_dir={'nfb': '${CMAKE_CURRENT_SOURCE_DIR}/nfb'},
+)

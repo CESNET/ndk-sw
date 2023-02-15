@@ -1,18 +1,24 @@
-#!/usr/bin/env python
+from setuptools import Extension, setup
+from Cython.Build import cythonize
 
-from distutils.core import setup, Extension
+# This setup.py uses the system default path for includes/libraries,
+# so the nfb-framework package must be already installed.
+# If isn't installed, define include_dirs and library_dirs as in setup.py.in
 
-nfb_module = Extension('_nfb',
-	sources=['pynfb.i', 'pynfb.cxx'],
-	swig_opts=['-c++'],
-	extra_compile_args=['-std=c++11'],
-	libraries=['fdt', 'nfb'],
-)
-
-setup (name = 'python2-pynfb',
-	version = '0.2.1',
-	author      = "spinler@cesnet.cz",
-	description = """NFB python module""",
-	ext_modules = [nfb_module],
-	py_modules = ["nfb"],
+setup(
+    name = "nfb",
+    version = "0.1.0",
+    author = "Martin Spinler",
+    author_email = "spinler@cesnet.cz",
+    ext_package = "nfb",
+    ext_modules = cythonize(
+        [
+            Extension("libnfb", ["src/libnfb.pyx"], libraries=["nfb", "fdt"]),
+            Extension("libnetcope", ["src/libnetcope.pyx"], libraries=["nfb", "fdt"]),
+        ],
+        compiler_directives={'embedsignature': True, 'binding': False}
+    ),
+    py_modules=['nfb'],
+    packages=['nfb'],
+    package_dir={'nfb': 'nfb'},
 )

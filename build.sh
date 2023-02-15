@@ -40,9 +40,27 @@ usage()
     echo "  --deb         Build DEB package"
 }
 
+function item_in_list() {
+    VALUE=$1
+    LIST=$2
+    DELIMITER=" "
+    echo $LIST | tr "$DELIMITER" '\n' | grep -F -q -x "$VALUE"
+}
+
 get_os_version()
 {
-    supported_os=(ubuntu centos scientific arch fedora ol manjaro)
+    . /etc/os-release
+    if [ -z "$VERSION_ID" ]; then
+        echo "unknown"
+        return
+    fi
+    echo "$ID"
+}
+
+
+get_os_id()
+{
+    supported_os="ubuntu centos scientific arch fedora ol manjaro rocky"
 
     . /etc/os-release
 
@@ -51,52 +69,47 @@ get_os_version()
         return
     fi
 
-    for i in "${supported_os[@]}"
-    do
-        if [ "$i" = "$ID" ] ; then
-            echo "$ID"
-            return
-        fi
-    done
+    if ! item_in_list "$ID" "$supported_os"; then
+        echo >&2 "WARNING: Unknown OS"
+    fi
 
-    echo >&2 "WARNING: Unknown OS"
-    echo $ID
+    echo "$ID"
 }
 
 get_install_command()
 {
-    os=$(get_os_version)
-    if [ "$os" = "ubuntu" ]; then
+    os=$(get_os_id)
+    if item_in_list "$os" "ubuntu"; then
         echo "apt-get -qy install"
-    elif [ "$os" = "centos" ] || [ "$os" = "scientific" ] || [ "$os" = "fedora" ] || [ "$os" = "ol" ]; then
+    elif item_in_list "$os" "centos scientific fedora ol rocky"; then
         echo "yum -y install"
-    elif [ "$os" = "arch" ] || [ "$os" = "manjaro" ]; then
+    elif item_in_list "$os" "arch manjaro"; then
         echo "pacman -S --needed"
     fi
 }
 
 get_prerequisities()
 {
-    os=$(get_os_version)
+    os=$(get_os_id)
 
     ret=""
     ret="$ret git"
     ret="$ret curl"
-    if [ "$os" = "ubuntu" ]; then
+    if item_in_list "$os" "ubuntu"; then
         ret="$ret cmake"
         ret="$ret pkg-config"
-    elif [ "$os" = "centos" ] || [ "$os" = "scientific" ] || [ "$os" = "ol" ]; then
+    elif item_in_list "$os" "centos scientific ol rocky"; then
         ret="$ret epel-release"
         ret="$ret cmake3"
         ret="$ret make"
         ret="$ret gcc"
         ret="$ret rpm-build"
-    elif [ "$os" = "fedora" ]; then
+    elif item_in_list "$os" "fedora"; then
         ret="$ret cmake3"
         ret="$ret make"
         ret="$ret gcc"
         ret="$ret rpm-build"
-    elif [ "$os" = "arch" ] || [ "$os" = "manjaro" ]; then
+    elif item_in_list "$os" "arch manjaro"; then
         ret="$ret cmake"
     fi
 
@@ -105,25 +118,36 @@ get_prerequisities()
 
 get_dependencies()
 {
-    os=$(get_os_version)
+    os=$(get_os_id)
+    os_version=$(get_os_version)
+    os_version_major=$(echo $os_version | cut -d'.' -f1)
+    echo $os_version_major
 
     ret=""
     ret="$ret autoconf"
     ret="$ret automake"
 
-    if [ "$os" = "ubuntu" ]; then
+    if item_in_list "$os" "ubuntu"; then
         ret="$ret libfdt-dev"
         ret="$ret libnuma-dev"
         ret="$ret libncurses-dev"
         ret="$ret libarchive-dev"
-    elif [ "$os" = "centos" ] || [ "$os" = "scientific" ] || [ "$os" = "fedora" ] || [ "$os" = "ol" ]; then
+        ret="$ret python3-dev"
+        ret="$ret python3-setuptools"
+        ret="$ret cython3"
+    elif item_in_list "$os" "centos scientific fedora ol rocky"; then
         ret="$ret libfdt-devel"
         ret="$ret numactl-devel"
         ret="$ret ncurses-devel"
         ret="$ret libarchive-devel"
         ret="$ret libconfig"
         ret="$ret libconfig-devel"
-    elif [ "$os" = "arch" ] || [ "$os" = "manjaro" ]; then
+        if [ "$os_version" = "7" ]; then
+            ret="$ret python36-Cython"
+        else
+            ret="$ret python3-Cython"
+        fi
+    elif item_in_list "$os" "arch manjaro"; then
         ret="$ret dtc"
         ret="$ret numactl"
         ret="$ret ncurses"
@@ -162,9 +186,9 @@ Build()
 # ----[ MAIN function ]------------------------------------------------------- #
 cmake=cmake
 cpack=cpack
-os=$(get_os_version)
+os=$(get_os_id)
 
-if [ "$os" = "centos" ] || [ "$os" = "scientific" ] || [ "$os" = "fedora" ]; then
+if item_in_list "$os" "centos scientific fedora"; then
     cmake=cmake3
     cpack=cpack3
 fi

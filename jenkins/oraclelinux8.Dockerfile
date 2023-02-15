@@ -10,6 +10,6 @@ RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.n
 RUN dnf config-manager --set-enabled ol8_codeready_builder;
 
 RUN yum install -y epel-release git make gcc rpm-build autoconf automake sudo curl
-RUN yum install -y libfdt-devel numactl-devel ncurses-devel libarchive-devel libconfig libconfig-devel
+RUN yum install -y libfdt-devel numactl-devel ncurses-devel libarchive-devel libconfig libconfig-devel python3-devel python3-Cython
 RUN yum install -y cmake
 RUN yum clean all
