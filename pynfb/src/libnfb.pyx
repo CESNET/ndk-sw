@@ -142,6 +142,46 @@ cdef class Comp:
     def read32(self, addr: int): return int.from_bytes(self.read(addr, 4), sys.byteorder)
     def read64(self, addr: int): return int.from_bytes(self.read(addr, 8), sys.byteorder)
 
+    def set_bit(self, addr, bit, value=True, width=32):
+        """
+        Set bit in component register
+
+        The register is first readen and if the value of requested bit differs, the new value is written into register as a whole word of specified width.
+
+        :param addr: Address of the register in component space
+        :param bit: Bit number in register
+        :param value: Set or clear bit
+        :param width: The bit width of accessed register; supported values are 8, 16, 32, 64
+        """
+
+        reg = getattr(self, f"read{width}")(addr)
+        val = (reg | (1 << bit)) if value else (reg & ~(1 << bit))
+        if val != reg:
+            getattr(self, f"write{width}")(addr, val)
+
+    def clr_bit(self, addr, bit, width=32):
+        """
+        Clear bit in component register
+
+        The register is first readen and if the value of requested bit differs, the new value is written into register as a whole word of specified width.
+
+        :param addr: Address of the register in component space
+        :param bit: Bit number in register
+        :param width: The bit width of accessed register; supported values are 8, 16, 32, 64
+        """
+        self.set_bit(addr, bit, value=False, width=width)
+
+    def get_bit(self, addr, bit, width=32):
+        """
+        Get value of bit in component register
+
+        :param addr: Address of the register in component space
+        :param bit: Bit number in register
+        :param width: The bit width of accessed register; supported values are 8, 16, 32, 64
+        """
+        reg = getattr(self, f"read{width}")(addr)
+        return True if (reg & (1 << bit)) else False
+
 
 class QueueManager:
     #cdef dict __dict__
