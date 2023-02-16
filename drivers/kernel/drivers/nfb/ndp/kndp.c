@@ -47,7 +47,7 @@ inline int _ndp_queue_start(struct ndp_queue *q)
 inline int _ndp_queue_stop(struct ndp_queue *q)
 {
 #ifdef __KERNEL__
-	ndp_subscription_stop(ndp_subscription_by_id(q->subscriber, q->sync.id));
+	ndp_subscription_stop(ndp_subscription_by_id(q->subscriber, q->sync.id), 1);
 #else
 	if (ioctl(q->fd, NDP_IOC_STOP, &q->sync))
 		return errno;
@@ -119,6 +119,7 @@ void ndp_close_queue(struct ndp_queue *q)
 		ndp_queue_stop(q);
 #ifdef __KERNEL__
 	if (q->sub) {
+		/* FIXME: force stop ctrl */
 		ndp_subscription_destroy(q->sub);
 		q->sub = NULL;
 	}

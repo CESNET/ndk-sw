@@ -55,6 +55,7 @@ void ndp_char_release(void *priv, void *app_priv, struct file *file)
 {
 	struct ndp_subscriber *subscriber = app_priv;
 
+	/* FIXME: force stop ctrl */
 	ndp_subscriber_destroy(subscriber);
 }
 
@@ -127,7 +128,7 @@ long ndp_char_ioctl(void *priv, void *app_priv, struct file *file, unsigned int 
 		if (sub == NULL)
 			return -EBADF;
 
-		ndp_subscription_stop(sub);
+		ret = ndp_subscription_stop(sub, 0);
 		break;
 	}
 	default:

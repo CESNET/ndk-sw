@@ -501,30 +501,33 @@ static int ndp_ctrl_start(struct ndp_channel *channel, uint64_t *hwptr)
 	return 0;
 }
 
-static void ndp_ctrl_stop(struct ndp_channel *channel)
+static int ndp_ctrl_stop(struct ndp_channel *channel, int force)
 {
-	const int ignore_timeout = 1;
 	int ret;
 	int cnt = 0;
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
-	do {
+	while (cnt < 10 || (!ndp_kill_signal_pending(current) && !force)) {
 		ret = nc_ndp_ctrl_stop(&ctrl->c);
-		if (ret == -EINPROGRESS)
-			cnt = 0;
-		else if (ret != -EAGAIN)
+		if (ret == 0) {
 			break;
+		} else if (ret == -EINPROGRESS) {
+			cnt = 0;
+		} else if (ret == -EAGAIN && !force) {
+			return -EAGAIN;
+		}
 		msleep(10);
 		cnt++;
-	} while ((cnt < 100 || ignore_timeout) && !ndp_kill_signal_pending(current));
+	}
 
 	if (ret) {
 		nc_ndp_ctrl_stop_force(&ctrl->c);
 		dev_err(ctrl->nfb->dev,
-			"NDP queue %s did't stop in 1 sec. "
+			"NDP queue %s did't stop in %d msecs. "
 			"This may be due to firmware error.\n",
-			dev_name(&channel->dev));
+			dev_name(&channel->dev), cnt * 10);
 	}
+	return 0;
 }
 
 static int ndp_ctrl_hdr_mmap(struct vm_area_struct *vma, unsigned long offset, unsigned long size, void *priv)

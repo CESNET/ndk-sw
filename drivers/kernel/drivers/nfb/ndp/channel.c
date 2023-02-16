@@ -178,7 +178,7 @@ err_start:
 	return ret;
 }
 
-int ndp_channel_stop(struct ndp_subscription *sub)
+int ndp_channel_stop(struct ndp_subscription *sub, int force)
 {
 	int ret = 0;
 	struct ndp_channel *channel = sub->channel;
@@ -190,13 +190,20 @@ int ndp_channel_stop(struct ndp_subscription *sub)
 
 	/* stop now (i.e. the last one)? */
 	if (--channel->start_count == 0) {
-		channel->ops->stop(channel);
+		ret = channel->ops->stop(channel, force);
+		if (ret == -EAGAIN) {
+			++channel->start_count;
+			goto err_again;
+		} else {
+			ret = 0;
+		}
 	}
 
 	spin_lock(&channel->lock);
 	list_del_init(&sub->list_item);
 	spin_unlock(&channel->lock);
 
+err_again:
 	mutex_unlock(&channel->mutex);
 	return ret;
 }
