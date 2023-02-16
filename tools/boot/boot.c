@@ -18,6 +18,7 @@
 #include <err.h>
 #include <archive.h>
 #include <archive_entry.h>
+#include <linux/limits.h>
 
 #include <nfb/nfb.h>
 #include <nfb/boot.h>
@@ -134,6 +135,64 @@ enum fw_diff_values firmware_diff(const void *fdt, const void *ffdt)
 	else if (strcmp(prop, fprop))
 		ret = DIFF_CARD;
 
+	return ret;
+}
+
+int get_path_by_pci_slot(const char *path, char *path_by_pci_slot, size_t size)
+{
+	int ret;
+	struct nfb_device *dev;
+	const void *fdt;
+
+	const char *slot;
+
+	if (size < 1)
+		return -EINVAL;
+
+	dev = nfb_open(path);
+	if (dev == NULL)
+		return -ENODEV;
+
+	fdt = nfb_get_fdt(dev);
+	ret = fdt_path_offset(fdt, "/system/device/endpoint0");
+	slot = fdt_getprop(fdt, ret, "pci-slot", NULL);
+	if (slot == NULL)
+		return -ENODEV;
+
+	ret = snprintf(path_by_pci_slot, size, "/dev/nfb/by-pci-slot/%s", slot);
+
+	nfb_close(dev);
+	return ret;
+}
+
+int check_boot_success(const char *path_by_pci, int cmd, const char *filename)
+{
+	int ret = 0;
+	struct nfb_device *dev;
+	void *fdt;
+	int diff;
+
+	dev = nfb_open(path_by_pci);
+	if (dev == NULL) {
+		warn("can't open device file after boot");
+	} else {
+		if (cmd == CMD_WRITE_AND_BOOT) {
+			archive_read_first_file_with_extension(filename, ".dtb", &fdt);
+			if (fdt == NULL) {
+				warnx("can't read firmware file");
+			} else {
+				diff = firmware_diff(nfb_get_fdt(dev), fdt);
+
+				if (diff == DIFF_ERROR) {
+					warnx("can't check firmware difference");
+				} else if (diff != DIFF_SAME) {
+					warnx("boot failed, the running firmware is't equal to written configuration");
+					ret = EBADF;
+				}
+			}
+		}
+		nfb_close(dev);
+	}
 	return ret;
 }
 
@@ -345,6 +404,9 @@ int do_boot(const char *path, int slot)
 		warnx("boot failed: %s", strerror(ret));
 		break;
 	}
+
+	/* Let settle links in the /dev/ */
+	usleep(100000);
 	return ret;
 }
 
@@ -405,6 +467,7 @@ int main(int argc, char *argv[])
 	long slot = -1;
 	char *slot_arg = NULL;
 	char *path = NFB_DEFAULT_DEV_PATH;
+	char path_by_pci[PATH_MAX];
 	char *filename = NULL;
 	int ret = 0;
 	int flags = 0;
@@ -504,9 +567,19 @@ int main(int argc, char *argv[])
 	}
 
 	if (cmd == CMD_WRITE_AND_BOOT || cmd == CMD_BOOT) {
+		c = get_path_by_pci_slot(path, path_by_pci, sizeof(path_by_pci));
 		ret = do_boot(path, slot);
-		if (ret)
+		if (ret) {
+			if (cmd == CMD_WRITE_AND_BOOT)
+				warnx("however, the configuration was successfully written into device slot");
 			goto err;
+		}
+
+		if (c < 0) {
+			warnx("can't get device path by PCI slot, after-boot checks skipped");
+		} else {
+			ret = check_boot_success(path_by_pci, cmd, filename);
+		}
 	}
 
 err:

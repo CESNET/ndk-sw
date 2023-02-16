@@ -92,9 +92,15 @@ inline int _ndp_queue_start(struct ndp_queue *q)
 inline int _ndp_queue_stop(struct ndp_queue *q)
 {
 #ifdef __KERNEL__
-	ndp_subscription_stop(ndp_subscription_by_id(q->subscriber, q->sync.id));
+	ndp_subscription_stop(ndp_subscription_by_id(q->subscriber, q->sync.id), 1);
 #else
-	if (ioctl(q->fd, NDP_IOC_STOP, &q->sync))
+	int ret;
+	do {
+		errno = 0;
+		ret = ioctl(q->fd, NDP_IOC_STOP, &q->sync);
+	} while (ret == -1 && errno == EAGAIN);
+
+	if (ret)
 		return errno;
 #endif
 	return 0;

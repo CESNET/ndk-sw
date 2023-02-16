@@ -98,7 +98,7 @@ struct ndp_subscriber {
 
 struct ndp_channel_ops {
 	int (*start)(struct ndp_channel *channel, uint64_t *hwptr);
-	void (*stop)(struct ndp_channel *channel);
+	int (*stop)(struct ndp_channel *channel, int force);
 	int (*attach_ring)(struct ndp_channel *channel);
 	void (*detach_ring)(struct ndp_channel *channel);
 	uint64_t (*get_hwptr)(struct ndp_channel *channel);
@@ -213,7 +213,7 @@ ssize_t ndp_channel_set_discard(struct device *dev, struct device_attribute *att
 
 int ndp_subscription_start(struct ndp_subscription *sub,
 	struct ndp_subscription_sync *sync);
-void ndp_subscription_stop(struct ndp_subscription *sub);
+int ndp_subscription_stop(struct ndp_subscription *sub, int force);
 
 int ndp_subscription_sync(struct ndp_subscription *sub,
 		struct ndp_subscription_sync *sync);
@@ -231,7 +231,7 @@ void ndp_subscriber_destroy(struct ndp_subscriber *subscriber);
 int ndp_subscriber_poll(struct ndp_subscriber *subscriber, struct file *filp, struct poll_table_struct *wait);
 
 int ndp_channel_start(struct ndp_subscription *sub);
-int ndp_channel_stop(struct ndp_subscription *sub);
+int ndp_channel_stop(struct ndp_subscription *sub, int force);
 void ndp_channel_sync(struct ndp_subscription *sub, struct ndp_subscription_sync *sync);
 
 extern struct ndp_channel *ndp_channel_create(struct ndp *ndp, struct ndp_channel_ops *ctrl_ops,

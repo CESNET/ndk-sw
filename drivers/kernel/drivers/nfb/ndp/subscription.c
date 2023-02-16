@@ -7,6 +7,8 @@
  *   Martin Spinler <spinler@cesnet.cz>
  */
 
+#include <linux/delay.h>
+
 #include "ndp.h"
 
 size_t ndp_subscription_rx_data_available(struct ndp_subscription *sub)
@@ -64,14 +66,26 @@ int ndp_subscription_start(struct ndp_subscription *sub,
 	return 0;
 }
 
-void ndp_subscription_stop(struct ndp_subscription *sub)
+int ndp_subscription_stop(struct ndp_subscription *sub, int force)
 {
+	int ret;
 	if (sub->status != NDP_SUB_STATUS_RUNNING) {
 		//dev_warn("Trying to stop not started subscription.");
-		return;
+		//return -EBADF;
+		return 0;
 	}
-	ndp_channel_stop(sub);
+	ret = ndp_channel_stop(sub, 0);
+	if (ret == -EAGAIN) {
+		if (force) {
+			msleep(10);
+			ndp_channel_stop(sub, 1);
+		} else {
+			return ret;
+		}
+	}
+
 	sub->status = NDP_SUB_STATUS_SUBSCRIBED;
+	return 0;
 }
 
 struct ndp_subscription *ndp_subscription_create(
@@ -146,7 +160,7 @@ void ndp_subscription_destroy(struct ndp_subscription *sub)
 	struct ndp *ndp = subscriber->ndp;
 
 	if (sub->status == NDP_SUB_STATUS_RUNNING) {
-		ndp_subscription_stop(sub);
+		ndp_subscription_stop(sub, 1);
 	}
 
 	ndp_channel_unsubscribe(sub);

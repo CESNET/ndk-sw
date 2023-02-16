@@ -295,29 +295,33 @@ static uint64_t ndp_ctrl_set_flags(struct ndp_channel *channel, uint64_t flags)
 	return ret;
 }
 
-static void ndp_ctrl_stop(struct ndp_channel *channel)
+static int ndp_ctrl_stop(struct ndp_channel *channel, int force)
 {
+	uint64_t s, e;
 	int dirty = 0;
-	unsigned int counter = 0;
+	unsigned int cnt = 0;
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
 	if (channel->id.type == NDP_CHANNEL_TYPE_TX) {
-		while (1) {
-			uint64_t s, e;
+		dirty = 1;
+		while (cnt < 10 || (!ndp_kill_signal_pending(current) && !force)) {
 			s = *((uint64_t *)ctrl->update_ptr);
 			e = ctrl->swptr;
-			if (s == e)
+			if (s == e) {
+				dirty = 0;
 				break;
-			if (ndp_kill_signal_pending(current)) {
-				dev_warn(ctrl->comp->nfb->dev,
-						"NDP queue %s has not completed all data transfers. "
-						"Transfers aborted by users, queue is in dirty state.\n",
-						dev_name(&channel->dev));
-				dirty = 1;
-				break;
+			} else if (/*ret == -EAGAIN && */!force) {
+				return -EAGAIN;
 			}
 
 			msleep(10);
+			cnt++;
+		}
+		if (dirty) {
+			dev_warn(ctrl->comp->nfb->dev,
+					"NDP queue %s has not completed all data transfers. "
+					"Transfers aborted by users, queue is in dirty state.\n",
+					dev_name(&channel->dev));
 		}
 	}
 
@@ -328,12 +332,13 @@ static void ndp_ctrl_stop(struct ndp_channel *channel)
 		ndp_ctrl_set_swptr(channel, ndp_ctrl_get_hwptr(channel));
 	}
 
+	cnt = 0;
 	while (1) {
 		uint32_t status;
 		status = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_STATUS);
 		if (dirty || !(status & NDP_CTRL_REG_STATUS_RUNNING))
 			break;
-		if (counter++ > 100) {
+		if (cnt++ > 100) {
 			dev_warn(ctrl->comp->nfb->dev,
 					"NDP queue %s did not stop in 1 sec. "
 					"This may be due to hardware/firmware error.\n",
@@ -342,6 +347,7 @@ static void ndp_ctrl_stop(struct ndp_channel *channel)
 		}
 		msleep(10);
 	}
+	return 0;
 }
 
 static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
