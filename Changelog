@@ -1,3 +1,9 @@
+* Thu Feb 16 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.2-1
+- [FEATURE] added pynfb - Python package for NFB API
+- [FEATURE] try to restart NDP queue if first start fail in driver
+- [BUGFIX] do not stuck on queue stop, even with kill signal
+- [BUGFIX] disable MI access to components inside of the unconnected endpoint
+
 * Fri Feb 10 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.1-1
 - [FEATURE] added support for boot on ia420f card in active serial mode
 - [BUGFIX] safe handling the transmission of undersized and oversized packets
