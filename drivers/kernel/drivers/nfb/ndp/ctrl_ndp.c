@@ -454,9 +454,17 @@ static int ndp_ctrl_start(struct ndp_channel *channel, uint64_t *hwptr)
 
 	ret = nc_ndp_ctrl_start(&ctrl->c, &sp);
 	if (ret == -EALREADY) {
-                dev_err(ctrl->nfb->dev, "NDP queue %s is in dirty state, can't be started\n",
-                        dev_name(&channel->dev));
-		return -1;
+		/* Try to stop */
+		nc_ndp_ctrl_stop_force(&ctrl->c);
+		msleep(10);
+		ret = nc_ndp_ctrl_start(&ctrl->c, &sp);
+		if (ret == 0) {
+			dev_err(ctrl->nfb->dev, "NDP queue %s was in dirty state, restart seems succesfull, "
+					"but errors can occur\n", dev_name(&channel->dev));
+		} else {
+			dev_err(ctrl->nfb->dev, "NDP queue %s is in dirty state, can't be started\n", dev_name(&channel->dev));
+			return -1;
+		}
 	} else if (ret) {
 		return ret;
 	}
