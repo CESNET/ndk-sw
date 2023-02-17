@@ -58,15 +58,20 @@ void usage(const char *me)
 {
 	printf("Usage: %s [-d device] [-b id file] [-f id file] [-F id] [-w id file] [-i file] [-hlqv]\n", me);
 	printf("-d device       Path to device [default: %s]\n", NFB_DEFAULT_DEV_PATH);
-	printf("-b slot file    Quick boot: Write configuration to device slot only when their signatures differs\n");
+	printf("-F slot         Boot device from selected slot\n");
 	printf("-w slot file    Write configuration from file to device slot\n");
 	printf("-f slot file    Write configuration from file to device slot and boot device\n");
-	printf("-F slot         Boot device from selected slot\n");
-	printf("-i file         Print information about firmware file\n");
+	printf("-b slot file    Quick boot, see below\n");
+	printf("-i file         Print information about configuration file\n");
 	printf("-q              Do not show boot progress\n");
 	printf("-v              Be verbose\n");
 	printf("-l              Print list of available slots\n");
 	printf("-h              Print this help message\n");
+	printf("\n");
+	printf("Quick boot:\n");
+	printf("Boot the device from selected slot and check if the signature\n");
+	printf("of running firmware is equal to the requested configuration file.\n");
+	printf("If is not equal, do the write + boot action, as with parameter -f\n");
 }
 
 ssize_t archive_read_first_file_with_extension(const char *filename, const char *ext, void **outp)
@@ -169,24 +174,24 @@ int check_boot_success(const char *path_by_pci, int cmd, const char *filename)
 {
 	int ret = 0;
 	struct nfb_device *dev;
-	void *fdt;
+	void *fdt = NULL;
 	int diff;
 
 	dev = nfb_open(path_by_pci);
 	if (dev == NULL) {
-		warn("can't open device file after boot");
+		warnx("can't open device file after boot; can be caused by a corrupted configuration file or unsupported hotplug on this platform");
 	} else {
 		if (cmd == CMD_WRITE_AND_BOOT) {
 			archive_read_first_file_with_extension(filename, ".dtb", &fdt);
 			if (fdt == NULL) {
-				warnx("can't read firmware file");
+				warnx("can't read firmware info from configuration file, after-boot checks are not performed");
 			} else {
 				diff = firmware_diff(nfb_get_fdt(dev), fdt);
 
 				if (diff == DIFF_ERROR) {
-					warnx("can't check firmware difference");
+					warnx("can't check equality of the running firmware to the requested configuration file");
 				} else if (diff != DIFF_SAME) {
-					warnx("boot failed, the running firmware is't equal to written configuration");
+					warnx("boot failed: the signature of running firmware is not equal to signature of written configuration file");
 					ret = EBADF;
 				}
 			}
@@ -439,7 +444,7 @@ int do_quick_boot(const char *path, int slot, const char *filename, int flags)
 	diff = firmware_diff(nfb_get_fdt(dev), fdt);
 
 	if (diff == DIFF_ERROR)
-		warnx("can't check firmware difference, write enforced");
+		warnx("can't check firmware equality, write enforced");
 
 	if (diff != DIFF_SAME) {
 		ret = do_write_with_dev(dev, slot, filename, fdt, flags);
