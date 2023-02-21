@@ -198,6 +198,7 @@ err_malloc_fdt:
 err_fdt_size:
 	close(fd);
 err_open:
+	free(dev);
 	return errno;
 }
 
