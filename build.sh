@@ -77,7 +77,7 @@ get_os_number()
 
 get_os_id()
 {
-    supported_os="ubuntu centos scientific arch fedora ol manjaro rocky"
+    supported_os="ubuntu centos scientific arch fedora ol manjaro rocky arcolinux"
 
     . /etc/os-release
 
@@ -102,7 +102,7 @@ get_install_command()
         echo "apt-get -qy install"
     elif item_in_list "$os" "centos scientific fedora ol rocky"; then
         echo "yum -y install"
-    elif item_in_list "$os" "arch manjaro"; then
+    elif item_in_list "$os" "arch manjaro arcolinux"; then
         echo "pacman -S --needed"
     fi
 }
@@ -128,7 +128,7 @@ get_prerequisities()
         ret="$ret make"
         ret="$ret gcc"
         ret="$ret rpm-build"
-    elif item_in_list "$os" "arch manjaro"; then
+    elif item_in_list "$os" "arch manjaro arcolinux"; then
         ret="$ret cmake"
     fi
 
@@ -166,7 +166,7 @@ get_dependencies()
         else
             ret="$ret python3-Cython"
         fi
-    elif item_in_list "$os" "arch manjaro"; then
+    elif item_in_list "$os" "arch manjaro arcolinux"; then
         ret="$ret dtc"
         ret="$ret numactl"
         ret="$ret ncurses"
