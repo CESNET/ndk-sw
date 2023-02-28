@@ -176,6 +176,14 @@ struct nfb_comp *nfb_comp_open_ext(const struct nfb_device *dev, int fdt_offset,
 void nfb_comp_close(struct nfb_comp *component);
 
 /*!
+ * \brief Get component DT path
+ * \param[in] component Component handle
+ *
+ * Return path of component in Device Tree.
+ */
+const char *nfb_comp_path(struct nfb_comp *component);
+
+/*!
  * \brief Lock a component feature, prevent access in other process
  * \param[in] component  Component handle
  * \param[in] features   Bitmask of user-defined features to lock

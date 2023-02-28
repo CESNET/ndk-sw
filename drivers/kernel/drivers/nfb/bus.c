@@ -82,6 +82,11 @@ void nfb_comp_close(struct nfb_comp *comp)
 	kfree(comp);
 }
 
+const char *nfb_comp_path(struct nfb_comp *comp)
+{
+	return comp->path;
+}
+
 int nfb_comp_lock(struct nfb_comp *comp, uint32_t features)
 {
 	int cnt = 0;

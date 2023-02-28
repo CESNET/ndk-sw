@@ -487,6 +487,10 @@ int nfb_comp_get_version(const struct nfb_comp *comp)
 	return fdt32_to_cpu(*prop);
 }
 
+const char *nfb_comp_path(struct nfb_comp *comp)
+{
+	return comp->path;
+}
 
 ssize_t nfb_comp_read(const struct nfb_comp *comp, void *buf, size_t nbyte, off_t offset)
 {
