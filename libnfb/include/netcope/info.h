@@ -279,6 +279,21 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 		eth_info->node_port = fdt_node_offset_by_phandle_ref(fdt, node, "pmd");
 		eth_info->node_rxmac = fdt_node_offset_by_phandle_ref(fdt, node, "rxmac");
 		eth_info->node_txmac = fdt_node_offset_by_phandle_ref(fdt, node, "txmac");
+
+		if (eth_info->node_port >= 0) {
+			if (mi->eth_cnt - 1 == 0) {
+				eth_info->port = 0;
+				eth_info->channel = 0;
+			} else {
+				if (eth_info->node_port == eth_info[-1].node_port) {
+					eth_info->port = eth_info[-1].port;
+					eth_info->channel = eth_info[-1].channel + 1;
+				} else {
+					eth_info->port = eth_info[-1].port + 1;
+					eth_info->channel = 0;
+				}
+			}
+		}
 	}
 
 	/* TODO: Add stream/device helper into DT. Currently we must assume
