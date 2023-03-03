@@ -71,7 +71,8 @@ static inline int nc_ndp_v2_open_queue(struct ndp_queue *q, int fdt_offset)
 	if (q->frame_size_max == 0)
 		q->frame_size_max = 0x3FFF;
 
-	if (fdt_getprop32(fdt, fdt_offset, "buffer_size", &buffer_size) && buffer_size < q->frame_size_max)
+	fdt_getprop32(fdt, fdt_offset, "buffer_size", &buffer_size);
+	if (buffer_size < q->frame_size_max)
 		q->frame_size_max = buffer_size;
 
 	q->u.v2.rhp = 0;
