@@ -151,6 +151,7 @@ struct nfb_comp *nfb_comp_open_ext(const struct nfb_device *nfb, int fdtoffset, 
 void nfb_comp_close(struct nfb_comp *comp);
 
 const char *nfb_comp_path(struct nfb_comp *comp);
+struct nfb_device *nfb_comp_get_device(struct nfb_comp *comp);
 
 #define nfb_user_to_comp(ptr) (((struct nfb_comp *) ptr) - 1)
 #define nfb_comp_to_user(ptr) (((struct nfb_comp *) ptr) + 1)

@@ -492,6 +492,11 @@ const char *nfb_comp_path(struct nfb_comp *comp)
 	return comp->path;
 }
 
+const struct nfb_device *nfb_comp_get_device(struct nfb_comp *comp)
+{
+	return comp->dev;
+}
+
 ssize_t nfb_comp_read(const struct nfb_comp *comp, void *buf, size_t nbyte, off_t offset)
 {
 	if (offset + nbyte > comp->size)

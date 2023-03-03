@@ -87,6 +87,11 @@ const char *nfb_comp_path(struct nfb_comp *comp)
 	return comp->path;
 }
 
+struct nfb_device *nfb_comp_get_device(struct nfb_comp *comp)
+{
+	return comp->nfb;
+}
+
 int nfb_comp_lock(struct nfb_comp *comp, uint32_t features)
 {
 	int cnt = 0;

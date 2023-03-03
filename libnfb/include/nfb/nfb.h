@@ -184,6 +184,14 @@ void nfb_comp_close(struct nfb_comp *component);
 const char *nfb_comp_path(struct nfb_comp *component);
 
 /*!
+ * \brief Get pointer to nfb_device structure
+ * \param[in] component Component handle
+ *
+ * Return pointer to struct nfb_device
+ */
+const struct nfb_device *nfb_comp_get_device(struct nfb_comp *component);
+
+/*!
  * \brief Lock a component feature, prevent access in other process
  * \param[in] component  Component handle
  * \param[in] features   Bitmask of user-defined features to lock
