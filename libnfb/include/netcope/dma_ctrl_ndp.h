@@ -344,4 +344,30 @@ static inline void nc_ndp_ctrl_close(struct nc_ndp_ctrl *ctrl)
 	nfb_comp_close(ctrl->comp);
 }
 
+static inline int nc_ndp_ctrl_get_mtu(struct nc_ndp_ctrl *ctrl, unsigned int *min, unsigned int *max)
+{
+	int ret = 0;
+	const void *fdt = nfb_get_fdt(nfb_comp_get_device(ctrl->comp));
+	int ctrl_offset, ctrl_params_offset;
+	const fdt32_t *prop;
+	int proplen;
+
+        ctrl_offset = fdt_path_offset(fdt, nfb_comp_path(ctrl->comp));
+        ctrl_params_offset = fdt_node_offset_by_phandle_ref(fdt, ctrl_offset, "params");
+
+	prop = fdt_getprop(fdt, ctrl_params_offset, "frame_size_min", &proplen);
+	if (proplen == sizeof(*prop))
+		*min = fdt32_to_cpu(*prop);
+	else
+		ret -= 1;
+
+	prop = fdt_getprop(fdt, ctrl_params_offset, "frame_size_max", &proplen);
+	if (proplen == sizeof(*prop))
+		*max = fdt32_to_cpu(*prop);
+	else
+		ret -= 2;
+
+	return ret;
+}
+
 #endif /* NETCOPE_DMA_CTRL_NDP_H*/
