@@ -1,4 +1,4 @@
-* Tue Feb 14 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.3-1
+* Tue Mar 14 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.3-1
 - [FEATURE] added nic_rss component
 
 * Thu Feb 16 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.2-1
