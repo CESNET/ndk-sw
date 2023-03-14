@@ -11,10 +11,8 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -246,7 +244,7 @@ When this function is called, it stops the delivery of packets to the queue. </p
 <p>
 When the function returns nonzero, the NDP packet structs in <code class="docutils literal notranslate"><span class="pre">packets</span></code> are filled with pointers to packet data. This data is valid until <a class="reference internal" href="#group__rx__functions_1gace0138339566803fc51e2e331055caa7"><span class="std std-ref">ndp_rx_burst_put</span></a> is called.</p>
 <p>The packet data must eventually be released through <a class="reference internal" href="#group__rx__functions_1gace0138339566803fc51e2e331055caa7"><span class="std std-ref">ndp_rx_burst_put</span></a>. The usage should look like this</p>
-<p><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>struct ndp_packet packets[32];
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>struct ndp_packet packets[32];
 unsigned count = 32;
 struct ndp_packet more_packets[16];
 unsigned more_count = 16;
@@ -262,7 +260,6 @@ while (!STOPPED) {
 }
 </pre></div>
 </div>
- </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Traffic must be started (see <a class="reference internal" href="#group__queue__fn_1ga23ce29ef7e099abb6909626b36ecf0f0"><span class="std std-ref">ndp_queue_start</span></a>)</p>
@@ -330,12 +327,12 @@ while (!STOPPED) {
 }
 </pre></div>
 </div>
- </p>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>queue</strong> – <strong>[in]</strong> NDP TX queue </p></li>
-<li><p><strong>packets</strong> – <strong>[inout]</strong> NDP packet structs with <strong>only sizes filled</strong> </p></li>
+<li><p><strong>packets</strong> – <strong>[inout]</strong> NDP packet structs with <strong>only sizes filled</strong></p></li>
 <li><p><strong>count</strong> – <strong>[in]</strong> Maximal count of retrieved placeholders (length of <code class="docutils literal notranslate"><span class="pre">packets</span></code>) </p></li>
 </ul>
 </dd>
@@ -376,7 +373,7 @@ while (!STOPPED) {
 }
 </pre></div>
 </div>
- </p>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
