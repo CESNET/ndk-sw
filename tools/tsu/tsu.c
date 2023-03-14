@@ -429,7 +429,7 @@ void tsu_stop(int signum)
 
 void usage()
 {
-	printf("Usage: %s [-DhVw] [-d path] [-l<file>] [-x file] [-i index]\n", PROGNAME);
+	printf("Usage: %s [-Dh] [-d path] [-i index]\n", PROGNAME);
 	printf("-c source    Select CLK source (higher the number -> more accurate CLK source)\n");
 	printf("-d path      Use device file, instead of default %s\n", NFB_DEFAULT_DEV_PATH);
 	printf("-i index     Set index of the TSU component [default: 0]\n");
