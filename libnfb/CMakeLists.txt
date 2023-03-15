@@ -56,6 +56,7 @@ foreach(NFB IN ITEMS nfb nfb_static)
 		VERSION ${GIT_VERSION}
 		SOVERSION ${GIT_VERSION_MAJOR}
 	)
+	set_source_files_properties(src/bus/mi.c PROPERTIES COMPILE_FLAGS -mavx2)
 endforeach()
 
 install(TARGETS nfb nfb_static
