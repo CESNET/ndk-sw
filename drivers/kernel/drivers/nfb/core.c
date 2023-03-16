@@ -308,6 +308,10 @@ static int nfb_init(void)
 	int ret;
 	int i;
 
+	ret = nfb_boot_init();
+	if (ret)
+		return ret;
+
 	mutex_init(&nfb_driver_register_mutex);
 
 	for (i = 0; i < ARRAY_SIZE(embedded_driver_ops); i++)
@@ -338,6 +342,8 @@ static void nfb_exit(void)
 {
 	nfb_pci_exit();
 	nfb_char_exit();
+
+	nfb_boot_exit();
 }
 
 module_init(nfb_init);

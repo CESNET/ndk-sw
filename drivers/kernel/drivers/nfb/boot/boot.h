@@ -21,11 +21,13 @@
 #include "../nfb.h"
 
 #include "sdm.h"
+#include "nfb-pmci.h"
 
 struct nfb_boot {
 	struct nfb_comp *comp;
 	struct spi_device *spi;
 	struct nfb_device *nfb;
+	struct pmci_device *pmci;
 
 	int num_image;
 
@@ -61,6 +63,8 @@ int nfb_boot_ioctl_mtd_info(struct nfb_boot *nfb_boot,
 
 int nfb_mtd_read(struct nfb_device *dev, int index, size_t addr, void *data, size_t size);
 
+int nfb_boot_init(void);
+void nfb_boot_exit(void);
 int nfb_boot_attach(struct nfb_device* nfb, void **priv);
 void nfb_boot_detach(struct nfb_device* nfb, void *priv);
 /*int ndp_char_open(void *priv, void **app_priv, struct file *file);

@@ -382,5 +382,15 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 	kfree(boot);
 }
 
+int nfb_boot_init()
+{
+	return nfb_pmci_init();
+}
+
+void nfb_boot_exit()
+{
+	nfb_pmci_exit();
+}
+
 module_param(boot_enable, bool, S_IRUGO);
 MODULE_PARM_DESC(boot_enable, "Enable boot (design reload) [yes]");
