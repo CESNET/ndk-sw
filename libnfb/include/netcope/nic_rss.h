@@ -73,6 +73,8 @@ static inline int nc_nic_rss_write_key(struct nc_nic_rss *rss, int channel, cons
 		nfb_comp_write8(comp, 0x18 + i % 4, key[i]);
 	}
 
+	nfb_comp_write32(comp, 0x14, 1);
+
 	nfb_comp_unlock(comp, 1);
 
 	return 0;
