@@ -1,3 +1,6 @@
+* Mon Mar 20 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.4-1
+- [BUGFIX] set RSS hash function type
+
 * Tue Mar 14 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.3-1
 - [FEATURE] added nic_rss component
 
