@@ -14,6 +14,7 @@ enum bitstream_format {
 	BITSTREAM_FORMAT_SPI4,
 	BITSTREAM_FORMAT_INTEL_AVST,
 	BITSTREAM_FORMAT_INTEL_AS,
+	BITSTREAM_FORMAT_NATIVE,
 };
 
 ssize_t nfb_fw_open_rpd(FILE *fd, void **pdata, enum bitstream_format f);

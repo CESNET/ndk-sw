@@ -297,6 +297,7 @@ int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, co
 		".bit",
 		".rbf",
 		".rpd",
+		".bin",
 	};
 
 	if (fdt == NULL) {
