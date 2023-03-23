@@ -124,6 +124,17 @@ static int nfb_fdt_create_binary_slot(void *fdt, int node, char *name, char *tit
 	return fdt_offset;
 }
 
+static inline void nfb_fdt_create_boot_type(void *fdt, int node, const char *type, int width)
+{
+	int subnode;
+
+	subnode = fdt_add_subnode(fdt, node, "control-param");
+	fdt_setprop_string(fdt, subnode, "boot-interface-type", type);
+	if (width) {
+		fdt_setprop_u32(fdt, subnode, "boot-interface-width", width);
+	}
+}
+
 /*
  * nfb_fdt_fixups - Fix the FDT: Create missing nodes and properties
  * @nfb: NFB device
@@ -133,11 +144,13 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	static const char *flag_fb_select_flash = "fb_select_flash";
 	static const char *flag_flash_set_async = "flash_set_async";
 
+	int i;
 	int node, subnode;
 	uint32_t prop32;
 	struct nfb_pci_device *pci_device = NULL;
 
 	const char *name = nfb->nfb_pci_dev->name;
+	const char *card_name = "";
 	void *fdt = nfb->fdt;
 
 	enum pci_bus_speed speed;
@@ -146,8 +159,11 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	char node_name[NFB_FDT_FIXUP_NODE_NAME_LEN];
 
 	int proplen;
-	const uint32_t *prop32_p;
-	int boot_intel_sdm = 0;
+
+	static const char * boot_ctrl_compatibles[] = {
+		"netcope,boot_controller",
+		"netcope,intel_sdm_controller",
+	};
 
 	node = fdt_path_offset(fdt, "/");
 	node = fdt_add_subnode(fdt, node, "system");
@@ -169,20 +185,17 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 		fdt_setprop_u32(fdt, node, "pcie-link-width", width);
 	}
 
-	node = fdt_node_offset_by_compatible(fdt, -1, "netcope,boot_controller");
-	// FIXME: better create some general boot controller interface
-	if (node < 0) {
-		node = fdt_node_offset_by_compatible(fdt, -1, "netcope,intel_sdm_controller");
-		if (node < 0) {
-			return;
-		} else {
-			prop32_p = fdt_getprop(fdt, node, "boot_en", &proplen);
-			if (proplen != sizeof(*prop32_p) || fdt32_to_cpu(*prop32_p) == 0) {
-				return;
-			}
-			boot_intel_sdm = 1;
-		}
+	node = fdt_path_offset(fdt, "/firmware");
+	card_name = fdt_getprop(fdt, node, "card-name", &proplen);
+
+	for (node = -1, i = 0; i < ARRAY_SIZE(boot_ctrl_compatibles); i++) {
+		node = fdt_node_offset_by_compatible(fdt, -1, boot_ctrl_compatibles[i]);
+		if (node >= 0)
+			break;
 	}
+
+	if (node < 0)
+		return;
 
 	/* Add binary slots to DT for coresponding partitions for Flash access and booting */
 	/* TODO - move definition to firmware FDT */
@@ -198,6 +211,8 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 		nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 1, 0x00000000, 0x04000000-0x40000);
 		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 0, 0x00000000, 0x04000000-0x40000);
+
+		nfb_fdt_create_boot_type(fdt, node, "BPI", 16);
 	} else if (!strcmp(name, "NFB-100G2")) {
 		prop32 = cpu_to_fdt32(1);
 		fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
@@ -206,6 +221,8 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 		nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 0, 0x02000000, 0x02000000);
 		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 0, 0x00000000, 0x02000000-0x40000);
+
+		nfb_fdt_create_boot_type(fdt, node, "BPI", 16);
 	} else if (!strcmp(name, "FB1CGG")) {
 		prop32 = cpu_to_fdt32(2);
 		fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
@@ -224,6 +241,9 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 		subnode = nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 1, 0x00040000, 0x04000000-0x40000);
 		subnode = fdt_subnode_offset(fdt, subnode, "control-param");
 		fdt_setprop_u32(fdt, subnode, "bitstream-offset", 32);
+
+		/* INFO: mango is SMAPx32, but this works too */
+		nfb_fdt_create_boot_type(fdt, node, "BPI", 16);
 	} else if (!strcmp(name, "TIVOLI")) {
 		prop32 = cpu_to_fdt32(2);
 		fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
@@ -233,12 +253,16 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 		nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery",      1, 0, 0, 0x00000000, 0x04000000);
 		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 1, 0x00000000, 0x04000000);
+
+		nfb_fdt_create_boot_type(fdt, node, "SPI", 4);
 	} else if (!strcmp(name, "NFB-40G2") || !strcmp(name, "NFB-100G")) {
 		prop32 = cpu_to_fdt32(1);
 		fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
 
 		nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 0, 0x00020000, 0x02000000-0x20000);
 		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 0, 0x02000000, 0x02000000);
+
+		nfb_fdt_create_boot_type(fdt, node, "BPI", 16);
 	} else if (!strcmp(name, "COMBO-400G1")) {
 		prop32 = cpu_to_fdt32(2);
 		fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
@@ -249,9 +273,10 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 		nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 1, 0x00000000, 0x08000000);
 		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 0, 0x00000000, 0x08000000);
+
+		nfb_fdt_create_boot_type(fdt, node, "INTEL-AVST", 0);
 	} else if (!strcmp(name, "COMBO-GENERIC")) {
-		/* INFO: This setting applies to IA-420F card (boot via SDM ctrl - Intel) */
-		if (boot_intel_sdm) {
+		if (!strcmp(card_name, "IA-420F")) {
 			prop32 = cpu_to_fdt32(1);
 			fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
 			prop32 = cpu_to_fdt32(256 * 1024 * 1024);
@@ -261,19 +286,8 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 			nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 0, 0, 0, 0x00210000, 0x02000000-0x210000);
 			nfb_fdt_create_binary_slot(fdt, node, "image0", "application0" , 1, 1, 0, 0x02000000, 0x04000000);
+			//nfb_fdt_create_boot_type(fdt, node, "BPI", 16);
 		}
-	}
-
-	subnode = fdt_add_subnode(fdt, node, "control-param");
-	if (!strcmp(name, "TIVOLI")) {
-		fdt_setprop_string(fdt, subnode, "boot-interface-type", "SPI");
-		fdt_setprop_u32(fdt, subnode, "boot-interface-width", 4);
-	} else if (!strcmp(name, "COMBO-400G1")) {
-		fdt_setprop_string(fdt, subnode, "boot-interface-type", "INTEL-AVST");
-	} else {
-		/* TODO: mango is SMAPx32, but this works too */
-		fdt_setprop_string(fdt, subnode, "boot-interface-type", "BPI");
-		fdt_setprop_u32(fdt, subnode, "boot-interface-width", 16);
 	}
 }
 /*
