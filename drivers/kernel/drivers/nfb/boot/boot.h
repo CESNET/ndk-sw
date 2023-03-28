@@ -16,6 +16,8 @@
 
 #include <linux/nfb/boot.h>
 
+#include <uapi/linux/nfb-fpga-image-load.h>
+
 #include "../../spi-nor/spi-nor.h"
 
 #include "../nfb.h"
@@ -78,5 +80,11 @@ int nfb_boot_get_sensor_ioc(struct nfb_boot *boot, struct nfb_boot_ioc_sensor __
 
 #define NFB_BOOT_FLAG_FB_SELECT_FLASH 1
 #define NFB_BOOT_FLAG_FLASH_SET_ASYNC 2
+
+int nfb_fpga_image_load_attach(struct nfb_device *nfb, void **priv);
+void nfb_fpga_image_load_detach(struct nfb_device* nfb, void *priv);
+long nfb_fpga_image_load_ioctl(void *priv, void * app_priv, struct file *file, unsigned int cmd, unsigned long arg);
+int nfb_fpga_image_load_open(void *priv, void **app_priv, struct file *file);
+void nfb_fpga_image_load_release(void *priv, void *app_priv, struct file *file);
 
 #endif /* NFB_BOOT_H */

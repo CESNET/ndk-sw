@@ -298,6 +298,14 @@ static struct nfb_driver_ops embedded_driver_ops[] = {
 		.attach = nfb_ndp_netdev_attach,
 		.detach = nfb_ndp_netdev_detach,
 	},
+	{
+		.attach = nfb_fpga_image_load_attach,
+		.detach = nfb_fpga_image_load_detach,
+		.ioc_type = FPGA_IMAGE_LOAD_MAGIC,
+		.ioctl = nfb_fpga_image_load_ioctl,
+		.open = nfb_fpga_image_load_open,
+		.release = nfb_fpga_image_load_release,
+	},
 };
 
 /*
