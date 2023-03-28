@@ -112,6 +112,8 @@ int nfb_boot_reload(void *arg)
 	struct nfb_pci_device *slave, *temp;
 	struct device *mbus_dev;
 
+	int reload_time_ms;
+
 	boot = arg;
 	nfb = boot->nfb;
 
@@ -148,15 +150,23 @@ int nfb_boot_reload(void *arg)
 	/* Workaround: Close all MTDs within BootFPGA */
 	nfb_boot_mtd_destroy(boot);
 
+	reload_time_ms = 2000;
 	/* Send reload-fw command to BootFPGA component */
-	if (boot->controller_type == 3) {
-		uint64_t cmd = (0x7l << 60) | (7l << 48) | boot->num_image;
-		nfb_comp_write64(boot->comp, 0, cmd);
+	if (boot->pmci) {
+		boot->pmci->image_load[boot->num_image].load_image(boot->pmci->sec);
+		reload_time_ms = 5000;
 	} else if (boot->sdm && boot->sdm_boot_en) {
 		sdm_rsu_image_update(boot->sdm, boot->num_image);
+	} else if (boot->comp) {
+		if (boot->controller_type == 3) {
+			uint64_t cmd = (0x7l << 60) | (7l << 48) | boot->num_image;
+			nfb_comp_write64(boot->comp, 0, cmd);
+		} else {
+			nfb_comp_write32(boot->comp, 0, boot->num_image);
+			nfb_comp_write32(boot->comp, 4, 0xE0000000);
+		}
 	} else {
-		nfb_comp_write32(boot->comp, 0, boot->num_image);
-		nfb_comp_write32(boot->comp, 4, 0xE0000000);
+		dev_warn(mbus_dev, "no boot controller on %s\n", pci_name(nfb->pci));
 	}
 
 	nfb_boot_reload_shutdown(master);
@@ -169,7 +179,7 @@ int nfb_boot_reload(void *arg)
 	}
 
 	/* Wait some time before FPGA reboots */
-	msleep(2000);
+	msleep(reload_time_ms);
 
 	nfb_boot_reload_linkup(master);
 	list_for_each_entry(slave, &slaves, reload_list) {
