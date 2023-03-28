@@ -7,6 +7,9 @@
  *   Martin Spinler <spinler@cesnet.cz>
  */
 
+#include <config.h>
+#ifdef CONFIG_NFB_ENABLE_PMCI
+
 #include <linux/bitfield.h>
 #include <linux/mfd/nfb-intel-m10-bmc.h>
 #include <linux/module.h>
@@ -412,3 +415,5 @@ void nfb_pmci_exit()
 	platform_driver_unregister(&nfb_intel_m10bmc_hwmon_driver);
 	platform_driver_unregister(&nfb_intel_m10bmc_sec_driver);
 }
+
+#endif

@@ -298,6 +298,7 @@ static struct nfb_driver_ops embedded_driver_ops[] = {
 		.attach = nfb_ndp_netdev_attach,
 		.detach = nfb_ndp_netdev_detach,
 	},
+#ifdef CONFIG_NFB_ENABLE_PMCI
 	{
 		.attach = nfb_fpga_image_load_attach,
 		.detach = nfb_fpga_image_load_detach,
@@ -306,6 +307,7 @@ static struct nfb_driver_ops embedded_driver_ops[] = {
 		.open = nfb_fpga_image_load_open,
 		.release = nfb_fpga_image_load_release,
 	},
+#endif
 };
 
 /*

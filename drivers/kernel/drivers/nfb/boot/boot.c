@@ -261,10 +261,12 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	*priv = boot;
 
 	boot->nfb = nfb;
+#ifdef CONFIG_NFB_ENABLE_PMCI
 
 	ret = nfb_pmci_attach(boot);
 	if (ret == 0 && boot->pmci)
 		goto have_boot_controller;
+#endif
 
 	/* Cards with Intel FPGA (Stratix10, Agilex) use Secure Device Manager for QSPI Flash access and Boot */
 	boot->sdm = NULL;
@@ -304,7 +306,9 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 		ret = -ENODEV;
 		goto err_comp_open;
 	}
+#ifdef CONFIG_NFB_ENABLE_PMCI
 have_boot_controller:
+#endif
 
 	prop32 = fdt_getprop(nfb->fdt, fdt_offset, "num_flash", &len);
 	if (len == sizeof(*prop32))
@@ -364,7 +368,9 @@ have_boot_controller:
 
 err_comp_open:
 err_nocomp:
+#ifdef CONFIG_NFB_ENABLE_PMCI
 	nfb_pmci_detach(boot);
+#endif
 	kfree(boot);
 err_kmalloc:
 	return ret;
@@ -386,19 +392,27 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 	if (boot->comp)
 		nfb_comp_close(boot->comp);
 	sdm_free(boot->sdm);
+#ifdef CONFIG_NFB_ENABLE_PMCI
 	if (boot->pmci)
 		nfb_pmci_detach(boot);
+#endif
 	kfree(boot);
 }
 
 int nfb_boot_init()
 {
+#ifdef CONFIG_NFB_ENABLE_PMCI
 	return nfb_pmci_init();
+#else
+	return 0;
+#endif
 }
 
 void nfb_boot_exit()
 {
+#ifdef CONFIG_NFB_ENABLE_PMCI
 	nfb_pmci_exit();
+#endif
 }
 
 module_param(boot_enable, bool, S_IRUGO);
