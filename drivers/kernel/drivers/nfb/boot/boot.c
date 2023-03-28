@@ -262,6 +262,10 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 
 	boot->nfb = nfb;
 
+	ret = nfb_pmci_attach(boot);
+	if (ret == 0 && boot->pmci)
+		goto have_boot_controller;
+
 	/* Cards with Intel FPGA (Stratix10, Agilex) use Secure Device Manager for QSPI Flash access and Boot */
 	boot->sdm = NULL;
 	boot->sdm_boot_en = 0;
@@ -300,6 +304,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 		ret = -ENODEV;
 		goto err_comp_open;
 	}
+have_boot_controller:
 
 	prop32 = fdt_getprop(nfb->fdt, fdt_offset, "num_flash", &len);
 	if (len == sizeof(*prop32))
@@ -359,6 +364,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 
 err_comp_open:
 err_nocomp:
+	nfb_pmci_detach(boot);
 	kfree(boot);
 err_kmalloc:
 	return ret;
@@ -377,8 +383,11 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 		nfb_xilinx_spi_remove(master);
 	}
 
-	nfb_comp_close(boot->comp);
+	if (boot->comp)
+		nfb_comp_close(boot->comp);
 	sdm_free(boot->sdm);
+	if (boot->pmci)
+		nfb_pmci_detach(boot);
 	kfree(boot);
 }
 
