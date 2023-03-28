@@ -163,6 +163,7 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	static const char * boot_ctrl_compatibles[] = {
 		"netcope,boot_controller",
 		"netcope,intel_sdm_controller",
+		"cesnet,pmci",
 	};
 
 	node = fdt_path_offset(fdt, "/");
@@ -287,6 +288,10 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 			nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 0, 0, 0, 0x00210000, 0x02000000-0x210000);
 			nfb_fdt_create_binary_slot(fdt, node, "image0", "application0" , 1, 1, 0, 0x02000000, 0x04000000);
 			//nfb_fdt_create_boot_type(fdt, node, "BPI", 16);
+		} else if (!strcmp(card_name, "N6010")) {
+			nfb_fdt_create_binary_slot(fdt, node, "image2", "fpga_factory", 2, 2, -1, 0, 0);
+			nfb_fdt_create_binary_slot(fdt, node, "image1", "fpga_user1",   1, 3, -1, 0, 0);
+			nfb_fdt_create_binary_slot(fdt, node, "image0", "fpga_user0",   0, 4, -1, 0, 0);
 		}
 	}
 }
