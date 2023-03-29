@@ -16,16 +16,20 @@
 
 #include <linux/nfb/boot.h>
 
+#include <uapi/linux/nfb-fpga-image-load.h>
+
 #include "../../spi-nor/spi-nor.h"
 
 #include "../nfb.h"
 
 #include "sdm.h"
+#include "nfb-pmci.h"
 
 struct nfb_boot {
 	struct nfb_comp *comp;
 	struct spi_device *spi;
 	struct nfb_device *nfb;
+	struct pmci_device *pmci;
 
 	int num_image;
 
@@ -61,6 +65,8 @@ int nfb_boot_ioctl_mtd_info(struct nfb_boot *nfb_boot,
 
 int nfb_mtd_read(struct nfb_device *dev, int index, size_t addr, void *data, size_t size);
 
+int nfb_boot_init(void);
+void nfb_boot_exit(void);
 int nfb_boot_attach(struct nfb_device* nfb, void **priv);
 void nfb_boot_detach(struct nfb_device* nfb, void *priv);
 /*int ndp_char_open(void *priv, void **app_priv, struct file *file);
@@ -74,5 +80,11 @@ int nfb_boot_get_sensor_ioc(struct nfb_boot *boot, struct nfb_boot_ioc_sensor __
 
 #define NFB_BOOT_FLAG_FB_SELECT_FLASH 1
 #define NFB_BOOT_FLAG_FLASH_SET_ASYNC 2
+
+int nfb_fpga_image_load_attach(struct nfb_device *nfb, void **priv);
+void nfb_fpga_image_load_detach(struct nfb_device* nfb, void *priv);
+long nfb_fpga_image_load_ioctl(void *priv, void * app_priv, struct file *file, unsigned int cmd, unsigned long arg);
+int nfb_fpga_image_load_open(void *priv, void **app_priv, struct file *file);
+void nfb_fpga_image_load_release(void *priv, void *app_priv, struct file *file);
 
 #endif /* NFB_BOOT_H */

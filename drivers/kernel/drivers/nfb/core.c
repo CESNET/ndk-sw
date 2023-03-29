@@ -298,6 +298,16 @@ static struct nfb_driver_ops embedded_driver_ops[] = {
 		.attach = nfb_ndp_netdev_attach,
 		.detach = nfb_ndp_netdev_detach,
 	},
+#ifdef CONFIG_NFB_ENABLE_PMCI
+	{
+		.attach = nfb_fpga_image_load_attach,
+		.detach = nfb_fpga_image_load_detach,
+		.ioc_type = FPGA_IMAGE_LOAD_MAGIC,
+		.ioctl = nfb_fpga_image_load_ioctl,
+		.open = nfb_fpga_image_load_open,
+		.release = nfb_fpga_image_load_release,
+	},
+#endif
 };
 
 /*
@@ -307,6 +317,10 @@ static int nfb_init(void)
 {
 	int ret;
 	int i;
+
+	ret = nfb_boot_init();
+	if (ret)
+		return ret;
 
 	mutex_init(&nfb_driver_register_mutex);
 
@@ -338,6 +352,8 @@ static void nfb_exit(void)
 {
 	nfb_pci_exit();
 	nfb_char_exit();
+
+	nfb_boot_exit();
 }
 
 module_init(nfb_init);

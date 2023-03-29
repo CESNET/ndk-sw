@@ -14,8 +14,11 @@
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
+#include <sys/eventfd.h>
 
 #include <libfdt.h>
+
+#include <uapi/linux/nfb-fpga-image-load.h>
 
 #include <linux/nfb/boot.h>
 #include <nfb/nfb.h>
@@ -23,6 +26,7 @@
 
 #include "../nfb.h"
 #include "boot.h"
+
 
 int nfb_fw_boot(const char *devname, unsigned int image)
 {
@@ -221,6 +225,12 @@ ssize_t nfb_fw_read_for_dev(const struct nfb_device *dev, FILE *fd, void **data)
 
 	enum bitstream_format format = BITSTREAM_FORMAT_BPI16;
 
+	fdt_for_each_compatible_node(fdt, node, "cesnet,pmci") {
+		format = BITSTREAM_FORMAT_NATIVE;
+		ret = nfb_fw_open_rpd(fd, data, format);
+		return ret;
+	}
+
 	/* For Intel Stratix 10 and Agilex FPGAs */
 	fdt_for_each_compatible_node(fdt, node, "netcope,intel_sdm_controller") {
 		prop32 = fdt_getprop(fdt, node, "boot_en", &proplen);
@@ -271,6 +281,81 @@ int nfb_fw_load(const struct nfb_device *dev, unsigned int image, void *data, si
 	return nfb_fw_load_ext(dev, image, data, size, NFB_FW_LOAD_FLAG_VERBOSE);
 }
 
+int nfb_fw_load_fpga_image_load(const struct nfb_device *dev, void *data, size_t size, int flags)
+{
+	struct fpga_image_status fs;
+	int ret;
+	int efd;
+	int pct;
+	unsigned int prev_progress;
+	const char *text = NULL;
+
+	if (ioctl(dev->fd, FPGA_IMAGE_LOAD_STATUS, &fs)) {
+		ret = errno;
+		return ret;
+	}
+
+	if (fs.progress != FPGA_IMAGE_PROG_IDLE)
+		return -EBUSY;
+
+	efd = eventfd(0, 0);
+
+	struct fpga_image_write fw = {
+		.flags = 0,
+		.size = size,
+		.evtfd = efd,
+		.buf = (uint64_t) data,
+	};
+
+	if (flags & NFB_FW_LOAD_FLAG_VERBOSE) {
+		printf("Card is using fpga_image_load mechanism, ignoring image parameter\n");
+		printf("Bitstream size: %lu B\n", size);
+	}
+
+	ret = ioctl(dev->fd, FPGA_IMAGE_LOAD_WRITE, &fw);
+	if (ret) {
+		ret = errno;
+		goto err_ioctl_write;
+	}
+
+	prev_progress = FPGA_IMAGE_PROG_IDLE;
+	do {
+		if (ioctl(dev->fd, FPGA_IMAGE_LOAD_STATUS, &fs)) {
+			ret = errno;
+			goto err_ioctl_status;
+		}
+		if (flags & NFB_FW_LOAD_FLAG_VERBOSE) {
+			if (prev_progress != fs.progress) {
+				if (text) {
+					nfb_fw_print_progress(text, 100);
+					text = NULL;
+				}
+				prev_progress = fs.progress;
+
+				if (fs.progress == FPGA_IMAGE_PROG_PREPARING)
+					text = "Erasing Flash: %3d%%";
+				else if (fs.progress == FPGA_IMAGE_PROG_WRITING)
+					text = "Writing Flash: %3d%%";
+				else if (fs.progress == FPGA_IMAGE_PROG_PROGRAMMING)
+					text = "Staging Flash: %3d%%";
+			}
+
+			if (text) {
+				pct = 0;
+				if (fs.progress == FPGA_IMAGE_PROG_WRITING)
+					pct = (size - fs.remaining_size) * 100 / size;
+				nfb_fw_print_progress(text, pct);
+			}
+		}
+		usleep(200000);
+	} while (fs.progress != 0);
+
+err_ioctl_status:
+err_ioctl_write:
+	close(efd);
+	return ret;
+}
+
 int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags)
 {
 	int node = -1;
@@ -286,6 +371,14 @@ int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data
 
 	struct nfb_boot_ioc_mtd mtd;
 	struct nfb_boot_ioc_mtd_info mtd_info;
+
+	struct fpga_image_status fs;
+
+	if (ioctl(dev->fd, FPGA_IMAGE_LOAD_STATUS, &fs) == 0) {
+		if (errno != -ENXIO) {
+			return nfb_fw_load_fpga_image_load(dev, data, size, flags);
+		}
+	}
 
 	fdt_for_each_compatible_node(fdt, node, "netcope,binary_slot") {
 		prop = fdt_getprop(fdt, node, "id", &proplen);
