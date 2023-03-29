@@ -16,6 +16,18 @@
 extern "C" {
 #endif
 
+#define FTILE_RSFEC_BASE_25G  0x6000
+#define FTILE_RSFEC_BASE_50G  0x6200
+#define FTILE_RSFEC_BASE_100G 0x6600
+#define FTILE_RSFEC_BASE_200G 0x6E00
+#define FTILE_RSFEC_BASE_400G 0x7E00
+
+#define FTILE_PCS_BASE_10_25G	0x1000
+#define FTILE_PCS_BASE_50G	0x2000
+#define FTILE_PCS_BASE_40_100G	0x3000
+#define FTILE_PCS_BASE_200G	0x4000
+#define FTILE_PCS_BASE_400G	0x5000
+
 /* ~~~~[ INCLUDES ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 #include "mdio_dmap.h"
 #include "mdio_ctrl.h"
@@ -36,6 +48,151 @@ struct nc_mdio {
 	enum mdio_pma_enc link_encoding; /* Line modulation */
 	int speed;                       /* Speed in Gbps */
 };
+
+/* Structure holds IEEE -> FTILE registers mapping */
+struct nc_ftile_reg_map {
+	int devad;
+	int ieee_reg;
+	uint32_t ftile_reg;
+};
+
+/* Register mapping table for FTILE RS-FEC registers (200 & 400GE) */
+static const struct nc_ftile_reg_map ftile_fec_map[] = {
+	{1, 202, 0x0000 + 0x184},
+	{1, 203, 0x0000 + 0x186},
+	{1, 204, 0x0000 + 0x18c},
+	{1, 205, 0x0000 + 0x18e},
+	{1, 210, 0x0000 + 0x194}, /* PMA FEC symbol errors, lane 0 low  */
+	{1, 211, 0x0000 + 0x196}, /* PMA FEC symbol errors, lane 0 high */
+	{1, 212, 0x0200 + 0x194},
+	{1, 213, 0x0200 + 0x196},
+	{1, 214, 0x0400 + 0x194},
+	{1, 215, 0x0400 + 0x196},
+	{1, 216, 0x0600 + 0x194}, /* PMA FEC symbol errors, lane 3 low  */
+	{1, 217, 0x0600 + 0x196}, /* PMA FEC symbol errors, lane 3 high */
+	{3, 802, 0x0000 + 0x184}, /* Corrected codewords low */
+	{3, 803, 0x0000 + 0x186}, /* Corrected codewords high */
+	{3, 804, 0x0000 + 0x18c}, /* Uncorrected codewords */
+	{3, 805, 0x0000 + 0x18e}, /* Uncorrected codewords */
+	{3, 600, 0x0000 + 0x194}, /* PCS FEC symbol errors, lane 0 low */
+	{3, 601, 0x0000 + 0x196}, /* PCS FEC symbol errors, lane 0 high */
+	{3, 602, 0x0200 + 0x194},
+	{3, 603, 0x0200 + 0x196},
+	{3, 604, 0x0400 + 0x194},
+	{3, 605, 0x0400 + 0x196},
+	{3, 606, 0x0600 + 0x194},
+	{3, 607, 0x0600 + 0x196},
+	{3, 608, 0x0800 + 0x194},
+	{3, 609, 0x0800 + 0x196},
+	{3, 610, 0x0a00 + 0x194},
+	{3, 611, 0x0a00 + 0x196},
+	{3, 612, 0x0c00 + 0x194},
+	{3, 613, 0x0c00 + 0x196},
+	{3, 614, 0x0e00 + 0x194},
+	{3, 615, 0x0e00 + 0x196},
+	{3, 616, 0x1000 + 0x194},
+	{3, 617, 0x1000 + 0x196},
+	{3, 618, 0x1200 + 0x194},
+	{3, 619, 0x1200 + 0x196},
+	{3, 620, 0x1400 + 0x194},
+	{3, 621, 0x1400 + 0x196},
+	{3, 622, 0x1600 + 0x194},
+	{3, 623, 0x1600 + 0x196},
+	{3, 624, 0x1800 + 0x194},
+	{3, 625, 0x1800 + 0x196},
+	{3, 626, 0x1a00 + 0x194},
+	{3, 627, 0x1a00 + 0x196},
+	{3, 628, 0x1c00 + 0x194},
+	{3, 629, 0x1c00 + 0x196},
+	{3, 630, 0x1e00 + 0x194}, /* PCS FEC symbol errors, lane 16 low */
+	{3, 631, 0x1e00 + 0x196}, /* PCS FEC symbol errors, lane 16 high */
+	{3, 400, 0x0000 + 0x16c}, /* PCS lane mapping, lane 0 */
+	{3, 401, 0x0200 + 0x16c}, /* PCS lane mapping, lane 1 */
+	{3, 402, 0x0400 + 0x16c}, /* PCS lane mapping, lane 2 */
+	{3, 403, 0x0600 + 0x16c}, /* PCS lane mapping, lane 3 */
+	{3, 404, 0x0800 + 0x16c}, /* PCS lane mapping, lane 4 */
+	{3, 405, 0x0a00 + 0x16c}, /* PCS lane mapping, lane 5 */
+	{3, 406, 0x0c00 + 0x16c}, /* PCS lane mapping, lane 6 */
+	{3, 407, 0x0e00 + 0x16c}, /* PCS lane mapping, lane 7 */
+	{3, 408, 0x1000 + 0x16c}, /* PCS lane mapping, lane 8 */
+	{3, 409, 0x1200 + 0x16c}, /* PCS lane mapping, lane 9 */
+	{3, 410, 0x1400 + 0x16c}, /* PCS lane mapping, lane 10 */
+	{3, 411, 0x1600 + 0x16c}, /* PCS lane mapping, lane 11 */
+	{3, 412, 0x1800 + 0x16c}, /* PCS lane mapping, lane 12 */
+	{3, 413, 0x1a00 + 0x16c}, /* PCS lane mapping, lane 13 */
+	{3, 414, 0x1c00 + 0x16c}, /* PCS lane mapping, lane 14 */
+	{3, 415, 0x1e00 + 0x16c}, /* PCS lane mapping, lane 15 */
+	{0, 0, 0}
+};
+
+/* Register mapping table for FTILE PCS */
+static const struct nc_ftile_reg_map ftile_pcs_map[] = {
+	{3, 200, 0xa4},	  /* BIP counter, lane 0 */
+	{3, 201, 0xa8},	  /* BIP counter, lane 1 */
+	{3, 202, 0xac},	  /* BIP counter, lane 2 */
+	{3, 203, 0xb0},	  /* BIP counter, lane 3 */
+	{3, 204, 0xb4},	  /* BIP counter, lane 4 */
+	{3, 205, 0xb8},	  /* BIP counter, lane 5 */
+	{3, 206, 0xbc},	  /* BIP counter, lane 6 */
+	{3, 207, 0xc0},	  /* BIP counter, lane 7 */
+	{3, 208, 0xc4},	  /* BIP counter, lane 8 */
+	{3, 209, 0xc8},	  /* BIP counter, lane 9 */
+	{3, 210, 0xcc},	  /* BIP counter, lane 10 */
+	{3, 211, 0xd0},	  /* BIP counter, lane 11 */
+	{3, 212, 0xd4},	  /* BIP counter, lane 12 */
+	{3, 213, 0xd8},	  /* BIP counter, lane 13 */
+	{3, 214, 0xdc},	  /* BIP counter, lane 14 */
+	{3, 215, 0xe0},	  /* BIP counter, lane 15 */
+	{3, 216, 0xe4},	  /* BIP counter, lane 16 */
+	{3, 217, 0xe8},	  /* BIP counter, lane 17 */
+	{3, 218, 0xec},	  /* BIP counter, lane 18 */
+	{3, 219, 0xf0},	  /* BIP counter, lane 19 */
+	{0, 0, 0}
+};
+
+static inline uint32_t _find_ftile_reg(uint16_t devad, uint16_t ieee_reg, const struct nc_ftile_reg_map table[])
+{
+	int i = 0;
+
+	while (table[i].devad) {
+		if (
+			(ieee_reg == table[i].ieee_reg) &&
+			(devad == table[i].devad)
+		)
+			return (table[i].ftile_reg);
+		i++;
+	}
+	return 0;
+}
+
+static inline uint32_t _ftile_rsfec_base(int speed)
+{
+	switch (speed) {
+	case 25: return FTILE_RSFEC_BASE_25G;
+	case 50: return FTILE_RSFEC_BASE_50G;
+	case 100: return FTILE_RSFEC_BASE_100G;
+	case 200: return FTILE_RSFEC_BASE_200G;
+	case 400: return FTILE_RSFEC_BASE_400G;
+	default: return 0;
+	}
+}
+
+static inline uint32_t _ftile_pcs_base(int speed)
+{
+	switch (speed) {
+	case 10: return FTILE_PCS_BASE_10_25G;
+	case 25: return FTILE_PCS_BASE_10_25G;
+	case 50: return FTILE_PCS_BASE_50G;
+	case 40: return FTILE_PCS_BASE_40_100G;
+	case 100: return FTILE_PCS_BASE_40_100G;
+	case 200: return FTILE_PCS_BASE_200G;
+	case 400: return FTILE_PCS_BASE_400G;
+	default: return 0;
+	}
+}
+
+#define ftile_rsfec_addr(speed, lane, reg) ( ( _ftile_rsfec_base(speed) + (lane)*0x200 + (reg)) >> 2)
+#define ftile_pcs_addr(speed, reg) ((_ftile_pcs_base(speed) + (reg)) >> 2)
 
 /* ~~~~[ PROTOTYPES ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 static inline struct nc_mdio *nc_mdio_open (const struct nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam);
@@ -158,13 +315,13 @@ static inline void nc_mdio_ftile_fgt_attribute_write(struct nc_mdio *mdio, int p
 	int phy_lane;
 
 	/* FGT Attribute Access addresses according to Intel documentation:
- 	 *    https://www.intel.com/content/www/us/en/docs/programmable/683872/22-3-4-2-0/fgt-attribute-access-method.html
- 	 * Our designs currently implement page-based mapping, i.e., registers
- 	 * for each channel are mapped to the same addresses, but on separate
- 	 * pages.
- 	 * If required, the page-based mapping can be reimplemented in an
- 	 * Intel-like fashion.
- 	 */
+	 *    https://www.intel.com/content/www/us/en/docs/programmable/683872/22-3-4-2-0/fgt-attribute-access-method.html
+	 * Our designs currently implement page-based mapping, i.e., registers
+	 * for each channel are mapped to the same addresses, but on separate
+	 * pages.
+	 * If required, the page-based mapping can be reimplemented in an
+	 * Intel-like fashion.
+	 */
 	int channel = 0; // mapping for each channel follows channel 0
 	page = lane + 1; // page number corresponds to lane number + 1
 	LINK_MNG_SIDE_CPI_REGS = 0x0009003c + (channel >> 2) * 0x00400000;
@@ -211,7 +368,7 @@ static inline void nc_mdio_fixup_ftile_set_mode(struct nc_mdio *mdio, int prtad,
 	int i;
 	uint16_t media_type;
 
-	if (mdio->link_encoding == MDIO_PMA_ENC_NRZ) 
+	if (mdio->link_encoding == MDIO_PMA_ENC_NRZ)
 		return; /* Not necessary to change media mode for NRZ modes */
 	if (
 		(val == 0x5B || val == 0x5C) ||  /* 400GBASE-R8 */
@@ -222,7 +379,7 @@ static inline void nc_mdio_fixup_ftile_set_mode(struct nc_mdio *mdio, int prtad,
 		media_type = 0x14; // optical
 	/* all other media types */
 	} else {
-		media_type = 0x10; // default = -CR 
+		media_type = 0x10; // default = -CR
 	}
 
 	for (i = 0; i < mdio->pma_lanes; i++) {
@@ -231,6 +388,219 @@ static inline void nc_mdio_fixup_ftile_set_mode(struct nc_mdio *mdio, int prtad,
 
 	nc_mdio_ftile_reset(mdio, prtad, 1, 1); // assert RX reset
 	nc_mdio_ftile_reset(mdio, prtad, 1, 0); // deassert reset
+}
+
+static inline void _ftile_rsfec_snapshot(struct nfb_comp *comp, int prtad, int fec_lane, int speed)
+{
+	/* make stats snapshot */
+	nc_mdio_dmap_drp_write(comp, prtad, 0, ftile_rsfec_addr(speed, fec_lane, 0x1e0), 1);
+	nc_mdio_dmap_drp_write(comp, prtad, 0, ftile_rsfec_addr(speed, fec_lane, 0x1e0), 0);
+}
+
+/* Construct ieee register 1.201 (RSFEC status) */
+static inline uint16_t _get_ftile_r1201(struct nfb_comp *comp, int prtad, int fec_lanes, int speed)
+{
+	uint32_t val;
+	uint16_t tmp;
+	int lanes = (fec_lanes <= 4) ? fec_lanes : 4;
+	int i;
+
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_rsfec_addr(speed, 0, 0x158));
+	tmp =  ((val & 0x0010) >> 2);  /* High SER */
+	tmp |= (((~val & 0x0002) >> 1) << 8);  /* Lane0 AM locked */
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_rsfec_addr(speed, 0, 0x164));
+	tmp |= ((~val & 0x0001) << 14); /* RSFEC lanes aligned */
+	for (i = 1; i<lanes; i++) {
+		val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_rsfec_addr(speed, i, 0x158));
+		tmp |= (((~val & 0x2) >> 1) << (8+i)); /* Lane AM lock for lanes 1..3 */
+	}
+	/* Read TX align status from EHIP reg 0x118 */
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x118 >> 2);
+	tmp |= (((val & 0x0004) >> 2) << 15);
+	/* Clear flags */
+	nc_mdio_dmap_drp_write(comp, prtad, 0, ftile_rsfec_addr(speed, 0, 0x164), 0xffffffff);
+	for (i = 0; i<lanes; i++)
+		nc_mdio_dmap_drp_write(comp, prtad, 0, ftile_rsfec_addr(speed, i, 0x158), 0xffffffff);
+	return tmp;
+}
+
+/* (Unaligned) read F-TILE FSFEC register */
+static inline uint16_t _get_ftile_rsfec_reg(struct nfb_comp *comp, int prtad, uint32_t addr, int speed)
+{
+	uint32_t val;
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_rsfec_addr(speed, 0, (addr & 0xfffffffc)));
+	if (addr & 0x2) /* Unaligned 16bit read */
+		return (val >> 16);    /* Higher 16 bits */
+	else
+		return (val & 0xffff); /* lower 16 bits */
+}
+
+/* (Unaligned) read F-TILE PCS register */
+static inline uint16_t _get_ftile_pcs_reg(struct nfb_comp *comp, int prtad, uint32_t reg, int speed)
+{
+	uint32_t val;
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_pcs_addr(speed, reg));
+	return (val & 0xffff);
+}
+
+/* Construct ieee register 1.206 (RSFEC lane map) */
+static inline uint16_t _get_ftile_r1206(struct nfb_comp *comp, int prtad, int fec_lanes, int speed)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+	int lanes = (fec_lanes <= 4) ? fec_lanes : 4;
+	int i;
+
+	for (i = 0; i<lanes; i++) {
+		val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_rsfec_addr(speed, i, 0x16c));
+		tmp |= ((val & 0x3) << (2*i));
+	}
+	return tmp;
+}
+
+/* Construct ieee register 3.801 (RSFEC status) */
+static inline uint16_t _get_ftile_r3801(struct nfb_comp *comp, int prtad, int speed)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_rsfec_addr(speed, 0, 0x158));
+	tmp = (1 << 3);                     /* Degraded SER ability */
+	tmp |= (((val >>  4) & 0x1) << 2);  /* High SER */
+	tmp |= (((val >> 24) & 0x1) << 4);  /* Degraded SER */
+	tmp |= (((val >> 27) & 0x1) << 5);  /* Remote degraded SER recieved */
+	tmp |= (((val >> 26) & 0x1) << 6);  /* Local degraded SER received */
+	/* Clear the flags */
+	nc_mdio_dmap_drp_write(comp, prtad, 0, ftile_rsfec_addr(speed, 0, 0x158), 0xffffffff);
+	return tmp;
+}
+
+static inline uint16_t nc_mdio_fixup_ftile_rsfec_read(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr)
+{
+	const int speed = mdio->speed;
+	const int fec_lanes = speed / 25;
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+	uint32_t ftile_reg;
+
+	/* Try to find the <addr> register in table first */
+	if ( (ftile_reg = _find_ftile_reg(devad, addr, ftile_fec_map)) ) {
+		_ftile_rsfec_snapshot(comp, prtad, 0, speed);
+		return _get_ftile_rsfec_reg(comp, prtad, ftile_reg, speed);
+	}
+	/* Register not found in the table */
+	if (devad == 1) { /* PMA & PMA RSFEC registers */
+		switch (addr) {
+		case 201: return _get_ftile_r1201(comp, prtad, fec_lanes, speed);
+		case 206: return _get_ftile_r1206(comp, prtad, fec_lanes, speed);
+		default: break;
+		}
+	}
+	if (devad == 3) { /* PCS &  PCS-FEC registers */
+		switch (addr) {
+		case 801: return _get_ftile_r3801(comp, prtad, speed);
+		default: break;
+		}
+	}
+	return 0;
+}
+
+static inline void _ftile_pcs_snapshot(struct nfb_comp *comp, int prtad, int speed)
+{
+	/* make PCS stats snapshot */
+	nc_mdio_dmap_drp_write(comp, prtad, 0, ftile_pcs_addr(speed, 0x0), 3);
+	nc_mdio_dmap_drp_write(comp, prtad, 0, ftile_pcs_addr(speed, 0x0), 0);
+}
+
+/* Construct ieee register 3.44 (BER counter high) */
+static inline uint16_t _get_ftile_r3044(struct nfb_comp *comp, int prtad, int speed)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_pcs_addr(speed, 0x90)); // BER count reg */
+	tmp = ((val >> 6) & 0xffff);
+	return tmp;
+}
+
+/* Construct ieee register 3.45 (Err block counter high) */
+static inline uint16_t _get_ftile_r3045(struct nfb_comp *comp, int prtad, int speed)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_pcs_addr(speed, 0xf4)); // BlkErr count reg */
+	tmp = ((val >> 8) & 0xffff);
+	return tmp;
+}
+
+/* Construct ieee register 3.33 (BASE-R status 2) */
+static inline uint16_t _get_ftile_r3033(struct nc_mdio *mdio, struct nfb_comp *comp, int prtad)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+	/* Bits [15:14] read from mgmt using standard MDIO */
+	val = mdio->mdio_read(comp, prtad, 3, 33);
+	tmp = (val & 0xc000);
+	/* Others bits (counters) read using DRP */
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_pcs_addr(mdio->speed, 0xf4)); /* BlkErr count reg */
+	tmp |= (val & 0xff);
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_pcs_addr(mdio->speed, 0x90)); /* BER count reg */
+	tmp |= ((val & 0x3f) << 8);
+	return tmp;
+}
+
+/* Construct ieee register 3.400-419 (PCS lane mapping) */
+static inline uint16_t _get_ftile_r3400(struct nfb_comp *comp, int prtad, int speed, int lane)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+	if (lane <= 5)
+		val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_pcs_addr(speed, 0x94));
+	else if (lane <= 11)
+		val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_pcs_addr(speed, 0x98));
+	else if (lane <= 17)
+		val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_pcs_addr(speed, 0x9c));
+	else
+		val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_pcs_addr(speed, 0xa0));
+
+	tmp = ((val >> ((lane % 6) * 5)) & 0x1f);
+	return tmp;
+}
+
+static inline uint16_t nc_mdio_fixup_ftile_pcs_read(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr)
+{
+	const int speed = mdio->speed;
+	const int fec_lanes = speed / 25;
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+	uint32_t ftile_reg;
+
+	/* Try to find the <addr> register in PCS table first */
+	if ( (ftile_reg = _find_ftile_reg(devad, addr, ftile_pcs_map)) ) {
+		 _ftile_pcs_snapshot(comp, prtad, speed);
+                 return  _get_ftile_pcs_reg(comp, prtad, ftile_reg, speed);
+	}
+	/* Also try to find the <addr> register in RSFEC table */
+	if ( (addr < 400) && (ftile_reg = _find_ftile_reg(devad, addr, ftile_fec_map)) )  {
+		_ftile_rsfec_snapshot(comp, prtad, 0, speed);
+		return _get_ftile_rsfec_reg(comp, prtad, ftile_reg, speed);
+	}
+	/* Register not found in tables */
+	if (devad == 1) { /* PMA & RSFEC registers */
+		switch (addr) {
+		case 201: return _get_ftile_r1201(comp, prtad, fec_lanes, speed);
+		case 206: return _get_ftile_r1206(comp, prtad, fec_lanes, speed);
+		}
+	}
+	if (devad == 3) { /* PCS registers */
+		if (addr == 33)
+			return _get_ftile_r3033(mdio, comp, prtad);
+		if (addr == 44)
+			return _get_ftile_r3044(comp, prtad, speed);
+		if (addr == 45)
+			return _get_ftile_r3045(comp, prtad, speed);
+		if ((addr >= 400) && (addr <= 419)) {
+			int lane = (addr - 400);
+			return _get_ftile_r3400(comp, prtad, speed, lane);
+		}
+	}
+	return 0;
 }
 
 static inline void nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
@@ -310,6 +680,26 @@ static inline void nc_mdio_close(struct nc_mdio *m)
 static inline int nc_mdio_read(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr)
 {
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+	uint16_t (*nc_mdio_fixup_rsfec_read)(struct nc_mdio *mdio, int devad, int prtad, uint16_t reg) = NULL;
+
+	/* Select correct set of FIXUP functions */
+	if (mdio->pcspma_is_e_tile) {
+		nc_mdio_fixup_rsfec_read = NULL;
+	} else if ((mdio->pcspma_is_f_tile) && (mdio->speed > 100)) {
+		nc_mdio_fixup_rsfec_read = nc_mdio_fixup_ftile_rsfec_read;
+	} else if (mdio->pcspma_is_f_tile) {
+		nc_mdio_fixup_rsfec_read = nc_mdio_fixup_ftile_pcs_read;
+	}
+
+	if (mdio->pcspma_is_f_tile) {
+		if (
+				(addr >= 200) ||
+				(addr == 33)  ||
+				(addr == 44)  ||
+				(addr == 45)) {
+			return nc_mdio_fixup_rsfec_read(mdio, prtad,  devad, addr);
+		}
+	}
 	return mdio->mdio_read(comp, prtad, devad, addr);
 }
 
