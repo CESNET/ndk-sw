@@ -38,6 +38,8 @@ cdef class Nfb:
     It also allows to access to the object representation of the Flattened Device Tree by the ``fdt`` attribute and some helper functions.
     """
 
+    default_device = '/dev/nfb0'
+
     def __cinit__(self, path: str):
         self._dev = nfb_open(path.encode())
         if self._dev is NULL:
@@ -49,6 +51,7 @@ cdef class Nfb:
         self.fdt = fdt.parse_dtb(self._dtb)
 
         self.ndp = QueueManager(self)
+
 
     def __dealloc__(self):
         if self._dev is not NULL:
@@ -182,6 +185,26 @@ cdef class Comp:
         reg = getattr(self, f"read{width}")(addr)
         return True if (reg & (1 << bit)) else False
 
+    def wait_for_bit(self, addr, bit, timeout=5.0, delay=0.01, level=True, width=32):
+        """
+        Wait for bit in comenent register
+
+        :param addr: Address of the register in component space
+        :param bit: Bit number in register
+        :param timeout: Timeout after which will be the waiting terminated
+        :param delay: Delay between each ask (ask = read of a given register)
+        :param level: For what bit level is function waiting
+        :param width: The bit width of accessed register; supported values are 8, 16, 32, 64
+        :return: True if bit was set in time, else False
+        """
+        t = 0
+        while self.get_bit(addr, bit, width) != level:
+            t += delay
+            if t >= timeout:
+                return False
+            else:
+                time.sleep(delay)
+        return True
 
 class QueueManager:
     #cdef dict __dict__
