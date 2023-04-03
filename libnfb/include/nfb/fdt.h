@@ -10,11 +10,11 @@
 #ifndef LIBNFB_FDT_H
 #define LIBNFB_FDT_H
 
-#include <libfdt.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <libfdt.h>
 
 /* define for loop iterate throught compatible property of Device Tree */
 #define fdt_for_each_compatible_node(fdt, node, compatible) \
