@@ -427,8 +427,8 @@ int ieee802_3_get_pcs_lines(struct mdio_if_info *if_info)
 			case 4: return 20;
 			case 5: return 1;
 			case 6: return 4;
-			case 9: return 4;
-			case 10: return 8;
+			case 9: return 8;
+			case 10: return 16;
 			default: return -1;
 		}
 	} else {

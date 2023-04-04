@@ -15,6 +15,7 @@
 #include <nfb/nfb.h>
 #include <netcope/mdio.h>
 #include <netcope/eth.h>
+#include <netcope/ieee802_3.h>
 
 #include "eth.h"
 #include "ieee802_3.h"
@@ -114,6 +115,7 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 	const char *active;
 
 	struct mdio_if_info mdio_info = nfb_eth_create_mdio_info(mdio, portaddr);
+	int pma_speed = ieee802_3_get_pma_speed_value(&mdio_info);
 
 	//printf("--------------------------------------- PMA %d regs ----\n", p->index);
 	printf("----------------------------------------- PMA regs ----\n");
@@ -147,7 +149,7 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 
 		/* RS-FEC registers */
 		lines = ieee802_3_get_fec_lines(active);
-		if (lines > 0) {
+		if ((lines > 0) && (pma_speed < 200000)) { /* RS-FEC Clause 91, 108 or 134 - RSFEC reg located in 1.200 - 1.300 */
 			reg = nc_mdio_read_dword(mdio, portaddr, 1, 201);
 			printf("RS-FEC status              : %s%s%s\n",
 //					reg & (1 <<  0) ? "FEC bypass corection ability | " : "",
@@ -155,12 +157,12 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 					reg & (1 <<  2) ? "RS-FEC high SER | " : "",
 					reg & (1 << 14) ? "RS-FEC lanes aligned | " : "",
 					reg & (1 << 15) ? "PCS lanes aligned | " : "");
-			printf("RS-FEC corrected cws       : %d\n", nc_mdio_read_dword(mdio, portaddr, 1, 202));
-			printf("RS-FEC uncorrected cws     : %d\n", nc_mdio_read_dword(mdio, portaddr, 1, 204));
+			printf("RS-FEC corrected cws       : %u\n", nc_mdio_read_dword(mdio, portaddr, 1, 202));
+			printf("RS-FEC uncorrected cws     : %u\n", nc_mdio_read_dword(mdio, portaddr, 1, 204));
 
 			printf("RS-FEC symbol errors ->\n");
 			for (i = 0; i < lines; i++) {
-				printf(" * Lane %d                  : %d\n", i, nc_mdio_read_dword(mdio, portaddr, 1, 210 + i * 2));
+				printf(" * Lane %d                  : %u\n", i, nc_mdio_read_dword(mdio, portaddr, 1, 210 + i * 2));
 			}
 			printf("RS-FEC lane mapping        :");
 			reg = nc_mdio_read(mdio, portaddr, 1, 206);
@@ -176,6 +178,22 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 			}
 			printf("\n");
 		}
+		/* RS-FEC integrated in PCS clause 119 (not bypassable) */
+		if (pma_speed >= 200000) {
+			reg = nc_mdio_read_dword(mdio, portaddr, 3, 801);
+			printf("RS-FEC status              : %s%s%s%s\n",
+					reg & (1 <<  2) ? "RS-FEC high SER | " : "",
+					reg & (1 <<  4) ? "RS-FEC degraded SER | " : "",
+					reg & (1 <<  5) ? "Remote degraded SER | " : "",
+					reg & (1 <<  6) ? "Local degraded SER" : "");
+			printf("RS-FEC corrected cws       : %u\n", nc_mdio_read_dword(mdio, portaddr, 3, 802));
+			printf("RS-FEC uncorrected cws     : %u\n", nc_mdio_read_dword(mdio, portaddr, 3, 804));
+
+			printf("RS-FEC symbol errors ->\n");
+			for (i = 0; i < lines; i++) {
+				printf(" * Lane %d                  : %u\n", i, nc_mdio_read_dword(mdio, portaddr, 3, 600 + i * 2));
+			}
+		}
 	}
 
 	//printf("--------------------------------------- PCS %d regs ----\n", p->index);
@@ -187,30 +205,33 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 		reg = nc_mdio_read(mdio, portaddr, 3, 32);
 		// PCS status reg 2 -> 33
 		reg2 = nc_mdio_read(mdio, portaddr, 3, 33);
-		printf("Global Block Lock          : %s | %s\n",
-			(reg & 0x0001) ? "Yes" : "No",
-			(reg2 & 0x8000) ? "Yes":"No");
+		if (pma_speed <= 100000) /* Block lock not defined above 100G */
+			printf("Global Block Lock          : %s | %s\n",
+				(reg & 0x0001) ? "Yes" : "No",
+				(reg2 & 0x8000) ? "Yes" : "No");
 		printf("Global High BER            : %s | %s\n",
 			(reg & 0x0002) ? "Yes" : "No",
 			(reg2 & 0x4000) ? "Yes":"No");
 		// BER counter register -> 44
 		reg = nc_mdio_read(mdio, portaddr, 3, 44);
 		low_bits = ((reg2 >> 8) & 0x003F);
-		printf("BER counter                : %d\n",
+		printf("BER counter                : %u\n",
 			((reg & 0xFFFF) << 6) | low_bits);
 		low_bits = (reg2 & 0x00FF);
 		// Error blocks register -> 45
 		reg = nc_mdio_read(mdio, portaddr, 3, 45);
-		printf("Errored blocks             : %d\n",
+		printf("Errored blocks             : %u\n",
 			((reg & 0x3FFF) << 8) | low_bits);
 
 		lines = ieee802_3_get_pcs_lines(&mdio_info);
 		if (lines > 1) {
+			reg = nc_mdio_read(mdio, portaddr, 3, 50);
+			printf("PCS lanes aligned          : %s\n",
+				(reg & 0x1000) ? "Yes" : "No");
 			printf("\nBlock status for lines     :");
 			// Block status register first half (8 lines)   -> 50
 			//                       second half (12 lines) -> 51
 			//                       total 20 lines (max for 100G)
-			reg = nc_mdio_read(mdio, portaddr, 3, 50);
 			for (i = 0, j =0; i < lines; i++) {
 				if (i == 8) {
 					reg = nc_mdio_read(mdio, portaddr, 3, 51);
@@ -239,12 +260,15 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 				printf(" %2d", nc_mdio_read(mdio, portaddr, 3, 400 + i) & 0x3F);
 			}
 
-			printf("\nBIP error counter           \n");
-			// BIP counter register for each line starting from -> 200 to 220
-			for (i = 0; i < lines; i++) {
-				if (i == 10)
-					printf("\n");
-				printf(" %5d", nc_mdio_read(mdio, portaddr, 3, 200 + i));
+			// BIP counters not defined for speeds above 100
+			if (pma_speed <= 100000) {
+				printf("\nBIP error counter\n");
+				// BIP counter register for each line starting from -> 200 to 220
+				for (i = 0; i < lines; i++) {
+					if (i == 10)
+						printf("\n");
+					printf(" %5d", nc_mdio_read(mdio, portaddr, 3, 200 + i));
+				}
 			}
 			printf("\n");
 		}
