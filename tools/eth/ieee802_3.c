@@ -80,17 +80,24 @@ static const struct pma_pmd_type_t ieee802_3_pma_pmd_type[] = {
 	{0x32, "10GPASS-XR-D",         -1, 0},
 	{0x33, "10GPASS-XR-U",         -1, 0},
 	{0x34, "BASE-H",               -1, 0},
+	{0x35, "25GBASE-LR",           -1, 0},
+	{0x36, "25GBASE-ER",           -1, 0},
 	{0x37, "25GBASE-T",            -1, 0},
 	{0x38, "25GBASE-CR-S",         -1, IEEE802_3_FLAG_FEC_VARIANT},
 	{0x38, "25GBASE-CR",           ET(25000baseCR_Full), (1 | IEEE802_3_FLAG_FEC_VARIANT | IEEE802_3_FLAG_FEC_MANDATORY)},
 	{0x39, "25GBASE-KR",           ET(25000baseKR_Full), 0},
 	{0x3A, "25GBASE-SR",           ET(25000baseSR_Full), 1 | IEEE802_3_FLAG_FEC_MANDATORY},
+	{0x3B, "2.5GBASE-KX",          -1, 0},
+	{0x3C, "5GBASE-KR",            -1, 0},
 	{0x3D, "BASE-T1",              -1, 0},
 	{0x40, "50GBASE-KR",           ET(50000baseKR_Full), 0},
 	{0x41, "50GBASE-CR",           ET(50000baseCR_Full), 0},
 	{0x42, "50GBASE-SR",           ET(50000baseSR_Full), 2 | IEEE802_3_FLAG_FEC_MANDATORY},
 	{0x43, "50GBASE-FR",           ET(50000baseLR_ER_FR_Full), 0},
 	{0x44, "50GBASE-LR",           ET(50000baseLR_ER_FR_Full), 0},
+	{0x45, "50GBASE-ER",           ET(50000baseLR_ER_FR_Full), 0},
+	{0x46, "100GBASE-KR1",         -1, 0},
+	{0x47, "100GBASE-CR1",         -1, 0},
 	{0x48, "100GBASE-KR2",         ET(100000baseKR2_Full), 0},
 	{0x49, "100GBASE-CR2",         ET(100000baseCR2_Full), 0},
 	{0x4A, "100GBASE-SR2",         ET(100000baseSR2_Full), 0},
@@ -101,10 +108,44 @@ static const struct pma_pmd_type_t ieee802_3_pma_pmd_type[] = {
 	{0x53, "200GBASE-DR4",         ET(200000baseDR4_Full), 0},
 	{0x54, "200GBASE-FR4",         ET(200000baseLR4_ER4_FR4_Full), 0},
 	{0x55, "200GBASE-LR4",         ET(200000baseLR4_ER4_FR4_Full), 0},
+	{0x56, "200GBASE-KR2",         -1, 0},
+	{0x57, "200GBASE-CR2",         -1, 0},
+	{0x58, "200GBASE-ER4",         -1, 0},
 	{0x59, "400GBASE-SR16",        -1, 0},
 	{0x5A, "400GBASE-DR4",         -1, 0},
 	{0x5B, "400GBASE-FR8",         -1, 0},
 	{0x5C, "400GBASE-LR8",         -1, 0},
+	{0x5D, "400GBASE-KR4",         -1, 0},
+	{0x5E, "400GBASE-CR4",         -1, 0},
+	{0x5F, "400GBASE-SR8",         -1, 0},
+	{0x60, "400GBASE-SR4.2",       -1, 0},
+	{0x61, "400GBASE-FR4",         -1, 0},
+	{0x62, "400GBASE-LR4-6",       -1, 0},
+	{0x63, "400GBASE-ER8",         -1, 0},
+	{0x67, "10GBASE-BR10-D",       -1, 0},
+	{0x68, "10GBASE-BR20-D",       -1, 0},
+	{0x69, "10GBASE-BR40-D",       -1, 0},
+	{0x6A, "10GBASE-BR10-U",       -1, 0},
+	{0x6B, "10GBASE-BR20-U",       -1, 0},
+	{0x6C, "10GBASE-BR40-U",       -1, 0},
+	{0x6D, "25GBASE-BR10-D",       -1, 0},
+	{0x6E, "25GBASE-BR20-D",       -1, 0},
+	{0x6F, "25GBASE-BR40-D",       -1, 0},
+	{0x70, "25GBASE-BR10-U",       -1, 0},
+	{0x71, "25GBASE-BR20-U",       -1, 0},
+	{0x72, "25GBASE-BR40-U",       -1, 0},
+	{0x73, "25GBASE-BR10-D",       -1, 0},
+	{0x74, "25GBASE-BR20-D",       -1, 0},
+	{0x75, "25GBASE-BR40-D",       -1, 0},
+	{0x76, "25GBASE-BR10-U",       -1, 0},
+	{0x77, "25GBASE-BR20-U",       -1, 0},
+	{0x78, "25GBASE-BR40-U",       -1, 0},
+	{0x79, "100GBASE-VR1",         -1, 0},
+	{0x7A, "100GBASE-SR1",         -1, 0},
+	{0x7B, "200GBASE-VR2",         -1, 0},
+	{0x7C, "200GBASE-SR2",         -1, 0},
+	{0x7C, "400GBASE-VR4",         -1, 0},
+	{0x7C, "400GBASE-SR4",         -1, 0},
 	{0x00, NULL,                   -1, 0},
 };
 
@@ -178,6 +219,18 @@ static const struct pma_pmd_type_t ieee802_3_pma_pmd_50g_extended_ability_list[]
 	{4, "50GBASE-LR",              ET(50000baseLR_ER_FR_Full), 0},
 	{-1, NULL,                     -1, 0},
 };
+
+static const struct pma_pmd_type_t ieee802_3_pma_pmd_40g_100g_extended_ability2_list[] = {
+	{3, "100GBASE-DR",              -1, 0},
+	{4, "100GBASE-FR1",             -1, 0},
+	{5, "100GBASE-LR1",             -1, 0},
+	{6, "100GBASE-ZR",              -1, 0},
+	{7, "100GBASE-KR2",             -1, 0},
+	{8, "100GBASE-CR2",             -1, 0},
+	{9, "100GBASE-SR2",             -1, 0},
+	{-1, NULL,                      -1, 0},
+};
+
 
 static inline struct pma_pmd_type_t const *_find_pma_pmd_type_by_string(struct pma_pmd_type_t const *table, const char *string)
 {
@@ -260,12 +313,12 @@ int ieee802_3_set_pma_pmd_type_string(struct mdio_if_info *if_info, const char *
 
 void ieee802_3_get_supported_pma_pmd_types_string(struct mdio_if_info *if_info, string_cb_t cb, void *cb_priv)
 {
-	#define ST_TABLES_COUNT 7
+	#define ST_TABLES_COUNT 8
 	const int ext_abilities_hotfix = 1;
 
-	uint16_t reg[ST_TABLES_COUNT] = {0, 0, 0, 0, 0, 0, 0,};
+	uint16_t reg[ST_TABLES_COUNT] = {0, 0, 0, 0, 0, 0, 0, 0,};
 	uint16_t reg_pma_ea2 = 0;
-	int have_caps[ST_TABLES_COUNT] = {0, 0, 0, 0, 0, 0, 0,};
+	int have_caps[ST_TABLES_COUNT] = {0, 0, 0, 0, 0, 0, 0, 0,};
 	const struct pma_pmd_type_t *tables[ST_TABLES_COUNT] = {
 		ieee802_3_pma_pmd_ability_list,
 		ieee802_3_pma_pmd_extended_ability_list,
@@ -273,7 +326,8 @@ void ieee802_3_get_supported_pma_pmd_types_string(struct mdio_if_info *if_info, 
 		ieee802_3_pma_pmd_25g_extended_ability_list,
 		ieee802_3_pma_pmd_200g_extended_ability_list,
 		ieee802_3_pma_pmd_400g_extended_ability_list,
-		ieee802_3_pma_pmd_50g_extended_ability_list
+		ieee802_3_pma_pmd_50g_extended_ability_list,
+		ieee802_3_pma_pmd_40g_100g_extended_ability2_list
 	};
 
 	const struct pma_pmd_type_t *table;
@@ -290,6 +344,7 @@ void ieee802_3_get_supported_pma_pmd_types_string(struct mdio_if_info *if_info, 
 		have_caps[3] = reg[1] & (1 << 12);
 		have_caps[4] = reg[1] & (1 << 13);
 		have_caps[5] = reg[1] & (1 << 13);
+		have_caps[7] = reg[1] & (1 << 10);
 		// read PMA/PMD extended ability 2
 		reg_pma_ea2 = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 25);
 		have_caps[6] = reg_pma_ea2 & (1 << 0);
@@ -309,6 +364,10 @@ void ieee802_3_get_supported_pma_pmd_types_string(struct mdio_if_info *if_info, 
 		if (have_caps[6] || ext_abilities_hotfix) {
 			reg[6] = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 20);
 		}
+		if (have_caps[7] || ext_abilities_hotfix) {
+			reg[7] = if_info->mdio_read(if_info->dev, if_info->prtad, 1, 26);
+		}
+
 	}
 
 	for (i = 0; i < ST_TABLES_COUNT; i++) {
