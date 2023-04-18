@@ -135,6 +135,20 @@ static inline void nfb_fdt_create_boot_type(void *fdt, int node, const char *typ
 	}
 }
 
+static inline void n6010_binary_slot_prepare(void *fdt, int node, const char *mod_val, const char* mod_mask, int mod_len)
+{
+	int subnode;
+	uint64_t prop64;
+
+	node = fdt_add_subnode(fdt, node, "image-prepare");
+	subnode = fdt_add_subnode(fdt, node, "m0");
+
+	prop64 = cpu_to_fdt64(8);
+	fdt_appendprop(fdt, subnode, "modify-offset", &prop64, sizeof(prop64));
+	fdt_appendprop(fdt, subnode, "modify-value", mod_val, mod_len);
+	fdt_appendprop(fdt, subnode, "modify-mask",  mod_mask, mod_len);
+}
+
 /*
  * nfb_fdt_fixups - Fix the FDT: Create missing nodes and properties
  * @nfb: NFB device
@@ -289,9 +303,12 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 			nfb_fdt_create_binary_slot(fdt, node, "image0", "application0" , 1, 1, 0, 0x02000000, 0x04000000);
 			//nfb_fdt_create_boot_type(fdt, node, "BPI", 16);
 		} else if (!strcmp(card_name, "N6010")) {
-			nfb_fdt_create_binary_slot(fdt, node, "image2", "fpga_factory", 2, 2, -1, 0, 0);
-			nfb_fdt_create_binary_slot(fdt, node, "image1", "fpga_user1",   1, 3, -1, 0, 0);
-			nfb_fdt_create_binary_slot(fdt, node, "image0", "fpga_user0",   0, 4, -1, 0, 0);
+			subnode = nfb_fdt_create_binary_slot(fdt, node, "image2", "fpga_factory", 2, 2, -1, 0, 0);
+			n6010_binary_slot_prepare(fdt, subnode, "\x03\x00\x00\x00", "\xff\xff\xff\xff", 4);
+			subnode = nfb_fdt_create_binary_slot(fdt, node, "image1", "fpga_user2",   1, 3, -1, 0, 0);
+			n6010_binary_slot_prepare(fdt, subnode, "\x00\x00\x01\x00", "\xff\xff\xff\xff", 4);
+			subnode = nfb_fdt_create_binary_slot(fdt, node, "image0", "fpga_user1",   0, 4, -1, 0, 0);
+			n6010_binary_slot_prepare(fdt, subnode, "\x00\x00\x00\x00", "\xff\xff\xff\xff", 4);
 		}
 	}
 }

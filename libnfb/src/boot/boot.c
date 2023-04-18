@@ -234,7 +234,7 @@ ssize_t nfb_fw_read_for_dev(const struct nfb_device *dev, FILE *fd, void **data)
 	/* For Intel Stratix 10 and Agilex FPGAs */
 	fdt_for_each_compatible_node(fdt, node, "netcope,intel_sdm_controller") {
 		prop32 = fdt_getprop(fdt, node, "boot_en", &proplen);
-                if (proplen == sizeof(*prop32) && fdt32_to_cpu(*prop32) != 0) {
+		if (proplen == sizeof(*prop32) && fdt32_to_cpu(*prop32) != 0) {
 			// TODO: figure out if bitswap needs to be used (currently YES by default)
 			format = BITSTREAM_FORMAT_INTEL_AS;
 			ret = nfb_fw_open_rpd(fd, data, format);
@@ -281,14 +281,28 @@ int nfb_fw_load(const struct nfb_device *dev, unsigned int image, void *data, si
 	return nfb_fw_load_ext(dev, image, data, size, NFB_FW_LOAD_FLAG_VERBOSE);
 }
 
-int nfb_fw_load_fpga_image_load(const struct nfb_device *dev, void *data, size_t size, int flags)
+int nfb_fw_load_fpga_image_load(const struct nfb_device *dev, void *data, size_t size, int flags, int slot_fdt_offset)
 {
+	int i;
+	int processing_node;
+	int fdt_offset;
 	struct fpga_image_status fs;
 	int ret;
 	int efd;
 	int pct;
 	unsigned int prev_progress;
 	const char *text = NULL;
+
+	const void *fdt = nfb_get_fdt(dev);
+
+	const uint64_t* prop_mod_off;
+	const uint8_t*  prop_mod_mask;
+	const uint8_t*  prop_mod_val;
+
+	int proplen;
+	int mod_len;
+	uint64_t mod_off;
+	uint8_t *udata = data;
 
 	if (ioctl(dev->fd, FPGA_IMAGE_LOAD_STATUS, &fs)) {
 		ret = errno;
@@ -308,8 +322,31 @@ int nfb_fw_load_fpga_image_load(const struct nfb_device *dev, void *data, size_t
 	};
 
 	if (flags & NFB_FW_LOAD_FLAG_VERBOSE) {
-		printf("Card is using fpga_image_load mechanism, ignoring image parameter\n");
 		printf("Bitstream size: %lu B\n", size);
+	}
+
+	fdt_offset = fdt_subnode_offset(fdt, slot_fdt_offset, "image-prepare");
+
+	fdt_for_each_subnode(processing_node, fdt, fdt_offset) {
+		mod_off = 0;
+		mod_len = 0;
+		prop_mod_off = fdt_getprop(fdt, processing_node, "modify-offset", &proplen);
+
+		if (proplen == sizeof(*prop_mod_off))
+			mod_off = fdt64_to_cpu(*prop_mod_off);
+
+		prop_mod_val  = fdt_getprop(fdt, processing_node, "modify-value", &proplen);
+		if (proplen > 0)
+			mod_len = proplen;
+
+		prop_mod_mask = fdt_getprop(fdt, processing_node, "modify-mask", &proplen);
+		if (proplen != mod_len)
+			mod_len = 0;
+
+		for (i = 0; i < mod_len; i++) {
+			udata[mod_off + i] &= ~prop_mod_mask[i];
+			udata[mod_off + i] |= prop_mod_val[i];
+		}
 	}
 
 	ret = ioctl(dev->fd, FPGA_IMAGE_LOAD_WRITE, &fw);
@@ -374,12 +411,6 @@ int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data
 
 	struct fpga_image_status fs;
 
-	if (ioctl(dev->fd, FPGA_IMAGE_LOAD_STATUS, &fs) == 0) {
-		if (errno != -ENXIO) {
-			return nfb_fw_load_fpga_image_load(dev, data, size, flags);
-		}
-	}
-
 	fdt_for_each_compatible_node(fdt, node, "netcope,binary_slot") {
 		prop = fdt_getprop(fdt, node, "id", &proplen);
 
@@ -400,6 +431,12 @@ int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data
 	prop = fdt_getprop(fdt, fdt_offset, "ro", &proplen);
 	if (prop)
 		return EROFS;
+
+	if (ioctl(dev->fd, FPGA_IMAGE_LOAD_STATUS, &fs) == 0) {
+		if (errno != -ENXIO) {
+			return nfb_fw_load_fpga_image_load(dev, data, size, flags, node);
+		}
+	}
 
 	prop = fdt_getprop(fdt, fdt_offset, "bitstream-offset", &proplen);
 	if (proplen == sizeof(*prop)) {
