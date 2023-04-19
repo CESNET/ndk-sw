@@ -1,6 +1,6 @@
 # Maintainer: Martin Spinler <spinler@cesnet.cz>
 pkgname=('nfb-framework' 'python-nfb')
-pkgver=6.17.0
+pkgver=6.17.4
 pkgrel=1
 pkgdesc="Software bundle for CESNET NDK firmware platform"
 url='https://github.com/CESNET/ndk-sw'
@@ -25,8 +25,8 @@ build() {
 }
 
 package_nfb-framework() {
-	DESTDIR="$pkgdir" cmake --install build --prefix $pkgdir --component Main
+	DESTDIR="$pkgdir" cmake --install build  --component Main
 }
 package_python-nfb() {
-	DESTDIR="$pkgdir" cmake --install build --prefix $pkgdir --component python
+	DESTDIR="$pkgdir" cmake --install build  --component python
 }
