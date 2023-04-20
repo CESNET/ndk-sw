@@ -1,3 +1,8 @@
+* Thu Apr 20 2023 Martin Spinler <spinler@cesnet.cz> - 6.18.0-1
+- [FEATURE] added support for N6010 card (hwmon, flash, boot/RSU)
+- [FEATURE] added support for PMA type switching on F-Tile Ethernet IPs
+- [FEATURE] added BaseComp class in Python API
+
 * Mon Mar 20 2023 Martin Spinler <spinler@cesnet.cz> - 6.17.4-1
 - [BUGFIX] set RSS hash function type
 
