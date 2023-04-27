@@ -219,6 +219,8 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 
 err_nfb_queue_add:
 	ndp_close_queue(q);
+	return ret;
+
 err_vx_open_queue:
 #ifndef __KERNEL__
 	munmap(q->buffer, q->size * 2);
