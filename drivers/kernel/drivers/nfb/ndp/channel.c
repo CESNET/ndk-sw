@@ -121,9 +121,6 @@ int ndp_channel_subscribe(struct ndp_subscription *sub, uint32_t *flags)
 			ret = -EPERM;
 		} else {
 			channel->flags = req_flags & mask;
-			/* For RX with NO_BUFFER flag is EXCLUSIVE flag necessary */
-			if (channel->id.type == NDP_CHANNEL_TYPE_RX && req_flags & NDP_CHANNEL_FLAG_NO_BUFFER)
-				channel->flags |= NDP_CHANNEL_FLAG_EXCLUSIVE;
 		}
 	} else {
 		mask = channel->ops->get_flags(channel);

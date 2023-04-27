@@ -155,7 +155,7 @@ static inline int nc_ndp_v2_rx_unlock(struct ndp_queue *q)
 static inline unsigned nc_ndp_v2_rx_burst_get(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)
 {
 	unsigned i;
-	unsigned char *data_base = (q->flags & NDP_CHANNEL_FLAG_NO_BUFFER) ? (void*)0 : q->buffer;
+	unsigned char *data_base = q->buffer;
 	struct ndp_v2_packethdr *hdr_base;
 	struct ndp_v2_offsethdr *off_base;
 
@@ -219,7 +219,7 @@ static inline unsigned nc_ndp_rx_burst_put_desc(struct ndp_queue *q, struct ndp_
 	struct ndp_v2_packethdr *hdr_base;
 	struct ndp_v2_offsethdr *off_base;
 
-	const uint32_t flags_req = (NDP_CHANNEL_FLAG_NO_BUFFER | NDP_CHANNEL_FLAG_EXCLUSIVE);
+	const uint32_t flags_req = (NDP_CHANNEL_FLAG_EXCLUSIVE);
 
 	if (q->version != 2 || (q->flags & flags_req) != flags_req) {
 		return 0;

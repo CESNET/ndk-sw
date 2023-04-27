@@ -25,9 +25,6 @@
 #define NDP_CHANNEL_FLAG_USE_HEADER     0x04
 /* Use offset buffer for specifying data positions in main buffer */
 #define NDP_CHANNEL_FLAG_USE_OFFSET     0x08
-/* Do not use main NDP buffer for transfer of data.
- * Use direct descriptors in offset & header buffers instead */
-#define NDP_CHANNEL_FLAG_NO_BUFFER      0x10
 
 /**
  * struct ndp_channel_request

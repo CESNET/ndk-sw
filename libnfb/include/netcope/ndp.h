@@ -93,7 +93,6 @@ static inline int nc_ndp_v2_open_queue(struct ndp_queue *q, int fdt_offset)
 
 	prot = PROT_READ;
 	prot |= q->channel.type == NDP_CHANNEL_TYPE_TX ? PROT_WRITE : 0;
-	prot |= q->channel.flags & NDP_CHANNEL_FLAG_NO_BUFFER ? PROT_WRITE : 0;
 
 	q->u.v2.hdr = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
 	if (q->u.v2.hdr == MAP_FAILED) {
@@ -128,6 +127,8 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 	size_t mmap_size;
 	const void *fdt;
 
+	(void) ndp_flags;
+
 	fdt = nfb_get_fdt(dev);
 	fdt_offset = nfb_fdt_queue_offset(dev, index, type);
 
@@ -137,8 +138,6 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 	ctrl_params_offset = fdt_node_offset_by_phandle_ref(fdt, ctrl_offset, "params");
 	fdt_getprop32(fdt, ctrl_params_offset, "frame_size_min", &q->frame_size_min);
 	fdt_getprop32(fdt, ctrl_params_offset, "frame_size_max", &q->frame_size_max);
-
-	flags = (ndp_flags & NDP_OPEN_FLAG_NO_BUFFER) ? (NDP_CHANNEL_FLAG_NO_BUFFER | NDP_CHANNEL_FLAG_EXCLUSIVE) : 0;
 
 	ret |= fdt_getprop64(fdt, fdt_offset, "size", &q->size);
 	ret |= fdt_getprop64(fdt, fdt_offset, "mmap_size", &mmap_size);

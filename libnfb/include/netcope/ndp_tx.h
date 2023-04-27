@@ -181,7 +181,6 @@ static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 	struct ndp_v2_packethdr *hdr_base;
 	struct ndp_v2_offsethdr *off_base;
 
-	int modify_hdr_off;
 
 	__builtin_prefetch(q->u.v2.hdr);
 
@@ -195,8 +194,6 @@ static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 	data_base = q->buffer;
 	hdr_base = q->u.v2.hdr;
 	off_base = q->u.v2.off;
-
-	modify_hdr_off = (q->flags & NDP_CHANNEL_FLAG_NO_BUFFER);
 
 	for (i = 0; i < count; i++) {
 		unsigned packet_size;
@@ -212,13 +209,8 @@ static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 		packet_size = packets[i].data_length + header_size;
 
 		if (unlikely(packet_size < q->frame_size_min)) {
-			/* Enlarge packets smaller than min size */
-			if (modify_hdr_off) {
-			} else {
-				/* Clean remaining data */
-				memset(data_base + off->offset + header_size + packet_size, 0, q->frame_size_min - packet_size);
-			}
-
+			/* Enlarge packets smaller than min size & clean remaining data */
+			memset(data_base + off->offset + header_size + packet_size, 0, q->frame_size_min - packet_size);
 			packet_size = q->frame_size_min;
 		} else if (unlikely(packet_size > q->frame_size_max)) {
 			/* Can't handle packets larger than max size */
@@ -230,14 +222,9 @@ static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 		hdr->header_size = header_size;
 		hdr->flags = packets[i].flags & 0xF;
 
-		if (modify_hdr_off) {
-			/* INFO: packet header must be right before packet data in NO_BUFFER mode */
-			off->offset = (__u64)(packets[i].data - packets[i].header_length);
-		} else {
-			/* Set pointers, where user can write packet content */
-			packets[i].header = data_base + off->offset;
-			packets[i].data   = data_base + off->offset + header_size;
-		}
+		/* Set pointers, where user can write packet content */
+		packets[i].header = data_base + off->offset;
+		packets[i].data   = data_base + off->offset + header_size;
 
 		/* Move pointers behind the end of packet, update free space */
 	}

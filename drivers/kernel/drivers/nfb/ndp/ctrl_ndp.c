@@ -428,13 +428,6 @@ static uint64_t ndp_ctrl_get_flags(struct ndp_channel *channel)
 
 static uint64_t ndp_ctrl_set_flags(struct ndp_channel *channel, uint64_t flags)
 {
-	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
-
-	if (flags & NDP_CHANNEL_FLAG_NO_BUFFER)
-		ctrl->flags |= NDP_CHANNEL_FLAG_NO_BUFFER;
-	else
-		ctrl->flags &= ~NDP_CHANNEL_FLAG_NO_BUFFER;
-
 	return ndp_ctrl_get_flags(channel);
 }
 
@@ -472,11 +465,7 @@ static int ndp_ctrl_start(struct ndp_channel *channel, uint64_t *hwptr)
 	ctrl->mps_last_offset = 0;
 	ctrl->next_sdp = 0;
 
-	if (ctrl->flags & NDP_CHANNEL_FLAG_NO_BUFFER) {
-		ctrl->mode = NDP_CTRL_MODE_USER;
-	} else {
-		ctrl->mode = NDP_CTRL_MODE_PACKET_SIMPLE;
-	}
+	ctrl->mode = NDP_CTRL_MODE_PACKET_SIMPLE;
 
 	if (ctrl->mode == NDP_CTRL_MODE_PACKET_SIMPLE) {
 		int i;
@@ -546,7 +535,7 @@ static int ndp_ctrl_hdr_mmap(struct vm_area_struct *vma, unsigned long offset, u
 	/* TODO: Check if channel is subscribed */
 
 	/* Check permissions: read-only for RX */
-	if ((ctrl->flags & NDP_CHANNEL_FLAG_NO_BUFFER) == 0 && ctrl->channel.id.type == NDP_CHANNEL_TYPE_RX && (vma->vm_flags & (VM_WRITE | VM_READ)) != VM_READ)
+	if (ctrl->channel.id.type == NDP_CHANNEL_TYPE_RX && (vma->vm_flags & (VM_WRITE | VM_READ)) != VM_READ)
 		return -EINVAL;
 
 	/* Allow mmap only for exact offset & size match */
@@ -569,7 +558,7 @@ static int ndp_ctrl_off_mmap(struct vm_area_struct *vma, unsigned long offset, u
 	/* TODO: Check if channel is subscribed */
 
 	/* Check permissions: read-only for RX */
-	if ((ctrl->flags & NDP_CHANNEL_FLAG_NO_BUFFER) == 0 && ctrl->channel.id.type == NDP_CHANNEL_TYPE_RX && (vma->vm_flags & (VM_WRITE | VM_READ)) != VM_READ)
+	if (ctrl->channel.id.type == NDP_CHANNEL_TYPE_RX && (vma->vm_flags & (VM_WRITE | VM_READ)) != VM_READ)
 		return -EINVAL;
 
 	/* Allow mmap only for exact offset & size match */
