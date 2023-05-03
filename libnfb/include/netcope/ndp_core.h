@@ -304,15 +304,6 @@ int ndp_get_tx_queue_available_count(const struct nfb_device *dev)
 }
 #endif
 
-/*!
- * \brief Getter for tx buffer size
- * \param[in] queue  NDP TX queue
- */
-long long unsigned ndp_queue_size(struct ndp_queue *q)
-{
-	return q->size;
-}
-
 int ndp_queue_start(struct ndp_queue *q)
 {
 	return nc_ndp_queue_start(q);
@@ -333,11 +324,6 @@ void ndp_rx_burst_put(struct ndp_queue *q)
 	nc_ndp_rx_burst_put(q);
 }
 
-unsigned ndp_rx_burst_put_desc(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)
-{
-	return nc_ndp_rx_burst_put_desc(q, packets, count);
-}
-
 unsigned ndp_tx_burst_get(ndp_tx_queue_t *q, struct ndp_packet *packets, unsigned count)
 {
 	return nc_ndp_tx_burst_get(q, packets, count);
@@ -354,34 +340,8 @@ void ndp_tx_burst_flush(struct ndp_queue *q)
 }
 
 #ifndef __KERNEL__
-unsigned ndp_v2_tx_get_pkts_available(struct ndp_queue *q)
-{
-	return nc_ndp_v2_tx_get_pkts_available(q);
-}
-
-unsigned ndp_get_buffer_item_count(struct ndp_queue *q)
-{
-	return nc_ndp_get_buffer_item_count(q);
-}
 
 #define NDP_TX_BURST_COPY_ATTEMPTS 1000
-
-unsigned ndp_tx_raw_get(ndp_tx_queue_t *q, unsigned burst_size)
-{
-	if (q->version != 1)
-		return 0;
-
-	if (q->u.v1.bytes < burst_size) {
-		nc_ndp_v1_tx_lock(q);
-		if (q->u.v1.bytes < burst_size) {
-			return 0;
-		}
-	}
-	q->u.v1.data  += burst_size;
-	q->u.v1.swptr += burst_size;
-	q->u.v1.bytes -= burst_size;
-	return 1;
-}
 
 unsigned ndp_tx_burst_copy(ndp_tx_queue_t *queue, struct ndp_packet *packets, unsigned count)
 {

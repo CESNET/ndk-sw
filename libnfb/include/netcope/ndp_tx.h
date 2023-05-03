@@ -269,11 +269,3 @@ static inline void nc_ndp_tx_burst_flush(struct ndp_queue *q)
 		nc_ndp_v1_tx_unlock(q);
 	}
 }
-
-unsigned nc_ndp_v2_tx_get_pkts_available(struct ndp_queue *q)
-{
-	if (q->version != 2)
-		return 0;
-	nc_ndp_v2_tx_lock(q);
-	return q->u.v2.pkts_available;
-}

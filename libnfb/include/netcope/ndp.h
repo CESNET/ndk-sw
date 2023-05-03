@@ -276,13 +276,6 @@ static int nc_ndp_queue_stop(struct ndp_queue *q)
 	return 0;
 }
 
-static inline unsigned nc_ndp_get_buffer_item_count(struct ndp_queue *q)
-{
-	if (q->version == 2) {
-		return q->u.v2.hdr_items;
-	}
-	return 0;
-}
 
 #include "ndp_rx.h"
 #include "ndp_tx.h"

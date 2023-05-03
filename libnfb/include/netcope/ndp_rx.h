@@ -211,53 +211,6 @@ static inline unsigned nc_ndp_rx_burst_get(struct ndp_queue *q, struct ndp_packe
 	return 0;
 }
 
-static inline unsigned nc_ndp_rx_burst_put_desc(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)
-{
-	unsigned i;
-	unsigned free;
-
-	struct ndp_v2_packethdr *hdr_base;
-	struct ndp_v2_offsethdr *off_base;
-
-	const uint32_t flags_req = (NDP_CHANNEL_FLAG_EXCLUSIVE);
-
-	if (q->version != 2 || (q->flags & flags_req) != flags_req) {
-		return 0;
-	}
-
-	free = (q->u.v2.rhp - q->sync.swptr - 1) & (q->u.v2.hdr_items-1);
-	if (count > free) {
-		if (_ndp_queue_sync(q, &q->sync)) {
-			return 0;
-		}
-		free = (q->u.v2.rhp - q->sync.swptr - 1) & (q->u.v2.hdr_items-1);
-		count = min(count,free);
-	}
-
-	if (count == 0)
-		return 0;
-
-	hdr_base = q->u.v2.hdr + q->sync.swptr;
-	off_base = q->u.v2.off + q->sync.swptr;
-
-	for (i = 0; i < count; i++) {
-		struct ndp_v2_packethdr *hdr;
-		struct ndp_v2_offsethdr *off;
-
-		hdr = hdr_base + i;
-		off = off_base + i;
-
-		off->offset = (__u64)packets[i].data;
-		hdr->packet_size = packets[i].data_length;
-	}
-
-	q->sync.swptr = (q->sync.swptr + count) & (q->u.v2.hdr_items-1);
-	if (_ndp_queue_sync(q, &q->sync)) {
-		return 0;
-	}
-	return count;
-}
-
 static inline void nc_ndp_rx_burst_put(struct ndp_queue *q)
 {
 	if (q->version == 2) {
