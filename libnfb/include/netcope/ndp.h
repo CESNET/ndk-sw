@@ -15,8 +15,6 @@
 
 #define NDP_PACKET_HEADER_SIZE 4
 
-int nfb_queue_add(struct ndp_queue *q);
-void nfb_queue_remove(struct ndp_queue *q);
 void ndp_close_queue(struct ndp_queue *q);
 
 int _ndp_queue_sync(struct ndp_queue *q, struct ndp_subscription_sync *sync);
@@ -210,15 +208,7 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 	if (ret)
 		goto err_vx_open_queue;
 
-	if ((ret = nfb_queue_add(q))) {
-		goto err_nfb_queue_add;
-	}
-
 	return 0;
-
-err_nfb_queue_add:
-	ndp_close_queue(q);
-	return ret;
 
 err_vx_open_queue:
 #ifndef __KERNEL__

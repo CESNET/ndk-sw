@@ -100,7 +100,7 @@ void nfb_nfree(int numa_node, void *ptr, size_t size)
 #endif
 }
 
-int nfb_queue_add(struct ndp_queue *q)
+static int nfb_queue_add(struct ndp_queue *q)
 {
 #ifdef __KERNEL__
 //	(void*) q;
@@ -120,7 +120,7 @@ int nfb_queue_add(struct ndp_queue *q)
 	return 0;
 }
 
-void nfb_queue_remove(struct ndp_queue *q)
+static void nfb_queue_remove(struct ndp_queue *q)
 {
 #ifndef __KERNEL__
 	struct ndp_queue **queues;
@@ -138,6 +138,7 @@ void nfb_queue_remove(struct ndp_queue *q)
 #ifdef __KERNEL__
 int ndp_queue_open_init(struct nfb_device *dev, struct ndp_queue *q, unsigned index, int type)
 {
+	nfb_queue_add(q); /* INFO: does nothing, overcomes not-used warning */
 	return nc_ndp_queue_open_init(dev, q, index, type);
 }
 #else
@@ -166,8 +167,14 @@ static struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, 
 		goto err_ndp_queue_open_init;
 	}
 
+	if ((ret = nfb_queue_add(q))) {
+		goto err_nfb_queue_add;
+	}
+
 	return q;
 
+err_nfb_queue_add:
+	ndp_close_queue(q);
 err_ndp_queue_open_init:
 	nfb_nfree(q->numa, q, sizeof(*q));
 err_nalloc:
