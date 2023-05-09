@@ -13,6 +13,7 @@
 #ifndef __KERNEL__
 #include <stdint.h>
 #endif
+#include <nfb/ext.h>
 
 #ifdef __cplusplus
 extern "C" {

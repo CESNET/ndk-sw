@@ -150,6 +150,11 @@ void ndp_queue_destroy(struct ndp_queue* q)
 	nfb_nfree(q->numa, q, sizeof(*q));
 }
 
+struct ndp_queue_ops* ndp_queue_get_ops(struct ndp_queue *q)
+{
+	return &q->ops;
+}
+
 static int nfb_queue_add(struct ndp_queue *q)
 {
 #ifdef __KERNEL__

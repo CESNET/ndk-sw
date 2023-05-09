@@ -77,6 +77,7 @@ struct ndp_queue
 	struct ndp_subscriber *subscriber;
 #else
 #endif
+	struct ndp_queue_ops ops;
 };
 
 #endif

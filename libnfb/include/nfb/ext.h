@@ -10,7 +10,9 @@
 #ifndef LIBNFB_EXTENSION_H
 #define LIBNFB_EXTENSION_H
 
+#ifndef __KERNEL__
 #include <stdint.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +21,7 @@ extern "C" {
 struct nfb_device;
 struct nfb_bus;
 struct nfb_comp;
+struct ndp_queue;
 
 struct libnfb_ext_abi_version {
 	uint32_t major;
@@ -45,13 +48,49 @@ struct libnfb_ext_ops {
 	void (*bus_close_mi)(void *bus_priv);
 	int (*comp_lock)(const struct nfb_comp *comp, uint32_t features);
 	void (*comp_unlock)(const struct nfb_comp *comp, uint32_t features);
+
+	int (*ndp_queue_open)(struct nfb_device *dev, void *dev_priv, unsigned index, int dir, int flags, struct ndp_queue ** pq);
+	int (*ndp_queue_close)(struct ndp_queue *q);
 };
 
 typedef int libnfb_ext_get_ops_t(const char *devname, struct libnfb_ext_ops *ops);
 
 /* NDP extensions */
+
+struct ndp_packet;
+
+typedef unsigned (*ndp_rx_burst_get_t)(void *priv, struct ndp_packet *packets, unsigned count);
+typedef int (*ndp_rx_burst_put_t)(void *priv);
+
+typedef unsigned (*ndp_tx_burst_get_t)(void *priv, struct ndp_packet *packets, unsigned count);
+typedef int (*ndp_tx_burst_put_t)(void *priv);
+typedef int (*ndp_tx_burst_flush_t)(void *priv);
+
+struct ndp_queue_ops {
+	/* Fast path */
+	union {
+		struct {
+			ndp_rx_burst_get_t get;
+			ndp_rx_burst_put_t put;
+		} rx;
+		struct {
+			ndp_tx_burst_get_t get;
+			ndp_tx_burst_put_t put;
+			ndp_tx_burst_flush_t flush;
+		} tx;
+	} burst;
+
+	/* Control path */
+	struct {
+		int (*start)(void *priv);
+		int (*stop)(void *priv);
+	} control;
+};
+
 struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int type, int index);
 void ndp_queue_destroy(struct ndp_queue* q);
+
+struct ndp_queue_ops* ndp_queue_get_ops(struct ndp_queue *q);
 
 #ifdef __cplusplus
 } // extern "C"
