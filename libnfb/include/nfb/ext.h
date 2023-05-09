@@ -49,6 +49,10 @@ struct libnfb_ext_ops {
 
 typedef int libnfb_ext_get_ops_t(const char *devname, struct libnfb_ext_ops *ops);
 
+/* NDP extensions */
+struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int type, int index);
+void ndp_queue_destroy(struct ndp_queue* q);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

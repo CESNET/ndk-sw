@@ -100,6 +100,56 @@ void nfb_nfree(int numa_node, void *ptr, size_t size)
 #endif
 }
 
+void _ndp_queue_init(struct ndp_queue *q, struct nfb_device *dev, int numa, int type, int index)
+{
+#ifdef __KERNEL__
+	struct ndp_subscriber *s = q->subscriber;
+#endif
+
+	memset(q, 0, sizeof(struct ndp_queue));
+
+	q->numa = numa;
+	q->type = type;
+	q->dev = dev;
+
+	q->index = index;
+
+	q->status = NDP_QUEUE_STOPPED;
+#ifdef __KERNEL__
+	q->alloc = 0;
+	q->subscriber = s;
+#endif
+}
+
+struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int type, int index)
+{
+	struct ndp_queue *q;
+
+	/* Create queue structure */
+	q = nfb_nalloc(numa, sizeof(*q));
+	if (q == NULL) {
+		goto err_nalloc;
+	}
+	_ndp_queue_init(q, dev, numa, type, index);
+#ifdef __KERNEL__
+	q->alloc = 1;
+#endif
+
+	return q;
+
+err_nalloc:
+	return NULL;
+}
+
+void ndp_queue_destroy(struct ndp_queue* q)
+{
+#ifdef __KERNEL__
+	if (!q->alloc)
+		return;
+#endif
+	nfb_nfree(q->numa, q, sizeof(*q));
+}
+
 static int nfb_queue_add(struct ndp_queue *q)
 {
 #ifdef __KERNEL__
@@ -129,20 +179,18 @@ static void nfb_queue_remove(struct ndp_queue *q)
 	while (*queues != q)
 		queues++;
 	*queues = NULL;
-
-	munmap(q->buffer, q->size * 2);
-	nfb_nfree(q->numa, q, sizeof(*q));
 #endif
 }
 
 #ifdef __KERNEL__
 int ndp_queue_open_init(struct nfb_device *dev, struct ndp_queue *q, unsigned index, int type)
 {
+	_ndp_queue_init(q, dev, -1, type, index);
 	nfb_queue_add(q); /* INFO: does nothing, overcomes not-used warning */
 	return nc_ndp_queue_open_init(dev, q, index, type);
 }
 #else
-static struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir, ndp_open_flags_t flags)
+int ndp_base_queue_open(struct nfb_device *dev, unsigned index, int dir, ndp_open_flags_t flags, struct ndp_queue ** pq)
 {
 	int ret;
 	int fdt_offset;
@@ -154,30 +202,61 @@ static struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, 
 		numa = -1;
 	}
 
-	/* Create queue structure */
-	q = nfb_nalloc(numa, sizeof(*q));
+	q = ndp_queue_create(dev, numa, dir, index);
 	if (q == NULL) {
-		errno = ENOMEM;
+		ret = -ENOMEM;
 		goto err_nalloc;
 	}
 
-	q->numa = numa;
 	if ((ret = nc_ndp_queue_open_init_ext(dev, q, index, dir, flags))) {
+		goto err_open;
+	}
+
+	*pq = q;
+	return 0;
+
+err_open:
+	ndp_queue_destroy(q);
+err_nalloc:
+	return ret;
+}
+#endif
+
+void ndp_base_queue_close(struct ndp_queue *q)
+{
+#ifdef __KERNEL__
+	if (q->sub) {
+		ndp_subscription_destroy(q->sub);
+		q->sub = NULL;
+	}
+#endif
+
+	nc_ndp_queue_close(q);
+
+	ndp_queue_destroy(q);
+}
+
+#ifndef __KERNEL__
+static struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir, ndp_open_flags_t flags)
+{
+	int ret;
+	struct ndp_queue *q = NULL;
+
+	if ((ret = ndp_base_queue_open(dev, index, dir, flags, &q))) {
 		errno = ret;
 		goto err_ndp_queue_open_init;
 	}
 
 	if ((ret = nfb_queue_add(q))) {
+		errno = ret;
 		goto err_nfb_queue_add;
 	}
 
 	return q;
 
 err_nfb_queue_add:
-	ndp_close_queue(q);
+	ndp_base_queue_close(q);
 err_ndp_queue_open_init:
-	nfb_nfree(q->numa, q, sizeof(*q));
-err_nalloc:
 	return NULL;
 }
 
@@ -204,15 +283,11 @@ struct ndp_queue *ndp_open_tx_queue(struct nfb_device *dev, unsigned index)
 
 void ndp_close_queue(struct ndp_queue *q)
 {
-	if (q->status == NDP_QUEUE_RUNNING)
-		ndp_queue_stop(q);
-#ifdef __KERNEL__
-	if (q->sub) {
-		ndp_subscription_destroy(q->sub);
-		q->sub = NULL;
-	}
-#endif
+	ndp_queue_stop(q);
+
 	nfb_queue_remove(q);
+
+	ndp_base_queue_close(q);
 }
 
 void ndp_close_rx_queue(struct ndp_queue *q)

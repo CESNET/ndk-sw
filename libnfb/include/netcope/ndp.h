@@ -196,7 +196,6 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 #endif
 	q->sync.id = q->channel.id;
 
-	q->status = NDP_QUEUE_STOPPED;
 	q->sync.swptr = 0;
 	q->sync.hwptr = 0;
 
@@ -224,6 +223,13 @@ err_fdt_getprop:
 static inline int nc_ndp_queue_open_init(struct nfb_device *dev, struct ndp_queue *q, unsigned index, int type)
 {
 	return nc_ndp_queue_open_init_ext(dev, q, index, type, 0);
+}
+
+static inline void nc_ndp_queue_close(struct ndp_queue *q)
+{
+#ifndef __KERNEL__
+	munmap(q->buffer, q->size * 2);
+#endif
 }
 
 static int nc_ndp_queue_start(struct ndp_queue *q)

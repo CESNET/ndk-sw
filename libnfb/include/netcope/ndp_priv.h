@@ -69,7 +69,10 @@ struct ndp_queue
 	uint32_t frame_size_max;
 
 	int numa;
+	int type;
+	int index;
 #ifdef __KERNEL__
+	int alloc;
 	struct ndp_subscription *sub;
 	struct ndp_subscriber *subscriber;
 #else
