@@ -76,23 +76,29 @@ inline int _ndp_queue_stop(struct ndp_queue *q)
 	return 0;
 }
 
-#ifndef __KERNEL__
-static void *nalloc(int numa_node, size_t size)
+void *nfb_nalloc(int numa_node, size_t size)
 {
+#ifndef __KERNEL__
 	if (numa_node == -1)
 		return (malloc(size));
 
 	return (numa_alloc_onnode(size, numa_node));
+#else
+	return kmalloc_node(size, GFP_KERNEL, numa_node);
+#endif
 }
 
-static void nfree(int numa_node, void *ptr, size_t size)
+void nfb_nfree(int numa_node, void *ptr, size_t size)
 {
+#ifndef __KERNEL__
 	if (numa_node == -1)
 		free(ptr);
 	else
 		numa_free(ptr, size);
-}
+#else
+	kfree(ptr);
 #endif
+}
 
 int nfb_queue_add(struct ndp_queue *q)
 {
@@ -125,7 +131,7 @@ void nfb_queue_remove(struct ndp_queue *q)
 	*queues = NULL;
 
 	munmap(q->buffer, q->size * 2);
-	nfree(q->numa, q, sizeof(*q));
+	nfb_nfree(q->numa, q, sizeof(*q));
 #endif
 }
 
@@ -148,7 +154,7 @@ static struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, 
 	}
 
 	/* Create queue structure */
-	q = nalloc(numa, sizeof(*q));
+	q = nfb_nalloc(numa, sizeof(*q));
 	if (q == NULL) {
 		errno = ENOMEM;
 		goto err_nalloc;
@@ -163,7 +169,7 @@ static struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, 
 	return q;
 
 err_ndp_queue_open_init:
-	nfree(q->numa, q, sizeof(*q));
+	nfb_nfree(q->numa, q, sizeof(*q));
 err_nalloc:
 	return NULL;
 }
