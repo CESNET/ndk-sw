@@ -389,12 +389,35 @@ int ndp_get_tx_queue_available_count(const struct nfb_device *dev)
 
 int ndp_queue_start(struct ndp_queue *q)
 {
-	return nc_ndp_queue_start(q);
+	int ret;
+
+	if (q->status == NDP_QUEUE_RUNNING)
+		return EALREADY;
+
+	ret = nc_ndp_queue_start(q);
+	if (ret)
+		return ret;
+
+	q->status = NDP_QUEUE_RUNNING;
+	return 0;
 }
 
 int ndp_queue_stop(struct ndp_queue *q)
 {
-	return nc_ndp_queue_stop(q);
+	int ret;
+
+	if (q->status == NDP_QUEUE_STOPPED)
+		return EALREADY;
+
+	if (q->type == NDP_CHANNEL_TYPE_TX)
+		nc_ndp_tx_burst_flush(q);
+
+	ret = nc_ndp_queue_stop(q);
+	if (ret)
+		return ret;
+
+	q->status = NDP_QUEUE_STOPPED;
+	return 0;
 }
 
 unsigned ndp_rx_burst_get(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)

@@ -236,8 +236,6 @@ static int nc_ndp_queue_start(struct ndp_queue *q)
 {
 	int ret;
 	q->sync.flags = 0;
-	if (q->status == NDP_QUEUE_RUNNING)
-		return EALREADY;
 
 	if ((ret = _ndp_queue_start(q)))
 		return ret;
@@ -249,23 +247,17 @@ static int nc_ndp_queue_start(struct ndp_queue *q)
 		q->u.v2.rhp = q->sync.hwptr;
 	}
 
-	q->status = NDP_QUEUE_RUNNING;
-
 	return ret;
 }
 
-static void nc_ndp_tx_burst_flush(struct ndp_queue *q);
 
 static int nc_ndp_queue_stop(struct ndp_queue *q)
 {
 	int ret;
-	if (q->channel.type == NDP_CHANNEL_TYPE_TX && q->status == NDP_QUEUE_RUNNING)
-		nc_ndp_tx_burst_flush(q);
 
 	if ((ret = _ndp_queue_stop(q)))
 		return ret;
 
-	q->status = NDP_QUEUE_STOPPED;
 	if (q->version == 1) {
 		q->u.v1.bytes = 0;
 	}
