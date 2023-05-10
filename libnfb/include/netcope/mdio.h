@@ -672,6 +672,122 @@ static inline void nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int pr
 	}
 }
 
+#define ETILE_RSFEC_PAGE 9
+
+static inline uint32_t nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr)
+{
+	int i;
+	uint32_t val = 0;
+
+	for (i = 0; i < 4; i++)
+		val |= ((nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, addr+i) & 0xff) << i*8);
+	return val;
+}
+
+static inline uint32_t nc_mdio_etile_rsfec_write(struct nfb_comp *comp, int prtad, uint32_t addr, uint32_t val)
+{
+	int i;
+
+	for (i = 0; i < 4; i++)
+		nc_mdio_dmap_drp_write(comp, prtad, ETILE_RSFEC_PAGE, addr+i, ((val >> i*8) & 0xff));
+	return val;
+}
+
+/* Perform RX+TX reset of E-tile Ethernet PHY */
+static inline void nc_mdio_etile_reset(struct nfb_comp *comp, int prtad)
+{
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6);
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x0);
+}
+
+static inline void nc_mdio_etile_rsfec_off(struct nfb_comp *comp, int prtad, int lanes)
+{
+	int i;
+	uint32_t reg;
+
+	/* Intel e-tile RSFEC. See following docs for more details:
+	 *   https://www.intel.com/content/www/us/en/docs/programmable/683860/22-3/steps-to-disable-fec.html
+	 *   https://www.intel.com/content/www/us/en/docs/programmable/683860/22-3/configuring-for-100g-nrz-with-rsfec-09491.html
+	 */
+	nc_mdio_etile_rsfec_write(comp, prtad, 0x14, 0x00);
+	nc_mdio_etile_rsfec_write(comp, prtad, 0x04, 0x00);
+	for (i = 0; i < lanes; i++) {
+		/* Configure transceiver channels 0-3 */
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x04, 0xcb);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x05, 0x4c);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x06, 0x0f);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x07, 0xa6);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0xa4, 0xa5);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0xa8, 0xa5);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0xb0, 0x55);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0xe8, 0x07);
+	}
+	/* Ethernet configuration */
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x37a, 0x312c7);
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x40b, 0x9ffd8028);
+	reg = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x30e);
+	reg |= 0x208;
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x30e, reg);
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x313, 0x20);
+	/* RX+TX reset */
+	nc_mdio_etile_reset(comp, prtad);
+}
+
+static inline void nc_mdio_etile_rsfec_on(struct nfb_comp *comp, int prtad, int lanes)
+{
+	int i;
+	uint32_t reg;
+
+	/* Intel e-tile RSFEC. See following docs for more details:
+	 *   https://www.intel.com/content/www/us/en/docs/programmable/683860/22-3/steps-to-disable-fec.html
+	 *   https://www.intel.com/content/www/us/en/docs/programmable/683860/22-3/configuring-for-100g-nrz-with-rsfec-09491.html
+	 */
+	for (i=0; i<lanes; i++) {
+		/* Configure transceiver channels 0-3*/
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x04, 0xc7);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x05, 0x2c);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x06, 0x0f);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x07, 0x86);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0xa4, 0xa5);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0xa8, 0xa5);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0xb0, 0x55);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0xe8, 0x07);
+	}
+	/* Ethernet configuration */
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x37a, 0x312c7);
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x40b, 0x9ffd8028);
+	reg = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x30e);
+	reg &= 0xfffffdf7;
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x30e, reg);
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x313, 0x00);
+	/* RS-FEC configuration */
+	nc_mdio_etile_rsfec_write(comp, prtad, 0x04, 0x0f00);
+	nc_mdio_etile_rsfec_write(comp, prtad, 0x10, 0x0000);
+	nc_mdio_etile_rsfec_write(comp, prtad, 0x14, 0x1111);
+	nc_mdio_etile_rsfec_write(comp, prtad, 0x30, 0x0080);
+	nc_mdio_etile_rsfec_write(comp, prtad, 0x40, 0x0000);
+	nc_mdio_etile_rsfec_write(comp, prtad, 0x44, 0x0000);
+	nc_mdio_etile_rsfec_write(comp, prtad, 0x48, 0x0000);
+	nc_mdio_etile_rsfec_write(comp, prtad, 0x4C, 0x0000);
+	/* RX+TX reset */
+	nc_mdio_etile_reset(comp, prtad);
+}
+
+static inline void nc_mdio_fixup_etile_set_mode(struct nc_mdio *mdio, int prtad, uint16_t val)
+{
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+
+	if ((val == 0x2a) || (val == 0x2b)) {
+		/* 100GBASE-LR4/ER4 - turn the FEC off */
+		nc_mdio_etile_rsfec_off(comp, prtad, 4);
+	} else if ((val == 0x2f) || (val == 0x2e)) {
+		/* 100GBASE-SR4/CR4 - turn the FEC on */
+		nc_mdio_etile_rsfec_on(comp, prtad, 4);
+	}
+	/* Update the mode in HW Eth mgmt too */
+	mdio->mdio_write(comp, prtad, 1, 7, val);
+}
+
 static inline void nc_mdio_close(struct nc_mdio *m)
 {
 	nfb_comp_close(nfb_user_to_comp(m));
@@ -711,7 +827,7 @@ static inline int nc_mdio_write(struct nc_mdio *mdio, int prtad, int devad, uint
 
 	/* Select correct set of FIXUP functions */
 	if (mdio->pcspma_is_e_tile) {
-		nc_mdio_fixup_set_mode = NULL;
+		nc_mdio_fixup_set_mode = nc_mdio_fixup_etile_set_mode;
 		nc_mdio_fixup_set_loopback = nc_mdio_fixup_etile_set_loopback;
 	} else if (mdio->pcspma_is_f_tile) {
 		nc_mdio_fixup_set_mode = nc_mdio_fixup_ftile_set_mode;
