@@ -10,6 +10,8 @@
 #include <linux/nfb/ndp.h>
 #include "ndp.h"
 
+#include <netcope/ndp_core_queue.h>
+
 struct ndp_queue;
 int ndp_ctrl_v2_get_vmaps(struct ndp_channel *channel, void **hdr, void **off);
 

@@ -33,9 +33,10 @@ static inline unsigned min(unsigned a, unsigned b)
 
 #endif
 
+#include <netcope/ndp_core_queue.h>
 #include <netcope/ndp.h>
 
-inline int _ndp_queue_sync(struct ndp_queue *q, struct ndp_subscription_sync *sync)
+inline int _ndp_queue_sync(struct nc_ndp_queue *q, struct ndp_subscription_sync *sync)
 {
 #ifdef __KERNEL__
 	if (q->sub == NULL)
@@ -48,7 +49,7 @@ inline int _ndp_queue_sync(struct ndp_queue *q, struct ndp_subscription_sync *sy
 #endif
 }
 
-inline int _ndp_queue_start(struct ndp_queue *q)
+inline int _ndp_queue_start(struct nc_ndp_queue *q)
 {
 #ifdef __KERNEL__
 	return ndp_subscription_start(ndp_subscription_by_id(q->subscriber, q->sync.id), &q->sync);
@@ -59,7 +60,7 @@ inline int _ndp_queue_start(struct ndp_queue *q)
 #endif
 }
 
-inline int _ndp_queue_stop(struct ndp_queue *q)
+inline int _ndp_queue_stop(struct nc_ndp_queue *q)
 {
 #ifdef __KERNEL__
 	ndp_subscription_stop(ndp_subscription_by_id(q->subscriber, q->sync.id), 1);
@@ -102,10 +103,6 @@ void nfb_nfree(int numa_node, void *ptr, size_t size)
 
 void _ndp_queue_init(struct ndp_queue *q, struct nfb_device *dev, int numa, int type, int index)
 {
-#ifdef __KERNEL__
-	struct ndp_subscriber *s = q->subscriber;
-#endif
-
 	memset(q, 0, sizeof(struct ndp_queue));
 
 	q->numa = numa;
@@ -117,16 +114,12 @@ void _ndp_queue_init(struct ndp_queue *q, struct nfb_device *dev, int numa, int 
 	q->status = NDP_QUEUE_STOPPED;
 #ifdef __KERNEL__
 	q->alloc = 0;
-	q->subscriber = s;
 #endif
 }
 
 struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int type, int index)
 {
 	struct ndp_queue *q;
-#ifdef __KERNEL__
-	struct ndp * ndp;
-#endif
 
 	/* Create queue structure */
 	q = nfb_nalloc(numa, sizeof(*q));
@@ -136,21 +129,11 @@ struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int type, 
 	_ndp_queue_init(q, dev, numa, type, index);
 
 #ifdef __KERNEL__
-	ndp = (struct ndp *) dev->list_drivers[NFB_DRIVER_NDP].priv;
-	q->subscriber = ndp_subscriber_create(ndp);
-	if (!q->subscriber) {
-		goto err_subscriber_create;
-	}
-
 	q->alloc = 1;
 #endif
 
 	return q;
 
-#ifdef __KERNEL__
-err_subscriber_create:
-	nfb_nfree(q->numa, q, sizeof(*q));
-#endif
 err_nalloc:
 	return NULL;
 }
@@ -158,8 +141,6 @@ err_nalloc:
 void ndp_queue_destroy(struct ndp_queue* q)
 {
 #ifdef __KERNEL__
-	ndp_subscriber_destroy(q->subscriber);
-
 	if (!q->alloc)
 		return;
 #endif
@@ -218,9 +199,13 @@ int ndp_base_queue_open(struct nfb_device *dev, unsigned index, int dir, ndp_ope
 	int ret;
 	int fdt_offset;
 	int32_t numa;
+	struct nc_ndp_queue *q_nc;
 	struct ndp_queue *q;
+#ifdef __KERNEL__
+	struct ndp * ndp;
+#endif
 
-	fdt_offset = nfb_fdt_queue_offset(dev, index, dir);
+	fdt_offset = nc_nfb_fdt_queue_offset(dev, index, dir);
 	if (fdt_getprop32(nfb_get_fdt(dev), fdt_offset, "numa", &numa)) {
 		numa = -1;
 	}
@@ -231,7 +216,26 @@ int ndp_base_queue_open(struct nfb_device *dev, unsigned index, int dir, ndp_ope
 		goto err_nalloc;
 	}
 
-	if ((ret = nc_ndp_queue_open_init_ext(dev, q, index, dir, flags))) {
+	q_nc = nfb_nalloc(numa, sizeof(struct nc_ndp_queue));
+	if (q_nc == NULL) {
+		ret = -ENOMEM;
+		goto err_nc_ndp_queue_alloc;
+	}
+
+	q_nc->q = q;
+#ifdef __KERNEL__
+	ndp = (struct ndp *) dev->list_drivers[NFB_DRIVER_NDP].priv;
+	q_nc->subscriber = ndp_subscriber_create(ndp);
+	if (!q_nc->subscriber) {
+		ret = -ENOMEM;
+		goto err_subscriber_create;
+	}
+#else
+	q_nc->fd = dev->fd;
+#endif
+
+	ndp_queue_set_priv(q, q_nc);
+	if ((ret = nc_ndp_queue_open_init_ext(nfb_get_fdt(dev), q_nc, index, dir, flags))) {
 		goto err_open;
 	}
 
@@ -239,23 +243,28 @@ int ndp_base_queue_open(struct nfb_device *dev, unsigned index, int dir, ndp_ope
 	return 0;
 
 err_open:
+#ifdef __KERNEL__
+	ndp_subscriber_destroy(q_nc->subscriber);
+err_subscriber_create:
+#endif
+	nfb_nfree(numa, q_nc, sizeof(struct nc_ndp_queue));
+err_nc_ndp_queue_alloc:
 	ndp_queue_destroy(q);
 err_nalloc:
 	return ret;
 }
 
-void ndp_base_queue_close(struct ndp_queue *q)
+void ndp_base_queue_close(struct nc_ndp_queue *q)
 {
-#ifdef __KERNEL__
-	if (q->sub) {
-		ndp_subscription_destroy(q->sub);
-		q->sub = NULL;
-	}
-#endif
+	struct ndp_queue *ndp_q = q->q;
 
 	nc_ndp_queue_close(q);
+#ifdef __KERNEL__
+	ndp_subscriber_destroy(q->subscriber);
+#endif
 
-	ndp_queue_destroy(q);
+	nfb_nfree(ndp_queue_get_numa_node(ndp_q), q, sizeof(struct nc_ndp_queue));
+	ndp_queue_destroy(ndp_q);
 }
 
 struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir, int flags)
@@ -274,7 +283,7 @@ struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir
 	return q;
 
 err_nfb_queue_add:
-	ndp_base_queue_close(q);
+	ndp_base_queue_close(q->priv);
 err_ndp_queue_open_init:
 #ifndef __KERNEL__
 	errno = ret;
@@ -308,7 +317,7 @@ void ndp_close_queue(struct ndp_queue *q)
 
 	nfb_queue_remove(q);
 
-	ndp_base_queue_close(q);
+	ndp_base_queue_close(q->priv);
 }
 
 void ndp_close_rx_queue(struct ndp_queue *q)
@@ -416,7 +425,7 @@ int ndp_queue_start(struct ndp_queue *q)
 	if (q->status == NDP_QUEUE_RUNNING)
 		return EALREADY;
 
-	ret = nc_ndp_queue_start(q);
+	ret = q->ops.control.start(q->priv);
 	if (ret)
 		return ret;
 
@@ -432,9 +441,9 @@ int ndp_queue_stop(struct ndp_queue *q)
 		return EALREADY;
 
 	if (q->type == NDP_CHANNEL_TYPE_TX)
-		nc_ndp_tx_burst_flush(q);
+		q->ops.burst.tx.flush(q->priv);
 
-	ret = nc_ndp_queue_stop(q);
+	ret = q->ops.control.stop(q->priv);
 	if (ret)
 		return ret;
 
@@ -444,27 +453,27 @@ int ndp_queue_stop(struct ndp_queue *q)
 
 unsigned ndp_rx_burst_get(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)
 {
-	return nc_ndp_rx_burst_get(q, packets, count);
+	return q->ops.burst.rx.get(q->priv, packets, count);
 }
 
 void ndp_rx_burst_put(struct ndp_queue *q)
 {
-	nc_ndp_rx_burst_put(q);
+	q->ops.burst.rx.put(q->priv);
 }
 
-unsigned ndp_tx_burst_get(ndp_tx_queue_t *q, struct ndp_packet *packets, unsigned count)
+unsigned ndp_tx_burst_get(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)
 {
-	return nc_ndp_tx_burst_get(q, packets, count);
+	return q->ops.burst.tx.get(q->priv, packets, count);
 }
 
 void ndp_tx_burst_put(struct ndp_queue *q)
 {
-	nc_ndp_tx_burst_put(q);
+	q->ops.burst.tx.put(q->priv);
 }
 
 void ndp_tx_burst_flush(struct ndp_queue *q)
 {
-	nc_ndp_tx_burst_flush(q);
+	q->ops.burst.tx.flush(q->priv);
 }
 
 #ifndef __KERNEL__

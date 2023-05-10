@@ -12,11 +12,6 @@
 #ifndef _NC_NDP_PRIV_H_
 #define _NC_NDP_PRIV_H_
 
-enum ndp_queue_status {
-	NDP_QUEUE_RUNNING,
-	NDP_QUEUE_STOPPED,
-};
-
 struct ndp_packethdr {
 	__u16	packet_size;	/**< size of whole packet (header incl.) */
 	__u16	header_size;	/**< size of hw data (optional) */
@@ -32,11 +27,11 @@ struct ndp_v2_offsethdr {
 	__u64	offset;
 };
 
-struct ndp_queue
-{
-	uint32_t version;
-	uint32_t flags;
 
+struct ndp_queue;
+
+struct nc_ndp_queue {
+	/* Data path */
 	void *buffer;
 	unsigned long long size;
 
@@ -62,20 +57,21 @@ struct ndp_queue
 	int fd;
 	struct ndp_subscription_sync sync;
 
-	struct nfb_device *dev;
-	struct ndp_channel_request channel;
-	enum ndp_queue_status status;
 	uint32_t frame_size_min;
 	uint32_t frame_size_max;
 
-	int numa;
-	int type;
-	int index;
 #ifdef __KERNEL__
-	int alloc;
 	struct ndp_subscription *sub;
+#endif
+
+	/* Control path */
+	struct ndp_queue *q;
+	uint32_t version;
+	uint32_t flags;
+
+	struct ndp_channel_request channel;
+#ifdef __KERNEL__
 	struct ndp_subscriber *subscriber;
-#else
 #endif
 	struct ndp_queue_ops ops;
 	void *priv;

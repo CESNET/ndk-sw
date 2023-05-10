@@ -17,26 +17,32 @@
 
 void ndp_close_queue(struct ndp_queue *q);
 
-int _ndp_queue_sync(struct ndp_queue *q, struct ndp_subscription_sync *sync);
-int _ndp_queue_start(struct ndp_queue *q);
-int _ndp_queue_stop(struct ndp_queue *q);
+int _ndp_queue_sync(struct nc_ndp_queue *q, struct ndp_subscription_sync *sync);
+int _ndp_queue_start(struct nc_ndp_queue *q);
+int _ndp_queue_stop(struct nc_ndp_queue *q);
 
+static int nc_ndp_queue_start(void *priv);
+static int nc_ndp_queue_stop(void *priv);
 
-static inline int nfb_fdt_queue_offset(struct nfb_device *dev, unsigned index, int type)
+#include "ndp_rx.h"
+#include "ndp_tx.h"
+
+static inline int nc_nfb_fdt_queue_offset(const void *fdt, unsigned index, int type)
 {
 	const char * dir_str = type ? "tx" : "rx";
-	const void *fdt = nfb_get_fdt(dev);
 	char path[64];
 
 	index &= 0x0FFFFFFF;
 
 	snprintf(path, 64, "/drivers/ndp/%s_queues/%s%u", dir_str, dir_str, index);
 
-	return  fdt_path_offset(fdt, path);
+	return fdt_path_offset(fdt, path);
 }
 
-static inline int nc_ndp_v1_open_queue(struct ndp_queue *q)
+static inline int nc_ndp_v1_open_queue(struct nc_ndp_queue *q)
 {
+	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
+
 	if (q->frame_size_min == 0)
 		q->frame_size_min = 57;
 	if (q->frame_size_max == 0)
@@ -47,20 +53,31 @@ static inline int nc_ndp_v1_open_queue(struct ndp_queue *q)
 	q->u.v1.swptr = 0;
 
 	q->u.v1.data = q->buffer;
+
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		ops->burst.rx.get = nc_ndp_v1_rx_burst_get;
+		ops->burst.rx.put = nc_ndp_v1_rx_burst_put;
+	} else {
+		ops->burst.tx.get = nc_ndp_v1_tx_burst_get;
+		ops->burst.tx.put = nc_ndp_v1_tx_burst_put;
+		ops->burst.tx.flush = nc_ndp_v1_tx_burst_flush;
+	}
+
 	return 0;
 }
 
-static inline int nc_ndp_v2_open_queue(struct ndp_queue *q, int fdt_offset)
+static inline int nc_ndp_v2_open_queue(struct nc_ndp_queue *q, const void *fdt, int fdt_offset)
 {
+	int ret = 0;
 #ifndef __KERNEL__
 	int prot;
-	int ret = 0;
 	size_t hdr_mmap_size = 0;
 	size_t off_mmap_size = 0;
 	off_t hdr_mmap_offset = 0;
 	off_t off_mmap_offset = 0;
 #endif
-	const void *fdt = nfb_get_fdt(q->dev);
+	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
+
 	/* 4096 is the default value from older version of driver. Never version have buffer_size prop in DT */
 	uint32_t buffer_size = 4096;
 
@@ -78,7 +95,6 @@ static inline int nc_ndp_v2_open_queue(struct ndp_queue *q, int fdt_offset)
 
 #ifdef __KERNEL__
 	q->u.v2.hdr_items = ndp_ctrl_v2_get_vmaps(q->sub->channel, (void**)&q->u.v2.hdr, (void**)&q->u.v2.off);
-	return 0;
 #else
 	ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_size", &hdr_mmap_size);
 	ret |= fdt_getprop64(fdt, fdt_offset, "off_mmap_size", &off_mmap_size);
@@ -92,6 +108,17 @@ static inline int nc_ndp_v2_open_queue(struct ndp_queue *q, int fdt_offset)
 	prot = PROT_READ;
 	prot |= q->channel.type == NDP_CHANNEL_TYPE_TX ? PROT_WRITE : 0;
 
+#endif
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		ops->burst.rx.get = nc_ndp_v2_rx_burst_get;
+		ops->burst.rx.put = nc_ndp_v2_rx_burst_put;
+	} else {
+		ops->burst.tx.get = nc_ndp_v2_tx_burst_get;
+		ops->burst.tx.put = nc_ndp_v2_tx_burst_put;
+		ops->burst.tx.flush = nc_ndp_v2_tx_burst_flush;
+	}
+
+#ifndef __KERNEL__
 	q->u.v2.hdr = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
 	if (q->u.v2.hdr == MAP_FAILED) {
 		goto err_mmap_hdr;
@@ -103,17 +130,19 @@ static inline int nc_ndp_v2_open_queue(struct ndp_queue *q, int fdt_offset)
 	}
 
 	q->u.v2.hdr_items = hdr_mmap_size / 2 / sizeof(struct ndp_v2_packethdr);
+#endif
 	return 0;
 
+#ifndef __KERNEL__
 err_mmap_off:
 	munmap(q->u.v2.hdr, hdr_mmap_size);
 err_mmap_hdr:
 err_fdt_getprop:
-	return ret;
 #endif
+	return ret;
 }
 
-static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_queue *q, unsigned index, int type, ndp_open_flags_t ndp_flags)
+static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queue *q, unsigned index, int type, ndp_open_flags_t ndp_flags)
 {
 	int ret = 0;
 	int fdt_offset;
@@ -123,12 +152,12 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 
 	off_t mmap_offset;
 	size_t mmap_size;
-	const void *fdt;
+
+	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
 
 	(void) ndp_flags;
 
-	fdt = nfb_get_fdt(dev);
-	fdt_offset = nfb_fdt_queue_offset(dev, index, type);
+	fdt_offset = nc_nfb_fdt_queue_offset(fdt, index, type);
 
 	/* Fetch controller parameters */
 	q->frame_size_min = q->frame_size_max = 0;
@@ -161,7 +190,6 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 		flags |= NDP_CHANNEL_FLAG_USE_HEADER | NDP_CHANNEL_FLAG_USE_OFFSET;
 	}
 
-	q->dev = dev;
 	q->flags = flags;
 
 	q->channel.index = index;
@@ -179,7 +207,6 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 
 	q->buffer = q->sub->channel->ring.vmap;
 #else
-	q->fd = dev->fd;
 
 	if ((ret = ioctl(q->fd, NDP_IOC_SUBSCRIBE, &q->channel))) {
 		goto err_subscribe;
@@ -189,7 +216,7 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 	 * is 2 times larger than q->size and the buffer space is shadowed.
 	 * Due to this feature user normally needs not to check buffer boundary. */
 	q->buffer = mmap(NULL, q->size * 2, PROT_READ | (type ? PROT_WRITE : 0),
-			MAP_FILE | MAP_SHARED, q->dev->fd, mmap_offset);
+			MAP_FILE | MAP_SHARED, q->fd, mmap_offset);
 	if (q->buffer == MAP_FAILED) {
 		goto err_mmap;
 	}
@@ -200,10 +227,14 @@ static inline int nc_ndp_queue_open_init_ext(struct nfb_device *dev, struct ndp_
 	q->sync.hwptr = 0;
 
 	if (q->version == 2) {
-		ret = nc_ndp_v2_open_queue(q, fdt_offset);
+		ret = nc_ndp_v2_open_queue(q, fdt, fdt_offset);
 	} else if (q->version == 1) {
 		ret = nc_ndp_v1_open_queue(q);
 	}
+
+	ops->control.start = nc_ndp_queue_start;
+	ops->control.stop = nc_ndp_queue_stop;
+
 	if (ret)
 		goto err_vx_open_queue;
 
@@ -220,21 +251,29 @@ err_fdt_getprop:
 	return ret;
 }
 
-static inline int nc_ndp_queue_open_init(struct nfb_device *dev, struct ndp_queue *q, unsigned index, int type)
+static inline int nc_ndp_queue_open_init(const void *fdt, struct nc_ndp_queue *q, unsigned index, int type)
 {
-	return nc_ndp_queue_open_init_ext(dev, q, index, type, 0);
+	return nc_ndp_queue_open_init_ext(fdt, q, index, type, 0);
 }
 
-static inline void nc_ndp_queue_close(struct ndp_queue *q)
+static inline void nc_ndp_queue_close(struct nc_ndp_queue *q)
 {
-#ifndef __KERNEL__
+#ifdef __KERNEL__
+	if (q->sub) {
+		ndp_subscription_destroy(q->sub);
+		q->sub = NULL;
+	}
+
+#else
 	munmap(q->buffer, q->size * 2);
 #endif
 }
 
-static int nc_ndp_queue_start(struct ndp_queue *q)
+static int nc_ndp_queue_start(void *priv)
 {
+	struct nc_ndp_queue *q = priv;
 	int ret;
+
 	q->sync.flags = 0;
 
 	if ((ret = _ndp_queue_start(q)))
@@ -250,9 +289,9 @@ static int nc_ndp_queue_start(struct ndp_queue *q)
 	return ret;
 }
 
-
-static int nc_ndp_queue_stop(struct ndp_queue *q)
+static int nc_ndp_queue_stop(void *priv)
 {
+	struct nc_ndp_queue *q = priv;
 	int ret;
 
 	if ((ret = _ndp_queue_stop(q)))
@@ -263,9 +302,5 @@ static int nc_ndp_queue_stop(struct ndp_queue *q)
 	}
 	return 0;
 }
-
-
-#include "ndp_rx.h"
-#include "ndp_tx.h"
 
 #endif
