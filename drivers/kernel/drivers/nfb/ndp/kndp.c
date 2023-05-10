@@ -20,4 +20,6 @@
 
 #include <netcope/ndp.h>
 
+#include <netcope/ndp_base.h>
+
 #include <netcope/ndp_core.h>

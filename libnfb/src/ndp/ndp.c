@@ -34,4 +34,6 @@
 
 #include "../nfb.h"
 
+#include <netcope/ndp_base.h>
+
 #include <netcope/ndp_core.h>
