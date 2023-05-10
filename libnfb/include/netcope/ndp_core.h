@@ -276,6 +276,13 @@ struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir
 		goto err_ndp_queue_open_init;
 	}
 
+	if (q->ops.control.start == NULL || q->ops.control.stop == NULL ||
+			q->ops.burst.tx.get == NULL || q->ops.burst.tx.put == NULL ||
+			(q->ops.burst.tx.flush == NULL && q->type != NDP_CHANNEL_TYPE_RX)) {
+		ret = -EINVAL;
+		goto err_ops_invalid;
+	}
+
 	if ((ret = nfb_queue_add(q))) {
 		goto err_nfb_queue_add;
 	}
@@ -283,6 +290,7 @@ struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir
 	return q;
 
 err_nfb_queue_add:
+err_ops_invalid:
 	ndp_base_queue_close(q->priv);
 err_ndp_queue_open_init:
 #ifndef __KERNEL__
