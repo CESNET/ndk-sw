@@ -78,6 +78,7 @@ struct ndp_queue
 #else
 #endif
 	struct ndp_queue_ops ops;
+	void *priv;
 };
 
 #endif

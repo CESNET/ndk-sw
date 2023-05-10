@@ -90,6 +90,9 @@ struct ndp_queue_ops {
 struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int type, int index);
 void ndp_queue_destroy(struct ndp_queue* q);
 
+void* ndp_queue_get_priv(struct ndp_queue *q);
+void ndp_queue_set_priv(struct ndp_queue *q, void *priv);
+
 struct ndp_queue_ops* ndp_queue_get_ops(struct ndp_queue *q);
 
 #ifdef __cplusplus

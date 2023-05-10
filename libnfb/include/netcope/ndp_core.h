@@ -150,6 +150,16 @@ void ndp_queue_destroy(struct ndp_queue* q)
 	nfb_nfree(q->numa, q, sizeof(*q));
 }
 
+void* ndp_queue_get_priv(struct ndp_queue *q)
+{
+	return q->priv;
+}
+
+void ndp_queue_set_priv(struct ndp_queue *q, void *priv)
+{
+	q->priv = priv;
+}
+
 struct ndp_queue_ops* ndp_queue_get_ops(struct ndp_queue *q)
 {
 	return &q->ops;
