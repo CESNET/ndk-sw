@@ -502,8 +502,13 @@ unsigned ndp_tx_burst_copy(struct ndp_queue *q, struct ndp_packet *packets, unsi
 
 int ndp_rx_poll(struct nfb_device *dev, int timeout, struct ndp_queue **q)
 {
+	int ret = -ENXIO;
+	(void) dev;
+	(void) timeout;
+	(void) q;
+
+#if 0
 	int i;
-	int ret;
 	struct pollfd pfd;
 	size_t size, max_size = 0;
 
@@ -556,6 +561,7 @@ int ndp_rx_poll(struct nfb_device *dev, int timeout, struct ndp_queue **q)
 
 	return ret;
 err:
+#endif
 	return ret;
 }
 #endif
