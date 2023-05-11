@@ -305,9 +305,9 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 		} else if (!strcmp(card_name, "N6010")) {
 			subnode = nfb_fdt_create_binary_slot(fdt, node, "image2", "fpga_factory", 2, 2, -1, 0, 0);
 			n6010_binary_slot_prepare(fdt, subnode, "\x03\x00\x00\x00", "\xff\xff\xff\xff", 4);
-			subnode = nfb_fdt_create_binary_slot(fdt, node, "image1", "fpga_user2",   1, 3, -1, 0, 0);
+			subnode = nfb_fdt_create_binary_slot(fdt, node, "image1", "fpga_user2",   1, 4, -1, 0, 0);
 			n6010_binary_slot_prepare(fdt, subnode, "\x00\x00\x01\x00", "\xff\xff\xff\xff", 4);
-			subnode = nfb_fdt_create_binary_slot(fdt, node, "image0", "fpga_user1",   0, 4, -1, 0, 0);
+			subnode = nfb_fdt_create_binary_slot(fdt, node, "image0", "fpga_user1",   0, 3, -1, 0, 0);
 			n6010_binary_slot_prepare(fdt, subnode, "\x00\x00\x00\x00", "\xff\xff\xff\xff", 4);
 		}
 	}
