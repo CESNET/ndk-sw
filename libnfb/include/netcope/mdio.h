@@ -371,7 +371,8 @@ static inline void nc_mdio_fixup_ftile_set_mode(struct nc_mdio *mdio, int prtad,
 	if (mdio->link_encoding == MDIO_PMA_ENC_NRZ)
 		return; /* Not necessary to change media mode for NRZ modes */
 	if (
-		(val == 0x5B || val == 0x5C) ||  /* 400GBASE-R8 */
+		(val == 0x5B || val == 0x5C) ||  /* 400GBASE-R8  */
+		(val == 0x5F)                ||  /* 400GBASE-SR8 */
 		(val >= 0x52 && val <= 0x55) ||  /* 200GBASE-R4 */
 		(val == 0x4A)                ||  /* 100GBASE-R2 */
 		(val >= 0x42 && val <= 0x45))    /*  50GBASE-R1 */

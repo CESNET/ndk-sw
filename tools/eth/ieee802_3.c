@@ -197,9 +197,13 @@ static const struct pma_pmd_type_t ieee802_3_pma_pmd_25g_extended_ability_list[]
 };
 
 static const struct pma_pmd_type_t ieee802_3_pma_pmd_200g_extended_ability_list[] = {
+	{0, "200GBASE-KR4",            -1, 0},
+	{1, "200GBASE-CR4",            -1, 0},
+	{2, "200GBASE-SR4",            -1, 0},
 	{3, "200GBASE-DR4",            ET(200000baseDR4_Full), 0},
 	{4, "200GBASE-FR4",            ET(200000baseLR4_ER4_FR4_Full), 0},
 	{5, "200GBASE-LR4",            ET(200000baseLR4_ER4_FR4_Full), 0},
+	{6, "200GBASE-ER4",            ET(200000baseLR4_ER4_FR4_Full), 0},
 	{-1, NULL,                     -1, 0},
 };
 
@@ -208,6 +212,11 @@ static const struct pma_pmd_type_t ieee802_3_pma_pmd_400g_extended_ability_list[
 	{3, "400GBASE-DR4",            -1, 0},
 	{4, "400GBASE-FR8",            -1, 0},
 	{5, "400GBASE-LR8",            -1, 0},
+	{6, "400GBASE-SR8",            -1, 0},
+	{7, "400GBASE-SR4-2",          -1, 0},
+	{8, "400GBASE-FR4",            -1, 0},
+	{9, "400GBASE-LR4-6",          -1, 0},
+	{10, "400GBASE-ER8",            -1, 0},
 	{-1, NULL,                     -1, 0},
 };
 
@@ -230,7 +239,6 @@ static const struct pma_pmd_type_t ieee802_3_pma_pmd_40g_100g_extended_ability2_
 	{9, "100GBASE-SR2",             -1, 0},
 	{-1, NULL,                      -1, 0},
 };
-
 
 static inline struct pma_pmd_type_t const *_find_pma_pmd_type_by_string(struct pma_pmd_type_t const *table, const char *string)
 {
