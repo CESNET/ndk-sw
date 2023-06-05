@@ -28,18 +28,18 @@ enum nc_idcomp_repeater {
 #define IDCOMP_REG_REPEATER             0x70
 
 #define IDCOMP_SYSMON_OFFSET            0x80
-#define SYSMON_REG2TEMP(value) ((value) * 0.0076900482177734375 - 273.15)
+#define SYSMON_REG2TEMP(value) ((value) * 769 / 100 - 273150)
 
-static inline float nc_idcomp_sysmon_get_temp(struct nfb_device *dev)
+static inline int nc_idcomp_sysmon_get_temp(struct nfb_device *dev, int32_t *val)
 {
 	int nodeoffset;
 	struct nfb_comp * comp;
-	uint32_t temp;
+	int32_t temp;
 
 	nodeoffset = fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, "netcope,idcomp");
 	comp = nfb_comp_open(dev, nodeoffset);
 	if (!comp)
-		return 0.0f / 0.0f;
+		return -EINVAL;
 
 	nfb_comp_write32(comp, IDCOMP_REG_SYSMON_BANK, 0);
 
@@ -47,7 +47,9 @@ static inline float nc_idcomp_sysmon_get_temp(struct nfb_device *dev)
 
 	nfb_comp_close(comp);
 
-	return SYSMON_REG2TEMP(temp);
+	*val = SYSMON_REG2TEMP(temp);
+	
+	return 0;
 }
 
 static inline void nc_idcomp_repeater_set(struct nfb_device *dev, unsigned index, enum nc_idcomp_repeater status)

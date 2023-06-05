@@ -16,14 +16,8 @@ extern "C"
 #endif
 
 #include <netcope/idcomp.h>
-
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
 #include <libfdt.h>
 
-#include <inttypes.h>
 
 // Macros for the addresses of the configuration registers
 #define ADC_CONF_REG  0x00
@@ -67,103 +61,119 @@ static inline uint32_t _nc_get_adc_value_stratix(struct nfb_device *dev, uint32_
 	conf_reg = nfb_comp_read32(comp, channel_address);
 
 	nfb_comp_close(comp);
-	
+
 	return conf_reg;
 }
 
 /**
  * Function used for getting the voltage from a specific channel.
  */
-static inline float nc_get_adc_volt_stratix(struct nfb_device *dev, uint8_t channel)
+static inline int nc_get_adc_volt_stratix(struct nfb_device *dev, uint8_t channel, uint32_t *val)
 {
-	double ans;
+	uint32_t raw;
+	uint32_t ans;
 	uint32_t output_chn = 0x40; // The first address of a voltage data register
 
 	// Quick boundary check
-	if (channel > 15) {
-	    return NAN;
-	}
+	if (channel > 15)
+		return -EINVAL;
+
 
 	// Get the address of the channel to be read
-	output_chn += 4*channel;
+	output_chn += 4 * channel;
 
-	// Using double because float had problems with conversions, the value would be off by up to 0xC0
-	// in the positive or the negative direction. I'm not really sure why, but double does not seem to have
-	// this problem.
-	ans = (double)_nc_get_adc_value_stratix(dev, output_chn);
+	// The Voltage Sensor IP core returns the sampled voltage in unsigned 32-bit fixed point
+	// binary format, with 16 bits below binary point.
+	raw = _nc_get_adc_value_stratix(dev, output_chn);
 
-	// Getting the decimal part of the number
-	ans /= 0x10000;
+	// Getting the integer part of the number in millivolts
+	ans = (raw >> 16) * 1000;
 
-	return (float)ans;
+	// getting fractional part of the number in millivolts
+	ans += (raw & 0xFFFF) * 1000 / 65536;
+
+	*val = ans;
+	return 0;
 }
 
 /**
  * Same as nc_get_adc_volt_stratix();
  * Unless external sensors are connected, channels larger than 1 should NOT be read from.
  */
-static inline float nc_get_adc_temp_stratix(struct nfb_device *dev, uint8_t channel)
+static inline int nc_get_adc_temp_stratix(struct nfb_device *dev, uint8_t channel, int32_t *val)
 {
-	double ans;
+	int32_t raw;
+	int32_t ans;
 	uint32_t output_chn = 0x10; // The first address of a temperature data register
 
 	// Quick boundary check
-	if (channel > 8) {
-	    return NAN;
-	}
+	if (channel > 8)
+		return -EINVAL;
+
 
 	// Get temperature channel offset
-	output_chn += 4*channel;
+	output_chn += 4 * channel;
 
-	// Using double because float had problems with conversions, the value would be off by up to 0xC0
-	// in the positive or the negative direction. I'm not really sure why, but double does not seem to have
-	// this problem.
-	ans = (double)_nc_get_adc_value_stratix(dev, output_chn);
+	//The Temperature Sensor IP core returns the Celsius temperature value in signed 
+	//32-bit fixed point binary format, with eight bits below binary point
+	raw = _nc_get_adc_value_stratix(dev, output_chn);
 
-	// Getting the decimal portion of the number
-	ans /= 0x100;
+	// Getting the integer part of the number and multiplying it to get millidegrees
+	ans = (raw >> 8) * 1000; //shift is arithmetic because raw is signed
 
-	// Calculation for 2's complement
-	if (ans >= 0x800000) {
-		ans -= 2*0x800000;
-	}
+	//getting fractional part of the number in millidegrees
+	ans += (raw & 0xFF) * 1000 / 256;
 
-	return (float)ans;
+	*val = ans;
+	return 0;
 }
 
 /**
  * Function used to get temperature from Intel FPGA devices via their Secure Device Manager component.
  */
-static inline float nc_get_adc_temp_sdm(struct nfb_device *dev)
+static inline int nc_get_adc_temp_sdm(struct nfb_device *dev, int32_t *val)
 {
+#ifdef __KERNEL__
+	struct nfb_boot *nfb_boot;
+	int32_t temperature;
+#endif
 	int ret;
 	struct nfb_boot_ioc_sensor sensor_ioc;
 
 	sensor_ioc.sensor_id = 0;
 	sensor_ioc.flags = 0;
-#ifdef __KERNEL__
-	ret = -ENOSYS;
-	//ret = nfb_boot_get_sensor_ioc(dev, &sensor_ioc);
-#else
+
+
+#ifndef __KERNEL__
 	ret = nfb_sensor_get(dev, &sensor_ioc);
+#else
+	nfb_boot = nfb_get_priv_for_attach_fn(dev, nfb_boot_attach);
+
+	if (nfb_boot->sdm == NULL)
+		return -ENODEV;
+
+	ret = sdm_get_temperature(nfb_boot->sdm, &temperature);
+	sensor_ioc.value = temperature * 1000 / 256;
 #endif
 
-	if (ret)
-		return NAN;
 
-	return sensor_ioc.value / 1000.0f;
+	if (ret)
+		return ret;
+
+	*val = sensor_ioc.value;
+	return 0;
 }
 
-static inline float nc_adc_sensors_get_temp(struct nfb_device *dev)
+static inline int nc_adc_sensors_get_temp(struct nfb_device *dev, int32_t *val)
 {
 	if (fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, "netcope,intel_sdm_controller") >= 0) {
-		return nc_get_adc_temp_sdm(dev);
+		return nc_get_adc_temp_sdm(dev, val);
 	} else if (fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, "netcope,stratix_adc_sensors") >= 0) {
-		return nc_get_adc_temp_stratix(dev, 0);
+		return nc_get_adc_temp_stratix(dev, 0, val);
 	} else if (fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, "netcope,idcomp") >= 0) {
-		return nc_idcomp_sysmon_get_temp(dev);
+		return nc_idcomp_sysmon_get_temp(dev, val);
 	} else {
-		return NAN;
+		return -EINVAL;
 	}
 }
 
