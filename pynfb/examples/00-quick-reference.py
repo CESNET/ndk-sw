@@ -4,10 +4,10 @@
 # Python NFB API examples - quick reference #
 #############################################
 
+# 1.A Basic device manipulation
 import nfb
 
-# 1.A Basic device manipulation
-dev = nfb.open(path='0')
+dev = nfb.open(path="0")
 
 # 1.B Device Tree
 node = dev.fdt_get_compatible("netcope,eth")[0]
@@ -31,8 +31,8 @@ txq = ndp.tx[0]
 rxq.start()
 txq.start()
 
-pkt = bytes([0]*64)
-hdr = bytes([0]*16)
+pkt = bytes([0] * 64)
+hdr = bytes([0] * 16)
 msg = (pkt, hdr, 0)
 
 txq.send([pkt] * 2, hdrs=[hdr, hdr + hdr], flags=0)
@@ -42,7 +42,7 @@ pkts = rxq.recv(cnt=1, timeout=1)
 assert len(pkts) == 0 or (len(pkts) == 1 and isinstance(pkts[0], bytes))
 
 msgs = rxq.recvmsg(cnt=1, timeout=0.5)
-if len(msgs): assert isinstance(msgs[0], tuple) and len(msgs[0]) == 3
+assert len(msgs) == 0 or (isinstance(msgs[0], tuple) and len(msgs[0]) == 3)
 
 # 2.B Data transmission on multiple queues
 ndp.send(pkt, i=[0, 1, 2])
@@ -54,7 +54,7 @@ msgs_q = ndp.recvmsg(cnt=1, i=0, timeout=1)
 
 # 2.C NDP queues statistics
 txq.stats_reset()
-assert txq.stats_read()['packets'] == 0
+assert txq.stats_read()["packets"] == 0
 
 # 3.A Single Ethernet port manipulation
 eth = dev.eth[0]
@@ -64,7 +64,7 @@ for mac in [eth.rxmac, eth.txmac]:
     mac.enable(enable=True)
     mac.disable()
     mac.stats_reset()
-    assert mac.stats_read()['packets'] == 0
+    assert mac.stats_read()["packets"] == 0
 
 # 3.B PCS/PMA management and Transceiver manipulation
 eth.pcspma.pma_local_loopback = True

@@ -7,11 +7,12 @@
 # TOC
 #####
 
-# 3.A Single Ethernet port manipulation
-# 3.B PCS/PMA management and Transceiver manipulation
-# 3.C Shortcuts for Ethernet ports manipulation
+# 3A Single Ethernet port manipulation
+# 3B PCS/PMA management and Transceiver manipulation
+# 3C Shortcuts for Ethernet ports manipulation
 
 import nfb
+
 dev = nfb.open()
 
 # 3.A Single Ethernet port manipulation
@@ -58,9 +59,9 @@ pmd = eth.pmd
 val = pmd.vendor_name
 val = pmd.vendor_pn
 val = pmd.vendor_sn
-if hasattr(pmd, 'mdio'):
+if hasattr(pmd, "mdio"):
     val = pmd.mdio.read(3, 0)
-elif hasattr(pmd, 'i2c'):
+elif hasattr(pmd, "i2c"):
     val = pmd.i2c.read_reg(148, 16)
 
 
@@ -78,6 +79,6 @@ assert eth.link == eth.rxmac.link
 # all Ethernet ports
 dev.eth.enable()
 # selected Ethernet ports
-dev.eth.enable(i=[0,1])
+dev.eth.enable(i=[0, 1])
 dev.eth.enable(False, i=0)
 dev.eth.stats_reset()

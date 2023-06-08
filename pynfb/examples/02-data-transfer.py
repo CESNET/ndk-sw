@@ -7,11 +7,12 @@
 # TOC
 #####
 
-# 2.A Data transmission on specific queue
-# 2.B Data transmission on multiple queues
-# 2.C Queues statistics
+# 2A Data transmission on specific queue
+# 2B Data transmission on multiple queues
+# 2C Queues statistics
 
 import nfb
+
 dev = nfb.open()
 for e in dev.eth:
     e.enable()
@@ -26,13 +27,13 @@ rxq = ndp.rx[0]
 txq = ndp.tx[0]
 
 # start the queue; this step is optional
-# for loopback test purposes helps to avoid discarding on RxQ)
+# for loopback test purposes helps to avoid discarding on RxQ
 rxq.start()
 txq.start()
 
 # Raw frames are represented by bytes
-pkt = bytes([0]*64)
-hdr = bytes([0]*16)
+pkt = bytes([0] * 64)
+hdr = bytes([0] * 16)
 
 
 # Transmitting frames
@@ -108,7 +109,9 @@ ndp.sendmsg(msg)
 # receive pending frames from all queues
 # return value is list of tuple(pkt: bytes, queue_index: int)
 pkts = ndp.recv()
-assert len(pkts) == 0 or (isinstance(pkts[0], tuple) and len(pkts[0]) == 2 and isinstance(pkts[0][0], bytes))
+assert len(pkts) == 0 or (
+    isinstance(pkts[0], tuple) and len(pkts[0]) == 2 and isinstance(pkts[0][0], bytes)
+)
 
 # receive pending frames on specific queue
 ndp.recv(i=1)
@@ -119,7 +122,11 @@ ndp.recv(i=[0, 1, 2])
 
 # receive pending messages from all queues, return value is list of tuple(tuple(pkt: bytes, hdr: bytes, flags: int), queue_index: int)
 msgs = rxq.recvmsg()
-assert len(msgs) == 0 or (isinstance(msgs[0], tuple) and len(msgs[0]) == 2 and isinstance(msgs[0][0][0], bytes))
+assert len(msgs) == 0 or (
+    isinstance(msgs[0], tuple)
+    and len(msgs[0]) == 2
+    and isinstance(msgs[0][0][0], bytes)
+)
 
 
 # 2.C Queues statistics
