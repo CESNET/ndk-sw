@@ -94,6 +94,13 @@ KERNEL_TRY_COMPILE([[
 static const struct regmap_range regmap_range_test[] = {regmap_reg_range(0,0)};
 ]],[AC_DEFINE([CONFIG_NFB_ENABLE_PMCI], [1], [Define if kernel have regmap_reg_range]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
+AC_MSG_CHECKING([whether kernel has devm_kstrdup_const])
+KERNEL_TRY_COMPILE([[
+#include <linux/device.h>
+struct device dev;
+void test(void) {devm_kstrdup_const(&dev, "test", GFP_KERNEL);}
+]],[AC_DEFINE([CONFIG_NFB_ENABLE_HWMON], [1], [Define if kernel has devm_kstrdup_const()]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
 AC_SUBST(KDIR)
 AC_SUBST(KSRC)
 

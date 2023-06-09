@@ -25,6 +25,7 @@
 #include "net/net.h"
 #include "boot/boot.h"
 #include "ndp_netdev/core.h"
+#include "hwmon/nfb_hwmon.h"
 
 MODULE_VERSION(PACKAGE_VERSION);
 MODULE_AUTHOR("CESNET; Martin Spinler <spinler@cesnet.cz>");
@@ -297,6 +298,10 @@ static struct nfb_driver_ops embedded_driver_ops[] = {
 	{
 		.attach = nfb_ndp_netdev_attach,
 		.detach = nfb_ndp_netdev_detach,
+	},
+	{
+		.attach = nfb_hwmon_attach,
+		.detach = nfb_hwmon_detach,
 	},
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	{

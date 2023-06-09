@@ -20,5 +20,6 @@ nfb-objs += ../mfd/intel-m10-bmc-core.o ../fpga/fpga-image-load.o ../fpga/intel-
 nfb-objs += net/driver.o net/device.o net/ethtool.o net/sysfs.o
 nfb-objs += qdr/qdr.o
 nfb-objs += misc.o lock.o bus.o char.o pci.o core.o
+nfb-objs += hwmon/nfb_hwmon.o
 
 obj-m += nfb.o
