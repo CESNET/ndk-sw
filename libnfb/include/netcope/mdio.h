@@ -58,10 +58,10 @@ struct nc_ftile_reg_map {
 
 /* Register mapping table for FTILE RS-FEC registers (200 & 400GE) */
 static const struct nc_ftile_reg_map ftile_fec_map[] = {
-	{1, 202, 0x0000 + 0x184},
-	{1, 203, 0x0000 + 0x186},
-	{1, 204, 0x0000 + 0x18c},
-	{1, 205, 0x0000 + 0x18e},
+	{1, 202, 0x0000 + 0x184}, /* PMA FEC corrected codewords low */
+	{1, 203, 0x0000 + 0x186}, /* PMA FEC corrected codewords high */
+	{1, 204, 0x0000 + 0x18c}, /* PMA FEC uncorrected codewords low */
+	{1, 205, 0x0000 + 0x18e}, /* PMA FEC uncorrected codewords high */
 	{1, 210, 0x0000 + 0x194}, /* PMA FEC symbol errors, lane 0 low  */
 	{1, 211, 0x0000 + 0x196}, /* PMA FEC symbol errors, lane 0 high */
 	{1, 212, 0x0200 + 0x194},
@@ -150,6 +150,31 @@ static const struct nc_ftile_reg_map ftile_pcs_map[] = {
 	{0, 0, 0}
 };
 
+/* Register mapping table for ETILE PCS */
+static const struct nc_ftile_reg_map etile_pcs_map[] = {
+	{3, 200, 0x361},  /* BIP counter, lane 0 */
+	{3, 201, 0x362},  /* BIP counter, lane 1 */
+	{3, 202, 0x363},  /* BIP counter, lane 2 */
+	{3, 203, 0x364},  /* BIP counter, lane 3 */
+	{3, 204, 0x365},  /* BIP counter, lane 4 */
+	{3, 205, 0x366},  /* BIP counter, lane 5 */
+	{3, 206, 0x367},  /* BIP counter, lane 6 */
+	{3, 207, 0x368},  /* BIP counter, lane 7 */
+	{3, 208, 0x369},  /* BIP counter, lane 8 */
+	{3, 209, 0x36a},  /* BIP counter, lane 9 */
+	{3, 210, 0x36b},  /* BIP counter, lane 10 */
+	{3, 211, 0x36c},  /* BIP counter, lane 11 */
+	{3, 212, 0x36d},  /* BIP counter, lane 12 */
+	{3, 213, 0x36e},  /* BIP counter, lane 13 */
+	{3, 214, 0x36f},  /* BIP counter, lane 14 */
+	{3, 215, 0x370},  /* BIP counter, lane 15 */
+	{3, 216, 0x371},  /* BIP counter, lane 16 */
+	{3, 217, 0x372},  /* BIP counter, lane 17 */
+	{3, 218, 0x373},  /* BIP counter, lane 18 */
+	{3, 219, 0x374},  /* BIP counter, lane 19 */
+	{0, 0, 0}
+};
+
 static inline uint32_t _find_ftile_reg(uint16_t devad, uint16_t ieee_reg, const struct nc_ftile_reg_map table[])
 {
 	int i = 0;
@@ -225,6 +250,33 @@ static inline void nc_mdio_ftile_config(struct nc_mdio *mdio)
 	}
 }
 
+/* Get E-tile Ethernet configuration and fill corresponding fields in the nc_mdio structure */
+static inline void nc_mdio_etile_config(struct nc_mdio *mdio)
+{
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+	uint32_t val;
+
+	/* The E-Tile EHIP doesn't contains configuration registers, thus  */
+	/* the number of lanes&speed are determined by the MDIO register 1.7 */
+	val = mdio->mdio_read(comp, 0, 1, 7);
+	if (val < 0x1f) { /* 10GBASE */
+		mdio->pma_lanes = 1;
+		mdio->speed = 10;
+	} else if (val < 0x26) { /* 40GBASE */
+		mdio->pma_lanes = 4;
+		mdio->speed = 40;
+	} else if (val < 0x2f) { /* 100GBASE */
+		mdio->pma_lanes = 4;
+		mdio->speed = 100;
+	} else if (val < 0x3a) { /* 25GBASE */
+		mdio->pma_lanes = 1;
+		mdio->speed = 25;
+	} else { /* other modes are not supported on E-Tile now */
+		mdio->pma_lanes = 0;
+		mdio->speed = 0;
+	}
+}
+
 static inline struct nc_mdio *nc_mdio_open(const struct nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam)
 {
 	struct nc_mdio *mdio;
@@ -251,9 +303,10 @@ static inline struct nc_mdio *nc_mdio_open(const struct nfb_device *dev, int fdt
 		mdio->pcspma_is_f_tile = f_tile;
 		if (f_tile)
 			nc_mdio_ftile_config(mdio);
+		if (e_tile)
+			nc_mdio_etile_config(mdio);
 		return mdio;
 	}
-
 
 	comp = nc_mdio_dmap_open_ext(dev, fdt_offset, sizeof(struct nc_mdio));
 	if (comp) {
@@ -264,6 +317,8 @@ static inline struct nc_mdio *nc_mdio_open(const struct nfb_device *dev, int fdt
 		mdio->pcspma_is_f_tile = f_tile;
 		if (f_tile)
 			nc_mdio_ftile_config(mdio);
+		if (e_tile)
+			nc_mdio_etile_config(mdio);
 		return mdio;
 	}
 
@@ -527,7 +582,7 @@ static inline uint16_t _get_ftile_r3045(struct nfb_comp *comp, int prtad, int sp
 	uint32_t val;
 	uint16_t tmp = 0;
 	val = nc_mdio_dmap_drp_read(comp, prtad, 0, ftile_pcs_addr(speed, 0xf4)); // BlkErr count reg */
-	tmp = ((val >> 8) & 0xffff);
+	tmp = ((val >> 8) & 0xffff) | 0x8000;
 	return tmp;
 }
 
@@ -617,6 +672,219 @@ static inline void nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int pr
 	nc_mdio_ftile_reset(mdio, prtad, 1, 0); // deassert RX reset
 }
 
+/* ~~~~[ Intel E-Tile  ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+#define ETILE_RSFEC_PAGE 9
+
+/* 32-bit read operation from the RS-FEC registers */
+static inline uint32_t nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr)
+{
+	int i;
+	uint32_t val = 0;
+
+	for (i = 0; i < 4; i++)
+		val |= ((nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, addr+i) & 0xff) << i*8);
+	return val;
+}
+
+static inline uint32_t nc_mdio_etile_rsfec_write(struct nfb_comp *comp, int prtad, uint32_t addr, uint32_t val)
+{
+	int i;
+
+	for (i = 0; i < 4; i++)
+		nc_mdio_dmap_drp_write(comp, prtad, ETILE_RSFEC_PAGE, addr+i, ((val >> i*8) & 0xff));
+	return val;
+}
+
+/* Make PCS stats snapshot */
+static inline void _etile_pcs_snapshot(struct nfb_comp *comp, int prtad)
+{
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x108, 0x0f);
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x108, 0x00);
+}
+
+/* Make RSFEC stats snapshot */
+static inline void _etile_rsfec_snapshot(struct nfb_comp *comp, int prtad)
+{
+	nc_mdio_dmap_drp_write(comp, prtad, ETILE_RSFEC_PAGE, 0x108, 0x0f);
+	nc_mdio_dmap_drp_write(comp, prtad, ETILE_RSFEC_PAGE, 0x108, 0x00);
+}
+
+/* Clear RSFEC counters */
+static inline void _etile_rsfec_clear_stats(struct nfb_comp *comp, int prtad)
+{
+	nc_mdio_dmap_drp_write(comp, prtad, ETILE_RSFEC_PAGE, 0x108, 0xf0);
+	nc_mdio_dmap_drp_write(comp, prtad, ETILE_RSFEC_PAGE, 0x108, 0x00);
+}
+
+/* Construct ieee register 3.33 (BASE-R status 2) */
+static inline uint16_t _get_etile_r3033(struct nc_mdio *mdio, struct nfb_comp *comp, int prtad)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+	/* Bits [15:14] read from mgmt using standard MDIO */
+	val = mdio->mdio_read(comp, prtad, 3, 33);
+	tmp = (val & 0xc000);
+	/* Others bits (counters) read using DRP */
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x37c); /* BlkErr count reg */
+	tmp |= (val & 0xff);
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x32a); /* BER count reg */
+	tmp |= ((val & 0x3f) << 8);
+	return tmp;
+}
+
+/* Construct ieee register 3.44 (BER counter high) */
+static inline uint16_t _get_etile_r3044(struct nfb_comp *comp, int prtad)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x32a); // BER count reg */
+	tmp = ((val >> 6) & 0xffff);
+	return tmp;
+}
+
+/* Construct ieee register 3.45 (Err block counter high) */
+static inline uint16_t _get_etile_r3045(struct nfb_comp *comp, int prtad)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+	val = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x37c); // BlkErr count reg */
+	tmp = ((val >> 8) & 0xffff) | 0x8000;
+	return tmp;
+}
+
+/* Construct ieee register 3.400-419 (PCS lane mapping) */
+static inline uint16_t _get_etile_r3400(struct nfb_comp *comp, int prtad, int lane)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+        
+	if (lane <= 5)
+		val = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x330);
+	else if (lane <= 11)
+		val = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x331);
+	else if (lane <= 17)
+		val = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x332);
+	else
+		val = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x333);
+	tmp = ((val >> ((lane % 6) * 5)) & 0x1f);
+	return tmp;
+}
+
+/* Construct ieee register 1.200 (RSFEC control register) */
+static inline uint16_t _get_etile_r1200(struct nfb_comp *comp, int prtad)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x40); /* rsfec lane cfg */
+	tmp |= ((val & 0x0004) >> 3) << 1; /* Bypass error indication flag */
+	tmp |= ((val & 0x0008) >> 4) << 2; /* Clause 108 RSFEC enabled */
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x30); /* rsfec core cfg */
+	tmp |= ((~val & 0x0001) >> 0) << 3; /* Four lane PMD */
+
+	return tmp;
+}
+
+/* Construct ieee register 1.201 (RSFEC status register) */
+static inline uint16_t _get_etile_r1201(struct nfb_comp *comp, int prtad)
+{
+	uint32_t val;
+	uint16_t tmp = 0x2; /* FEC bypass ability enabled by default*/
+
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x150); /* rsfec_lane_rx_stat */
+	tmp |= ((val & 0x0010) >> 4) << 2; /* High SER */
+	tmp |= ((~val & 0x0002) >> 1) << 8; /* Lane 0 locked */
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x154); /* rsfec_lane_rx_stat */
+	tmp |= ((~val & 0x0002) >> 1) << 9; /* Lane 1 locked */
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x158); /* rsfec_lane_rx_stat */
+	tmp |= ((~val & 0x0002) >> 1) << 10; /* Lane 2 locked */
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x15c); /* rsfec_lane_rx_stat */
+	tmp |= ((~val & 0x0002) >> 1) << 11; /* Lane 3 locked */
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x180); /* rsfec_lane_rx_stat */
+	tmp |= ((~val & 0x0001) >> 0) << 14; /* Align status */
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x104); /* rsfec_lane_rx_stat */
+	tmp |= ((~val & 0x0001) >> 0) << 15; /* PCS align status */
+	return tmp;
+}
+
+/* Construct ieee register 1.206 (RSFEC lane mapping) */
+static inline uint16_t _get_etile_r1206(struct nfb_comp *comp, int prtad)
+{
+	uint32_t val;
+	uint16_t tmp = 0;
+
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x1a0+4*0);
+	tmp |= ((val & 0x3) << 0);
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x1a0+4*1);
+	tmp |= ((val & 0x3) << 2);
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x1a0+4*2);
+	tmp |= ((val & 0x3) << 4);
+	val = nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, 0x1a0+4*3);
+	tmp |= ((val & 0x3) << 6);
+	return tmp;
+}
+
+/* Sum 2 32-bit registers to compute total number of errors */
+static inline uint32_t _get_etile_stats(struct nfb_comp *comp, int prtad, uint16_t reg, int lane)
+{
+	uint64_t tmp;
+	_etile_rsfec_snapshot(comp, prtad);
+	tmp = nc_mdio_etile_rsfec_read(comp, prtad, reg+lane*8);
+	tmp += (((uint64_t)(nc_mdio_etile_rsfec_read(comp, prtad, reg+lane*8+4))) << 32);
+	if (tmp >= 0x100000000) 
+		return 0xffffffff;
+	else
+		return (tmp & 0xffffffff);
+}
+
+static inline uint16_t nc_mdio_fixup_etile_pcs_read(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr)
+{
+	const int fec_lane = 0; /* TBD: lane must be set for speeds < 100 */
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+	uint32_t etile_reg;
+
+	/* Try to find the <addr> register in PCS table first */
+	if ( (etile_reg = _find_ftile_reg(devad, addr, etile_pcs_map)) ) {
+		 _etile_pcs_snapshot(comp, prtad);
+		return nc_mdio_dmap_drp_read(comp, prtad, 0, etile_reg);
+	}
+	/* Register not found in tables */
+	if (devad == 1) { /* PMA & RSFEC registers */
+		switch (addr) {
+		case 200: return _get_etile_r1200(comp, prtad);
+		case 201: return _get_etile_r1201(comp, prtad);
+		case 202: return (_get_etile_stats(comp, prtad, 0x200, fec_lane) & 0xffff); /* CCW low   */
+		case 203: return (_get_etile_stats(comp, prtad, 0x200, fec_lane) >> 16);    /* CCW high  */
+		case 204: return (_get_etile_stats(comp, prtad, 0x220, fec_lane) & 0xffff); /* UCCW low  */
+		case 205: return (_get_etile_stats(comp, prtad, 0x220, fec_lane) >> 16);    /* UCCW high */
+		case 206: return _get_etile_r1206(comp, prtad); /* lane mapping */
+		case 210: return (_get_etile_stats(comp, prtad, 0x240, 0) & 0xffff); /* Lane 0 symbol errors low   */
+		case 211: return (_get_etile_stats(comp, prtad, 0x240, 0) >> 16);    /* Lane 0 symbol errors high  */
+		case 212: return (_get_etile_stats(comp, prtad, 0x240, 1) & 0xffff); /* Lane 1 symbol errors low   */
+		case 213: return (_get_etile_stats(comp, prtad, 0x240, 1) >> 16);    /* Lane 1 symbol errors high  */
+		case 214: return (_get_etile_stats(comp, prtad, 0x240, 2) & 0xffff); /* Lane 2 symbol errors low   */
+		case 215: return (_get_etile_stats(comp, prtad, 0x240, 2) >> 16);    /* Lane 2 symbol errors high  */
+		case 216: return (_get_etile_stats(comp, prtad, 0x240, 3) & 0xffff); /* Lane 3 symbol errors low   */
+		case 217: return (_get_etile_stats(comp, prtad, 0x240, 3) >> 16);    /* Lane 3 symbol errors high  */
+		default: return 0;
+		}
+	}
+	if (devad == 3) { /* PCS registers */
+		if (addr == 33)
+			return _get_etile_r3033(mdio, comp, prtad);
+		if (addr == 44)
+			return _get_etile_r3044(comp, prtad);
+		if (addr == 45)
+			return _get_etile_r3045(comp, prtad);
+		if ((addr >= 400) && (addr <= 419)) {
+			int lane = (addr - 400);
+			return _get_etile_r3400(comp, prtad, lane);
+		}
+	}
+	return 0;
+}
+
 static inline void nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int prtad, uint16_t lane, uint16_t code_addr, uint16_t code_val)
 {
 	uint32_t page = lane + 1; // page number corresponds to lane number + 1
@@ -667,31 +935,9 @@ static inline void nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int pr
 {
 	int i;
 	uint16_t data = enable ? 0x0301 : 0x0300; // enable or disable loopback?
-
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < mdio->pma_lanes; i++) {
 		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, data);
 	}
-}
-
-#define ETILE_RSFEC_PAGE 9
-
-static inline uint32_t nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr)
-{
-	int i;
-	uint32_t val = 0;
-
-	for (i = 0; i < 4; i++)
-		val |= ((nc_mdio_dmap_drp_read(comp, prtad, ETILE_RSFEC_PAGE, addr+i) & 0xff) << i*8);
-	return val;
-}
-
-static inline uint32_t nc_mdio_etile_rsfec_write(struct nfb_comp *comp, int prtad, uint32_t addr, uint32_t val)
-{
-	int i;
-
-	for (i = 0; i < 4; i++)
-		nc_mdio_dmap_drp_write(comp, prtad, ETILE_RSFEC_PAGE, addr+i, ((val >> i*8) & 0xff));
-	return val;
 }
 
 /* Perform RX+TX reset of E-tile Ethernet PHY */
@@ -770,6 +1016,7 @@ static inline void nc_mdio_etile_rsfec_on(struct nfb_comp *comp, int prtad, int 
 	nc_mdio_etile_rsfec_write(comp, prtad, 0x44, 0x0000);
 	nc_mdio_etile_rsfec_write(comp, prtad, 0x48, 0x0000);
 	nc_mdio_etile_rsfec_write(comp, prtad, 0x4C, 0x0000);
+	_etile_rsfec_clear_stats(comp, prtad);
 	/* RX+TX reset */
 	nc_mdio_etile_reset(comp, prtad);
 }
@@ -801,7 +1048,7 @@ static inline int nc_mdio_read(struct nc_mdio *mdio, int prtad, int devad, uint1
 
 	/* Select correct set of FIXUP functions */
 	if (mdio->pcspma_is_e_tile) {
-		nc_mdio_fixup_rsfec_read = NULL;
+		nc_mdio_fixup_rsfec_read = nc_mdio_fixup_etile_pcs_read;
 	} else if ((mdio->pcspma_is_f_tile) && (mdio->speed > 100)) {
 		nc_mdio_fixup_rsfec_read = nc_mdio_fixup_ftile_rsfec_read;
 	} else if (mdio->pcspma_is_f_tile) {
@@ -817,7 +1064,18 @@ static inline int nc_mdio_read(struct nc_mdio *mdio, int prtad, int devad, uint1
 			return nc_mdio_fixup_rsfec_read(mdio, prtad,  devad, addr);
 		}
 	}
+
+	if (mdio->pcspma_is_e_tile) {
+		if (
+				(addr >= 200) ||
+				(addr == 33)  ||
+				(addr == 44)  ||
+				(addr == 45)) {
+			return nc_mdio_fixup_rsfec_read(mdio, prtad,  devad, addr);
+		}
+	}
 	return mdio->mdio_read(comp, prtad, devad, addr);
+
 }
 
 static inline int nc_mdio_write(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr, uint16_t val)
