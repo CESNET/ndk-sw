@@ -8,11 +8,11 @@ from . import eth
 import fdt
 from typing import Optional
 
-def open(path: str = '0'):
+def open(path: str = '0') -> libnfb.Nfb:
     """Open a handle to NFB device in system
 
-    :param path: Path to device node, default leads to /dev/nfb0
-    :return: The ``Nfb`` object, enhanced by EthManager
+    :param path: Path to device node, default leads to ``/dev/nfb0``
+    :return: The :class:`libnfb.Nfb` object, enhanced by :class:`eth.EthManager`
     """
 
     dev = libnfb.Nfb(path)
@@ -24,7 +24,10 @@ class BaseComp():
     """
     BaseComp represents common parent for all classes that manages HW components
 
-    Derived class should set it's own DT_COMPATIBLE!
+    Derived class should set it's own `DT_COMPATIBLE`!
+
+    :ivar libnfb.Nfb _dev: NFB object
+    :ivar libnfb.Comp _comp: Component object
     """
 
     DT_COMPATIBLE = None
@@ -41,4 +44,3 @@ class BaseComp():
         
         self._node = node
         self._comp = self._dev.comp_open(node)
-

@@ -13,8 +13,14 @@ setup(
     ext_package = "nfb",
     ext_modules = cythonize(
         [
-            Extension("libnfb", ["nfb/libnfb.pyx"], libraries=["nfb", "fdt"]),
-            Extension("libnetcope", ["nfb/libnetcope.pyx"], libraries=["nfb", "fdt"]),
+            Extension("libnfb", ["nfb/libnfb.pyx"], libraries=["nfb", "fdt"],
+#                include_dirs=[str(pathlib.Path(__file__).parent / pathlib.Path("../libnfb/include"))],
+#                library_dirs=[str(pathlib.Path(__file__).parent / pathlib.Path("../cmake-build/libnfb"))],
+            ),
+            Extension("libnetcope", ["nfb/libnetcope.pyx"], libraries=["nfb", "fdt"],
+#                include_dirs=[str(pathlib.Path(__file__).parent / pathlib.Path("../libnfb/include"))],
+#                library_dirs=[str(pathlib.Path(__file__).parent / pathlib.Path("../cmake-build/libnfb"))],
+            ),
         ],
         include_path=['nfb'],
         compiler_directives={'embedsignature': True, 'binding': False},

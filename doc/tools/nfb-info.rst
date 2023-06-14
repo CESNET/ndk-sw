@@ -1,7 +1,7 @@
 .. _nfb_info:
 
 nfb-info
----------
+=========
 
 Tool for obtaining basic informations about the card and firmware that is currently booted in the FPGA.
 
@@ -15,10 +15,12 @@ It also shows PCIe endpoint configuration (slot number, speed and link width) an
 Supported queries are:
 
 - *project*:  Project name
+- *project-version*:  Project version
 - *build*:    Firmware compilation time
 - *rx*:       Number of receive DMA queues
 - *tx*:       Number of transmit DMA queues
-- *ethernet*: Number of ethernet channels and their types
+- *ethernet*: Number of ethernet channels
+- *port*:     Number of ethernet ports
 - *card*:     Card name
 - *pci*:      PCI slot number of the primary endpoint
 - *numa*:     Numa node of the primary endpoint

@@ -1,7 +1,7 @@
 from . import libnetcope
 
 class EthManager:
-    """Object which encapsulates all Ethernet interfaces in nfb"""
+    """Object which encapsulates all Ethernet interfaces into nfb"""
 
     def __init__(self, nfb):
         self._eth = [Eth(nfb, node) for i, node in enumerate(nfb.fdt_get_compatible("netcope,eth"))]
@@ -30,7 +30,14 @@ class EthManager:
 
 
 class Eth:
-    """Object representing one Ethernet interface"""
+    """Object representing one Ethernet interface
+
+    :ivar libnetcope.RxMac rxmac: Input MAC object
+    :ivar libnetcope.TxMac txmac: Ouput MAC object
+    :ivar PcsPma pcspma: PCS/PMA object
+    :ivar Transceiver pmd: Transceiver object
+    """
+
     def __init__(self, nfb, node):
         self.rxmac = libnetcope.RxMac(nfb, nfb.fdt_get_phandle(node.get_property('rxmac').value))
         self.txmac = libnetcope.TxMac(nfb, nfb.fdt_get_phandle(node.get_property('txmac').value))
@@ -54,6 +61,11 @@ class Eth:
             raise AttributeError
 
 class Transceiver:
+    """
+    Object representing a transciever interface
+
+    :ivar I2c i2c: I2c bus handle (only with QSFP+ modules)
+    """
     def __init__(self, nfb, node):
         status = nfb.fdt_get_phandle(node.get_property('status-reg').value)
         self.comp_status = nfb.comp_open(status)
@@ -82,8 +94,14 @@ class Transceiver:
         return self.i2c.read_reg(196, 16).decode()
 
 
-
 class PcsPma:
+    """
+    Object representing a PCS/PMA configuration registers
+
+    :ivar libnetcope.Mdio mdio: MDIO bus handle
+    :ivar int mdio_portad: Port address of PCS/PMA on MDIO bus
+    """
+
     def __init__(self, nfb, node):
         ctrl = nfb.fdt_get_phandle(node.get_property('control').value)
         prop_ctrl_param = node.get_property('control-param')
@@ -108,6 +126,9 @@ class PcsPma:
         return True if (self._read(dev, reg) & bit) else False
 
     @property
-    def pma_local_loopback(self): return self._bit(1, 0, 0x1)
+    def pma_local_loopback(self):
+        """Get or set loopback on local side of PMA module"""
+        return self._bit(1, 0, 0x1)
+
     @pma_local_loopback.setter
     def pma_local_loopback(self, value): self._set_bit(1, 0, 0x1, value)
