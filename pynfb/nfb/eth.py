@@ -92,8 +92,8 @@ class PcsPma:
         # FIXME: Check and enable!!!
         self.mdio_portad = ctrl_param.get_property("dev").value if ctrl_param and ctrl_param.get_property("dev") else 0
 
-    def _read(dev, reg): return self.mdio.read(self.mdio_portad, dev, reg)
-    def _write(dev, reg, val): return self.mdio.read(self.mdio_portad, dev, reg, val)
+    def _read(self, dev, reg): return self.mdio.read(self.mdio_portad, dev, reg)
+    def _write(self, dev, reg, val): return self.mdio.write(self.mdio_portad, dev, reg, val)
 
     def _set_bit(self, dev, reg, bit, value=True):
         reg = self._read(dev, reg)
