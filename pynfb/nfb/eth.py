@@ -96,10 +96,10 @@ class PcsPma:
     def _write(self, dev, reg, val): return self.mdio.write(self.mdio_portad, dev, reg, val)
 
     def _set_bit(self, dev, reg, bit, value=True):
-        reg = self._read(dev, reg)
-        val = (reg | bit) if value else (reg & ~bit)
-        if val != reg:
-            self._write(dev, reg, val)
+        oldval = self._read(dev, reg)
+        newval = (oldval | bit) if value else (oldval & ~bit)
+        if newval != oldval:
+            self._write(dev, reg, newval)
 
     def _clr_bit(self, dev, reg, bit):
         self._set_bit(dev, reg, bit, False)
