@@ -343,7 +343,7 @@ void ndp_tx_burst_flush(struct ndp_queue *q)
 
 #define NDP_TX_BURST_COPY_ATTEMPTS 1000
 
-unsigned ndp_tx_burst_copy(ndp_tx_queue_t *queue, struct ndp_packet *packets, unsigned count)
+unsigned ndp_tx_burst_copy(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)
 {
 	struct ndp_packet *our_packets;
 	unsigned our_burst_count;
@@ -361,14 +361,14 @@ unsigned ndp_tx_burst_copy(ndp_tx_queue_t *queue, struct ndp_packet *packets, un
 	}
 
 	while (packets_sent < count && attempts < NDP_TX_BURST_COPY_ATTEMPTS) {
-		our_burst_count = ndp_tx_burst_get(queue, our_packets + packets_sent, count - packets_sent);
+		our_burst_count = ndp_tx_burst_get(q, our_packets + packets_sent, count - packets_sent);
 
 		for (unsigned i = 0; i < our_burst_count; i++) {
 			memcpy(our_packets[packets_sent + i].data, packets[packets_sent + i].data,
 					our_packets[packets_sent + i].data_length);
 		}
 
-		ndp_tx_burst_put(queue);
+		ndp_tx_burst_put(q);
 
 		packets_sent += our_burst_count;
 		attempts++;
