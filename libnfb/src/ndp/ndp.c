@@ -7,8 +7,11 @@
  *   Martin Spinler <spinler@cesnet.cz>
  */
 
-#include "../nfb.h"
-
+#ifdef __KERNEL__
+#include <linux/unistd.h>
+#include <linux/err.h>
+#include <linux/errno.h>
+#else
 #include <assert.h>
 #include <fcntl.h>
 #include <numa.h>
@@ -31,10 +34,19 @@
 #include <endian.h>
 #include <stdint.h>
 
+#endif
+
 #include <linux/nfb/ndp.h>
 #include <nfb/ndp.h>
 
 #include "../nfb.h"
+
+#ifdef __KERNEL__
+#include "kndp.h"
+#else
+#include "ndp.h"
+#endif
+
 
 #define likely(x)      __builtin_expect(!!(x), 1)
 #define unlikely(x)    __builtin_expect(!!(x), 0)
@@ -56,12 +68,12 @@
   #error "Endian not specified !"
 #endif
 
-#endif
-
 static inline unsigned min(unsigned a, unsigned b)
 {
 	return a < b ? a : b;
 }
+
+#endif
 
 #include <netcope/ndp.h>
 
@@ -159,6 +171,12 @@ void nfb_queue_remove(struct ndp_queue *q)
 #endif
 }
 
+#ifdef __KERNEL__
+int ndp_queue_open_init(struct nfb_device *dev, struct ndp_queue *q, unsigned index, int type)
+{
+	return nc_ndp_queue_open_init(dev, q, index, type);
+}
+#else
 static struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir, ndp_open_flags_t flags)
 {
 	int ret;
@@ -211,6 +229,7 @@ struct ndp_queue *ndp_open_tx_queue(struct nfb_device *dev, unsigned index)
 {
 	return ndp_open_tx_queue_ext(dev, index, 0);
 }
+#endif
 
 void ndp_close_queue(struct ndp_queue *q)
 {
@@ -300,7 +319,6 @@ int ndp_tx_queue_is_available(const struct nfb_device *dev, unsigned index)
 	return ndp_queue_is_available(dev, index, NDP_CHANNEL_TYPE_TX);
 }
 
-
 int ndp_get_rx_queue_available_count(const struct nfb_device *dev)
 {
 	int i;
@@ -377,6 +395,7 @@ void ndp_tx_burst_flush(struct ndp_queue *q)
 	nc_ndp_tx_burst_flush(q);
 }
 
+#ifndef __KERNEL__
 unsigned ndp_v2_tx_get_pkts_available(struct ndp_queue *q)
 {
 	return nc_ndp_v2_tx_get_pkts_available(q);
@@ -500,3 +519,4 @@ int ndp_rx_poll(struct nfb_device *dev, int timeout, struct ndp_queue **q)
 err:
 	return ret;
 }
+#endif
