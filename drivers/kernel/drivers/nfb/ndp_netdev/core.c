@@ -44,7 +44,7 @@ static int nfb_ndp_netdev_rx_thread(void *data)
 	struct sk_buff *skb;
 
 	ethdev = netdev_priv(dev);
-	q = &ethdev->rx_q;
+	q = ethdev->rx_q;
 
 	while (!kthread_should_stop()) {
 		/* read new data */
@@ -97,6 +97,7 @@ static int nfb_ndp_netdev_sub_dma(struct net_device *ndev, int type)
 	int ret;
 
 	struct ndp_queue *q;
+	struct ndp_queue **qp;
 #if 0
 	struct ndp_channel * channel;
 #endif
@@ -104,11 +105,10 @@ static int nfb_ndp_netdev_sub_dma(struct net_device *ndev, int type)
 	struct nfb_ndp_netdev *ethdev;
 	ethdev = netdev_priv(ndev);
 
-	q = (type == NDP_CHANNEL_TYPE_TX ? &ethdev->tx_q : &ethdev->rx_q);
-
-	q->subscriber = (struct ndp_subscriber *) ethdev->suber;
-	ret = ndp_queue_open_init(ethdev->suber->ndp->nfb, q, ethdev->index, type);
-	if (ret) {
+	qp = (type == NDP_CHANNEL_TYPE_TX ? &ethdev->tx_q : &ethdev->rx_q);
+	*qp = q = ndp_open_queue(ethdev->nfb, ethdev->index, type, 0);
+	if (q == NULL) {
+		ret = -ENODEV;
 		printk(KERN_ERR "%s: failed to init queue\n", __func__);
 		goto err_queue_init;
 	}
@@ -130,7 +130,6 @@ static int nfb_ndp_netdev_sub_dma(struct net_device *ndev, int type)
 err_sub_present:
 	ndp_close_queue(q);
 err_queue_init:
-	memset(q, 0, sizeof(*q));
 	return ret;
 }
 
@@ -142,11 +141,10 @@ static void nfb_ndp_netdev_unsub_dma(struct nfb_ndp_netdev *ethdev, int type)
 {
 	struct ndp_queue *q;
 
-	q = (type == NDP_CHANNEL_TYPE_TX ? &ethdev->tx_q : &ethdev->rx_q);
+	q = (type == NDP_CHANNEL_TYPE_TX ? ethdev->tx_q : ethdev->rx_q);
 
-	if (q->subscriber != NULL) {
+	if (q != NULL) {
 		ndp_close_queue(q);
-		memset(q, 0, sizeof(*q));
 	}
 }
 
@@ -158,20 +156,9 @@ static void nfb_ndp_netdev_unsub_dma(struct nfb_ndp_netdev *ethdev, int type)
 static int nfb_ndp_netdev_open(struct net_device *ndev)
 {
 	int ret = 0;
-	struct ndp *ndp;
 
 	struct nfb_ndp_netdev *ethdev;
 	ethdev = netdev_priv(ndev);
-
-	/* create new subscriber */
-	ndp = (struct ndp *) ethdev->nfb->list_drivers[NFB_DRIVER_NDP].priv;
-	ethdev->suber = ndp_subscriber_create(ndp);
-
-	if (!ethdev->suber) {
-		printk(KERN_ERR "%s: %s - failed to create subscriber\n", __func__, ndev->name);
-		ret = -ENOMEM;
-		goto err_no_suber;
-	}
 
 	/* subscribe to channels and prepare ndp_queue structures */
 	ret = nfb_ndp_netdev_sub_dma(ndev, NDP_CHANNEL_TYPE_TX);
@@ -201,9 +188,6 @@ err_no_task:
 err_no_rx:
 	nfb_ndp_netdev_unsub_dma(ethdev, NDP_CHANNEL_TYPE_TX);
 err_no_tx:
-	ndp_subscriber_destroy(ethdev->suber);
-	ethdev->suber = NULL;
-err_no_suber:
 	return ret;
 }
 
@@ -221,9 +205,6 @@ static int nfb_ndp_netdev_close(struct net_device *ndev)
 	nfb_ndp_netdev_unsub_dma(ethdev, NDP_CHANNEL_TYPE_RX);
 	nfb_ndp_netdev_unsub_dma(ethdev, NDP_CHANNEL_TYPE_TX);
 
-	ndp_subscriber_destroy(ethdev->suber);
-	ethdev->suber = NULL;
-
 	return 0;
 }
 
@@ -240,7 +221,7 @@ netdev_tx_t nfb_ndp_netdev_xmit_dma(struct sk_buff *skb, struct net_device *dev)
 
 	struct nfb_ndp_netdev *ethdev;
 	ethdev = netdev_priv(dev);
-	q = &ethdev->tx_q;
+	q = ethdev->tx_q;
 
 	/* no NDP specific packet metadata */
 	packet.header_length = 0;

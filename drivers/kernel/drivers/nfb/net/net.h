@@ -16,6 +16,7 @@
 #include "../ndp/kndp.h"
 #include "../boot/boot.h"
 
+#include "../ndp/kndp.h"
 #include <netcope/ndp_priv.h>
 
 #include <linux/mdio.h>
@@ -59,9 +60,8 @@ enum nfb_net_device_state {
 
 struct nfb_net_queue {
 	struct nfb_net_device *priv;
-	struct ndp_subscriber *ndps;
 	struct task_struct *task;
-	struct ndp_queue ndpq;
+	struct ndp_queue *ndpq;
 	int32_t numa;
 
 	unsigned index;

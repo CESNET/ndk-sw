@@ -124,6 +124,9 @@ void _ndp_queue_init(struct ndp_queue *q, struct nfb_device *dev, int numa, int 
 struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int type, int index)
 {
 	struct ndp_queue *q;
+#ifdef __KERNEL__
+	struct ndp * ndp;
+#endif
 
 	/* Create queue structure */
 	q = nfb_nalloc(numa, sizeof(*q));
@@ -131,12 +134,23 @@ struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int type, 
 		goto err_nalloc;
 	}
 	_ndp_queue_init(q, dev, numa, type, index);
+
 #ifdef __KERNEL__
+	ndp = (struct ndp *) dev->list_drivers[NFB_DRIVER_NDP].priv;
+	q->subscriber = ndp_subscriber_create(ndp);
+	if (!q->subscriber) {
+		goto err_subscriber_create;
+	}
+
 	q->alloc = 1;
 #endif
 
 	return q;
 
+#ifdef __KERNEL__
+err_subscriber_create:
+	nfb_nfree(q->numa, q, sizeof(*q));
+#endif
 err_nalloc:
 	return NULL;
 }
@@ -144,6 +158,8 @@ err_nalloc:
 void ndp_queue_destroy(struct ndp_queue* q)
 {
 #ifdef __KERNEL__
+	ndp_subscriber_destroy(q->subscriber);
+
 	if (!q->alloc)
 		return;
 #endif
@@ -197,15 +213,6 @@ static void nfb_queue_remove(struct ndp_queue *q)
 #endif
 }
 
-#ifdef __KERNEL__
-int ndp_queue_open_init(struct nfb_device *dev, struct ndp_queue *q, unsigned index, int type)
-{
-	_ndp_queue_init(q, dev, -1, type, index);
-	nfb_queue_add(q); /* INFO: does nothing, overcomes not-used warning */
-	return nc_ndp_queue_open_init(dev, q, index, type);
-}
-#endif
-
 int ndp_base_queue_open(struct nfb_device *dev, unsigned index, int dir, ndp_open_flags_t flags, struct ndp_queue ** pq)
 {
 	int ret;
@@ -251,7 +258,7 @@ void ndp_base_queue_close(struct ndp_queue *q)
 	ndp_queue_destroy(q);
 }
 
-static struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir, ndp_open_flags_t flags)
+struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir, int flags)
 {
 	int ret;
 	struct ndp_queue *q = NULL;

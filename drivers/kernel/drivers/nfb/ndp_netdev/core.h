@@ -14,7 +14,7 @@
 #include <linux/netdevice.h>
 #include "../ndp/kndp.h"
 
-#include <netcope/ndp_priv.h>
+#include <nfb/ndp.h>
 
 struct nfb_mod_ndp_netdev {
 	struct nfb_device *nfb;
@@ -27,9 +27,8 @@ struct nfb_ndp_netdev {
 	struct nfb_mod_ndp_netdev *eth;
 	struct net_device *ndev;
 	struct list_head list_item;
-	struct ndp_subscriber *suber;
-	struct ndp_queue tx_q;
-	struct ndp_queue rx_q;
+	struct ndp_queue *tx_q;
+	struct ndp_queue *rx_q;
 	int index;
 	struct task_struct *rx_task;
 	struct net_device_stats ndev_stats;
