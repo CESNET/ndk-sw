@@ -97,7 +97,9 @@ static int nfb_ndp_netdev_sub_dma(struct net_device *ndev, int type)
 	int ret;
 
 	struct ndp_queue *q;
+#if 0
 	struct ndp_channel * channel;
+#endif
 
 	struct nfb_ndp_netdev *ethdev;
 	ethdev = netdev_priv(ndev);
@@ -119,8 +121,10 @@ static int nfb_ndp_netdev_sub_dma(struct net_device *ndev, int type)
 	}
 
 	/* enable discarding */
+#if 0
 	channel = q->sub->channel;
 	channel->ops->set_flags(channel, channel->ops->get_flags(channel) | NDP_CHANNEL_FLAG_DISCARD);
+#endif
 	return 0;
 
 err_sub_present:
