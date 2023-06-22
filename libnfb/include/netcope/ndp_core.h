@@ -7,52 +7,10 @@
  *   Martin Spinler <spinler@cesnet.cz>
  */
 
-#ifdef __KERNEL__
-#include <linux/unistd.h>
-#include <linux/err.h>
-#include <linux/errno.h>
-#else
-#include <assert.h>
-#include <fcntl.h>
-#include <numa.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/ioctl.h>
-#include <err.h>
-#include <errno.h>
-#include <poll.h>
-
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <endian.h>
-#include <stdint.h>
-
-#endif
-
-#include <linux/nfb/ndp.h>
-#include <nfb/ndp.h>
-
-#include "../nfb.h"
-
-#ifdef __KERNEL__
-#include "kndp.h"
-#else
-#include "ndp.h"
-#endif
-
-
 #define likely(x)      __builtin_expect(!!(x), 1)
 #define unlikely(x)    __builtin_expect(!!(x), 0)
 
-#ifdef __KERNEL__
-#else
+#ifndef __KERNEL__
 #define __ALIGN_MASK(x, mask)	(((x) + (mask)) & ~(mask))
 #define __ALIGN(x, a)		__ALIGN_MASK(x, (typeof(x))(a) - 1)
 #define ALIGN(x, a)		__ALIGN((x), (a))
