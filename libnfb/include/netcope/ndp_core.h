@@ -189,7 +189,8 @@ int ndp_queue_open_init(struct nfb_device *dev, struct ndp_queue *q, unsigned in
 	nfb_queue_add(q); /* INFO: does nothing, overcomes not-used warning */
 	return nc_ndp_queue_open_init(dev, q, index, type);
 }
-#else
+#endif
+
 int ndp_base_queue_open(struct nfb_device *dev, unsigned index, int dir, ndp_open_flags_t flags, struct ndp_queue ** pq)
 {
 	int ret;
@@ -220,7 +221,6 @@ err_open:
 err_nalloc:
 	return ret;
 }
-#endif
 
 void ndp_base_queue_close(struct ndp_queue *q)
 {
@@ -236,19 +236,16 @@ void ndp_base_queue_close(struct ndp_queue *q)
 	ndp_queue_destroy(q);
 }
 
-#ifndef __KERNEL__
 static struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir, ndp_open_flags_t flags)
 {
 	int ret;
 	struct ndp_queue *q = NULL;
 
 	if ((ret = ndp_base_queue_open(dev, index, dir, flags, &q))) {
-		errno = ret;
 		goto err_ndp_queue_open_init;
 	}
 
 	if ((ret = nfb_queue_add(q))) {
-		errno = ret;
 		goto err_nfb_queue_add;
 	}
 
@@ -257,6 +254,9 @@ static struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, 
 err_nfb_queue_add:
 	ndp_base_queue_close(q);
 err_ndp_queue_open_init:
+#ifndef __KERNEL__
+	errno = ret;
+#endif
 	return NULL;
 }
 
@@ -279,7 +279,6 @@ struct ndp_queue *ndp_open_tx_queue(struct nfb_device *dev, unsigned index)
 {
 	return ndp_open_tx_queue_ext(dev, index, 0);
 }
-#endif
 
 void ndp_close_queue(struct ndp_queue *q)
 {
