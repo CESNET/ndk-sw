@@ -302,11 +302,7 @@ void ndp_close_tx_queue(struct ndp_queue *q)
 
 int ndp_queue_get_numa_node(const struct ndp_queue *q)
 {
-#ifdef __KERNEL__
-	return dev_to_node(q->sub->channel->ring.dev);
-#else
 	return q->numa;
-#endif
 }
 
 static inline int fdt_get_subnode_count(const void *fdt, const char *path)
