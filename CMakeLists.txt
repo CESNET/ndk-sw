@@ -96,8 +96,8 @@ set(CPACK_RPM_Main_PACKAGE_OBSOLETES          "netcope-common")
 set(CPACK_RPM_DebugTools_PACKAGE_OBSOLETES    "netcope-common-debug")
 set(CPACK_RPM_Main_PACKAGE_PROVIDES           "netcope-common")
 set(CPACK_RPM_DebugTools_PACKAGE_PROVIDES     "netcope-common-debug")
-
 #set(CPACK_RPM_DebugTools_PACKAGE_REQUIRES "${PACKAGE_NAME} = ${CPACK_PACKAGE_VERSION}-${CPACK_RPM_PACKAGE_RELEASE}")
+set(CPACK_RPM_ndp-tool-dpdk_PACKAGE_REQUIRES "nfb-framework, dpdk-nfb, dpdk-nfb-tools")
 
 set(CPACK_RPM_Main_PRE_INSTALL_SCRIPT_FILE    "${CMAKE_CURRENT_BINARY_DIR}/package/preinst")
 set(CPACK_RPM_Main_PRE_UNINSTALL_SCRIPT_FILE  "${CMAKE_CURRENT_BINARY_DIR}/package/prerm")
