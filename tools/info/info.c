@@ -234,6 +234,7 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	int node;
 	int fdt_offset;
 	int count1, count2;
+	int32_t val = 0;
 	const void *prop;
 	const uint32_t *prop32;
 	const uint64_t *prop64;
@@ -274,7 +275,8 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	}
 
 	if (verbose) {
-		printf("Temperature                : %.1f C\n", nc_adc_sensors_get_temp(dev));
+		nc_adc_sensors_get_temp(dev, &val);
+		printf("Temperature                : %.1f C\n", val / 1000.0f);
 	}
 
 	printf("------------------------------------ Firmware info ----\n");
