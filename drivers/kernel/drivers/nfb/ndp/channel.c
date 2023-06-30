@@ -269,6 +269,8 @@ inline void ndp_channel_txsync(struct ndp_subscription *sub, struct ndp_subscrip
 		}
 
 		channel->hwptr = channel->ops->get_hwptr(channel);
+		if (channel->ops->get_free_space != NULL)
+			sync->size = channel->ops->get_free_space(channel);
 		chlen = (channel->hwptr - channel->swptr - 1) & channel->ptrmask;
 
 		/* Subscriber tries to lock LENGTH bytes */
@@ -284,6 +286,8 @@ inline void ndp_channel_txsync(struct ndp_subscription *sub, struct ndp_subscrip
 		/* There is no locked subscriber */
 
 		channel->hwptr = channel->ops->get_hwptr(channel);
+		if (channel->ops->get_free_space != NULL)
+			sync->size = channel->ops->get_free_space(channel);
 		chlen = (channel->hwptr - channel->swptr - 1) & channel->ptrmask;
 
 		/* Subscriber tries to lock LENGTH bytes */
@@ -302,7 +306,6 @@ inline void ndp_channel_txsync(struct ndp_subscription *sub, struct ndp_subscrip
 	}
 
 	spin_unlock(&channel->lock);
-
 	sync->hwptr = sub->hwptr;
 	sync->swptr = sub->swptr;
 }

@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
- * NDP driver of the NFB platform - DMA controller - Medusa/v2 type
+ * NDP driver of the NFB platform - DMA controller - Medusa/v2 type, Calypte/v3 type
  *
  * Copyright (C) 2020-2022 CESNET
  * Author(s):
  *   Martin Spinler <spinler@cesnet.cz>
+ *   Vladislav Valek <valekv@cesnet.cz>
  */
 
 #include <linux/delay.h>
@@ -22,9 +23,10 @@
 
 #include <netcope/dma_ctrl_ndp.h>
 
-#define NDP_CTRL_TX_DESC_SIZE	(sizeof(struct nc_ndp_desc))
-#define NDP_CTRL_RX_DESC_SIZE	(sizeof(struct nc_ndp_desc))
-#define NDP_CTRL_RX_HDR_SIZE	(sizeof(struct nc_ndp_hdr))
+#define NDP_CTRL_TX_DESC_SIZE	      (sizeof(struct nc_ndp_desc))
+#define NDP_CTRL_RX_DESC_SIZE	      (sizeof(struct nc_ndp_desc))
+#define NDP_CTRL_RX_NDP_HDR_SIZE      (sizeof(struct nc_ndp_hdr))
+#define NDP_CTRL_RX_CALYPTE_HDR_SIZE  (sizeof(struct nc_calypte_hdr))
 
 #define NDP_CTRL_RX_DESC_BURST (64u)
 
@@ -51,11 +53,19 @@ struct ndp_ctrl {
 
 	/* INFO: virtual memory: shadowed */
 	struct nc_ndp_desc *desc_buffer_v;
-	struct nc_ndp_hdr  *hdr_buffer_v;
 	ndp_offset_t    *off_buffer_v;
 
+	union {
+		struct {
+			struct nc_ndp_hdr *hdr_buffer;
+		} medusa;
+		struct {
+			struct nc_calypte_hdr *hdr_buffer;
+			uint64_t free_bytes;
+		} calypte;
+	} ts;
+
 	uint32_t next_sdp;
-	uint8_t next_sdp_age;
 
 	uint32_t flags;
 
@@ -65,8 +75,14 @@ struct ndp_ctrl {
 	/* INFO: Use only for alloc / free */
 	int desc_count;
 	int hdr_count;
+
+	void *hdr_buffer;
+	void *hdr_buffer_v;
+
+	uint8_t hdr_buff_en_rw_map;
+	uint8_t next_sdp_age;
+
 	struct nc_ndp_desc *desc_buffer;
-	struct nc_ndp_hdr  *hdr_buffer;
 	ndp_offset_t    *off_buffer;
 	uint32_t *update_buffer;
 	resource_size_t update_buffer_phys;
@@ -120,7 +136,7 @@ static const struct attribute_group *ndp_ctrl_attr_tx_groups[] = {
 int ndp_ctrl_v2_get_vmaps(struct ndp_channel *channel, void **hdr, void **off)
 {
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
-	*hdr = ctrl->hdr_buffer_v;
+	*hdr = ctrl->ts.medusa.hdr_buffer;
 	*off = ctrl->off_buffer_v;
 	return ctrl->c.mhp + 1;
 }
@@ -162,7 +178,7 @@ static void ndp_ctrl_user_fill_rx_descs(struct ndp_ctrl *ctrl)
 	uint32_t sdp = ctrl->c.sdp;
 
 	ndp_offset_t *off = ctrl->off_buffer_v + php;
-	struct nc_ndp_hdr *hdr = ctrl->hdr_buffer_v + php;
+	struct nc_ndp_hdr *hdr = ctrl->ts.medusa.hdr_buffer + php;
 	struct nc_ndp_desc *desc = ctrl->desc_buffer_v + ctrl->next_sdp;
 	uint32_t sdp_shift;
 	uint64_t last_upper_addr = ctrl->c.last_upper_addr;
@@ -228,13 +244,13 @@ static void ndp_ctrl_user_fill_rx_descs(struct ndp_ctrl *ctrl)
 	}
 }
 
-static void ndp_ctrl_rx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
+static void ndp_ctrl_medusa_rx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
 {
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
 	uint32_t shp = ctrl->c.shp;
 
-	struct nc_ndp_hdr *hdr = ctrl->hdr_buffer_v + shp;
+	struct nc_ndp_hdr *hdr = ctrl->ts.medusa.hdr_buffer + shp;
 //	struct nc_ndp_desc *desc_buffer = ctrl->desc_buffer_v + ctrl->sdp;
 
 	if (ctrl->mode == NDP_CTRL_MODE_PACKET_SIMPLE) {
@@ -273,6 +289,27 @@ static void ndp_ctrl_rx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
 	}
 }
 
+static void ndp_ctrl_calypte_rx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
+{
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	struct nc_calypte_hdr *hdr = ctrl->ts.calypte.hdr_buffer + ctrl->c.shp;
+	int count = (ptr - ctrl->c.shp) & ctrl->c.mhp;
+
+	int new_sdp = 0;
+	unsigned i;
+
+	for (i = 0; i < count; i++) {
+		new_sdp += (hdr[i].frame_len + NDP_RX_CALYPTE_BLOCK_SIZE - 1) / NDP_RX_CALYPTE_BLOCK_SIZE;
+	}
+
+	ctrl->c.shp = ptr;
+	ctrl->c.sdp = (ctrl->c.sdp + new_sdp) & ctrl->c.mdp;
+	if (count) {
+		nc_ndp_ctrl_sp_flush(&ctrl->c);
+	}
+}
+
 static uint64_t ndp_ctrl_rx_get_hwptr(struct ndp_channel *channel)
 {
 	int i;
@@ -283,14 +320,17 @@ static uint64_t ndp_ctrl_rx_get_hwptr(struct ndp_channel *channel)
 
 	hhp = ctrl->c.hhp;
 	nc_ndp_ctrl_hhp_update(&ctrl->c);
-	hhp_new = ctrl->c.hhp;
 
+	if (ctrl->c.type == DMA_TYPE_CALYPTE)
+		return ctrl->c.hhp;
+
+	hhp_new = ctrl->c.hhp;
 	count = (hhp_new - hhp) & ctrl->c.mhp;
 
 	if (ctrl->mode == NDP_CTRL_MODE_PACKET_SIMPLE) {
 		/* Constant packet offsets in this mode */
 	} else if (ctrl->mode == NDP_CTRL_MODE_STREAM) {
-		struct nc_ndp_hdr *hdr = ctrl->hdr_buffer_v + hhp;
+		struct nc_ndp_hdr *hdr = ctrl->ts.medusa.hdr_buffer + hhp;
 		ndp_offset_t *off = ctrl->off_buffer_v + hhp;
 		for (i = 0; i < count; i++) {
 			off[i+1] = off[i] + hdr[i].frame_len;
@@ -306,9 +346,9 @@ static uint64_t ndp_ctrl_rx_get_hwptr(struct ndp_channel *channel)
 	return hhp_new;
 }
 
-static uint64_t ndp_ctrl_tx_get_hwptr(struct ndp_channel *channel);
+static uint64_t ndp_ctrl_medusa_tx_get_hwptr(struct ndp_channel *channel);
 
-static void ndp_ctrl_tx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
+static void ndp_ctrl_medusa_tx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
 {
 	int i;
 	int count;
@@ -330,7 +370,7 @@ static void ndp_ctrl_tx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
 		struct nc_ndp_hdr *hdr;
 
 		off = ctrl->off_buffer_v + shp + i;
-		hdr = ctrl->hdr_buffer_v + shp + i;
+		hdr = ctrl->ts.medusa.hdr_buffer + shp + i;
 
 		if (ctrl->mode == NDP_CTRL_MODE_USER) {
 			addr = *off;
@@ -341,7 +381,7 @@ static void ndp_ctrl_tx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
 		if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(addr) != last_upper_addr)) {
 			while (ctrl->free_desc == 0) {
 				usleep_range(10, 50);
-				ndp_ctrl_tx_get_hwptr(channel);
+				ndp_ctrl_medusa_tx_get_hwptr(channel);
 
 				if (unlikely(ndp_kill_signal_pending(current))) {
 					dirty = 1;
@@ -360,7 +400,7 @@ static void ndp_ctrl_tx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
 
 		while (ctrl->free_desc == 0) {
 			usleep_range(10, 50);
-			ndp_ctrl_tx_get_hwptr(channel);
+			ndp_ctrl_medusa_tx_get_hwptr(channel);
 			if (ndp_kill_signal_pending(current)) {
 				dirty = 1;
 				break;
@@ -386,7 +426,7 @@ static void ndp_ctrl_tx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
 	nc_ndp_ctrl_sdp_flush(&ctrl->c);
 }
 
-static uint64_t ndp_ctrl_tx_get_hwptr(struct ndp_channel *channel)
+static uint64_t ndp_ctrl_medusa_tx_get_hwptr(struct ndp_channel *channel)
 {
 	uint32_t hdp;
 	int i, count, free_hdrs = 0;
@@ -410,13 +450,62 @@ static uint64_t ndp_ctrl_tx_get_hwptr(struct ndp_channel *channel)
 	return ctrl->c.hhp;
 }
 
+static uint64_t ndp_ctrl_calypte_tx_get_free_space(struct ndp_channel *channel) {
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+	return ctrl->ts.calypte.free_bytes;
+}
+
+static uint64_t ndp_ctrl_calypte_tx_get_hwptr(struct ndp_channel *channel)
+{
+	uint32_t hdp;
+	int count;
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	hdp = ctrl->c.hdp;
+	nc_ndp_ctrl_hp_update(&ctrl->c);
+	count = (ctrl->c.hdp - hdp) & ctrl->c.mdp;
+
+	ctrl->ts.calypte.free_bytes += count;
+	return ctrl->c.hhp;
+}
+
+static void ndp_ctrl_calypte_tx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
+{
+	int i;
+	int count;
+
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+	uint32_t sdp = ctrl->c.sdp;
+	uint32_t shp = ctrl->c.shp;
+	wmb();
+
+	count = (ptr - shp) & ctrl->c.mhp;
+
+	for (i = 0; i < count; i++) {
+		struct nc_calypte_hdr *hdr;
+		hdr = ctrl->ts.calypte.hdr_buffer + shp + i;
+		// Subtracting whole multiples of NDP_TX_CALYPTE_BLOCK_SIZE from the ctrl->free_bytes
+		ctrl->ts.calypte.free_bytes -= (hdr->frame_len + (NDP_TX_CALYPTE_BLOCK_SIZE -1)) & (~(NDP_TX_CALYPTE_BLOCK_SIZE -1));
+
+		// Rounding the SDP to the nearest higher multiple of NDP_TX_CALYPTE_BLOCK_SIZE
+		sdp = ((sdp + hdr->frame_len + (NDP_TX_CALYPTE_BLOCK_SIZE -1)) & (~(NDP_TX_CALYPTE_BLOCK_SIZE -1))) & ctrl->c.mdp;
+	}
+
+	wmb();
+	ctrl->c.sdp = sdp;
+	ctrl->c.shp = ptr;
+	nc_ndp_ctrl_sp_flush(&ctrl->c);
+}
+
 static uint64_t ndp_ctrl_get_flags(struct ndp_channel *channel)
 {
 	uint64_t ret = 0;
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
-	ret |= NDP_CHANNEL_FLAG_USE_HEADER;
-	ret |= NDP_CHANNEL_FLAG_USE_OFFSET;
+	if (ctrl->c.type == DMA_TYPE_MEDUSA) {
+		ret |= NDP_CHANNEL_FLAG_USE_HEADER;
+		ret |= NDP_CHANNEL_FLAG_USE_OFFSET;
+	}
 
 	ret |= ctrl->flags;
 
@@ -428,8 +517,31 @@ static uint64_t ndp_ctrl_set_flags(struct ndp_channel *channel, uint64_t flags)
 	return ndp_ctrl_get_flags(channel);
 }
 
-static int ndp_ctrl_start(struct ndp_channel *channel, uint64_t *hwptr)
+static int ndp_ctrl_start(struct ndp_ctrl *ctrl, struct nc_ndp_ctrl_start_params *sp)
 {
+	int ret;
+
+	ret = nc_ndp_ctrl_start(&ctrl->c, sp);
+	if (ret == -EALREADY) {
+		/* Try to stop */
+		nc_ndp_ctrl_stop_force(&ctrl->c);
+		msleep(10);
+		ret = nc_ndp_ctrl_start(&ctrl->c, sp);
+		if (ret == 0) {
+			dev_err(ctrl->nfb->dev, "NDP queue %s was in dirty state, restart seems succesfull, "
+					"but errors can occur\n", dev_name(&ctrl->channel.dev));
+		} else {
+			dev_err(ctrl->nfb->dev, "NDP queue %s is in dirty state, can't be started\n", dev_name(&ctrl->channel.dev));
+			return -1;
+		}
+	}
+
+	return ret;
+}
+
+static int ndp_ctrl_medusa_start(struct ndp_channel *channel, uint64_t *hwptr)
+{
+
 	int ret;
 	struct nc_ndp_ctrl_start_params sp;
 
@@ -442,22 +554,11 @@ static int ndp_ctrl_start(struct ndp_channel *channel, uint64_t *hwptr)
 	sp.nb_desc = ctrl->desc_count;
 	sp.nb_hdr = ctrl->hdr_count;
 
-	ret = nc_ndp_ctrl_start(&ctrl->c, &sp);
-	if (ret == -EALREADY) {
-		/* Try to stop */
-		nc_ndp_ctrl_stop_force(&ctrl->c);
-		msleep(10);
-		ret = nc_ndp_ctrl_start(&ctrl->c, &sp);
-		if (ret == 0) {
-			dev_err(ctrl->nfb->dev, "NDP queue %s was in dirty state, restart seems succesfull, "
-					"but errors can occur\n", dev_name(&channel->dev));
-		} else {
-			dev_err(ctrl->nfb->dev, "NDP queue %s is in dirty state, can't be started\n", dev_name(&channel->dev));
-			return -1;
-		}
-	} else if (ret) {
+	ctrl->ts.medusa.hdr_buffer = ctrl->hdr_buffer_v;
+
+	ret = ndp_ctrl_start(ctrl, &sp);
+	if (ret)
 		return ret;
-	}
 
 	ctrl->mps_last_offset = 0;
 	ctrl->next_sdp = 0;
@@ -495,6 +596,32 @@ static int ndp_ctrl_start(struct ndp_channel *channel, uint64_t *hwptr)
 	return 0;
 }
 
+static int ndp_ctrl_calypte_start(struct ndp_channel *channel, uint64_t *hwptr)
+{
+	int ret;
+	struct nc_ndp_ctrl_start_params sp;
+
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	// Only one block is used, therefore the physical address of the first one in "blocks"
+	// list is used.
+	sp.data_buffer = channel->ring.blocks->phys;
+	sp.hdr_buffer = ctrl->hdr_buffer_phys;
+	sp.nb_data = ctrl->hdr_count;
+	sp.nb_hdr = ctrl->hdr_count;
+
+	ctrl->ts.calypte.hdr_buffer = ctrl->hdr_buffer_v;
+
+	ret = ndp_ctrl_start(ctrl, &sp);
+	if (ret)
+		return ret;
+
+	ctrl->ts.calypte.free_bytes = ctrl->c.mdp;
+
+	*hwptr = 0;
+	return 0;
+}
+
 static int ndp_ctrl_stop(struct ndp_channel *channel, int force)
 {
 	int ret;
@@ -526,13 +653,13 @@ static int ndp_ctrl_stop(struct ndp_channel *channel, int force)
 
 static int ndp_ctrl_hdr_mmap(struct vm_area_struct *vma, unsigned long offset, unsigned long size, void *priv)
 {
-	int ret;
+	int ret = -1;
 	struct ndp_ctrl *ctrl = (struct ndp_ctrl*) priv;
 
 	/* TODO: Check if channel is subscribed */
 
-	/* Check permissions: read-only for RX */
-	if (ctrl->channel.id.type == NDP_CHANNEL_TYPE_RX && (vma->vm_flags & (VM_WRITE | VM_READ)) != VM_READ)
+	//Check permissions: read-only for RX unless it is DMA Calypte
+	if (ctrl->channel.id.type == NDP_CHANNEL_TYPE_RX && (vma->vm_flags & (VM_WRITE | VM_READ)) != VM_READ && ctrl->hdr_buff_en_rw_map == 0)
 		return -EINVAL;
 
 	/* Allow mmap only for exact offset & size match */
@@ -592,7 +719,7 @@ void *ndp_ctrl_vmap_shadow(int size, void *virt)
 	return ret;
 }
 
-static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
+static int ndp_ctrl_medusa_attach_ring(struct ndp_channel *channel)
 {
 	int ret = -ENOMEM;
 	int node_offset;
@@ -605,7 +732,7 @@ static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
 		return -EINVAL;
 
 	ctrl->desc_count = channel->ring.size / buffer_size;
-	if (ctrl->desc_count * min(NDP_CTRL_RX_DESC_SIZE, NDP_CTRL_RX_HDR_SIZE) < PAGE_SIZE) {
+	if (ctrl->desc_count * min(NDP_CTRL_RX_DESC_SIZE, NDP_CTRL_RX_NDP_HDR_SIZE) < PAGE_SIZE) {
 		/* Can't do shadow-map for this ring size */
 		return -EINVAL;
 	}
@@ -652,7 +779,7 @@ static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
 	}
 
 	/* allocate header area */
-	ctrl->hdr_buffer_size = ALIGN(ctrl->hdr_count * NDP_CTRL_RX_HDR_SIZE, PAGE_SIZE);
+	ctrl->hdr_buffer_size = ALIGN(ctrl->hdr_count * NDP_CTRL_RX_NDP_HDR_SIZE, PAGE_SIZE);
 	ctrl->hdr_buffer = dma_alloc_coherent(dev, ctrl->hdr_buffer_size,
 			&ctrl->hdr_buffer_phys, GFP_KERNEL);
 	if (ctrl->hdr_buffer == NULL) {
@@ -717,7 +844,155 @@ err_alloc_update:
 	return ret;
 }
 
-static void ndp_ctrl_detach_ring(struct ndp_channel *channel)
+static int ndp_ctrl_rx_calypte_attach_ring(struct ndp_channel *channel)
+{
+	int ret = -ENOMEM;
+	int node_offset;
+	void *fdt = channel->ndp->nfb->fdt;
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	struct device *dev = channel->ring.dev;
+
+	if (channel->ring.size == 0)
+		return -EINVAL;
+
+	if (channel->ring.block_count != 1)
+		return -EINVAL;
+
+	ctrl->hdr_buff_en_rw_map = 1;
+
+	ctrl->hdr_count = channel->ring.size / NDP_RX_CALYPTE_BLOCK_SIZE;
+	if (ctrl->hdr_count * min((uint16_t)NDP_RX_CALYPTE_BLOCK_SIZE, (uint16_t)NDP_CTRL_RX_CALYPTE_HDR_SIZE) < PAGE_SIZE) {
+		/* Can't do shadow-map for this ring size */
+		return -EINVAL;
+	}
+
+	channel->ptrmask = ctrl->hdr_count - 1;
+
+	/* allocate header area */
+	ctrl->hdr_buffer_size = ALIGN(ctrl->hdr_count * NDP_CTRL_RX_CALYPTE_HDR_SIZE, PAGE_SIZE);
+	ctrl->hdr_buffer = dma_alloc_coherent(dev, ctrl->hdr_buffer_size,
+			&ctrl->hdr_buffer_phys, GFP_KERNEL);
+	if (ctrl->hdr_buffer == NULL) {
+		return -EINVAL;
+	}
+
+	ctrl->hdr_buffer_v = ndp_ctrl_vmap_shadow(ctrl->hdr_buffer_size, ctrl->hdr_buffer);
+	if (ctrl->hdr_buffer_v == NULL) {
+		goto err_vmap_hdr_buffer;
+	}
+
+	ret = nfb_char_register_mmap(channel->ndp->nfb, ctrl->hdr_buffer_size * 2, &ctrl->hdr_mmap_offset, ndp_ctrl_hdr_mmap, ctrl);
+	if (ret) {
+		goto err_register_mmap_hdr;
+	}
+
+	node_offset = fdt_path_offset(fdt, "/drivers/ndp/rx_queues");
+	node_offset = fdt_subnode_offset(fdt, node_offset, dev_name(&channel->dev));
+
+	fdt_setprop_u32(fdt, node_offset, "protocol", 3);
+	fdt_setprop_u64(fdt, node_offset, "hdr_mmap_base", ctrl->hdr_mmap_offset);
+	fdt_setprop_u64(fdt, node_offset, "hdr_mmap_size", ctrl->hdr_buffer_size * 2);
+
+	return 0;
+
+err_register_mmap_hdr:
+	vunmap(ctrl->hdr_buffer_v);
+
+err_vmap_hdr_buffer:
+	dma_free_coherent(dev, ctrl->hdr_buffer_size,
+			ctrl->hdr_buffer, ctrl->hdr_buffer_phys);
+	ctrl->hdr_buffer = NULL;
+	return ret;
+}
+
+static int ndp_ctrl_tx_calypte_attach_ring(struct ndp_channel *channel)
+{
+	int ret = -ENOMEM;
+	int node_offset;
+	void *fdt = channel->ndp->nfb->fdt;
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+	int ctrl_node_offset = -1;
+	unsigned long data_buffer_size = -1;
+	int buffer_offset = -1;
+	int proplen;
+	const fdt32_t *prop = NULL;
+
+	struct device *dev = channel->ring.dev;
+
+	node_offset = fdt_path_offset(fdt, "/drivers/ndp/tx_queues");
+	node_offset = fdt_subnode_offset(fdt, node_offset, dev_name(&channel->dev));
+
+	// Find control node of the channel
+	ctrl_node_offset = fdt_node_offset_by_phandle_ref(fdt, node_offset, "ctrl");
+	if (ctrl_node_offset < 0)
+		return -EBADFD;
+
+	// Find mask for the data buffer
+	buffer_offset = fdt_node_offset_by_phandle_ref(fdt, ctrl_node_offset, "data_buff");
+	if (buffer_offset < 0)
+		return -EBADFD;
+
+	prop = fdt_getprop(fdt, buffer_offset, "reg", &proplen);
+	if (prop == NULL)
+		return -EBADFD;
+
+	data_buffer_size = fdt32_to_cpu(prop[1]);
+
+	// Find mask for the header buffer
+	buffer_offset = fdt_node_offset_by_phandle_ref(fdt, ctrl_node_offset, "hdr_buff");
+	if (buffer_offset < 0)
+		return -EBADFD;
+
+	prop = fdt_getprop(fdt, buffer_offset, "reg", &proplen);
+	if (prop == NULL)
+		return -EBADFD;
+
+	ctrl->hdr_buffer_size = fdt32_to_cpu(prop[1]);
+
+	/* Allocate header area */
+	ctrl->hdr_buffer = dma_alloc_coherent(dev, ctrl->hdr_buffer_size, &ctrl->hdr_buffer_phys, GFP_KERNEL);
+	if (ctrl->hdr_buffer == NULL) {
+		goto err_alloc_hdr;
+	}
+
+	ctrl->hdr_buffer_v = ndp_ctrl_vmap_shadow(ctrl->hdr_buffer_size, ctrl->hdr_buffer);
+	if (ctrl->hdr_buffer_v == NULL) {
+		goto err_vmap_hdr_buffer;
+	}
+
+	ret = nfb_char_register_mmap(channel->ndp->nfb, ctrl->hdr_buffer_size * 2, &ctrl->hdr_mmap_offset, ndp_ctrl_hdr_mmap, ctrl);
+	if (ret) {
+		goto err_register_mmap_hdr;
+	}
+
+	// Store read values of buffer sizes to structure variables
+	ctrl->c.mdp = (data_buffer_size/2 -1) & 0x0000FFFFul;
+	ctrl->c.mhp = (ctrl->hdr_buffer_size/(2*NDP_CTRL_RX_CALYPTE_HDR_SIZE) -1) & 0x0000FFFFul;
+	channel->ptrmask = ctrl->c.mhp;
+
+	fdt_setprop_u32(fdt, node_offset, "protocol", 3);
+	fdt_setprop_u32(fdt, node_offset, "data_buff_size", data_buffer_size);
+	fdt_setprop_u32(fdt, node_offset, "hdr_buff_size", ctrl->hdr_buffer_size);
+
+	fdt_setprop_u64(fdt, node_offset, "hdr_mmap_base", ctrl->hdr_mmap_offset);
+	fdt_setprop_u64(fdt, node_offset, "hdr_mmap_size", ctrl->hdr_buffer_size * 2);
+
+	return 0;
+
+err_register_mmap_hdr:
+	vunmap(ctrl->hdr_buffer_v);
+
+err_vmap_hdr_buffer:
+	dma_free_coherent(dev, ctrl->hdr_buffer_size,
+			ctrl->hdr_buffer, ctrl->hdr_buffer_phys);
+	ctrl->hdr_buffer = NULL;
+
+err_alloc_hdr:
+	return ret;
+}
+
+static void ndp_ctrl_medusa_detach_ring(struct ndp_channel *channel)
 {
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 	struct device *dev = channel->ring.dev;
@@ -745,6 +1020,19 @@ static void ndp_ctrl_detach_ring(struct ndp_channel *channel)
 		dma_free_coherent(dev, ALIGN(NDP_CTRL_UPDATE_SIZE, PAGE_SIZE),
 				ctrl->update_buffer, ctrl->update_buffer_phys);
 		ctrl->update_buffer = NULL;
+	}
+}
+
+static void ndp_ctrl_calypte_detach_ring(struct ndp_channel *channel)
+{
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+	struct device *dev = channel->ring.dev;
+
+	if (ctrl->hdr_buffer) {
+		nfb_char_unregister_mmap(channel->ndp->nfb, ctrl->hdr_mmap_offset);
+		vunmap(ctrl->hdr_buffer_v);
+		dma_free_coherent(dev, ctrl->hdr_buffer_size, ctrl->hdr_buffer, ctrl->hdr_buffer_phys);
+		ctrl->hdr_buffer = NULL;
 	}
 }
 
@@ -810,26 +1098,54 @@ err_alloc_ctrl:
 
 static struct ndp_channel_ops ndp_ctrl_rx_ops =
 {
-	.start = ndp_ctrl_start,
+	.start = ndp_ctrl_medusa_start,
 	.stop = ndp_ctrl_stop,
 	.get_hwptr = ndp_ctrl_rx_get_hwptr,
-	.set_swptr = ndp_ctrl_rx_set_swptr,
+	.set_swptr = ndp_ctrl_medusa_rx_set_swptr,
 	.get_flags = ndp_ctrl_get_flags,
 	.set_flags = ndp_ctrl_set_flags,
-	.attach_ring = ndp_ctrl_attach_ring,
-	.detach_ring = ndp_ctrl_detach_ring,
+	.attach_ring = ndp_ctrl_medusa_attach_ring,
+	.detach_ring = ndp_ctrl_medusa_detach_ring,
+	.get_free_space = NULL,
 };
 
 static struct ndp_channel_ops ndp_ctrl_tx_ops =
 {
-	.start = ndp_ctrl_start,
+	.start = ndp_ctrl_medusa_start,
 	.stop = ndp_ctrl_stop,
-	.get_hwptr = ndp_ctrl_tx_get_hwptr,
-	.set_swptr = ndp_ctrl_tx_set_swptr,
+	.get_hwptr = ndp_ctrl_medusa_tx_get_hwptr,
+	.set_swptr = ndp_ctrl_medusa_tx_set_swptr,
 	.get_flags = ndp_ctrl_get_flags,
 	.set_flags = ndp_ctrl_set_flags,
-	.attach_ring = ndp_ctrl_attach_ring,
-	.detach_ring = ndp_ctrl_detach_ring,
+	.attach_ring = ndp_ctrl_medusa_attach_ring,
+	.detach_ring = ndp_ctrl_medusa_detach_ring,
+	.get_free_space = NULL,
+};
+
+static struct ndp_channel_ops ndp_ctrl_calypte_rx_ops =
+{
+	.start = ndp_ctrl_calypte_start,
+	.stop = ndp_ctrl_stop,
+	.get_hwptr = ndp_ctrl_rx_get_hwptr,
+	.set_swptr = ndp_ctrl_calypte_rx_set_swptr,
+	.get_flags = ndp_ctrl_get_flags,
+	.set_flags = ndp_ctrl_set_flags,
+	.attach_ring = ndp_ctrl_rx_calypte_attach_ring,
+	.detach_ring = ndp_ctrl_calypte_detach_ring,
+	.get_free_space = NULL,
+};
+
+static struct ndp_channel_ops ndp_ctrl_calypte_tx_ops =
+{
+	.start = ndp_ctrl_calypte_start,
+	.stop = ndp_ctrl_stop,
+	.get_hwptr = ndp_ctrl_calypte_tx_get_hwptr,
+	.set_swptr = ndp_ctrl_calypte_tx_set_swptr,
+	.get_flags = ndp_ctrl_get_flags,
+	.set_flags = ndp_ctrl_set_flags,
+	.attach_ring = ndp_ctrl_tx_calypte_attach_ring,
+	.detach_ring = ndp_ctrl_calypte_detach_ring,
+	.get_free_space = ndp_ctrl_calypte_tx_get_free_space,
 };
 
 struct ndp_channel *ndp_ctrl_v2_create_rx(struct ndp *ndp, int index, int node_offset)
@@ -842,4 +1158,16 @@ struct ndp_channel *ndp_ctrl_v2_create_tx(struct ndp *ndp, int index, int node_o
 {
 	struct ndp_channel_id id = {.index = index, .type = NDP_CHANNEL_TYPE_TX};
 	return ndp_ctrl_create(ndp, id, ndp_ctrl_attr_tx_groups, &ndp_ctrl_tx_ops, node_offset);
+}
+
+struct ndp_channel *ndp_ctrl_v3_create_rx(struct ndp *ndp, int index, int node_offset)
+{
+	struct ndp_channel_id id = {.index = index, .type = NDP_CHANNEL_TYPE_RX};
+	return ndp_ctrl_create(ndp, id, ndp_ctrl_attr_rx_groups, &ndp_ctrl_calypte_rx_ops, node_offset);
+}
+
+struct ndp_channel *ndp_ctrl_v3_create_tx(struct ndp *ndp, int index, int node_offset)
+{
+	struct ndp_channel_id id = {.index = index, .type = NDP_CHANNEL_TYPE_TX};
+	return ndp_ctrl_create(ndp, id, ndp_ctrl_attr_tx_groups, &ndp_ctrl_calypte_tx_ops, node_offset);
 }
