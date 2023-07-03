@@ -26,9 +26,9 @@ static int nc_ndp_queue_stop(void *priv);
 #include "ndp_rx.h"
 #include "ndp_tx.h"
 
-static inline int nc_nfb_fdt_queue_offset(const void *fdt, unsigned index, int type)
+static inline int nc_nfb_fdt_queue_offset(const void *fdt, unsigned index, int dir)
 {
-	const char * dir_str = type ? "tx" : "rx";
+	const char * dir_str = dir ? "tx" : "rx";
 	char path[64];
 
 	index &= 0x0FFFFFFF;
@@ -141,7 +141,7 @@ err_fdt_getprop:
 	return ret;
 }
 
-static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queue *q, unsigned index, int type, ndp_open_flags_t ndp_flags)
+static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queue *q, unsigned index, int dir, ndp_open_flags_t ndp_flags)
 {
 	int ret = 0;
 	int fdt_offset;
@@ -156,7 +156,7 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 
 	(void) ndp_flags;
 
-	fdt_offset = nc_nfb_fdt_queue_offset(fdt, index, type);
+	fdt_offset = nc_nfb_fdt_queue_offset(fdt, index, dir);
 
 	/* Fetch controller parameters */
 	q->frame_size_min = q->frame_size_max = 0;
@@ -187,7 +187,7 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	q->flags = flags;
 
 	q->channel.index = index;
-	q->channel.type = type;
+	q->channel.type = dir;
 	q->channel.flags = q->flags;
 
 #ifdef __KERNEL__
@@ -209,7 +209,7 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	/* Map the memory of buffer space. Driver ensures that the mmap_size
 	 * is 2 times larger than q->size and the buffer space is shadowed.
 	 * Due to this feature user normally needs not to check buffer boundary. */
-	q->buffer = mmap(NULL, q->size * 2, PROT_READ | (type ? PROT_WRITE : 0),
+	q->buffer = mmap(NULL, q->size * 2, PROT_READ | (dir ? PROT_WRITE : 0),
 			MAP_FILE | MAP_SHARED, q->fd, mmap_offset);
 	if (q->buffer == MAP_FAILED) {
 		goto err_mmap;

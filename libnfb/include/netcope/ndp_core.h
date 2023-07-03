@@ -34,12 +34,12 @@ void nfb_nfree(int numa_node, void *ptr, size_t size)
 #endif
 }
 
-void _ndp_queue_init(struct ndp_queue *q, struct nfb_device *dev, int numa, int type, int index)
+void _ndp_queue_init(struct ndp_queue *q, struct nfb_device *dev, int numa, int dir, int index)
 {
 	memset(q, 0, sizeof(struct ndp_queue));
 
 	q->numa = numa;
-	q->type = type;
+	q->dir = dir;
 	q->dev = dev;
 
 	q->index = index;
@@ -50,7 +50,7 @@ void _ndp_queue_init(struct ndp_queue *q, struct nfb_device *dev, int numa, int 
 #endif
 }
 
-struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int type, int index)
+struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int dir, int index)
 {
 	struct ndp_queue *q;
 
@@ -59,7 +59,7 @@ struct ndp_queue * ndp_queue_create(struct nfb_device *dev, int numa, int type, 
 	if (q == NULL) {
 		goto err_nalloc;
 	}
-	_ndp_queue_init(q, dev, numa, type, index);
+	_ndp_queue_init(q, dev, numa, dir, index);
 
 #ifdef __KERNEL__
 	q->alloc = 1;
@@ -149,7 +149,7 @@ struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir
 
 	if (q->ops.control.start == NULL || q->ops.control.stop == NULL ||
 			q->ops.burst.tx.get == NULL || q->ops.burst.tx.put == NULL ||
-			(q->ops.burst.tx.flush == NULL && q->type != NDP_CHANNEL_TYPE_RX)) {
+			(q->ops.burst.tx.flush == NULL && q->dir != NDP_CHANNEL_TYPE_RX)) {
 		ret = -EINVAL;
 		goto err_ops_invalid;
 	}
@@ -328,7 +328,7 @@ int ndp_queue_stop(struct ndp_queue *q)
 	if (q->status == NDP_QUEUE_STOPPED)
 		return EALREADY;
 
-	if (q->type == NDP_CHANNEL_TYPE_TX)
+	if (q->dir == NDP_CHANNEL_TYPE_TX)
 		q->ops.burst.tx.flush(q->priv);
 
 	ret = q->ops.control.stop(q->priv);
