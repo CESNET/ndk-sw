@@ -314,7 +314,7 @@ int nfb_pmci_attach(struct nfb_boot *boot)
 		goto err_nfb_comp;
 	}
 
-	pmci->pd = platform_device_register_resndata(nfb->dev, "nfb-pmci-m10bmc", 0, NULL, 0, pmci, sizeof(pmci));
+	pmci->pd = platform_device_register_resndata(nfb->dev, "nfb-pmci-m10bmc", nfb->minor, NULL, 0, pmci, sizeof(pmci));
 	if (IS_ERR(pmci->pd)) {
 		ret = PTR_ERR(pmci->pd);
 		goto err_pd_register;
