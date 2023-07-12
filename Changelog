@@ -1,3 +1,9 @@
+* Wed Jul 12 2023 Martin Spinler <spinler@cesnet.cz> - 6.18.1-1
+- [FEATURE] added hwmon interface for FPGA temperature and transceivers
+- [FEATURE] added 400G and E-Tile MDIO features
+- [BUGFIX] some small fixes and improvements in Python NFB module
+- [BUGFIX] correct boot ID on N6010 IA-420F cards
+
 * Thu Apr 20 2023 Martin Spinler <spinler@cesnet.cz> - 6.18.0-1
 - [FEATURE] added support for N6010 card (hwmon, flash, boot/RSU)
 - [FEATURE] added support for PMA type switching on F-Tile Ethernet IPs
