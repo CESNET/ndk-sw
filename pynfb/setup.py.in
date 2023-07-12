@@ -10,9 +10,10 @@ setup(
     ext_package = "nfb",
     ext_modules = cythonize(
         [
-            Extension("libnfb",     ["${CMAKE_CURRENT_SOURCE_DIR}/src/libnfb.pyx"],     libraries=["nfb", "fdt"], include_dirs=['${CMAKE_CURRENT_SOURCE_DIR}/../libnfb/include'], library_dirs=['${CMAKE_BINARY_DIR}/libnfb']),
-            Extension("libnetcope", ["${CMAKE_CURRENT_SOURCE_DIR}/src/libnetcope.pyx"], libraries=["nfb", "fdt"], include_dirs=['${CMAKE_CURRENT_SOURCE_DIR}/../libnfb/include'], library_dirs=['${CMAKE_BINARY_DIR}/libnfb']),
+            Extension("libnfb",     ["${CMAKE_CURRENT_SOURCE_DIR}/nfb/libnfb.pyx"],     libraries=["nfb", "fdt"], include_dirs=['${CMAKE_CURRENT_SOURCE_DIR}/../libnfb/include'], library_dirs=['${CMAKE_BINARY_DIR}/libnfb']),
+            Extension("libnetcope", ["${CMAKE_CURRENT_SOURCE_DIR}/nfb/libnetcope.pyx"], libraries=["nfb", "fdt"], include_dirs=['${CMAKE_CURRENT_SOURCE_DIR}/../libnfb/include'], library_dirs=['${CMAKE_BINARY_DIR}/libnfb']),
         ],
+        include_path=['${CMAKE_CURRENT_SOURCE_DIR}/nfb'],
         compiler_directives={'embedsignature': True, 'binding': False},
     ),
     py_modules=['nfb'],
