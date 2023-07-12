@@ -39,5 +39,6 @@ class BaseComp():
         else:
             node = self._dev.fdt_get_compatible(self.DT_COMPATIBLE)[index]
         
+        self._node = node
         self._comp = self._dev.comp_open(node)
 
