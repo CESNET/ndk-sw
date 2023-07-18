@@ -7,11 +7,16 @@ image: python:3.7-alpine
 pages:
   stage: deploy
   script:
-  - apk add -U make doxygen
+  - apk add -U make doxygen musl-dev py3-setuptools
+  - apk add -U gcc cmake dtc-dev numactl-dev ncurses-dev libarchive-dev libconfig libconfig-dev automake autoconf curl git cython python3-dev dtc-dev linux-headers
   - pip install -U sphinx
   - pip install -U sphinx-rtd-theme
   - pip install -U breathe
-  - sphinx-build -b html doc/ public
+  - pip install -U fdt cython
+  - sh build.sh --prepare
+  - sh build.sh --make
+  - "(cd pynfb; python3 setup.py build_ext --inplace -I ../libnfb/include -L ../cmake-build/libnfb)"
+  - LD_LIBRARY_PATH=$(pwd)/cmake-build/libnfb/ sphinx-build -b html doc/ public
   artifacts:
     paths:
     - public

@@ -1,11 +1,11 @@
 NFB framework
 =============
 
-This bundle implements basic software support for NDK_ based NFB [1]_ devices.
+This bundle implements basic software environment for NDK_ based NFB [1]_ devices.
 
 It is distributed as nfb-framework package (RPM, DEB) and consists mainly from:
 
-* Configuration and transmission tools
+* Configuration and data transmission tools
 * Userspace library
 * Linux kernel driver
 
@@ -21,10 +21,9 @@ well as process data (network traffic) at very high speeds.
    :caption: Introduction
    :hidden:
 
-   quick-start
+   install
 ..
-   libnfb-quick-start-registers
-   libnfb-quick-start-ndp
+   glossary
 
 .. toctree::
    :hidden:
@@ -32,22 +31,32 @@ well as process data (network traffic) at very high speeds.
    :includehidden:
    :caption: Tools
 
+   tools/quickstart
    tools/index
    tools/nfb-tools
    tools/ndp-tools
 
 .. toctree::
-   :caption: Examples
+   :caption: libnfb reference
    :hidden:
 
-   libnfb-example
+   quick-start
+   Examples <libnfb-example>
+   Base API reference <libnfb-api-base>
+   NDP API reference <libnfb-api-ndp>
+
+.. toctree::
+   :caption: Python module
+   :hidden:
+   :maxdepth: 3
+
+   python/quick
+   python/examples
+   python/reference
 
 .. toctree::
    :caption: libnfb reference
    :hidden:
-
-   libnfb-api-base
-   libnfb-api-ndp
 
 ..
    .. toctree::
@@ -55,8 +64,9 @@ well as process data (network traffic) at very high speeds.
    :hidden:
 
 
-..
-   .. toctree::
+.. toctree::
    :maxdepth: 1
-   :caption: Driver
-   drivers/index
+   :caption: Linux driver
+
+   Modules <driver/modules>
+   Userspace access <driver/userspace>

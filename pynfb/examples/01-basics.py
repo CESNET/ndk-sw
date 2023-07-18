@@ -7,9 +7,9 @@
 # TOC
 #####
 
-# 1.A Basic device manipulation
-# 1.B Device Tree
-# 1.C Component manipulation
+# 1A Basic device manipulation
+# 1B Device Tree
+# 1C Component manipulation
 
 
 # 1.A Basic device manipulation
@@ -40,7 +40,7 @@ assert isinstance(phandle, int)
 node = dev.fdt_get_phandle(phandle)
 
 # show full path of node in DT
-print(node.path + '/' + node.name)
+print(node.path + "/" + node.name)
 
 
 # 1.C Component manipulation

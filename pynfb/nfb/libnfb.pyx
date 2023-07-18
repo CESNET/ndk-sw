@@ -34,8 +34,12 @@ cdef class Nfb:
     """
     Nfb class instance represents handle to NFB device in system
 
-    It allows to create ``Comp`` object instance for access to the component registers inside the NFB device.
+    It allows to create :class:`Comp` object instance for access to the component registers inside the NFB device.
     It also allows to access to the object representation of the Flattened Device Tree by the ``fdt`` attribute and some helper functions.
+
+    :ivar fdt.FDT fdt: FDT object
+    :ivar QueueManager ndp: NDP Queue manager object
+    :ivar EthManager eth: Ethernet manager object. Exist only when using :func:`nfb.open`
     """
 
     default_device = '/dev/nfb0'
@@ -51,7 +55,6 @@ cdef class Nfb:
         self.fdt = fdt.parse_dtb(self._dtb)
 
         self.ndp = QueueManager(self)
-
 
     def __dealloc__(self):
         if self._dev is not NULL:
@@ -111,6 +114,10 @@ cdef class Nfb:
 
 
 cdef class Comp:
+    """
+    Comp class instance represents component handle inside NFB device.
+    """
+
     cdef nfb_comp* _comp
     cdef Nfb _nfb_dev
 
@@ -125,25 +132,79 @@ cdef class Comp:
             nfb_comp_close(self._comp)
 
     def read(self, addr: int, count: int):
+        """
+        Read data from component register
+
+        :param addr: Address of the register in component space
+        :param count: Number of bytes to read
+        """
+
         cdef unsigned char *b = <unsigned char *> malloc(count)
         cdef ret = nfb_comp_read(self._comp, b, count, addr)
         assert ret == count
         return <bytes>b[:count]
 
     def write(self, addr: int, data: bytes):
+        """
+        Write data to component register
+
+        :param addr: Address of the register in component space
+        :param data: Data bytes to be written
+        """
         cdef const char* b = data
         cdef ret = nfb_comp_write(self._comp, b, len(data), addr)
         assert ret == len(data)
         return None
 
-    def write8 (self, addr: int, data: int): self.write(addr, data.to_bytes(1, sys.byteorder))
+    def write8 (self, addr: int, data: int):
+        """
+        Write integer value to component register, use 8 bit access (1 byte)
+
+        :param addr: Address of the register in component space
+        :param data: Unsigned integer value to be written
+        """
+        self.write(addr, data.to_bytes(1, sys.byteorder))
+
     def write16(self, addr: int, data: int): self.write(addr, data.to_bytes(2, sys.byteorder))
     def write32(self, addr: int, data: int): self.write(addr, data.to_bytes(4, sys.byteorder))
     def write64(self, addr: int, data: int): self.write(addr, data.to_bytes(8, sys.byteorder))
-    def read8 (self, addr: int): return int.from_bytes(self.read(addr, 1), sys.byteorder)
+
+    def read8 (self, addr: int):
+        """
+        Read integer value from component register, use 8 bit access (1 byte)
+
+        :param addr: Address of the register in component space
+        :return: Readen unsigned integer value
+        """
+        return int.from_bytes(self.read(addr, 1), sys.byteorder)
+
     def read16(self, addr: int): return int.from_bytes(self.read(addr, 2), sys.byteorder)
     def read32(self, addr: int): return int.from_bytes(self.read(addr, 4), sys.byteorder)
     def read64(self, addr: int): return int.from_bytes(self.read(addr, 8), sys.byteorder)
+
+    #write64.__doc__ = """
+    #    Write integer value to component register, use {0} bit access ({1} byte)
+
+    #    :param addr: Address of the register in component space
+    #    :param data: Unsigned integer value to be written
+    #    """
+
+    #read64.__doc__ = """
+    #    Read integer value from component register, use {0} bit access ({1} byte)
+
+    #    :param addr: Address of the register in component space
+    #    :return: Readen unsigned integer value
+    #    """
+
+    #write8.__doc__  = write64.__doc__.format(8, 1)
+    #write16.__doc__ = write64.__doc__.format(16, 2)
+    #write32.__doc__ = write64.__doc__.format(32, 4)
+    #write64.__doc__ = write64.__doc__.format(64, 8)
+
+    #read8.__doc__  = read64.__doc__.format(8, 1)
+    #read16.__doc__ = read64.__doc__.format(16, 2)
+    #read32.__doc__ = read64.__doc__.format(32, 4)
+    #read64.__doc__ = read64.__doc__.format(64, 8)
 
     def set_bit(self, addr, bit, value=True, width=32):
         """
@@ -206,16 +267,21 @@ cdef class Comp:
                 time.sleep(delay)
         return True
 
-class QueueManager:
-    #cdef dict __dict__
+cdef class QueueManager:
+    """
+    :ivar List[NdpQueueRx] rx: List of RX NDP queues
+    :ivar List[NdpQueueTx] tx: List of TX NDP queues
+    """
+
+    cdef dict __dict__
 
     def __init__(self, nfb):
         compatibles = ([
-            (QueueNdpRx, "netcope,dma_ctrl_ndp_rx", 0),
-            (QueueNdpRx, "netcope,dma_ctrl_sze_rx", 0),
+            (NdpQueueRx, "netcope,dma_ctrl_ndp_rx", 0),
+            (NdpQueueRx, "netcope,dma_ctrl_sze_rx", 0),
         ], [
-            (QueueNdpTx, "netcope,dma_ctrl_ndp_tx", 1),
-            (QueueNdpTx, "netcope,dma_ctrl_sze_tx", 1),
+            (NdpQueueTx, "netcope,dma_ctrl_ndp_tx", 1),
+            (NdpQueueTx, "netcope,dma_ctrl_sze_tx", 1),
         ])
 
         self.rx, self.tx = (
@@ -235,21 +301,56 @@ class QueueManager:
         return q
 
     def send(self, pkts: Union[bytes, List[bytes]], hdrs: Optional[Union[bytes, List[bytes]]] = None, flags: Optional[Union[int, List[int]]] = None, flush: bool = True, i: Optional[Union[int, List[int]]] = None) -> None:
+        """
+        Send burst of packets to multiple queues
+
+        See :func:`NdpQueueTx.send`
+
+        :param i: list of queue indexes
+        """
         for qi in self._get_q(i, True):
             self.tx[qi].send(pkts, hdrs, flags, flush)
 
     def sendmsg(self, pkts: List[Tuple[bytes, bytes, int]], flush: bool = True, i: Optional[Union[int, List[int]]] = None) -> None:
+        """
+        Send burst of messages to multiple queues
+
+        See :func:`NdpQueueTx.sendmsg`
+
+        :param i: list of queue indexes
+        """
         for qi in self._get_q(i, True):
             self.tx[qi].sendmsg(pkts, flush)
 
     def flush(self, i = None):
+        """
+        Flush the prepared packets/messages on multiple queues
+
+        See :func:`NdpQueueTx.flush`
+
+        :param i: list of queue indexes
+        """
         for qi in self._get_q(i, True):
             self.tx[qi].flush()
 
     def recv(self, cnt: int = -1, timeout = 0, i: Optional[Union[int, List[int]]] = None):
+        """
+        Receive packets from multiple queues
+
+        See :func:`NdpQueueRx.recv`
+
+        :param i: list of queue indexes
+        """
         return [(pkt, qi) for (pkt, _, _), qi in self.recvmsg(cnt, timeout, i)]
 
     def recvmsg(self, cnt: int = -1, timeout = 0, i: Optional[Union[int, List[int]]] = None):
+        """
+        Receive messages from multiple queues
+
+        See :func:`NdpQueueRx.recvmsg`
+
+        :param i: list of queue indexes
+        """
         cdef list p
         cdef list pkts
         cdef long long int to
@@ -284,7 +385,7 @@ class QueueManager:
         return pkts
 
 
-cdef class QueueNdp:
+cdef class _NdpQueue:
     cdef ndp_queue *_q
     cdef nfb_device *_dev
     cdef dict __dict__
@@ -312,9 +413,11 @@ cdef class QueueNdp:
             self._running = True
 
     def start(self):
+        """ Start the queue and prepare for transceiving"""
         self._check_running()
 
     def stop(self):
+        """ Stop the queue"""
         if self._running:
             assert ndp_queue_stop(self._q) == 0
             self._running = False
@@ -326,23 +429,27 @@ cdef class QueueNdp:
         raise NotImplementedError()
 
 
-cdef class QueueNdpRx(QueueNdp):
+cdef class NdpQueueRx(_NdpQueue):
+    """
+    Object representing a queue for receiving data from NDP
+    """
+
     cdef libnetcope.nc_rxqueue *_nc_queue
 
     def __init__(self, nfb: Nfb, node, index):
         self._dir = 0
-        QueueNdp.__init__(self, nfb, node, index)
+        _NdpQueue.__init__(self, nfb, node, index)
         self._nc_queue = libnetcope.nc_rxqueue_open(nfb._dev, nfb._fdt_path_offset(node))
 
     def stats_reset(self):
         """Reset statistic counters"""
         libnetcope.nc_rxqueue_reset_counters(self._nc_queue)
 
-    def stats_read(self):
+    def stats_read(self) -> dict:
         """
         Read statistic counters
 
-        :return: Dictionary with counters values
+        :return: Dictionary with counters values: 'received', 'received_bytes', 'discarded', 'discarded_bytes'.
         """
         cdef libnetcope.nc_rxqueue_counters counters
 
@@ -402,19 +509,45 @@ cdef class QueueNdpRx(QueueNdp):
 
         return pkts
 
-    def recv(self, cnt: int = -1, timeout = 0):
+    def recv(self, cnt: int = -1, timeout = 0) -> List[bytes]:
+        """
+        Receive packets
+
+        Try to receive packets from the queue.
+
+        With default parameter values receive all currently pending packets and return.
+
+        :param cnt: Maximum number of packets to read. cnt == -1 means unlimited packet count (timeout must be used).
+        :param timeout: Maximum time in secs to wait for packets. timeout == None means unlimited time (cnt must be used).
+        :return: list of packets; packet is represented by bytes
+        """
         return [pkt for pkt, _, _ in self._recvmsg(cnt, int(timeout * 1000000000) if timeout is not None else None)]
 
     def recvmsg(self, cnt: int = -1, timeout: int = 0) -> List[Tuple[bytes, bytes, int]]:
+        """
+        Receive messages
+
+        Try to receive messages from the queue.
+
+        With default parameter values receive all currently pending mesages and return.
+
+        :param cnt: Maximum number of messages to read. cnt == -1 means unlimited message count (timeout must be used).
+        :param timeout: Maximum time in secs to wait for messages. timeout == None means unlimited time (cnt must be used).
+        :return: list of messages; message is represented by tuple of (packet, packet_header, flags)
+        """
         return self._recvmsg(cnt, int(timeout * 1000000000) if timeout is not None else None)
 
 
-cdef class QueueNdpTx(QueueNdp):
+cdef class NdpQueueTx(_NdpQueue):
+    """
+    Object representing a queue for transmitting data over NDP
+    """
+
     cdef libnetcope.nc_txqueue *_nc_queue
 
     def __init__(self, nfb: Nfb, node, index):
         self._dir = 1
-        QueueNdp.__init__(self, nfb, node, index)
+        _NdpQueue.__init__(self, nfb, node, index)
         self._nc_queue = libnetcope.nc_txqueue_open(nfb._dev, nfb._fdt_path_offset(node))
 
     def stats_reset(self):
@@ -425,7 +558,7 @@ cdef class QueueNdpTx(QueueNdp):
         """
         Read statistic counters
 
-        :return: Dictionary with counters values
+        :return: Dictionary with counters values: 'sent', 'sent_bytes'.
         """
         cdef libnetcope.nc_txqueue_counters counters
 
