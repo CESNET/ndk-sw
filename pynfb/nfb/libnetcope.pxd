@@ -71,6 +71,7 @@ cdef extern from "<netcope/rxmac.h>":
     int              nc_rxmac_reset_counters(nc_rxmac *mac);
     void             nc_rxmac_mac_filter_enable(nc_rxmac *mac, nc_rxmac_mac_filter mode);
     void             nc_rxmac_set_error_mask(nc_rxmac *mac, unsigned error_mask);
+    int nc_rxmac_counters_initialize(nc_rxmac_counters *c, nc_rxmac_etherstats *s)
 
 cdef extern from "<netcope/txmac.h>":
     cdef struct nc_txmac:

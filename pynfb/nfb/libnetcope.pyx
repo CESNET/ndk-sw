@@ -66,9 +66,10 @@ cdef class RxMac:
         :return: A dictionary with counters values
         """
 
-        cdef nc_rxmac_counters counters = {0}
-        cdef nc_rxmac_etherstats es = {0}
-        ret = nc_rxmac_read_counters(self._mac, &counters, &es)
+        cdef nc_rxmac_counters counters
+        cdef nc_rxmac_etherstats es
+        nc_rxmac_counters_initialize(&counters, &es)
+        cdef int ret = nc_rxmac_read_counters(self._mac, &counters, &es)
         assert ret == 0
 
         return {

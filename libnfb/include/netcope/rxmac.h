@@ -515,6 +515,15 @@ static inline int nc_rxmac_set_mac_list(struct nc_rxmac *mac, unsigned long long
 	return mac_addr_count;
 }
 
+static inline int nc_rxmac_counters_initialize(struct nc_rxmac_counters *c, struct nc_rxmac_etherstats *s)
+{
+	struct nc_rxmac_counters ic = {0};
+	struct nc_rxmac_etherstats is = {0};
+	*c = ic;
+	*s = is;
+	return 0;
+}
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
