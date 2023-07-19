@@ -50,6 +50,9 @@ cdef class RxMac:
     def disable(self):
         self.enabled = False
 
+    def is_enabled(self):
+        return self.enabled
+
     def stats_reset(self):
         """Reset statistic counters"""
         nc_rxmac_reset_counters(self._mac)
@@ -124,6 +127,9 @@ cdef class TxMac:
 
     def disable(self):
         self.enabled = False
+
+    def is_enabled(self):
+        return self.enabled
 
     def stats_reset(self):
         """Reset statistic counters"""
