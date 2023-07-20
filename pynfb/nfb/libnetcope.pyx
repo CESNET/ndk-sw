@@ -204,3 +204,167 @@ cdef class I2c:
 
         c_data8 = data
         ret = nc_i2c_write_reg(self._ctrl, reg, c_data8, len(data))
+
+cdef class DmaCtrlNdp:
+    cdef nc_ndp_ctrl _ctrl
+    cdef void *_ctrl_queue
+    cdef nc_rxqueue *_ctrl_tx
+    cdef const unsigned char[:] ub_view
+
+    cdef dict __dict__
+
+    def __init__(self, libnfb.Nfb nfb, node):
+        cdef int ret
+        self._ctrl_queue = NULL
+
+        self.__nfb = nfb
+        ret = nc_ndp_ctrl_open(nfb._dev, nfb._fdt_path_offset(node), &self._ctrl)
+        if ret != 0:
+            PyErr_SetFromErrno(OSError)
+
+        if self._ctrl.dir == 0:
+            self._ctrl_queue = nc_rxqueue_open(nfb._dev, nfb._fdt_path_offset(node))
+        else: #if self._ctrl.dir == 1:
+            self._ctrl_queue = nc_txqueue_open(nfb._dev, nfb._fdt_path_offset(node))
+
+        if self._ctrl_queue == NULL != 0:
+            nc_ndp_ctrl_close(&self._ctrl)
+            self._ctrl.comp = NULL
+            PyErr_SetFromErrno(OSError)
+
+    def __del__(self):
+        if self._ctrl.comp is not NULL:
+            if self._ctrl_queue:
+                if self._ctrl.dir == 0:
+                    nc_rxqueue_close(<nc_rxqueue*> self._ctrl_queue)
+                else:
+                    nc_txqueue_close(<nc_txqueue*> self._ctrl_queue)
+                self._ctrl_queue = NULL
+            nc_ndp_ctrl_close(&self._ctrl)
+
+    @property
+    def mdp(self):
+        return self._ctrl.mdp
+
+    @property
+    def mhp(self):
+        return self._ctrl.mhp
+
+    @property
+    def last_upper_addr(self):
+        return self._ctrl.last_upper_addr
+
+    @last_upper_addr.setter
+    def last_upper_addr(self, val):
+        self._ctrl.last_upper_addr = val
+
+    @property
+    def sdp(self):
+        return self._ctrl.sdp
+
+    @sdp.setter
+    def sdp(self, val):
+        self._ctrl.sdp = val & self._ctrl.mdp
+
+    @property
+    def shp(self):
+        return self._ctrl.shp
+
+    @shp.setter
+    def shp(self, val):
+        self._ctrl.shp = val & self._ctrl.mhp
+
+    @property
+    def hdp(self):
+        return self._ctrl.hdp
+
+    @property
+    def hhp(self):
+        return self._ctrl.hhp
+
+    @property
+    def mtu(self):
+        cdef uint32_t imin
+        cdef uint32_t imax
+
+        ret = nc_ndp_ctrl_get_mtu(&self._ctrl, &imin, &imax)
+        if ret:
+            raise ValueError()
+        return (imin, imax)
+
+    cdef __desc2uint(self, nc_ndp_desc desc):
+        cdef nc_ndp_desc d = desc
+        cdef uint64_t *pi = (<uint64_t*> &d)
+        cdef uint64_t i = pi[0]
+        return int(i)
+
+    def desc0(self, phys: dma_addr_t) -> int:
+        return self.__desc2uint(nc_ndp_rx_desc0(phys))
+
+    def desc2(self, phys: dma_addr_t, length: int, meta: int=0, next: bool=False, hdr_length: int=0) -> int:
+        if self._ctrl.dir == 0:
+            return self.__desc2uint(nc_ndp_rx_desc2(phys, length, 1 if next else 0))
+        else:
+            return self.__desc2uint(nc_ndp_tx_desc2(phys, length, ((meta & 0xF) << 8) | (hdr_length & 0xFF), 1 if next else 0))
+
+    def start(self, desc_buffer: dma_addr_t, hdr_buffer: dma_addr_t, update_buffer: dma_addr_t,
+              update_buffer_p: memoryview,
+              nb_desc: uint32_t, nb_hdr: uint32_t):
+        cdef nc_ndp_ctrl_start_params sp
+        cdef uint32_t* ub_ptr
+        self.ub_view = update_buffer_p
+        ub_ptr = <uint32_t*>&self.ub_view[0]
+
+        sp.desc_buffer = desc_buffer
+        sp.hdr_buffer = hdr_buffer
+        sp.update_buffer = update_buffer
+        sp.update_buffer_virt = ub_ptr
+        sp.nb_desc = nb_desc
+        sp.nb_hdr = nb_hdr
+
+        self._ctrl.shp = 0
+        self._ctrl.sdp = 0
+
+        ret = nc_ndp_ctrl_start(&self._ctrl, &sp)
+        if ret:
+            PyErr_SetFromErrno(OSError)
+
+    def flush_sp(self):
+        nc_ndp_ctrl_sp_flush(&self._ctrl)
+
+    def flush_sdp(self):
+        nc_ndp_ctrl_sdp_flush(&self._ctrl)
+
+    def stop(self, force = False):
+        if force:
+            nc_ndp_ctrl_stop_force(&self._ctrl)
+        else:
+            nc_ndp_ctrl_stop(&self._ctrl)
+
+    def update_hdp(self):
+        nc_ndp_ctrl_hdp_update(&self._ctrl)
+        return self._ctrl.hdp
+
+    def update_hhp(self):
+        if self._ctrl.dir != 0:
+            raise NotImplementedError()
+        nc_ndp_ctrl_hhp_update(&self._ctrl)
+        return self._ctrl.hhp
+
+    def read_stats(self):
+        cdef nc_rxqueue_counters rxc
+        cdef nc_txqueue_counters txc
+        ret = {}
+        if self._ctrl.dir == 0:
+            nc_rxqueue_read_counters(<nc_rxqueue*> self._ctrl_queue, &rxc)
+            ret['received'] = rxc.received
+            ret['discarded'] = rxc.discarded
+            if rxc.have_bytes:
+                ret['received_bytes'] = txc.received_bytes
+                ret['discarded_bytes'] = txc.discarded_bytes
+        else:
+            nc_txqueue_read_counters(<nc_txqueue*> self._ctrl_queue, &txc)
+            ret['sent'] = txc.sent
+            if txc.have_bytes:
+                ret['sent_bytes'] = txc.sent
+        return ret

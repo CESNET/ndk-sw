@@ -3,7 +3,13 @@ from libcpp cimport bool
 
 from posix.types cimport off_t
 
-from libnfb cimport nfb_device
+from libnfb cimport nfb_device, nfb_comp
+
+cdef extern from *:
+    """
+    typedef uint64_t dma_addr_t;
+    """
+    ctypedef uint64_t dma_addr_t
 
 cdef extern from "<netcope/rxmac.h>":
     cdef enum nc_mac_speed:
@@ -146,3 +152,51 @@ cdef extern from "<netcope/txqueue.h>":
     void nc_txqueue_close(nc_txqueue *txqueue);
     void nc_txqueue_reset_counters(nc_txqueue *txqueue);
     void nc_txqueue_read_counters(nc_txqueue *txqueue, nc_txqueue_counters *counters);
+
+cdef extern from "<netcope/dma_ctrl_ndp.h>":
+    cdef struct nc_ndp_desc:
+        pass
+
+    cdef struct nc_ndp_hdr:
+        uint16_t frame_len
+        uint8_t hdr_len
+        unsigned meta
+        unsigned reserved
+        unsigned free_desc
+
+    cdef struct nc_ndp_ctrl_start_params:
+        dma_addr_t desc_buffer
+        dma_addr_t hdr_buffer
+        dma_addr_t update_buffer
+        uint32_t *update_buffer_virt
+        uint32_t nb_desc
+        uint32_t nb_hdr
+
+    cdef struct nc_ndp_ctrl:
+        uint64_t last_upper_addr
+        uint32_t mdp
+        uint32_t mhp
+        uint32_t sdp
+        uint32_t hdp
+        uint32_t shp
+        uint32_t hhp
+
+        nfb_comp *comp
+        uint32_t *update_buffer
+        uint32_t dir
+
+    nc_ndp_desc nc_ndp_rx_desc0(dma_addr_t phys)
+    nc_ndp_desc nc_ndp_rx_desc2(dma_addr_t phys, uint16_t len, int next)
+    nc_ndp_desc nc_ndp_tx_desc0(dma_addr_t phys)
+    nc_ndp_desc nc_ndp_tx_desc2(dma_addr_t phys, uint16_t len, uint16_t meta, int next)
+
+    void nc_ndp_ctrl_hdp_update(nc_ndp_ctrl *ctrl)
+    void nc_ndp_ctrl_hhp_update(nc_ndp_ctrl *ctrl)
+    void nc_ndp_ctrl_sp_flush(nc_ndp_ctrl *ctrl)
+    void nc_ndp_ctrl_sdp_flush(nc_ndp_ctrl *ctrl)
+    int nc_ndp_ctrl_open(nfb_device* nfb, int fdt_offset, nc_ndp_ctrl *ctrl)
+    int nc_ndp_ctrl_start(nc_ndp_ctrl *ctrl, nc_ndp_ctrl_start_params *sp)
+    int nc_ndp_ctrl_stop_force(nc_ndp_ctrl *ctrl)
+    int nc_ndp_ctrl_stop(nc_ndp_ctrl *ctrl)
+    void nc_ndp_ctrl_close(nc_ndp_ctrl *ctrl)
+    int nc_ndp_ctrl_get_mtu(nc_ndp_ctrl *ctrl, unsigned int *min, unsigned int *max)
