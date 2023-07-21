@@ -1,5 +1,4 @@
-#from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t
-#from libcpp cimport bool
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t
 
 from posix.types cimport off_t
 
@@ -35,6 +34,7 @@ cdef extern from "<nfb/ndp.h>":
         unsigned char *header
         unsigned data_length
         unsigned header_length
+        uint16_t flags
 
     cdef struct ndp_queue:
         pass
