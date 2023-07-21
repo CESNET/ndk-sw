@@ -453,11 +453,14 @@ cdef class NdpQueueRx(_NdpQueue):
         """
         cdef libnetcope.nc_rxqueue_counters counters
 
-        stats = {}
         libnetcope.nc_rxqueue_read_counters(self._nc_queue, &counters)
-        for i, name in enumerate(['received', 'received_bytes', 'discarded', 'discarded_bytes']):
-            stats[name] = getattr(counters, name)
-        return stats
+
+        return {
+                'received': counters.received,
+                'received_bytes': counters.received_bytes,
+                'discarded': counters.discarded,
+                'discarded_bytes': counters.discarded_bytes,
+        }
 
     cdef _recvmsg(self, cnt: int = -1, timeout: int = 0):
         cdef int l_pkt
@@ -562,12 +565,12 @@ cdef class NdpQueueTx(_NdpQueue):
         """
         cdef libnetcope.nc_txqueue_counters counters
 
-        stats = {}
         libnetcope.nc_txqueue_read_counters(self._nc_queue, &counters)
-        for i, name in enumerate(['sent', 'sent_bytes']):
-            stats[name] = getattr(counters, name)
 
-        return stats
+        return {
+                'sent': counters.sent,
+                'sent_bytes': counters.sent_bytes,
+        }
 
     cdef _sendmsg(self, pkts: List[Tuple[bytes, bytes, int]]): # -> None:
         cdef int cnt
