@@ -1,5 +1,5 @@
 from Cython.Build import cythonize
-from setuptools import Extension, setup
+from setuptools import Extension, setup, find_namespace_packages
 
 setup(
     name="libnfb_ext_python",
@@ -22,6 +22,5 @@ setup(
         compiler_directives={"embedsignature": True, "binding": False},
     ),
     py_modules=["libnfb_ext_python"],
-    packages=["libnfb_ext"],
-    package_dir={"libnfb_ext": "libnfb_ext_python"},
+    packages=find_namespace_packages(include=["nfb.*"]),
 )
