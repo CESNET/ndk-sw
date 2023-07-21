@@ -39,6 +39,7 @@ struct nc_rxmac {
 	unsigned mac_addr_count;
 
 	unsigned has_counter_below_64 : 1;
+	unsigned mac_addr_count_valid : 1;
 };
 
 struct nc_rxmac_counters {
@@ -205,7 +206,6 @@ static inline struct nc_rxmac *nc_rxmac_open(struct nfb_device *dev, int fdt_off
 	struct nfb_comp *comp;
 	const fdt32_t *prop;
 	int proplen;
-	uint32_t reg;
 	unsigned version = 0;
 
 	if (fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, COMP_NETCOPE_RXMAC))
@@ -230,8 +230,7 @@ static inline struct nc_rxmac *nc_rxmac_open(struct nfb_device *dev, int fdt_off
 	else
 		mac->mtu = 0;
 
-	reg = nfb_comp_read32(comp, RXMAC_REG_STATUS);
-	mac->mac_addr_count = (reg & 0x0F800000) >> 23;
+	mac->mac_addr_count_valid = 0;
 
 	return mac;
 }
@@ -247,6 +246,14 @@ static inline void nc_rxmac_close(struct nc_rxmac *mac)
 	nfb_comp_close(nfb_user_to_comp(mac));
 }
 
+static inline void __nc_rxmac_update_mac_addr_count(struct nc_rxmac *mac, uint32_t reg)
+{
+	if (mac->mac_addr_count_valid == 0) {
+		mac->mac_addr_count = (reg & 0x0F800000) >> 23;
+		mac->mac_addr_count_valid = 1;
+	}
+}
+
 static inline void nc_rxmac_enable(struct nc_rxmac *mac)
 {
 	nfb_comp_write32(nfb_user_to_comp(mac), RXMAC_REG_ENABLE, 1);
@@ -260,6 +267,7 @@ static inline void nc_rxmac_disable(struct nc_rxmac *mac)
 static inline int nc_rxmac_get_link(struct nc_rxmac *mac)
 {
 	uint32_t val = nfb_comp_read32(nfb_user_to_comp(mac), RXMAC_REG_STATUS);
+	__nc_rxmac_update_mac_addr_count(mac, val);
 	return (val & RXMAC_REG_STATUS_LINK) ? 1 : 0;
 }
 
@@ -278,6 +286,8 @@ static inline int nc_rxmac_read_status(struct nc_rxmac *mac, struct nc_rxmac_sta
 	s->frame_length_max = nfb_comp_read32(comp, RXMAC_REG_FRAME_LEN_MAX);
 
 	reg                 = nfb_comp_read32(comp, RXMAC_REG_STATUS);
+	__nc_rxmac_update_mac_addr_count(mac, reg);
+
 	s->link_up          = (reg & RXMAC_REG_STATUS_LINK) ? 1 : 0;
 	s->overflow         = (reg & RXMAC_REG_STATUS_OVER) ? 1 : 0;
 	s->mac_addr_count   = mac->mac_addr_count;
@@ -352,6 +362,12 @@ static inline int nc_rxmac_reset_counters(struct nc_rxmac *mac)
 
 static inline unsigned nc_rxmac_mac_address_count(struct nc_rxmac *mac)
 {
+	uint32_t reg;
+
+	if (!mac->mac_addr_count_valid) {
+		reg = nfb_comp_read32(nfb_user_to_comp(mac), RXMAC_REG_STATUS);
+		__nc_rxmac_update_mac_addr_count(mac, reg);
+	}
 	return mac->mac_addr_count;
 }
 
@@ -497,6 +513,15 @@ static inline int nc_rxmac_set_mac_list(struct nc_rxmac *mac, unsigned long long
 	nfb_comp_unlock(comp, RXMAC_COMP_LOCK);
 
 	return mac_addr_count;
+}
+
+static inline int nc_rxmac_counters_initialize(struct nc_rxmac_counters *c, struct nc_rxmac_etherstats *s)
+{
+	struct nc_rxmac_counters ic = {0};
+	struct nc_rxmac_etherstats is = {0};
+	*c = ic;
+	*s = is;
+	return 0;
 }
 
 #ifdef __cplusplus

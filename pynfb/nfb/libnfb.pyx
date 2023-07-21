@@ -501,7 +501,7 @@ cdef class NdpQueueRx(_NdpQueue):
                         raise MemoryError()
                     memcpy(c_hdr, ndppkt[i].data, l_hdr)
 
-                    pkts.append((<bytes>c_pkt[:l_pkt], <bytes>c_hdr[:l_hdr], 0))
+                    pkts.append((<bytes>c_pkt[:l_pkt], <bytes>c_hdr[:l_hdr], ndppkt[i].flags))
 
                 if cnt != -1:
                     cnt -= icnt
