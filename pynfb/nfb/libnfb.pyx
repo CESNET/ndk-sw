@@ -498,11 +498,11 @@ cdef class NdpQueueRx(_NdpQueue):
                         raise MemoryError()
                     memcpy(c_pkt, ndppkt[i].data, l_pkt)
 
-                    l_hdr = ndppkt[i].data_length
+                    l_hdr = ndppkt[i].header_length
                     c_hdr = <unsigned char *> malloc(l_hdr)
                     if c_hdr == NULL:
                         raise MemoryError()
-                    memcpy(c_hdr, ndppkt[i].data, l_hdr)
+                    memcpy(c_hdr, ndppkt[i].header, l_hdr)
 
                     pkts.append((<bytes>c_pkt[:l_pkt], <bytes>c_hdr[:l_hdr], ndppkt[i].flags))
 
