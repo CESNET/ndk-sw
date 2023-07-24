@@ -6,11 +6,12 @@ import importlib
 import fdt
 
 class AbstractNfbShim:
-    def __init__(self):
+    def __init__(self, dtb):
         self.__libnfb_ext_python = importlib.import_module(
             "libnfb-ext-python.libnfb_ext_python"
         )
-        self.fdt = fdt.parse_dtb(self.dtb)
+        self._nfb_ext_python_fdt = fdt.parse_dtb(dtb)
+        self._nfb_ext_python_dtb = dtb
 
     def read(self, bus_node, comp_node, offset, size):
         return bytes([])
