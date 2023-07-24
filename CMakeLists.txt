@@ -86,6 +86,8 @@ set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/")
 set(CPACK_RPM_FILE_NAME                 RPM-DEFAULT)
 set(CPACK_RPM_Main_PACKAGE_NAME         "${CPACK_PACKAGE_NAME}")
 set(CPACK_RPM_DebugTools_PACKAGE_NAME   "${CPACK_PACKAGE_NAME}-debug")
+set(CPACK_RPM_NfbExtGrpc_PACKAGE_NAME   "nfb-ext-grpc")
+
 # FIXME: use real Python version
 set(CPACK_RPM_python_PACKAGE_NAME       "python3-nfb")
 set(CPACK_RPM_SPEC_MORE_DEFINE "%define __python python3")

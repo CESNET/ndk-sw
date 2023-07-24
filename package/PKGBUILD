@@ -1,6 +1,6 @@
 # Maintainer: Martin Spinler <spinler@cesnet.cz>
-pkgname=('nfb-framework' 'python-nfb')
-pkgver=6.17.4
+pkgname=('nfb-framework' 'python-nfb' 'nfb-framework-debug' 'nfb-ext-grpc')
+pkgver=6.19.5
 pkgrel=1
 pkgdesc="Software bundle for CESNET NDK firmware platform"
 url='https://github.com/CESNET/ndk-sw'
@@ -10,6 +10,10 @@ arch=('x86_64')
 source=("nfb-framework::git+https://github.com/CESNET/ndk-sw.git")
 #source=("nfb-framework"::"git+file://$HOME/ndk/swbase")
 md5sums=('SKIP')
+
+depends=('dtc')
+# grpc can be omitted, resulting in empty grpc package
+makedepends=('grpc')
 
 pkgver() {
 	cat $srcdir/${pkgname}/VERSION
@@ -27,6 +31,16 @@ build() {
 package_nfb-framework() {
 	DESTDIR="$pkgdir" cmake --install build  --component Main
 }
+
+package_nfb-framework-debug() {
+	DESTDIR="$pkgdir" cmake --install build  --component DebugTools
+}
+
 package_python-nfb() {
 	DESTDIR="$pkgdir" cmake --install build  --component python
+}
+
+package_nfb-ext-grpc() {
+	depends=('grpc')
+	DESTDIR="$pkgdir" cmake --install build  --component NfbExtGrpc
 }
