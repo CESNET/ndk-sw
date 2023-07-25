@@ -558,7 +558,7 @@ cdef class NdpQueueRx(NdpQueue):
         """
         return [pkt for pkt, _, _ in self._recvmsg(cnt, int(timeout * 1000000000) if timeout is not None else None)]
 
-    def recvmsg(self, cnt: int = -1, timeout: int = 0) -> List[Tuple[bytes, bytes, int]]:
+    def recvmsg(self, cnt: int = -1, timeout = 0) -> List[Tuple[bytes, bytes, int]]:
         """
         Receive messages
 
