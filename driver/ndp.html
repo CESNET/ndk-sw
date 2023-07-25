@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NDP submodule &mdash; NFB Software User Guide 6.16.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Userspace access to NFB Driver" href="userspace.html" />
+    <link rel="prev" title="Base module" href="main.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            NFB Software User Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Common info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/ndp-tools.html">NDP tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python module</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../python/quick.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/reference.html">Module Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Linux driver</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="main.html">Base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html#mi-submodule">MI submodule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html#boot-submodule">Boot submodule</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">NDP submodule</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#driver-modes">Driver modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sze-mode">SZE mode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#packet-mode">Packet mode</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="userspace.html">Userspace access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">NFB Software User Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+      <li class="breadcrumb-item active">NDP submodule</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/driver/ndp.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ndp-submodule">
+<h1>NDP submodule<a class="headerlink" href="#ndp-submodule" title="Permalink to this heading"></a></h1>
+<p>The NDP driver is an embedded submodule of the NFB driver.
+It is the module responsible for DMA data transfer.</p>
+<figure class="align-default" id="id1" style="width: 100%">
+<span id="ndp-driver-diagram-simple"></span><a class="reference internal image-reference" href="../_images/ndp_scheme.svg"><img alt="../_images/ndp_scheme.svg" src="../_images/ndp_scheme.svg" width="100%" /></a>
+<figcaption>
+<p><span class="caption-text">Diagram of general communication chain between the DMA Module in a NFB device and user applications.</span><a class="headerlink" href="#id1" title="Permalink to this image"></a></p>
+</figcaption>
+</figure>
+<p>The general diagram of the entire communication chain is described in the <a class="reference internal" href="#ndp-driver-diagram-simple"><span class="std std-ref">diagram</span></a> above.</p>
+<p>NDP drivers allows data sharing between kernel space and user space processes.
+It also connects DMA controllers inside firmware to NDP queues (channels).</p>
+<p>It allows to connect multiple user space processes (subscribers) to one NDP queue via subscriptions and also allows
+one application to connect to multiple queues.</p>
+<section id="driver-modes">
+<h2>Driver modes<a class="headerlink" href="#driver-modes" title="Permalink to this heading"></a></h2>
+<p>The driver currently supports two protocols: the SZE (<em>Straight Zero Copy</em>) and the Packet mode.</p>
+<section id="sze-mode">
+<h3>SZE mode<a class="headerlink" href="#sze-mode" title="Permalink to this heading"></a></h3>
+<p>The SZE (also refered to as “<em>version 1</em>” in Libnfb) is a streaming mode supported by older version of DMA controllers.
+In this mode the driver allocates data for packets in the RAM as a single ring buffer where packets are placed one after another.
+This is practical for PCI throughput usage, since, when transfering small packets, you can transfer multiple of them at once in a single PCI transaction.
+The user, however, cannot be expected to work with packets stored in the RAM this way and so the driver has to copy each of them creating unwanted overhead.</p>
+</section>
+<section id="packet-mode">
+<h3>Packet mode<a class="headerlink" href="#packet-mode" title="Permalink to this heading"></a></h3>
+<p>In the Packet mode (called “<em>version 2</em>” in Libnfb) each packet is stored in the RAM individualy.
+This prevents the DMA Module from transfering multiple packets in one transaction, but allows them to be handled more easily in software.
+This mode is only currently only supported by the newer DMA module called “DMA Medusa”.</p>
+<p>For easier implementation they are stored in a single (virtually) buffer much like in SZE, but each packet has a predefined block of memory it can occupy (with a fixed starting address).
+This frees the user of the responsibility of low-level memory management.</p>
+<p>This mode involves the Header buffer.</p>
+<p>Details of synchronization between NDP driver and userspace library are described in <a class="reference internal" href="ndp-rx-sync.html#ndp-rx-sync"><span class="std std-ref">NDP RX synchronization</span></a> and <a class="reference internal" href="ndp-tx-sync.html#ndp-tx-sync"><span class="std std-ref">NDP TX synchronization</span></a>.</p>
+<section id="device-tree">
+<h4>Device Tree<a class="headerlink" href="#device-tree" title="Permalink to this heading"></a></h4>
+<p>Occupied node: <code class="docutils literal notranslate"><span class="pre">/drivers/ndp</span></code></p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>property <code class="docutils literal notranslate"><span class="pre">version</span></code></dt><dd><p>uint32 - version of API</p>
+</dd>
+</dl>
+</li>
+<li><p>nodes <code class="docutils literal notranslate"><span class="pre">rx_queues/rx%d</span></code></p></li>
+<li><p>nodes <code class="docutils literal notranslate"><span class="pre">tx_queues/tx%d</span></code></p></li>
+</ul>
+<dl class="simple">
+<dt>nodes <code class="docutils literal notranslate"><span class="pre">rx%d</span></code> and <code class="docutils literal notranslate"><span class="pre">tx%d</span></code>:</dt><dd><ul class="simple">
+<li><p>property size: Size of buffer</p></li>
+<li><p>property mmap_base: base address for mmap of channel ring</p></li>
+<li><p>property mmap_size: Size that can be maped (typically 2 * size for shadowing in NDP)</p></li>
+<li><p>property ctrl: phandle reference to DMA controller in <code class="docutils literal notranslate"><span class="pre">/firmware</span></code> node</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="ioctl">
+<h4>IOCTL<a class="headerlink" href="#ioctl" title="Permalink to this heading"></a></h4>
+<p>The Subscribe IOCTL call takes the <code class="xref c c-type docutils literal notranslate"><span class="pre">ndp_channel_request</span></code> struct.
+The others IOCTL calls takes the <code class="xref c c-type docutils literal notranslate"><span class="pre">ndp_subscription_sync</span></code> struct.</p>
+<ul class="simple">
+<li><p>SUBSCRIBE</p></li>
+<li><p>START</p></li>
+<li><p>STOP</p></li>
+<li><p>SYNC</p></li>
+</ul>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="main.html" class="btn btn-neutral float-left" title="Base module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="userspace.html" class="btn btn-neutral float-right" title="Userspace access to NFB Driver" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

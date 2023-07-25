@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NDP RX synchronization &mdash; NFB Software User Guide 6.16.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            NFB Software User Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Common info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/ndp-tools.html">NDP tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python module</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../python/quick.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/reference.html">Module Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Linux driver</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="userspace.html">Userspace access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">NFB Software User Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">NDP RX synchronization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/driver/ndp-rx-sync.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ndp-rx-synchronization">
+<span id="ndp-rx-sync"></span><h1>NDP RX synchronization<a class="headerlink" href="#ndp-rx-synchronization" title="Permalink to this heading"></a></h1>
+<p>When receiving data (RX DMA direction), the driver first tells the DMA Module, where in the computer’s RAM the data can be stored.
+After doing so, the DMA Module informs the driver about how much data has been received.
+The driver passes the data to the user and passes more space to the DMA Module.</p>
+<section id="function-call-map">
+<h2>Function call map<a class="headerlink" href="#function-call-map" title="Permalink to this heading"></a></h2>
+<p>This section contains a cheatsheet of how functions call each other when using DPDK, Libnfb and NDP driver.
+Each of these parts uses different structure to contain a block of memory space for packet.
+Between the DMA Module and the NDP driver “descriptors” are used.
+Descriptors are optimized for minimal PCI overhead.
+The NDP driver and the Libnfb pass these infromation using the “Header Buffer” and “Offset Buffer” (the two buffers share control and thus function as a single buffer).
+The buffers and the pointers to these buffers are accessible both to the NDP driver and (through <code class="docutils literal notranslate"><span class="pre">vmap</span></code>) to the Libnfb.
+This is basically the only way these two sides communicate.
+Otherwise they run independently in parallel.</p>
+<p>The Libnfb comunicates with the user using the “ndp_packet” structure.
+In DPDK memory blocks are managed using the structure called “Mbuf”.</p>
+<section id="rx">
+<h3>RX<a class="headerlink" href="#rx" title="Permalink to this heading"></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span> rte_eth_rx_burst (dpdk/lib/librte_ethdev/rte_ethdev.h)
+<span class="linenos"> 2</span>     -+
+<span class="linenos"> 3</span>      |
+<span class="linenos"> 4</span>      V
+<span class="linenos"> 5</span>      nfb_eth_ndp_rx (dpdk/drivers/net/nfb/nfb_rx.h)
+<span class="linenos"> 6</span>          - is set as dev-&gt;rx_pkt_burst
+<span class="linenos"> 7</span>          - main RX receive function
+<span class="linenos"> 8</span>          ==============-+
+<span class="linenos"> 9</span>                         |
+<span class="linenos">10</span>                         V
+<span class="linenos">11</span>                         (nc_)ndp_(v2_)rx_burst_get (swbase/libnfb/include/netcope/ndp_rx.h)
+<span class="linenos">12</span>                             - takes values from headers in the Offset Buffer and copies them to an ndp_packet
+<span class="linenos">13</span>                             - shifts rhp
+<span class="linenos">14</span>          ==========-+
+<span class="linenos">15</span>                     |
+<span class="linenos">16</span>                     V
+<span class="linenos">17</span>                     ndp_rx_fill_mbuf (dpdk/drivers/net/nfb/nfb_rx.h)
+<span class="linenos">18</span>                         - copies information from ndp_packet to an Mbuf Buffer
+<span class="linenos">19</span>                         - copies each Mbuf to output Mbuf array (from here it will be freed by the user)
+<span class="linenos">20</span>          -+
+<span class="linenos">21</span>           |
+<span class="linenos">22</span>           V
+<span class="linenos">23</span>           ndp_rx_fill_desc (dpdk/drivers/net/nfb/nfb_rx.h)
+<span class="linenos">24</span>               - allocates a requested amount of Mbufs in the Mbuf Buffer
+<span class="linenos">25</span>               - fills ndp_packets with pointers to the Mbufs&#39; data
+<span class="linenos">26</span>               -+
+<span class="linenos">27</span>                |
+<span class="linenos">28</span>                V
+<span class="linenos">29</span>                (nc_)ndp_rx_burst_put_desc (swbase/libnfb/include/netcope/ndp_rx.h)
+<span class="linenos">30</span>                    - checks the amount of free space in the Offset Buffer
+<span class="linenos">31</span>                    - copiest info from ndp_packets to Header and Offset Buffer
+<span class="linenos">32</span>                    - shifts sync.swptr
+<span class="linenos">33</span>
+<span class="linenos">34</span> ndp_channel_rxsync (drivers/kernel/drivers/nfb/ndp/channel.c)
+<span class="linenos">35</span>     -+
+<span class="linenos">36</span>      |
+<span class="linenos">37</span>      V
+<span class="linenos">38</span>      ndp_ctrl_rx_set_swptr (swbase/drivers/kernel/drivers/nfb/ndp/ctrl_ndp.c)
+<span class="linenos">39</span>          - is set as ndp_ctrl_rx_ops.set_swptr
+<span class="linenos">40</span>          - shifts shp
+<span class="linenos">41</span>          - pro SIMPLE mod vytvori deskriptory do deskriptoroveho bufferu
+<span class="linenos">42</span>          - in the *Simple* mode creates new descriptors in the Header and Offset Buffers
+<span class="linenos">43</span>          - in the *User* mode:
+<span class="linenos">44</span>          -+
+<span class="linenos">45</span>           |
+<span class="linenos">46</span>           V
+<span class="linenos">47</span>           ndp_ctrl_user_fill_rx_descs (swbase/drivers/kernel/drivers/nfb/ndp/ctrl_ndp.c)
+<span class="linenos">48</span>               - checks the number of new descritpors in the Header and Offset Buffer
+<span class="linenos">49</span>               - creates new descriptors in the HW descirptor buffer
+<span class="linenos">50</span>               - shifts SDP and propagates it to the HW
+<span class="linenos">51</span>      ndp_ctrl_rx_get_hwptr (swbase/drivers/kernel/drivers/nfb/ndp/ctrl_ndp.c)
+<span class="linenos">52</span>          - is set as ndp_ctrl_rx_ops.get_hwptr
+<span class="linenos">53</span>          - reads hhp
+<span class="linenos">54</span>          - sets sync.hwptr accordingly propagatng it higher
+<span class="linenos">55</span>          - if there are items in the Header and Offset Buffer waiting to be propagated as descriptors it does so
+</pre></div>
+</div>
+</section>
+</section>
+<section id="header-and-offset-buffer">
+<h2>Header and Offset Buffer<a class="headerlink" href="#header-and-offset-buffer" title="Permalink to this heading"></a></h2>
+<p>To better understand the function of individual pointer in the Header and Offset Buffer, here is a cheatsheet for that as well.</p>
+<section id="id1">
+<h3>RX<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span>  u.v2.rhp                     sync.hwptr                     sync.swptr
+<span class="linenos"> 2</span>     |   items filled by HW, but   |   created ready items from   |  non-valid items
+<span class="linenos"> 3</span>     V   not read by the SW yet    V   the SW but still empty     V  (freed by the SW)
+<span class="linenos"> 4</span> +==-+============================-+==-+======================+==-+======================+
+<span class="linenos"> 5</span>                                       ^                      ^
+<span class="linenos"> 6</span>                                       |                      |
+<span class="linenos"> 7</span>                                   ctrl-&gt;php              ctrl-&gt;shp
+<span class="linenos"> 8</span>                                       &lt;- - - - - - - - - - - &gt;
+<span class="linenos"> 9</span>                                items passed from Libnfb to the driver,
+<span class="linenos">10</span>                                 but not yet from the driver to the HW
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

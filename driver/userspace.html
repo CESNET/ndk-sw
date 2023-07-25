@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Userspace access to NFB Driver &mdash; NFB Software User Guide 6.16.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="NDP submodule" href="ndp.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            NFB Software User Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Common info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/ndp-tools.html">NDP tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python module</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../python/quick.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/reference.html">Module Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Linux driver</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Userspace access</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#device-tree-introduction">Device Tree introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fdt-description">FDT description</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#drivers">drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firmware">firmware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#board">board</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#character-device">Character device</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sysfs">sysfs</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">NFB Software User Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Userspace access to NFB Driver</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/driver/userspace.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="userspace-access-to-nfb-driver">
+<h1>Userspace access to NFB Driver<a class="headerlink" href="#userspace-access-to-nfb-driver" title="Permalink to this heading"></a></h1>
+<p>Large diversity of hardware boards and firmware blocks needs a flexible system for describing and driving hardware and firmware platform.
+As the main building block for solving this challenge was chosen the Device Tree model (<a class="reference external" href="http://www.devicetree.org">http://www.devicetree.org</a>).
+With well designed Device Tree structure the whole system can react very fast and safely for new hardware or firmware modifications and features.</p>
+<p>NFB Linux driver is designed to be modular.
+It can have user-written modules (either embedded or loadable).</p>
+<section id="device-tree-introduction">
+<h2>Device Tree introduction<a class="headerlink" href="#device-tree-introduction" title="Permalink to this heading"></a></h2>
+<p>Device Tree can have several forms.
+DTS is human-readable source format resembling branched C structure. It’s not suitable for machine processing.
+DTB is binary format, which holds string names of properties and nodes.
+Both format are convertible to each other with no information loss (except DTS comments). For this conversion is suitable compiler tool called DTC.</p>
+<p>Typically the firmware provides the main Device Tree frame as DTB (e.g. compressed with XZ).
+Card-specific part of the driver load this DTB.
+Device Tree is explored for known units (typically specified by <code class="docutils literal notranslate"><span class="pre">compatible</span></code> property).
+Recognized units are passed into corresponding attached modules.</p>
+</section>
+<section id="fdt-description">
+<h2>FDT description<a class="headerlink" href="#fdt-description" title="Permalink to this heading"></a></h2>
+<p>This structure describes hardware and module interface of the device.</p>
+<p>It contains typically three sections (nodes):</p>
+<section id="drivers">
+<h3>drivers<a class="headerlink" href="#drivers" title="Permalink to this heading"></a></h3>
+<p>Here are described all attached modules.
+Embedded modules and their nodes are documented in <span class="xref std std-doc">/modules</span>.</p>
+</section>
+<section id="firmware">
+<h3>firmware<a class="headerlink" href="#firmware" title="Permalink to this heading"></a></h3>
+<p>Firmware node in NFB Device Tree structure mainly decribes address space of currently programmed firmware.
+Components with <code class="docutils literal notranslate"><span class="pre">reg</span></code> property can be mapped and accessed in user application.
+Other components (virtual or hierarchical) serves for information purposes.</p>
+</section>
+<section id="board">
+<h3>board<a class="headerlink" href="#board" title="Permalink to this heading"></a></h3>
+<p>This node contains physical informations of the device and is not affected by changing firmware.
+Card-specific part of the driver fills it with informations e.g. from Flash.
+These holds information about card name, serial number, birth date, programmable chip name, ethernet interfaces and so on.</p>
+</section>
+</section>
+<section id="character-device">
+<h2>Character device<a class="headerlink" href="#character-device" title="Permalink to this heading"></a></h2>
+<p>Typical access to the NFB device is through the node in <em>dev</em> filesystem.
+Node is named with the “<code class="file docutils literal notranslate"><span class="pre">nfb%d</span></code>” format string.</p>
+<p>Node supports these basic operations:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>read</dt><dd><p>obtain FDT structure.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>seek</dt><dd><p>obtain size of FDT structure.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>ioctl</dt><dd><p>do a specific commands in attached NFB module.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>mmap</dt><dd><p>map a space of attached NFB modules to virtual memory of application.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="sysfs">
+<h2>sysfs<a class="headerlink" href="#sysfs" title="Permalink to this heading"></a></h2>
+<p>Basic informations about device are located in path <code class="file docutils literal notranslate"><span class="pre">/sys/class/nfb/nfb%d</span></code>.</p>
+<p>Each device contains these entries:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>name</dt><dd><p>hardware name</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>pcislot</dt><dd><p>PCIe slot ID in format 0000:00:00.0</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>serial</dt><dd><p>Serial number of the card</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Attached modules can have additional entries in their subfolders.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ndp.html" class="btn btn-neutral float-left" title="NDP submodule" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

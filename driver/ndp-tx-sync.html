@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NDP TX synchronization &mdash; NFB Software User Guide 6.16.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            NFB Software User Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Common info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/ndp-tools.html">NDP tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python module</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../python/quick.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/reference.html">Module Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Linux driver</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="userspace.html">Userspace access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">NFB Software User Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">NDP TX synchronization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/driver/ndp-tx-sync.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ndp-tx-synchronization">
+<span id="ndp-tx-sync"></span><h1>NDP TX synchronization<a class="headerlink" href="#ndp-tx-synchronization" title="Permalink to this heading"></a></h1>
+<p>When transmitting data from the SW to the device (TX DMA direction), the driver receives data stored in RAM from the user.
+Then tells the DMA Module where they are and how big.
+Once the DMA Module has finished transmitting the data from the RAM, it signals the driver, which frees the data from the RAM.
+It tells the user, that the transmition is completed and waits for more data to be transmitted.</p>
+<section id="pointers-description">
+<h2>Pointers description<a class="headerlink" href="#pointers-description" title="Permalink to this heading"></a></h2>
+<p>lib-drv sync:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>            <span class="n">___C__</span>   <span class="n">___B___</span>   <span class="n">___A___</span>
+           <span class="o">/</span>      \ <span class="o">/</span>       \ <span class="o">/</span>       \
+  <span class="n">lib</span><span class="p">:</span>           <span class="n">HWPTR</span>     <span class="n">RHP</span>     <span class="n">SWPTR</span>
+<span class="n">older</span> <span class="o">&gt;----|-------|---------|--------|&gt;</span> <span class="n">newer</span>
+  <span class="n">drv</span><span class="p">:</span>   <span class="n">HWPTR</span>   <span class="n">SWPTR</span>
+</pre></div>
+</div>
+<ol class="upperalpha simple">
+<li><p>empty space for new data</p></li>
+<li><p>data in NDP buffer, not yet synced with driver</p></li>
+<li><p>hardware is aware this data, but not transfered yet.</p></li>
+</ol>
+</section>
+<section id="example-of-tx-synchronization-run">
+<h2>Example of TX synchronization run<a class="headerlink" href="#example-of-tx-synchronization-run" title="Permalink to this heading"></a></h2>
+<ol class="arabic">
+<li><p>start: actual position HWPTR + SWPTR is undefined:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib:   ? ? ?
+older &gt;···································&gt; newer
+</pre></div>
+</div>
+</li>
+<li><p>first lock: libnfb requests the driver to lock part of the NDP buffer. Typically requests maximum space (buffer_size - 1). The position of HWPTR doesn’t matter, decisive is only described length:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lib</span><span class="p">:</span> <span class="n">HWPTR</span>                             <span class="n">SWPTR</span>
+<span class="n">older</span> <span class="o">&gt;|---------------------------------|&gt;</span> <span class="n">newer</span>
+</pre></div>
+</div>
+</li>
+<li><p>pointer sync: the driver:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><p>checks if there is no actual lock</p></li>
+<li><p>checks the boundaries of request</p></li>
+<li><p>sets sync.hwptr by last position assigned to hardware</p></li>
+<li><p>clamps sync.swptr according to free space:</p></li>
+</ol>
+</div></blockquote>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>older &gt;··|-----------------------------|··&gt; newer
+drv:   HWPTR                         SWPTR
+</pre></div>
+</div>
+</li>
+<li><p>fill &amp; wait: Software fills the data placeholders and calls ndp_tx_burst_put. This doesn’t flush the data and the lock is not given in.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib:   HWPTR     RHP                 SWPTR
+older &gt;··|————————|--------------------|··&gt; newer
+</pre></div>
+</div>
+</li>
+<li><p>fill &amp; flush: Software fills the further data placeholders and calls ndp_tx_burst_put &amp; ndp_tx_burst_flush. This flushes the data, but software still have the lock:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib:               RHP+HWPTR         SWPTR
+older &gt;················|---------------|··&gt; newer
+</pre></div>
+</div>
+</li>
+<li><p>desc fill: the driver creates the descriptors from packet headers and passes the SDP into hardware:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>older &gt;··|—————————————|---------------|··&gt; newer
+drv:    HDP           SDP
+</pre></div>
+</div>
+</li>
+<li><p>try lock: libnfb requests to lock additional data space:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib:      SWPTR      RHP+HWPTR
+older &gt;-----|··········|------------------&gt; newer
+</pre></div>
+</div>
+</li>
+<li><p>clamp: driver partially rejects and clamp this request, because the requested space in ring buffer is not yet freed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib:   SWPTR       RHP+HWPTR
+older &gt;--|·············|------------------&gt; newer
+</pre></div>
+</div>
+</li>
+<li><p>HDP update: hardware transmits some data and updates the HDP:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>older &gt;-----|——————————|------------------&gt; newer
+drv:       HDP        SDP
+</pre></div>
+</div>
+</li>
+<li><p>try lock: same as in step 7:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib:      SWPTR    RHP+HWPTR
+older &gt;-----|··········|------------------&gt; newer
+</pre></div>
+</div>
+</li>
+<li><p>sync: drivers detect the HDP update and  sets the SWPTR according to maximal free space:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib:      SWPTR     HP+HWPTR
+older &gt;-----|··········|------------------&gt; newer
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="example-of-tx-multiple-writers">
+<h2>Example of TX multiple writers<a class="headerlink" href="#example-of-tx-multiple-writers" title="Permalink to this heading"></a></h2>
+<ol class="arabic">
+<li><p>start condition: app0 have the lock, app1 just started</p></li>
+<li><p>app1 try lock: app1 request for the lock:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app1</span><span class="p">:</span><span class="n">HWPTR</span>                             <span class="n">SWPTR</span>
+<span class="n">older</span> <span class="o">&gt;|---------------------------------|&gt;</span> <span class="n">newer</span>
+</pre></div>
+</div>
+</li>
+<li><p>app1 sync: driver checks, that the lock exists and is not held by app1 and refuses to lock (swptr == hwptr):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app1</span><span class="p">:</span>      <span class="n">SWPTR</span><span class="o">+</span><span class="n">HWPTR</span>
+<span class="n">older</span> <span class="o">&gt;---------|-------------------------&gt;</span> <span class="n">newer</span>
+</pre></div>
+</div>
+</li>
+<li><p>app0 fill &amp; wait: Software fills the data placeholders and calls ndp_tx_burst_put. This doesn’t flush the data and the lock is not given in.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib:           HWPTR     RHP                 SWPTR
+older &gt;·········|————————|--------------------|··&gt; newer
+</pre></div>
+</div>
+</li>
+<li><p>app0 fill &amp; flush &amp; unlock: Software fills the further data placeholders and calls ndp_tx_burst_put &amp; ndp_tx_burst_flush. This flushes the data, and give in the lock:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib:                    HWPTR+SWPTR
+older &gt;······················|···················&gt; newer
+</pre></div>
+</div>
+</li>
+<li><p>desc fill: the driver creates the descriptors from packet headers and passes the SDP into hardware:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>drv:         HWPTR         SWPTR
+older &gt;········|—————————————|---------------|··&gt; newer
+drv:          HDP           SDP
+</pre></div>
+</div>
+</li>
+<li><p>app1 try lock: same as in step 2:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">app1</span><span class="p">:</span><span class="n">HWPTR</span>                                   <span class="n">SWPTR</span>
+<span class="n">older</span> <span class="o">&gt;|---------------------------------------|&gt;</span> <span class="n">newer</span>
+</pre></div>
+</div>
+</li>
+<li><p>app1 sync: driver checks, that the lock doesn’t exists and let the request of app1 go through:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>app1:      SWPTR          HWPTR
+older &gt;-------|··············|------------------&gt; newer
+</pre></div>
+</div>
+</li>
+</ol>
+<section id="function-call-map">
+<h3>Function call map<a class="headerlink" href="#function-call-map" title="Permalink to this heading"></a></h3>
+<p>This section contains a cheatsheet of how functions call each other when using DPDK, Libnfb and NDP driver.
+Each of these parts uses different structure to contain a block of memory space for packet.
+Between the DMA Module and the NDP driver “descriptors” are used.
+Descriptors are optimized for minimal PCI overhead.
+The NDP driver and the Libnfb pass these infromation using the “Header Buffer” and “Offset Buffer” (the two buffers share control and thus function as a single buffer).
+The buffers and the pointers to these buffers are accessible both to the NDP driver and (through <code class="docutils literal notranslate"><span class="pre">vmap</span></code>) to the Libnfb.
+This is basically the only way these two sides communicate.
+Otherwise they run independently in parallel.</p>
+<p>The Libnfb comunicates with the user using the “ndp_packet” structure.
+In DPDK memory blocks are managed using the structure called “Mbuf”.</p>
+</section>
+</section>
+<section id="tx">
+<h2>TX<a class="headerlink" href="#tx" title="Permalink to this heading"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span> rte_eth_tx_burst (dpdk/lib/librte_ethdev/rte_ethdev.h)
+<span class="linenos"> 2</span>     -+
+<span class="linenos"> 3</span>      |
+<span class="linenos"> 4</span>      V
+<span class="linenos"> 5</span>      nfb_eth_ndp_tx (dpdk/drivers/net/nfb/nfb_tx.h)
+<span class="linenos"> 6</span>          - set as dev-&gt;tx_pkt_burst
+<span class="linenos"> 7</span>          - main TX transmition function
+<span class="linenos"> 8</span>          - finds out the number of new succesfully sent packets
+<span class="linenos"> 9</span>          - frees the corresponding number of Mbufs (sent packets are freed from the memory)
+<span class="linenos">10</span>          - copies info from input array of Mbufs to its Mbuf Buffer (to be able to free them later) and to an array of ndp_packets
+<span class="linenos">11</span>          ==============-+
+<span class="linenos">12</span>                         |
+<span class="linenos">13</span>                         V
+<span class="linenos">14</span>                         (nc_)ndp_(v2_)tx_burst_get (swbase/libnfb/include/netcope/ndp_tx.h)
+<span class="linenos">15</span>                             - copiest info from ndp_packets to Header and Offset Buffer
+<span class="linenos">16</span>                             - shifts rhp
+<span class="linenos">17</span>          ==========-+
+<span class="linenos">18</span>                     |
+<span class="linenos">19</span>                     V
+<span class="linenos">20</span>                     (nc_)ndp_tx_burst_put (swbase/libnfb/include/netcope/ndp_tx.h)
+<span class="linenos">21</span>                     -+
+<span class="linenos">22</span>          -+          |
+<span class="linenos">23</span>           |          |
+<span class="linenos">24</span>           V          V
+<span class="linenos">25</span>           (nc_)ndp_(v2_)tx_burst_flush (swbase/libnfb/include/netcope/ndp_tx.h)
+<span class="linenos">26</span>               - sets sync.hwptr and sync.swptr to rhp (unlocks the TX Channel for other applications)
+<span class="linenos">27</span>
+<span class="linenos">28</span> ndp_channel_txsync (drivers/kernel/drivers/nfb/ndp/channel.c)
+<span class="linenos">29</span>     -+
+<span class="linenos">30</span>      |
+<span class="linenos">31</span>      V
+<span class="linenos">32</span>      ndp_ctrl_tx_set_swptr (swbase/drivers/kernel/drivers/nfb/ndp/ctrl_ndp.c)
+<span class="linenos">33</span>          - is set as ndp_ctrl_tx_ops.set_swptr
+<span class="linenos">34</span>          - creates descriptors from new items in Header and Offset Buffer
+<span class="linenos">35</span>          - shifts sdp propagates it to HW
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

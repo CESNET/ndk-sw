@@ -44,14 +44,18 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Tools</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Common info</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="nfb-tools.html">NFB tools</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="nfb-info.html">nfb-info</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">nfb-bus</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">nfb-bus</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#list-of-available-components">List of available components</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="nfb-boot.html">nfb-boot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nfb-eth.html">nfb-eth</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nfb-mdio.html">nfb-mdio</a></li>
@@ -61,14 +65,23 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ndp-tools.html">NDP tools</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">libnfb examples</a></li>
-</ul>
 <p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python module</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../python/quick.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/reference.html">Module Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Linux driver</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../driver/modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/userspace.html">Userspace access</a></li>
 </ul>
 
         </div>
@@ -102,6 +115,34 @@
 <p>For the write access, user enters the address and the data as arguments in hexadecimal format.
 For the read access, the data argument is omitted.
 The tool performs 32b access to the specified address regardless of the data argument width.</p>
+<section id="list-of-available-components">
+<h2>List of available components<a class="headerlink" href="#list-of-available-components" title="Permalink to this heading"></a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nfb-bus<span class="w"> </span>-l
+<span class="go">0x00002000: cesnet,pmci                         /firmware/mi_bus0/ofs_pmci</span>
+<span class="go">0x00000000: cesnet,ofm,mi_test_space            /firmware/mi_bus0/mi_test_space</span>
+<span class="go">0x00004000: netcope,tsu                         /firmware/mi_bus0/tsu</span>
+<span class="go">0x01000000: netcope,dma_ctrl_ndp_rx             /firmware/mi_bus0/dma_module@0x01000000/dma_ctrl_ndp_rx0</span>
+<span class="go">0x01000080: netcope,dma_ctrl_ndp_rx             /firmware/mi_bus0/dma_module@0x01000000/dma_ctrl_ndp_rx1</span>
+<span class="go">...</span>
+<span class="go">0x00003110: netcope,i2c                         /firmware/mi_bus0/i2c1</span>
+<span class="go">0x0000311c:                                     /firmware/mi_bus0/pmdctrl1</span>
+<span class="go">0x00800000: netcope,pcsregs                     /firmware/mi_bus0/regarr0</span>
+<span class="go">0x00008000: netcope,txmac                       /firmware/mi_bus0/txmac0</span>
+<span class="go">0x00008200: netcope,rxmac                       /firmware/mi_bus0/rxmac0</span>
+<span class="go">0x02000000: cesnet,nic,app_core                 /firmware/mi_bus0/application/nic_core_0</span>
+<span class="go">...</span>
+<span class="go">0x00005100: cesnet,ofm,gen_loop_switch          /firmware/mi_bus0/dbg_gls1</span>
+<span class="go">0x00005180: cesnet,ofm,mfb_generator            /firmware/mi_bus0/dbg_gls1/mfb_gen2dma</span>
+<span class="go">0x000051c0: cesnet,ofm,mfb_generator            /firmware/mi_bus0/dbg_gls1/mfb_gen2eth</span>
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="c1"># write 32b value 0xdeadbeef to address 0x1c</span>
+<span class="gp">$ </span>nfb-bus<span class="w"> </span>-c<span class="w"> </span>cesnet,ofm,mi_test_space<span class="w"> </span>1c<span class="w"> </span>deadbeef
+<span class="gp">$ </span><span class="c1"># read 32b value from address 0x1c</span>
+<span class="gp">$ </span>nfb-bus<span class="w"> </span>-c<span class="w"> </span>cesnet,ofm,mi_test_space<span class="w"> </span>1c
+<span class="go">deadbeef</span>
+</pre></div>
+</div>
 <p><strong>Component mode</strong> is used when the compatible string or Device Tree path is specified.
 In this case the address is entered as offset relative to the base address of the component.
 For the first 32b register in the component user enters simply address 0,
@@ -127,6 +168,7 @@ This can happend also for read access to <code class="docutils literal notransla
 <li><p><strong>-a</strong> (address) Print also address before readen data.</p></li>
 <li><p><strong>-l</strong> (list) Print list of all available components in firmware, their offsets, compatible strings and Device Tree paths.</p></li>
 </ul>
+</section>
 </section>
 
 

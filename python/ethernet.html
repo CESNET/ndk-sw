@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ethernet &mdash; NFB Software User Guide 6.16.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Simple component class example" href="component.html" />
+    <link rel="prev" title="Data transmission" href="transmission.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            NFB Software User Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Common info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/ndp-tools.html">NDP tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python module</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quick.html">Quick start</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="basics.html">Basic device manipulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transmission.html">Data transmission</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Ethernet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="component.html">Simple component class example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">Module Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Linux driver</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../driver/modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/userspace.html">Userspace access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">NFB Software User Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Ethernet</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/python/ethernet.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ethernet">
+<h1>Ethernet<a class="headerlink" href="#ethernet" title="Permalink to this heading"></a></h1>
+<p>NFB device handle opened through nfb.open() is already wrapped by EthManager.
+This allows simple configuration access to the ethernet ports.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># 3.A Single Ethernet port manipulation</span>
+<span class="c1">######################################</span>
+
+<span class="c1"># Ethernet port representer</span>
+<span class="n">eth</span> <span class="o">=</span> <span class="n">dev</span><span class="o">.</span><span class="n">eth</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1"># enable or disable RxMAC / TxMAC</span>
+<span class="k">for</span> <span class="n">mac</span> <span class="ow">in</span> <span class="p">[</span><span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="p">,</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="p">]:</span>
+    <span class="n">mac</span><span class="o">.</span><span class="n">enable</span><span class="p">()</span>
+    <span class="n">mac</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">mac</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
+
+<span class="c1"># check for link status</span>
+<span class="n">link_ready</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="o">.</span><span class="n">link</span>
+
+<span class="c1"># read RxMAC / TxMAC statistic counters</span>
+<span class="c1"># rx_stats == {&#39;packets&#39;: 0, &#39;received&#39;: 0, &#39;discarded&#39;: 0, &#39;overflowed&#39;: 0, &#39;octets&#39;: 0}</span>
+<span class="n">rx_stats</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="o">.</span><span class="n">stats_read</span><span class="p">()</span>
+
+<span class="c1"># tx_stats == {&#39;packets&#39;: 0, &#39;octets&#39;: 0, &#39;discarded&#39;: 0, &#39;sent&#39;: 0}</span>
+<span class="n">tx_stats</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="o">.</span><span class="n">stats_read</span><span class="p">()</span>
+
+<span class="c1"># reset RxMAC / TxMAC statistic counters</span>
+<span class="k">for</span> <span class="n">mac</span> <span class="ow">in</span> <span class="p">[</span><span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="p">,</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="p">]:</span>
+    <span class="n">mac</span><span class="o">.</span><span class="n">stats_reset</span><span class="p">()</span>
+
+
+</pre></div>
+</div>
+<p>Or use the advanced configuration through PCS/PMA registers and also transceivers.
+Some of the features are so useful that they have own property.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># 3.B PCS/PMA management and Transceiver manipulation</span>
+<span class="c1">####################################################</span>
+
+<span class="c1"># Enable local PMA loopback</span>
+<span class="n">eth</span><span class="o">.</span><span class="n">pcspma</span><span class="o">.</span><span class="n">pma_local_loopback</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="c1"># disable loopback in register 1.7</span>
+<span class="n">eth</span><span class="o">.</span><span class="n">pcspma</span><span class="o">.</span><span class="n">mdio</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="c1"># read 16b value from register 1.7: val = 0</span>
+<span class="n">val</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">pcspma</span><span class="o">.</span><span class="n">mdio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+
+<span class="c1"># None if transceiver isn&#39;t present, else an object</span>
+<span class="n">pmd</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">pmd</span>
+<span class="c1"># getters, e.g: val = &quot;FINISAIR CORP.&quot;</span>
+<span class="n">val</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">vendor_name</span>
+<span class="n">val</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">vendor_pn</span>
+<span class="n">val</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">vendor_sn</span>
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pmd</span><span class="p">,</span> <span class="s2">&quot;mdio&quot;</span><span class="p">):</span>
+    <span class="n">val</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">mdio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pmd</span><span class="p">,</span> <span class="s2">&quot;i2c&quot;</span><span class="p">):</span>
+    <span class="n">val</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">i2c</span><span class="o">.</span><span class="n">read_reg</span><span class="p">(</span><span class="mi">148</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+
+
+</pre></div>
+</div>
+<p>Shortcuts are also handy.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># 3.C Shortcuts for Ethernet ports manipulation</span>
+<span class="c1">##############################################</span>
+
+<span class="c1"># shortcuts to both RxMAC + TxMAC functions</span>
+<span class="n">eth</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">eth</span><span class="o">.</span><span class="n">stats_reset</span><span class="p">()</span>
+
+<span class="c1"># rxmac link status shortcut</span>
+<span class="k">assert</span> <span class="n">eth</span><span class="o">.</span><span class="n">link</span> <span class="o">==</span> <span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="o">.</span><span class="n">link</span>
+
+
+<span class="c1"># all Ethernet ports</span>
+<span class="n">dev</span><span class="o">.</span><span class="n">eth</span><span class="o">.</span><span class="n">enable</span><span class="p">()</span>
+<span class="c1"># selected Ethernet ports</span>
+<span class="n">dev</span><span class="o">.</span><span class="n">eth</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="n">dev</span><span class="o">.</span><span class="n">eth</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">dev</span><span class="o">.</span><span class="n">eth</span><span class="o">.</span><span class="n">stats_reset</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="transmission.html" class="btn btn-neutral float-left" title="Data transmission" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="component.html" class="btn btn-neutral float-right" title="Simple component class example" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

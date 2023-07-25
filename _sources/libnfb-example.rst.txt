@@ -1,5 +1,5 @@
 libnfb examples
-==================
+===============
 
 Simple access to the control registers
 --------------------------------------
@@ -20,5 +20,3 @@ NDP data transmit example
 
 .. literalinclude:: examples/ndp.c
   :language: c
-
-

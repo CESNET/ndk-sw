@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fdt &mdash; NFB Software User Guide 6.16.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            NFB Software User Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Common info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/ndp-tools.html">NDP tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python module</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../python/quick.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/reference.html">Module Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Linux driver</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../driver/modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/userspace.html">Userspace access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">NFB Software User Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">fdt</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fdt</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2017 Martin Olejar</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">.header</span> <span class="kn">import</span> <span class="n">Header</span><span class="p">,</span> <span class="n">DTB_BEGIN_NODE</span><span class="p">,</span> <span class="n">DTB_END_NODE</span><span class="p">,</span> <span class="n">DTB_PROP</span><span class="p">,</span> <span class="n">DTB_END</span><span class="p">,</span> <span class="n">DTB_NOP</span>
+<span class="kn">from</span> <span class="nn">.items</span> <span class="kn">import</span> <span class="n">new_property</span><span class="p">,</span> <span class="n">Property</span><span class="p">,</span> <span class="n">PropBytes</span><span class="p">,</span> <span class="n">PropWords</span><span class="p">,</span> <span class="n">PropStrings</span><span class="p">,</span> <span class="n">PropIncBin</span><span class="p">,</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">.misc</span> <span class="kn">import</span> <span class="n">strip_comments</span><span class="p">,</span> <span class="n">split_to_lines</span><span class="p">,</span> <span class="n">get_version_info</span><span class="p">,</span> <span class="n">extract_string</span>
+
+<span class="n">__author__</span>  <span class="o">=</span> <span class="s2">&quot;Martin Olejar&quot;</span>
+<span class="n">__contact__</span> <span class="o">=</span> <span class="s2">&quot;martin.olejar@gmail.com&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;0.3.3&quot;</span>
+<span class="n">__license__</span> <span class="o">=</span> <span class="s2">&quot;Apache 2.0&quot;</span>
+<span class="n">__status__</span>  <span class="o">=</span> <span class="s2">&quot;Development&quot;</span>
+<span class="n">__all__</span>     <span class="o">=</span> <span class="p">[</span>
+    <span class="c1"># FDT Classes</span>
+    <span class="s1">&#39;FDT&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;Node&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;Header&#39;</span><span class="p">,</span>
+    <span class="c1"># properties</span>
+    <span class="s1">&#39;Property&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;PropBytes&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;PropWords&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;PropStrings&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;PropIncBin&#39;</span><span class="p">,</span>
+    <span class="c1"># core methods</span>
+    <span class="s1">&#39;parse_dts&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;parse_dtb&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;diff&#39;</span>
+<span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">ItemType</span><span class="p">:</span>
+    <span class="n">NODE</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">PROP</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="c1"># Specific property type</span>
+    <span class="n">PROP_BASE</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">PROP_WORDS</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">PROP_BYTES</span> <span class="o">=</span> <span class="mi">7</span>
+    <span class="n">PROP_STRINGS</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="c1"># All types</span>
+    <span class="n">ALL</span> <span class="o">=</span> <span class="mi">100</span>
+
+
+<div class="viewcode-block" id="FDT"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT">[docs]</a><span class="k">class</span> <span class="nc">FDT</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Flattened Device Tree Class &quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">empty</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">entries</span><span class="o">=</span><span class="p">[]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        FDT class constructor</span>
+
+<span class="sd">        :param header:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entries</span> <span class="o">=</span> <span class="n">entries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">Header</span><span class="p">()</span> <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">header</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_handle</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_to_handle</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">handle_to_label</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; String representation &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FDT.info"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Return object info in human readable format &quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;FDT Content:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">props</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">walk</span><span class="p">():</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> [</span><span class="si">{}</span><span class="s2">N, </span><span class="si">{}</span><span class="s2">P]</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">props</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">msg</span></div>
+
+<div class="viewcode-block" id="FDT.get_node"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.get_node">[docs]</a>    <span class="k">def</span> <span class="nf">get_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">create</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Get node object from specified path</span>
+<span class="sd">        </span>
+<span class="sd">        :param path: Path as string</span>
+<span class="sd">        :param create: If True, not existing nodes will be created</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="s2">&quot;Node path must be a string type !&quot;</span>
+
+        <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get_subnode</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">create</span><span class="p">:</span>
+                        <span class="n">item</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                        <span class="n">node</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Path </span><span class="se">\&quot;</span><span class="si">{}</span><span class="se">\&quot;</span><span class="s2"> doesn&#39;t exists&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+                <span class="n">node</span> <span class="o">=</span> <span class="n">item</span>
+
+        <span class="k">return</span> <span class="n">node</span></div>
+
+<div class="viewcode-block" id="FDT.get_property"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.get_property">[docs]</a>    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Property</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Get property object by name from specified path</span>
+<span class="sd">        </span>
+<span class="sd">        :param name: Property name</span>
+<span class="sd">        :param path: Path to sub-node</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FDT.set_property"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.set_property">[docs]</a>    <span class="k">def</span> <span class="nf">set_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">create</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set property object by name</span>
+<span class="sd">        </span>
+<span class="sd">        :param name: Property name</span>
+<span class="sd">        :param value: Property value</span>
+<span class="sd">        :param path: Path to subnode</span>
+<span class="sd">        :param create: If True, not existing nodes will be created</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">create</span><span class="p">)</span><span class="o">.</span><span class="n">set_property</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FDT.exist_node"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.exist_node">[docs]</a>    <span class="k">def</span> <span class="nf">exist_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Check if &lt;path&gt;/node exist and return True</span>
+<span class="sd">        </span>
+<span class="sd">        :param path: path/node name</span>
+<span class="sd">        :return True if &lt;path&gt;/node exist else False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="FDT.exist_property"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.exist_property">[docs]</a>    <span class="k">def</span> <span class="nf">exist_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Check if property exist</span>
+<span class="sd">        </span>
+<span class="sd">        :param name: Property name</span>
+<span class="sd">        :param path: The path</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">exist_property</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exist_node</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="FDT.remove_node"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.remove_node">[docs]</a>    <span class="k">def</span> <span class="nf">remove_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Remove node obj by path/name. Raises ValueError if path/name doesn&#39;t exist</span>
+<span class="sd">        </span>
+<span class="sd">        :param name: Node name</span>
+<span class="sd">        :param path: Path to sub-node</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">remove_subnode</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FDT.remove_property"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.remove_property">[docs]</a>    <span class="k">def</span> <span class="nf">remove_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Remove property obj by name. Raises ValueError if path/name doesn&#39;t exist</span>
+<span class="sd">        </span>
+<span class="sd">        :param name: Property name</span>
+<span class="sd">        :param path: Path to subnode</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">remove_property</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FDT.add_item"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.add_item">[docs]</a>    <span class="k">def</span> <span class="nf">add_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">create</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Add sub-node or property at specified path. Raises ValueError if path doesn&#39;t exist</span>
+<span class="sd">        </span>
+<span class="sd">        :param obj: The node or property object</span>
+<span class="sd">        :param path: The path to subnode</span>
+<span class="sd">        :param create: If True, not existing nodes will be created</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">create</span><span class="p">)</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FDT.add_label"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.add_label">[docs]</a>    <span class="k">def</span> <span class="nf">add_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39; track labels/references to convert to phandles</span>
+<span class="sd">            adds label with incrmenting handle to dictionary if not alread present</span>
+<span class="sd">            returns handle for which can be used to replace the reference&#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_to_handle</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_to_handle</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_handle</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_to_handle</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_handle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">handle_to_label</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">last_handle</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_handle</span></div>
+
+<div class="viewcode-block" id="FDT.search"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.search">[docs]</a>    <span class="k">def</span> <span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">itype</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">ItemType</span><span class="o">.</span><span class="n">ALL</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Search properties and/or nodes with specified name. Return list of founded items</span>
+<span class="sd">        </span>
+<span class="sd">        :param name: The Property or Node name. If empty &quot;&quot;, all nodes or properties will selected</span>
+<span class="sd">        :param itype: Item type - NODE, PROP, PROP_BASE, PROP_WORDS, PROP_BYTES, PROP_STRINGS or ALL</span>
+<span class="sd">        :param path: Path to root node</span>
+<span class="sd">        :param recursive: Search in all sub-nodes (default: True)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="s2">&quot;Property name must be a string type !&quot;</span>
+
+        <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pclss</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">ItemType</span><span class="o">.</span><span class="n">PROP_BASE</span><span class="p">:</span> <span class="n">Property</span><span class="p">,</span>
+            <span class="n">ItemType</span><span class="o">.</span><span class="n">PROP_BYTES</span><span class="p">:</span> <span class="n">PropBytes</span><span class="p">,</span>
+            <span class="n">ItemType</span><span class="o">.</span><span class="n">PROP_WORDS</span><span class="p">:</span> <span class="n">PropWords</span><span class="p">,</span>
+            <span class="n">ItemType</span><span class="o">.</span><span class="n">PROP_STRINGS</span><span class="p">:</span> <span class="n">PropStrings</span>
+        <span class="p">}</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">nodes</span> <span class="o">+=</span> <span class="n">node</span><span class="o">.</span><span class="n">nodes</span>
+            <span class="k">if</span> <span class="n">itype</span> <span class="o">==</span> <span class="n">ItemType</span><span class="o">.</span><span class="n">NODE</span> <span class="ow">or</span> <span class="n">itype</span> <span class="o">==</span> <span class="n">ItemType</span><span class="o">.</span><span class="n">ALL</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+                    <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">itype</span> <span class="o">!=</span> <span class="n">ItemType</span><span class="o">.</span><span class="n">NODE</span> <span class="ow">or</span> <span class="n">itype</span> <span class="o">==</span> <span class="n">ItemType</span><span class="o">.</span><span class="n">ALL</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">name</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">name</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">itype</span> <span class="ow">in</span> <span class="n">pclss</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">pclss</span><span class="p">[</span><span class="n">itype</span><span class="p">]:</span>
+                        <span class="k">continue</span>
+                    <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">recursive</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">nodes</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">nodes</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">items</span></div>
+
+<div class="viewcode-block" id="FDT.walk"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.walk">[docs]</a>    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">relative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Walk trough nodes and return relative/absolute path with list of sub-nodes and properties</span>
+<span class="sd">        </span>
+<span class="sd">        :param path: The path to root node</span>
+<span class="sd">        :param relative: True for relative or False for absolute return path</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">all_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">all_nodes</span> <span class="o">+=</span> <span class="n">node</span><span class="o">.</span><span class="n">nodes</span>
+            <span class="n">current_path</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">current_path</span> <span class="o">=</span> <span class="n">current_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;///&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span>
+            <span class="n">current_path</span> <span class="o">=</span> <span class="n">current_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;//&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">path</span> <span class="ow">and</span> <span class="n">relative</span><span class="p">:</span>
+                <span class="n">current_path</span> <span class="o">=</span> <span class="n">current_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">current_path</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">props</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">all_nodes</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">all_nodes</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="FDT.merge"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdt_obj</span><span class="p">,</span> <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Merge external FDT object into this object.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fdt_obj: The FDT object which will be merged into this</span>
+<span class="sd">        :param replace: True for replace existing items or False for keep old items</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fdt_obj</span><span class="p">,</span> <span class="n">FDT</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> \
+               <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span>
+        <span class="k">if</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">in_entry</span> <span class="ow">in</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+                <span class="n">exist</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="s1">&#39;address&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">in_entry</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">in_entry</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span>
+                        <span class="n">exist</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="k">break</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">exist</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">in_entry</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fdt_obj</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span> <span class="n">replace</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">update_phandles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">all_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">no_phandle_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span>
+        <span class="n">all_nodes</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">nodes</span>
+        <span class="k">while</span> <span class="n">all_nodes</span><span class="p">:</span>
+            <span class="n">props</span> <span class="o">=</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s1">&#39;phandle&#39;</span><span class="p">),</span> <span class="n">node</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s1">&#39;linux,phandle&#39;</span><span class="p">))</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">PropWords</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="n">value</span> <span class="k">else</span> <span class="n">p</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">no_phandle_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="c1"># ...</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">all_nodes</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">all_nodes</span> <span class="o">+=</span> <span class="n">node</span><span class="o">.</span><span class="n">nodes</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">no_phandle_nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;/&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s1">&#39;/&#39;</span><span class="p">:</span>   
+                    <span class="n">phandle_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_label</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">phandle_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_label</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">path</span><span class="o">+</span><span class="s1">&#39;/&#39;</span><span class="o">+</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">set_property</span><span class="p">(</span><span class="s1">&#39;linux,phandle&#39;</span><span class="p">,</span> <span class="n">phandle_value</span><span class="p">)</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">set_property</span><span class="p">(</span><span class="s1">&#39;phandle&#39;</span><span class="p">,</span> <span class="n">phandle_value</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="FDT.to_dts"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.to_dts">[docs]</a>    <span class="k">def</span> <span class="nf">to_dts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tabsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Store FDT Object into string format (DTS)</span>
+
+<span class="sd">        :param tabsize:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="s2">&quot;/dts-v1/;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;// version: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;// last_comp_version: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">last_comp_version</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;// boot_cpuid_phys: 0x</span><span class="si">{:X}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">boot_cpuid_phys</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;/memreserve/ &quot;</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{:#x}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">])</span> <span class="k">if</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;0 &quot;</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{:#x}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">])</span> <span class="k">if</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;0&quot;</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">to_dts</span><span class="p">(</span><span class="n">tabsize</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="FDT.to_dtb"><a class="viewcode-back" href="../python/fdt.html#fdt.FDT.to_dtb">[docs]</a>    <span class="k">def</span> <span class="nf">to_dtb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">last_comp_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">boot_cpuid_phys</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">strings</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Export FDT Object into Binary Blob format (DTB)</span>
+
+<span class="sd">        :param version:</span>
+<span class="sd">        :param last_comp_version:</span>
+<span class="sd">        :param boot_cpuid_phys:</span>
+<span class="sd">        :param strings:</span>
+
+<span class="sd">        The strings param is useful (only) when manipulating a signed itb or dtb.  The signature includes</span>
+<span class="sd">        the strings buffer in the dtb _in order_.  C executables write the strings out in a surprising order.</span>
+<span class="sd">        The argument is used as an initial version of the strings buffer, so that all strings in the input</span>
+<span class="sd">        file are included (and in the same order) in the output file.  Usage:</span>
+
+<span class="sd">            # Read and parse dtb</span>
+<span class="sd">            with open(input, &#39;rb&#39;) as file:</span>
+<span class="sd">                data = file.read()</span>
+<span class="sd">            dtree = fdt.parse_dtb(data)</span>
+
+<span class="sd">            # Read strings buffer (Assumes version &gt;= 3)</span>
+<span class="sd">            strings_start = dtree.header.off_dt_strings</span>
+<span class="sd">            strings_end = strings_start + dtree.header.size_dt_strings</span>
+<span class="sd">            strings = data[strings_start:strings_end].decode(&quot;ascii&quot;)</span>
+
+<span class="sd">            # Serialize dtb and write to output</span>
+<span class="sd">            data = dtree.to_dtb(strings=strings)</span>
+<span class="sd">            with open(output, &#39;wb&#39;) as file:</span>
+<span class="sd">                file.write(data)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+
+        <span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">pack</span>
+
+        <span class="k">if</span> <span class="n">version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
+        <span class="k">if</span> <span class="n">last_comp_version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">last_comp_version</span> <span class="o">=</span> <span class="n">last_comp_version</span>
+        <span class="k">if</span> <span class="n">boot_cpuid_phys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">boot_cpuid_phys</span> <span class="o">=</span> <span class="n">boot_cpuid_phys</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;DTB Version must be specified !&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">strings</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">strings</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+        <span class="n">blob_entries</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+                <span class="n">blob_entries</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s1">&#39;&gt;QQ&#39;</span><span class="p">,</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">],</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">])</span>
+        <span class="n">blob_entries</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s1">&#39;&gt;QQ&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">blob_data_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">blob_entries</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">blob_data</span><span class="p">,</span> <span class="n">blob_strings</span><span class="p">,</span> <span class="n">data_pos</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">to_dtb</span><span class="p">(</span><span class="n">strings</span><span class="p">,</span> <span class="n">blob_data_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
+        <span class="n">blob_data</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s1">&#39;&gt;I&#39;</span><span class="p">,</span> <span class="n">DTB_END</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">size_dt_strings</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">blob_strings</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">size_dt_struct</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">blob_data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">off_mem_rsvmap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">off_dt_struct</span> <span class="o">=</span> <span class="n">blob_data_start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">off_dt_strings</span> <span class="o">=</span> <span class="n">blob_data_start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">blob_data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">total_size</span> <span class="o">=</span> <span class="n">blob_data_start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">blob_data</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">blob_strings</span><span class="p">)</span>
+        <span class="n">blob_header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">export</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">blob_header</span> <span class="o">+</span> <span class="n">blob_entries</span> <span class="o">+</span> <span class="n">blob_data</span> <span class="o">+</span> <span class="n">blob_strings</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="parse_dts"><a class="viewcode-back" href="../python/fdt.html#fdt.parse_dts">[docs]</a><span class="k">def</span> <span class="nf">parse_dts</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">root_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FDT</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse DTS text file and create FDT Object</span>
+
+<span class="sd">    :param text:</span>
+<span class="sd">    :param root_dir: </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ver</span> <span class="o">=</span> <span class="n">get_version_info</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">strip_comments</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">dts_lines</span> <span class="o">=</span> <span class="n">split_to_lines</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">fdt_obj</span> <span class="o">=</span> <span class="n">FDT</span><span class="p">()</span>
+    <span class="k">if</span> <span class="s1">&#39;version&#39;</span> <span class="ow">in</span> <span class="n">ver</span><span class="p">:</span>
+        <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">ver</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s1">&#39;last_comp_version&#39;</span> <span class="ow">in</span> <span class="n">ver</span><span class="p">:</span>
+        <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">last_comp_version</span> <span class="o">=</span> <span class="n">ver</span><span class="p">[</span><span class="s1">&#39;last_comp_version&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s1">&#39;boot_cpuid_phys&#39;</span> <span class="ow">in</span> <span class="n">ver</span><span class="p">:</span>
+        <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">boot_cpuid_phys</span> <span class="o">=</span> <span class="n">ver</span><span class="p">[</span><span class="s1">&#39;boot_cpuid_phys&#39;</span><span class="p">]</span>
+    <span class="c1"># parse entries</span>
+    <span class="n">fdt_obj</span><span class="o">.</span><span class="n">entries</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">dts_lines</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;{&#39;</span><span class="p">):</span>
+            <span class="k">break</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/memreserve/&#39;</span><span class="p">):</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">)</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+            <span class="n">fdt_obj</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;address&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">),</span> <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mi">0</span><span class="p">)})</span>
+    <span class="c1"># parse nodes</span>
+    <span class="n">curnode</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">fdt_obj</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">dts_lines</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;{&#39;</span><span class="p">):</span>
+            <span class="c1"># start node</span>
+            <span class="k">if</span> <span class="s1">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>  <span class="c1">#indicates the present of a label</span>
+                <span class="n">label</span><span class="p">,</span> <span class="n">rest</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+                <span class="n">node_name</span> <span class="o">=</span> <span class="n">rest</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">new_node</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+                <span class="n">new_node</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+
+                
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">node_name</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">new_node</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">fdt_obj</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">new_node</span>
+            <span class="k">if</span> <span class="n">curnode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">curnode</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_node</span><span class="p">)</span>
+            <span class="n">curnode</span> <span class="o">=</span> <span class="n">new_node</span>
+        <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;}&#39;</span><span class="p">):</span>
+            <span class="c1"># end node</span>
+            <span class="k">if</span> <span class="n">curnode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">curnode</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s1">&#39;phandle&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">curnode</span><span class="o">.</span><span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">handle</span> <span class="o">=</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">add_label</span><span class="p">(</span><span class="n">curnode</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+                        <span class="n">curnode</span><span class="o">.</span><span class="n">set_property</span><span class="p">(</span><span class="s1">&#39;phandle&#39;</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
+                <span class="n">curnode</span> <span class="o">=</span> <span class="n">curnode</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># properties</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">prop_name</span> <span class="o">=</span> <span class="n">line</span>
+                <span class="n">prop_obj</span> <span class="o">=</span> <span class="n">Property</span><span class="p">(</span><span class="n">prop_name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">prop_name</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="n">prop_value</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&lt;&#39;</span><span class="p">):</span>
+                    <span class="n">prop_obj</span> <span class="o">=</span> <span class="n">PropWords</span><span class="p">(</span><span class="n">prop_name</span><span class="p">)</span>
+                    <span class="n">prop_value</span> <span class="o">=</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&lt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                    <span class="c1"># [&#39;interrupts &#39; = &#39; &lt;0 5 4&gt;, &lt;0 6 4&gt;&#39;]</span>
+                    <span class="c1"># just change &#39;,&#39; to &#39; &#39; -- to concatenate the values into single array</span>
+                    <span class="k">if</span> <span class="s1">&#39;,&#39;</span> <span class="ow">in</span> <span class="n">prop_value</span><span class="p">:</span>
+                        <span class="n">prop_value</span> <span class="o">=</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+                    
+                    <span class="c1"># keep the orginal references for phandles as a phantom</span>
+                    <span class="c1"># property</span>
+                    <span class="k">if</span> <span class="s2">&quot;&amp;&quot;</span> <span class="ow">in</span> <span class="n">prop_value</span><span class="p">:</span>
+                        <span class="n">phantom_obj</span> <span class="o">=</span> <span class="n">PropStrings</span><span class="p">(</span><span class="n">prop_name</span><span class="o">+</span><span class="s1">&#39;_with_references&#39;</span><span class="p">)</span>
+                        <span class="n">phantom_obj</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">))</span>
+                        <span class="k">if</span> <span class="n">curnode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">curnode</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">phantom_obj</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">prop</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;0x&#39;</span><span class="p">):</span>
+                            <span class="n">prop_obj</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+                        <span class="k">elif</span> <span class="n">prop</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;0b&#39;</span><span class="p">):</span>
+                            <span class="n">prop_obj</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+                        <span class="k">elif</span> <span class="n">prop</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">):</span>
+                            <span class="n">prop_obj</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+                        <span class="k">elif</span> <span class="n">prop</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&amp;&#39;</span><span class="p">):</span>
+                            <span class="n">prop_obj</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fdt_obj</span><span class="o">.</span><span class="n">add_label</span><span class="p">(</span><span class="n">prop</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">prop_obj</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">prop</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="p">):</span>
+                    <span class="n">prop_obj</span> <span class="o">=</span> <span class="n">PropBytes</span><span class="p">(</span><span class="n">prop_name</span><span class="p">)</span>
+                    <span class="n">prop_value</span> <span class="o">=</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+                        <span class="n">prop_obj</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/incbin/&#39;</span><span class="p">):</span>
+                    <span class="n">prop_value</span> <span class="o">=</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;/incbin/(&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;)&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                    <span class="n">prop_value</span> <span class="o">=</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+                    <span class="n">file_path</span>  <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root_dir</span><span class="p">,</span> <span class="n">prop_value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                    <span class="n">file_offset</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">prop_value</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prop_value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span>
+                    <span class="n">file_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">prop_value</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prop_value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="mi">0</span>
+                    <span class="k">if</span> <span class="n">file_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;File path doesn&#39;t exist: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file_path</span><span class="p">))</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">file_offset</span><span class="p">)</span>
+                        <span class="n">prop_data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file_size</span><span class="p">)</span> <span class="k">if</span> <span class="n">file_size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                    <span class="n">prop_obj</span> <span class="o">=</span> <span class="n">PropIncBin</span><span class="p">(</span><span class="n">prop_name</span><span class="p">,</span> <span class="n">prop_data</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">file_path</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/plugin/&#39;</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented property value: /plugin/&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/bits/&#39;</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented property value: /bits/&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">prop_obj</span> <span class="o">=</span> <span class="n">PropStrings</span><span class="p">(</span><span class="n">prop_name</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="n">prop_value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;&quot;,&#39;</span><span class="p">):</span>
+                        <span class="n">prop</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                        <span class="n">prop</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prop</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">prop_obj</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prop</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">curnode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">curnode</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prop_obj</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fdt_obj</span></div>
+
+
+<div class="viewcode-block" id="parse_dtb"><a class="viewcode-back" href="../python/fdt.html#fdt.parse_dtb">[docs]</a><span class="k">def</span> <span class="nf">parse_dtb</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FDT</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse FDT Binary Blob and create FDT Object</span>
+<span class="sd">    </span>
+<span class="sd">    :param data: FDT Binary Blob in bytes</span>
+<span class="sd">    :param offset: The offset of input data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">)),</span> <span class="s2">&quot;Invalid argument type&quot;</span>
+
+    <span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">unpack_from</span>
+
+    <span class="n">fdt_obj</span> <span class="o">=</span> <span class="n">FDT</span><span class="p">()</span>
+    <span class="c1"># parse header</span>
+    <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">Header</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="c1"># parse entries</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">off_mem_rsvmap</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">entrie</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">((</span><span class="s1">&#39;address&#39;</span><span class="p">,</span> <span class="s1">&#39;size&#39;</span><span class="p">),</span> <span class="n">unpack_from</span><span class="p">(</span><span class="s2">&quot;&gt;QQ&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">index</span><span class="p">)))</span>
+        <span class="n">index</span> <span class="o">+=</span> <span class="mi">16</span>
+        <span class="k">if</span> <span class="n">entrie</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">entrie</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">fdt_obj</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entrie</span><span class="p">)</span>
+    <span class="c1"># parse nodes</span>
+    <span class="n">current_node</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">fdt_obj</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">off_dt_struct</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">offset</span> <span class="o">+</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">4</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Index out of range !&quot;</span><span class="p">)</span>
+        <span class="n">tag</span> <span class="o">=</span> <span class="n">unpack_from</span><span class="p">(</span><span class="s2">&quot;&gt;I&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">index</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">index</span> <span class="o">+=</span> <span class="mi">4</span>
+        <span class="k">if</span> <span class="n">tag</span> <span class="o">==</span> <span class="n">DTB_BEGIN_NODE</span><span class="p">:</span>
+            <span class="n">node_name</span> <span class="o">=</span> <span class="n">extract_string</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">index</span><span class="p">)</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="p">((</span><span class="n">index</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="mi">3</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">node_name</span><span class="p">:</span> <span class="n">node_name</span> <span class="o">=</span> <span class="s1">&#39;/&#39;</span>
+            <span class="n">new_node</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">fdt_obj</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">new_node</span>
+            <span class="k">if</span> <span class="n">current_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">current_node</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_node</span><span class="p">)</span>
+            <span class="n">current_node</span> <span class="o">=</span> <span class="n">new_node</span>
+        <span class="k">elif</span> <span class="n">tag</span> <span class="o">==</span> <span class="n">DTB_END_NODE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">current_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">current_node</span> <span class="o">=</span> <span class="n">current_node</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">elif</span> <span class="n">tag</span> <span class="o">==</span> <span class="n">DTB_PROP</span><span class="p">:</span>
+            <span class="n">prop_size</span><span class="p">,</span> <span class="n">prop_string_pos</span><span class="p">,</span> <span class="o">=</span> <span class="n">unpack_from</span><span class="p">(</span><span class="s2">&quot;&gt;II&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">index</span><span class="p">)</span>
+            <span class="n">prop_start</span> <span class="o">=</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">8</span>
+            <span class="k">if</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="o">&lt;</span> <span class="mi">16</span> <span class="ow">and</span> <span class="n">prop_size</span> <span class="o">&gt;=</span> <span class="mi">8</span><span class="p">:</span>
+                <span class="n">prop_start</span> <span class="o">=</span> <span class="p">((</span><span class="n">prop_start</span> <span class="o">+</span> <span class="mi">7</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="mh">0x7</span><span class="p">)</span>
+            <span class="n">prop_name</span> <span class="o">=</span> <span class="n">extract_string</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fdt_obj</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">off_dt_strings</span> <span class="o">+</span> <span class="n">prop_string_pos</span><span class="p">)</span>
+            <span class="n">prop_raw_value</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">offset</span> <span class="o">+</span> <span class="n">prop_start</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">prop_start</span> <span class="o">+</span> <span class="n">prop_size</span><span class="p">]</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">prop_start</span> <span class="o">+</span> <span class="n">prop_size</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="p">((</span><span class="n">index</span> <span class="o">+</span> <span class="mi">3</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="mh">0x3</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">current_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">current_node</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_property</span><span class="p">(</span><span class="n">prop_name</span><span class="p">,</span> <span class="n">prop_raw_value</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">tag</span> <span class="o">==</span> <span class="n">DTB_END</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Unknown Tag: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tag</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">fdt_obj</span></div>
+
+
+<div class="viewcode-block" id="diff"><a class="viewcode-back" href="../python/fdt.html#fdt.diff">[docs]</a><span class="k">def</span> <span class="nf">diff</span><span class="p">(</span><span class="n">fdt1</span><span class="p">:</span> <span class="n">FDT</span><span class="p">,</span> <span class="n">fdt2</span><span class="p">:</span> <span class="n">FDT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Compare two flattened device tree objects and return list of 3 objects (same in 1 and 2, specific for 1, specific for 2)</span>
+<span class="sd">    </span>
+<span class="sd">    :param fdt1: The object 1 of FDT</span>
+<span class="sd">    :param fdt2: The object 2 of FDT</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fdt1</span><span class="p">,</span> <span class="n">FDT</span><span class="p">),</span> <span class="s2">&quot;Invalid argument type&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fdt2</span><span class="p">,</span> <span class="n">FDT</span><span class="p">),</span> <span class="s2">&quot;Invalid argument type&quot;</span>
+
+    <span class="n">fdt_a</span> <span class="o">=</span> <span class="n">FDT</span><span class="p">(</span><span class="n">fdt1</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+    <span class="n">fdt_b</span> <span class="o">=</span> <span class="n">FDT</span><span class="p">(</span><span class="n">fdt2</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fdt1</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fdt2</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fdt_same</span> <span class="o">=</span> <span class="n">FDT</span><span class="p">(</span><span class="n">fdt1</span><span class="o">.</span><span class="n">header</span> <span class="k">if</span> <span class="n">fdt1</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="n">fdt2</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="k">else</span> <span class="n">fdt2</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fdt_same</span> <span class="o">=</span> <span class="n">FDT</span><span class="p">(</span><span class="n">fdt1</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fdt1</span><span class="o">.</span><span class="n">entries</span> <span class="ow">and</span> <span class="n">fdt2</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">entry_a</span> <span class="ow">in</span> <span class="n">fdt1</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">entry_b</span> <span class="ow">in</span> <span class="n">fdt2</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">entry_a</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">entry_b</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">entry_a</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">entry_b</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]:</span>
+                    <span class="n">fdt_same</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry_a</span><span class="p">)</span>
+                    <span class="k">break</span>
+
+    <span class="k">for</span> <span class="n">entry_a</span> <span class="ow">in</span> <span class="n">fdt1</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">entry_s</span> <span class="ow">in</span> <span class="n">fdt_same</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">entry_a</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">entry_s</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">entry_a</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">entry_s</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]:</span>
+                <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+            <span class="n">fdt_a</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry_a</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">entry_b</span> <span class="ow">in</span> <span class="n">fdt2</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">entry_s</span> <span class="ow">in</span> <span class="n">fdt_same</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">entry_b</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">entry_s</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">entry_b</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">entry_s</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]:</span>
+                <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+            <span class="n">fdt_b</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry_b</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">props</span> <span class="ow">in</span> <span class="n">fdt1</span><span class="o">.</span><span class="n">walk</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">rnode</span> <span class="o">=</span> <span class="n">fdt2</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">rnode</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">node_b</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rnode</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rnode</span><span class="o">.</span><span class="n">get_subnode</span><span class="p">(</span><span class="n">node_b</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">fdt_a</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">Node</span><span class="p">(</span><span class="n">node_b</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fdt_same</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">Node</span><span class="p">(</span><span class="n">node_b</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">path</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">prop_a</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rnode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prop_a</span> <span class="o">==</span> <span class="n">rnode</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="n">prop_a</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+                <span class="n">fdt_same</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">prop_a</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fdt_a</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">prop_a</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">path</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">props</span> <span class="ow">in</span> <span class="n">fdt2</span><span class="o">.</span><span class="n">walk</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">rnode</span> <span class="o">=</span> <span class="n">fdt_same</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">rnode</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">node_b</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rnode</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rnode</span><span class="o">.</span><span class="n">get_subnode</span><span class="p">(</span><span class="n">node_b</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">fdt_b</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">Node</span><span class="p">(</span><span class="n">node_b</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">path</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">prop_b</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rnode</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">prop_b</span> <span class="o">!=</span> <span class="n">rnode</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="n">prop_b</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+                <span class="n">fdt_b</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">prop_b</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">path</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fdt_same</span><span class="p">,</span> <span class="n">fdt_a</span><span class="p">,</span> <span class="n">fdt_b</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
