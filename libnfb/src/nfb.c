@@ -62,6 +62,7 @@ void *nfb_comp_to_user(struct nfb_comp *ptr)
 struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 {
 	int ret;
+	int ext_ops_loaded = 0;
 	struct nfb_device *dev;
 	char path[PATH_LEN];
 	unsigned index;
@@ -91,8 +92,6 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 	memset(dev, 0, sizeof(struct nfb_device));
 	dev->fd = -1;
 
-	dev->ops = nfb_base_ops;
-
 	ext_name = strchr(devname, ':');
 	if (ext_name && strstr(devname, "libnfb-ext-")) {
 		ext_name = strndup(devname, (ext_name - devname));
@@ -113,6 +112,8 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 
 					if (get_ops) {
 						ret = get_ops(devname, &dev->ops);
+						if (ret > 0)
+							ext_ops_loaded = 1;
 					}
 				}
 			}
@@ -121,6 +122,17 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 		}
 		free(ext_name);
 	}
+
+	if (!ext_ops_loaded) {
+		dev->ops = nfb_base_ops;
+	}
+
+	if (!dev->ops.open || !dev->ops.close ||
+			!dev->ops.bus_open_mi || !dev->ops.bus_close_mi ||
+			!dev->ops.comp_lock || !dev->ops.comp_unlock) {
+		goto err_ops;
+	}
+
 	ret = dev->ops.open(devname, oflag, &dev->priv, &dev->fdt);
 	if (ret) {
 		//errno = ret;
@@ -144,6 +156,7 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 err_fdt_check_header:
 	dev->ops.close(dev->priv);
 	free(dev->fdt);
+err_ops:
 err_open:
 	free(dev);
 err_malloc_dev:
