@@ -1,3 +1,8 @@
+* Tue Jul 25 2023 Martin Spinler <spinler@cesnet.cz> - 6.18.2-1
+- [FEATURE] updated documentation (mainly Python)
+- [FEATURE] added Python libnfb extension
+- [BUGFIX] fixed some isssues in Python NFB module
+
 * Wed Jul 12 2023 Martin Spinler <spinler@cesnet.cz> - 6.18.1-1
 - [FEATURE] added hwmon interface for FPGA temperature and transceivers
 - [FEATURE] added 400G and E-Tile MDIO features
