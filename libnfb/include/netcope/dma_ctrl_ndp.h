@@ -179,7 +179,9 @@ static inline void nc_ndp_ctrl_sdp_flush(struct nc_ndp_ctrl *ctrl)
 #ifdef __KERNEL__
 	wmb();
 #else
+#ifdef _RTE_CONFIG_H_
 	rte_wmb();
+#endif
 #endif
 	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_SDP, ctrl->sdp);
 }
@@ -342,6 +344,7 @@ static inline int nc_ndp_ctrl_stop(struct nc_ndp_ctrl *ctrl)
 static inline void nc_ndp_ctrl_close(struct nc_ndp_ctrl *ctrl)
 {
 	nfb_comp_close(ctrl->comp);
+	ctrl->comp = NULL;
 }
 
 static inline int nc_ndp_ctrl_get_mtu(struct nc_ndp_ctrl *ctrl, unsigned int *min, unsigned int *max)
