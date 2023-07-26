@@ -132,6 +132,13 @@ struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir
 	int ret;
 	struct ndp_queue *q = NULL;
 
+#ifndef __KERNEL__
+	if (!dev->ops.ndp_queue_open || !dev->ops.ndp_queue_close) {
+		ret = -ENXIO;
+		goto err_dev_ops_invalid;
+	}
+#endif
+
 #ifdef __KERNEL__
 	if ((ret = ndp_base_queue_open(dev, NULL, index, dir, flags, &q))) {
 #else
@@ -162,6 +169,7 @@ err_ops_invalid:
 #endif
 err_ndp_queue_open_init:
 #ifndef __KERNEL__
+err_dev_ops_invalid:
 	errno = ret;
 #endif
 	return NULL;
