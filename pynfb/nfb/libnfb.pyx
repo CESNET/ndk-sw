@@ -300,6 +300,34 @@ cdef class QueueManager:
             q = [i for i in q if i in range(len(self.tx if tx else self.rx))]
         return q
 
+    def start(self, i: Optional[Union[int, List[int]]] = None):
+        """
+        Start all Rx and Tx queues
+
+        See :func:`NdpQueue.start`
+
+        :param i: list of queue indexes
+        """
+        for qi in self._get_q(i, False):
+            self.rx[qi].start()
+
+        for qi in self._get_q(i, True):
+            self.tx[qi].start()
+
+    def stop(self, i: Optional[Union[int, List[int]]] = None):
+        """
+        Stop all Rx and Tx queues
+
+        See :func:`NdpQueue.stop`
+
+        :param i: list of queue indexes
+        """
+        for qi in self._get_q(i, False):
+            self.rx[qi].stop()
+
+        for qi in self._get_q(i, True):
+            self.tx[qi].stop()
+
     def send(self, pkts: Union[bytes, List[bytes]], hdrs: Optional[Union[bytes, List[bytes]]] = None, flags: Optional[Union[int, List[int]]] = None, flush: bool = True, i: Optional[Union[int, List[int]]] = None) -> None:
         """
         Send burst of packets to multiple queues
@@ -385,7 +413,11 @@ cdef class QueueManager:
         return pkts
 
 
-cdef class _NdpQueue:
+cdef class NdpQueue:
+    """
+    Object representing a NDP queue
+    """
+
     cdef ndp_queue *_q
     cdef nfb_device *_dev
     cdef dict __dict__
@@ -429,7 +461,7 @@ cdef class _NdpQueue:
         raise NotImplementedError()
 
 
-cdef class NdpQueueRx(_NdpQueue):
+cdef class NdpQueueRx(NdpQueue):
     """
     Object representing a queue for receiving data from NDP
     """
@@ -438,7 +470,7 @@ cdef class NdpQueueRx(_NdpQueue):
 
     def __init__(self, nfb: Nfb, node, index):
         self._dir = 0
-        _NdpQueue.__init__(self, nfb, node, index)
+        NdpQueue.__init__(self, nfb, node, index)
         self._nc_queue = libnetcope.nc_rxqueue_open(nfb._dev, nfb._fdt_path_offset(node))
 
     def stats_reset(self):
@@ -541,7 +573,7 @@ cdef class NdpQueueRx(_NdpQueue):
         return self._recvmsg(cnt, int(timeout * 1000000000) if timeout is not None else None)
 
 
-cdef class NdpQueueTx(_NdpQueue):
+cdef class NdpQueueTx(NdpQueue):
     """
     Object representing a queue for transmitting data over NDP
     """
@@ -550,7 +582,7 @@ cdef class NdpQueueTx(_NdpQueue):
 
     def __init__(self, nfb: Nfb, node, index):
         self._dir = 1
-        _NdpQueue.__init__(self, nfb, node, index)
+        NdpQueue.__init__(self, nfb, node, index)
         self._nc_queue = libnetcope.nc_txqueue_open(nfb._dev, nfb._fdt_path_offset(node))
 
     def stats_reset(self):
