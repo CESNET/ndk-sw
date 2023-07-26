@@ -5,11 +5,9 @@ __all__ = ["AbstractNfbShim"]
 import importlib
 import fdt
 
+
 class AbstractNfbShim:
     def __init__(self, dtb):
-        self.__libnfb_ext_python = importlib.import_module(
-            "libnfb-ext-python.libnfb_ext_python"
-        )
         self._nfb_ext_python_fdt = fdt.parse_dtb(dtb)
         self._nfb_ext_python_dtb = dtb
 
@@ -20,4 +18,7 @@ class AbstractNfbShim:
         return 0
 
     def path(self):
-        return self.__libnfb_ext_python.__file__ + ":pynfb:" + str(id(self))
+        __libnfb_ext_python = importlib.import_module(
+            "libnfb-ext-python.libnfb_ext_python"
+        )
+        return __libnfb_ext_python.__file__ + ":pynfb:" + str(id(self))
