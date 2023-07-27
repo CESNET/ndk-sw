@@ -1,4 +1,5 @@
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t
+from libc.string cimport memcpy
 
 from posix.types cimport off_t
 
@@ -51,15 +52,11 @@ cdef extern from "<nfb/ndp.h>":
     void ndp_close_rx_queue(ndp_queue *queue)
     void ndp_close_tx_queue(ndp_queue *queue)
 
-    int ndp_queue_start(ndp_queue *queue);
-    int ndp_queue_stop(ndp_queue *queue);
+    int ndp_queue_start(ndp_queue *queue)
+    int ndp_queue_stop(ndp_queue *queue)
 
 cdef extern from "<libfdt.h>":
-    int fdt_path_offset(const void *fdt, const char *path);
-
-cdef extern from "<string.h>":
-    void * memcpy(void * destination, const void * source, size_t num);
-    pass
+    int fdt_path_offset(const void *fdt, const char *path)
 
 
 cdef class Nfb:

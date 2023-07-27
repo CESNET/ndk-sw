@@ -114,7 +114,7 @@ cdef class TxMac:
         cdef nc_txmac_status status
         assert nc_txmac_read_status(self._mac, &status) == 0
         return True if status.enabled else False
-    
+
     @enabled.setter
     def enabled(self, enable):
         enabled = self.enabled
@@ -168,7 +168,7 @@ cdef class Mdio:
     def __del__(self):
         if self._mdio is not NULL:
             nc_mdio_close(self._mdio)
-    
+
     def read(self, prtad: int, devad: int, reg: int):
         return nc_mdio_read(self._mdio, prtad, devad, reg)
 
