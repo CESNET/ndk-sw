@@ -28,4 +28,7 @@ setup(
     py_modules=['nfb'],
     packages=['nfb'],
     package_dir={'nfb': 'nfb'},
+    package_data = {
+        'nfb': ['*.pxd'],
+    },
 )
