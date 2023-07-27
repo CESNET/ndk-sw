@@ -278,6 +278,9 @@ __nfb_comp_read(64)
 //int nfb_comp_get_version(const struct nfb_comp *component);
 //int nfb_comp_get_index(const struct nfb_comp *component);
 
+void *nfb_nalloc(int numa_node, size_t size);
+void nfb_nfree(int numa_node, void *ptr, size_t size);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

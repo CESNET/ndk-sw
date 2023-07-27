@@ -25,8 +25,10 @@
  *   there can be an other subscriber holding a lock).
  */
 
-static inline int nc_ndp_v1_tx_lock(struct ndp_queue *q)
+static inline int nc_ndp_v1_tx_lock(void *priv)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	int ret;
 	/* Try to request whole buffer space. */
 	q->sync.swptr = (q->sync.hwptr - 1) & (q->size - 1);
@@ -50,8 +52,10 @@ static inline int nc_ndp_v1_tx_lock(struct ndp_queue *q)
 	return 0;
 }
 
-static inline int nc_ndp_v1_tx_unlock(struct ndp_queue *q)
+static inline int nc_ndp_v1_tx_unlock(void *priv)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	int ret;
 
 	/* Publish all data, release lock (if any) */
@@ -67,8 +71,10 @@ static inline int nc_ndp_v1_tx_unlock(struct ndp_queue *q)
 	return 0;
 }
 
-static inline unsigned nc_ndp_v1_tx_burst_get(ndp_tx_queue_t *q, struct ndp_packet *packets, unsigned count)
+static inline unsigned nc_ndp_v1_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	uint16_t packet_size;
 	uint16_t header_size;
 	unsigned cnt = 0;
@@ -137,8 +143,10 @@ static inline unsigned nc_ndp_v1_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 	return cnt;
 }
 
-static inline void nc_ndp_v2_tx_lock(struct ndp_queue *q)
+static inline void nc_ndp_v2_tx_lock(void *priv)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	signed offset;
 	int lock_valid = q->sync.swptr == q->sync.hwptr ? 0 : 1;
 
@@ -157,8 +165,10 @@ static inline void nc_ndp_v2_tx_lock(struct ndp_queue *q)
 	q->u.v2.pkts_available = (q->sync.swptr - q->u.v2.rhp) & (q->u.v2.hdr_items-1);
 }
 
-static inline void nc_ndp_v2_tx_burst_flush(struct ndp_queue *q)
+static inline int nc_ndp_v2_tx_burst_flush(void *priv)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	if (q->u.v2.rhp >= q->u.v2.hdr_items) {
 		q->u.v2.rhp -= q->u.v2.hdr_items;
 		q->u.v2.hdr -= q->u.v2.hdr_items;
@@ -169,19 +179,21 @@ static inline void nc_ndp_v2_tx_burst_flush(struct ndp_queue *q)
 	q->u.v2.pkts_available = 0;
 
 	if (_ndp_queue_sync(q, &q->sync)) {
-		return;
+		return -1;
 	}
+	return 0;
 }
 
-static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_packet *packets, unsigned count)
+static inline unsigned nc_ndp_v2_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	unsigned i;
 
 	unsigned char *data_base;
 	struct ndp_v2_packethdr *hdr_base;
 	struct ndp_v2_offsethdr *off_base;
 
-	int modify_hdr_off;
 
 	__builtin_prefetch(q->u.v2.hdr);
 
@@ -195,8 +207,6 @@ static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 	data_base = q->buffer;
 	hdr_base = q->u.v2.hdr;
 	off_base = q->u.v2.off;
-
-	modify_hdr_off = (q->flags & NDP_CHANNEL_FLAG_NO_BUFFER);
 
 	for (i = 0; i < count; i++) {
 		unsigned packet_size;
@@ -212,13 +222,8 @@ static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 		packet_size = packets[i].data_length + header_size;
 
 		if (unlikely(packet_size < q->frame_size_min)) {
-			/* Enlarge packets smaller than min size */
-			if (modify_hdr_off) {
-			} else {
-				/* Clean remaining data */
-				memset(data_base + off->offset + header_size + packet_size, 0, q->frame_size_min - packet_size);
-			}
-
+			/* Enlarge packets smaller than min size & clean remaining data */
+			memset(data_base + off->offset + header_size + packet_size, 0, q->frame_size_min - packet_size);
 			packet_size = q->frame_size_min;
 		} else if (unlikely(packet_size > q->frame_size_max)) {
 			/* Can't handle packets larger than max size */
@@ -230,14 +235,9 @@ static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 		hdr->header_size = header_size;
 		hdr->flags = packets[i].flags & 0xF;
 
-		if (modify_hdr_off) {
-			/* INFO: packet header must be right before packet data in NO_BUFFER mode */
-			off->offset = (__u64)(packets[i].data - packets[i].header_length);
-		} else {
-			/* Set pointers, where user can write packet content */
-			packets[i].header = data_base + off->offset;
-			packets[i].data   = data_base + off->offset + header_size;
-		}
+		/* Set pointers, where user can write packet content */
+		packets[i].header = data_base + off->offset;
+		packets[i].data   = data_base + off->offset + header_size;
 
 		/* Move pointers behind the end of packet, update free space */
 	}
@@ -248,45 +248,72 @@ static inline unsigned nc_ndp_v2_tx_burst_get(ndp_tx_queue_t *q, struct ndp_pack
 	return count;
 }
 
-static inline unsigned nc_ndp_tx_burst_get(ndp_tx_queue_t *q, struct ndp_packet *packets, unsigned count)
+static inline int nc_ndp_v1_tx_burst_put(void *priv);
+static inline int nc_ndp_v1_tx_burst_flush(void *priv);
+
+static inline int nc_ndp_v2_tx_burst_put(void *priv);
+
+static inline unsigned nc_ndp_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	if (q->version == 2) {
-		return nc_ndp_v2_tx_burst_get(q, packets, count);
+		return nc_ndp_v2_tx_burst_get(priv, packets, count);
 	} else if (q->version == 1) {
-		return nc_ndp_v1_tx_burst_get(q, packets, count);
+		return nc_ndp_v1_tx_burst_get(priv, packets, count);
 	}
 	return 0;
 }
 
-static inline void nc_ndp_tx_burst_put(struct ndp_queue *q)
+static inline void nc_ndp_tx_burst_put(void *priv)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	if (q->version == 2) {
-		if (((q->u.v2.rhp - q->sync.hwptr) & (q->u.v2.hdr_items-1)) > q->u.v2.hdr_items / 4) {
-			nc_ndp_v2_tx_burst_flush(q);
-		}
+		nc_ndp_v2_tx_burst_put(priv);
 	} else if (q->version == 1) {
-		/* Publish written data if their size is bigger than quarter of buffer size */
-		if (q->u.v1.swptr > q->size / 4) {
-			q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
-			nc_ndp_v1_tx_unlock(q);
-		}
+		nc_ndp_v1_tx_burst_put(priv);
 	}
 }
 
-static inline void nc_ndp_tx_burst_flush(struct ndp_queue *q)
+static inline void nc_ndp_tx_burst_flush(void *priv)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	if (q->version == 2) {
-		nc_ndp_v2_tx_burst_flush(q);
+		nc_ndp_v2_tx_burst_flush(priv);
 	} else if (q->version == 1) {
+		nc_ndp_v1_tx_burst_flush(priv);
+	}
+}
+
+static inline int nc_ndp_v1_tx_burst_put(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	/* Publish written data if their size is bigger than quarter of buffer size */
+	if (q->u.v1.swptr > q->size / 4) {
 		q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
 		nc_ndp_v1_tx_unlock(q);
 	}
+	return 0;
 }
 
-unsigned nc_ndp_v2_tx_get_pkts_available(struct ndp_queue *q)
+static inline int nc_ndp_v2_tx_burst_put(void *priv)
 {
-	if (q->version != 2)
-		return 0;
-	nc_ndp_v2_tx_lock(q);
-	return q->u.v2.pkts_available;
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	if (((q->u.v2.rhp - q->sync.hwptr) & (q->u.v2.hdr_items-1)) > q->u.v2.hdr_items / 4) {
+		nc_ndp_v2_tx_burst_flush(priv);
+	}
+	return 0;
+}
+
+static inline int nc_ndp_v1_tx_burst_flush(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
+	nc_ndp_v1_tx_unlock(q);
+	return 0;
 }

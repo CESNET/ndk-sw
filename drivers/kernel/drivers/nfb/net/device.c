@@ -408,7 +408,7 @@ static int nfb_net_rx_thread(void *rxqptr)
 	struct nfb_net_device *priv = rxq->priv;
 	struct net_device *netdev = priv->netdev;
 
-	struct ndp_queue *queue = &rxq->ndpq;
+	struct ndp_queue *queue = rxq->ndpq;
 	struct ndp_packet packet;
 
 	struct sk_buff *skb;
@@ -478,23 +478,18 @@ static void nfb_net_transmission_off(struct net_device *netdev)
 			priv->rxqs[i].task = NULL;
 		}
 
-		if (priv->rxqs[i].ndps != NULL) {
-			struct ndp_queue *queue = &priv->rxqs[i].ndpq;
-			ndp_close_queue(queue);
-			ndp_subscriber_destroy(priv->rxqs[i].ndps);
-			priv->rxqs[i].ndps = NULL;
+		if (priv->rxqs[i].ndpq != NULL) {
+			ndp_close_queue(priv->rxqs[i].ndpq);
+			priv->rxqs[i].ndpq = NULL;
 		}
 	}
 
 	// Stop all TX queues
 	netif_tx_stop_all_queues(netdev);
 	for (i = 0; i < priv->txqs_count; i++) {
-		if (priv->txqs[i].ndps != NULL) {
-			struct ndp_queue *queue = &priv->txqs[i].ndpq;
-			ndp_close_queue(queue);
-
-			ndp_subscriber_destroy(priv->txqs[i].ndps);
-			priv->txqs[i].ndps = NULL;
+		if (priv->txqs[i].ndpq != NULL) {
+			ndp_close_queue(priv->txqs[i].ndpq);
+			priv->txqs[i].ndpq = NULL;
 		}
 	}
 }
@@ -525,7 +520,6 @@ static int nfb_net_transmission_on(struct net_device *netdev)
 
 		struct nfb_net_queue *netq;
 
-		struct ndp_subscriber *subscriber;
 		struct ndp_queue *queue;
 
 		uint64_t channel_flags;
@@ -538,25 +532,13 @@ static int nfb_net_transmission_on(struct net_device *netdev)
 
 		// TODO: add check if the queue is available
 
-		// Create NDP subscriber
-		subscriber = ndp_subscriber_create(ndp);
-		if (!subscriber) {
-			printk(KERN_ERR "%s: %s - failed to create subscriber for queue %s\n",
-				__func__, netdev->name, dev_name(&channel->dev));
-			ret = -ENOMEM;
-			goto err_subscriber_create;
-		}
-
 		netq = is_rx ? &priv->rxqs[rxqs_index] : &priv->txqs[txqs_index];
 		#ifdef CONFIG_NUMA
 		netq->numa = dev_to_node(channel->ring.dev);
 		#endif
-		netq->ndps = subscriber;
 
-		queue = &netq->ndpq;
-		queue->subscriber = subscriber;
-		ret = ndp_queue_open_init(ndp->nfb, queue, channel->id.index, channel->id.type);
-		if (ret) {
+		netq->ndpq = queue = ndp_open_queue(ndp->nfb, channel->id.index, channel->id.type, 0);
+		if (queue == NULL) {
 			printk(KERN_ERR "%s: %s - failed to init queue %s (error: %d)\n",
 				__func__, netdev->name, dev_name(&channel->dev), ret);
 			goto err_queue_init;
@@ -594,13 +576,11 @@ static int nfb_net_transmission_on(struct net_device *netdev)
 
 	netif_tx_start_all_queues(netdev);
 	for (i = 0; i < priv->rxqs_count; i++) {
-		unsigned channel = priv->rxqs[i].ndpq.channel.index;
-
 		// Create RX thread for each queue
-		priv->rxqs[i].task = kthread_create_on_node(nfb_net_rx_thread, &priv->rxqs[i], priv->rxqs[i].numa, "%s/%u", netdev->name, channel);
+		priv->rxqs[i].task = kthread_create_on_node(nfb_net_rx_thread, &priv->rxqs[i], priv->rxqs[i].numa, "%s/%u", netdev->name, i);
 		if (IS_ERR(priv->rxqs[i].task)) {
 			printk(KERN_ERR "%s: %s - failed to create rx thread (error: %ld, channel: %d)\n",
-				__func__, netdev->name, PTR_ERR(priv->rxqs[i].task), channel);
+				__func__, netdev->name, PTR_ERR(priv->rxqs[i].task), i);
 			ret = PTR_ERR(priv->rxqs[i].task);
 			goto err_kthread_create;
 		}
@@ -613,7 +593,6 @@ static int nfb_net_transmission_on(struct net_device *netdev)
 
 err_queue_start:
 err_queue_init:
-err_subscriber_create:
 err_queues_count:
 err_kthread_create:
 	nfb_net_transmission_off(netdev);
@@ -651,7 +630,7 @@ netdev_tx_t nfb_start_xmit(struct sk_buff *skb, struct net_device *netdev)
 	packet.data_length = max_t(unsigned int, skb->len, ETH_ZLEN);
 
 	// Allocate free space for packet in ring buffer
-	cnt = ndp_tx_burst_get(&txq->ndpq, &packet, 1);
+	cnt = ndp_tx_burst_get(txq->ndpq, &packet, 1);
 	if (cnt != 1) {
 		u64_stats_update_begin(&txq->sync);
 		txq->errors++;
@@ -664,7 +643,7 @@ netdev_tx_t nfb_start_xmit(struct sk_buff *skb, struct net_device *netdev)
 	memcpy(packet.data, skb->data, skb->len);
 
 	// Flush to send immediately
-	ndp_tx_burst_flush(&txq->ndpq);
+	ndp_tx_burst_flush(txq->ndpq);
 
 	// Update stats
 	u64_stats_update_begin(&txq->sync);

@@ -35,6 +35,9 @@ void nfb_bus_close_mi(void *bus_priv);
 int nfb_base_comp_lock(const struct nfb_comp *comp, uint32_t features);
 void nfb_base_comp_unlock(const struct nfb_comp *comp, uint32_t features);
 
+int ndp_base_queue_open(struct nfb_device *dev, void *dev_priv, unsigned index, int dir, int flags, struct ndp_queue ** pq);
+int ndp_base_queue_close(struct ndp_queue * q);
+
 struct libnfb_ext_ops nfb_base_ops = {
 	.open = nfb_base_open,
 	.close = nfb_base_close,
@@ -42,6 +45,9 @@ struct libnfb_ext_ops nfb_base_ops = {
 	.bus_close_mi = nfb_bus_close_mi,
 	.comp_lock = nfb_base_comp_lock,
 	.comp_unlock = nfb_base_comp_unlock,
+
+	.ndp_queue_open = ndp_base_queue_open,
+	.ndp_queue_close = ndp_base_queue_close,
 };
 
 const void *nfb_get_fdt(const struct nfb_device *dev)

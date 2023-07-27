@@ -7,8 +7,10 @@
  *   Martin Spinler <spinler@cesnet.cz>
  */
 
-static inline int nc_ndp_v1_rx_lock(struct ndp_queue *q)
+static inline int nc_ndp_v1_rx_lock(void *priv)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	int ret;
 
 	if ((ret = _ndp_queue_sync(q, &q->sync))) {
@@ -22,8 +24,10 @@ static inline int nc_ndp_v1_rx_lock(struct ndp_queue *q)
 	return 0;
 }
 
-static inline int nc_ndp_v1_rx_unlock(struct ndp_queue *q)
+static inline int nc_ndp_v1_rx_unlock(void *priv)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	int ret;
 	unsigned long long unlock_bytes = (q->u.v1.total - q->u.v1.bytes);
 
@@ -38,8 +42,10 @@ static inline int nc_ndp_v1_rx_unlock(struct ndp_queue *q)
 	return 0;
 }
 
-static inline unsigned nc_ndp_v1_rx_burst_get(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)
+static inline unsigned nc_ndp_v1_rx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	uint16_t packet_size;
 	uint16_t header_size;
 	unsigned cnt = 0;
@@ -82,7 +88,7 @@ static inline unsigned nc_ndp_v1_rx_burst_get(struct ndp_queue *q, struct ndp_pa
 		/* check packet header */
 		if (unlikely(packet_size == 0 || header_size > packet_size - NDP_PACKET_HEADER_SIZE)) {
 			nc_ndp_queue_stop(q);
-			ndp_close_queue(q);
+			ndp_close_queue(q->q);
 #ifdef __KERNEL__
                         printk(KERN_ERR "%s: NDP packet header malformed %d\n", __func__, packet_size);
 			return 0;
@@ -93,7 +99,7 @@ static inline unsigned nc_ndp_v1_rx_burst_get(struct ndp_queue *q, struct ndp_pa
 		/* check locked space */
 		if (unlikely(packet_size > bytes)) {
 			nc_ndp_queue_stop(q);
-			ndp_close_queue(q);
+			ndp_close_queue(q->q);
 #ifdef __KERNEL__
 			return 0;
 #else
@@ -126,8 +132,21 @@ static inline unsigned nc_ndp_v1_rx_burst_get(struct ndp_queue *q, struct ndp_pa
 	return cnt;
 }
 
-static inline unsigned nc_ndp_v2_rx_lock(struct ndp_queue *q)
+static inline int nc_ndp_v1_rx_burst_put(void *priv)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	/* Unlock when 1/2 of locked bytes readen */
+	if (q->u.v1.total - q->u.v1.bytes > q->size / 2) {
+		nc_ndp_v1_rx_unlock(q);
+	}
+	return 0;
+}
+
+static inline unsigned nc_ndp_v2_rx_lock(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	int ret;
 	if ((ret = _ndp_queue_sync(q, &q->sync))) {
 		return ret;
@@ -141,8 +160,10 @@ static inline unsigned nc_ndp_v2_rx_lock(struct ndp_queue *q)
 	return 0;
 }
 
-static inline int nc_ndp_v2_rx_unlock(struct ndp_queue *q)
+static inline int nc_ndp_v2_rx_unlock(void *priv)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	int ret;
 	q->sync.swptr = q->u.v2.rhp & (q->u.v2.hdr_items-1);
 
@@ -152,10 +173,12 @@ static inline int nc_ndp_v2_rx_unlock(struct ndp_queue *q)
 	return 0;
 }
 
-static inline unsigned nc_ndp_v2_rx_burst_get(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)
+static inline unsigned nc_ndp_v2_rx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
 {
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	unsigned i;
-	unsigned char *data_base = (q->flags & NDP_CHANNEL_FLAG_NO_BUFFER) ? (void*)0 : q->buffer;
+	unsigned char *data_base = q->buffer;
 	struct ndp_v2_packethdr *hdr_base;
 	struct ndp_v2_offsethdr *off_base;
 
@@ -201,71 +224,30 @@ static inline unsigned nc_ndp_v2_rx_burst_get(struct ndp_queue *q, struct ndp_pa
 	return count;
 }
 
-static inline unsigned nc_ndp_rx_burst_get(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)
+static inline int nc_ndp_v2_rx_burst_put(void *priv)
 {
+	return nc_ndp_v2_rx_unlock(priv);
+}
+
+static inline unsigned nc_ndp_rx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
 	if (q->version == 2) {
-		return nc_ndp_v2_rx_burst_get(q, packets, count);
+		return nc_ndp_v2_rx_burst_get(priv, packets, count);
 	} else if (q->version == 1) {
-		return nc_ndp_v1_rx_burst_get(q, packets, count);
+		return nc_ndp_v1_rx_burst_get(priv, packets, count);
 	}
 	return 0;
 }
 
-static inline unsigned nc_ndp_rx_burst_put_desc(struct ndp_queue *q, struct ndp_packet *packets, unsigned count)
+static inline void nc_ndp_rx_burst_put(void *priv)
 {
-	unsigned i;
-	unsigned free;
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
-	struct ndp_v2_packethdr *hdr_base;
-	struct ndp_v2_offsethdr *off_base;
-
-	const uint32_t flags_req = (NDP_CHANNEL_FLAG_NO_BUFFER | NDP_CHANNEL_FLAG_EXCLUSIVE);
-
-	if (q->version != 2 || (q->flags & flags_req) != flags_req) {
-		return 0;
-	}
-
-	free = (q->u.v2.rhp - q->sync.swptr - 1) & (q->u.v2.hdr_items-1);
-	if (count > free) {
-		if (_ndp_queue_sync(q, &q->sync)) {
-			return 0;
-		}
-		free = (q->u.v2.rhp - q->sync.swptr - 1) & (q->u.v2.hdr_items-1);
-		count = min(count,free);
-	}
-
-	if (count == 0)
-		return 0;
-
-	hdr_base = q->u.v2.hdr + q->sync.swptr;
-	off_base = q->u.v2.off + q->sync.swptr;
-
-	for (i = 0; i < count; i++) {
-		struct ndp_v2_packethdr *hdr;
-		struct ndp_v2_offsethdr *off;
-
-		hdr = hdr_base + i;
-		off = off_base + i;
-
-		off->offset = (__u64)packets[i].data;
-		hdr->packet_size = packets[i].data_length;
-	}
-
-	q->sync.swptr = (q->sync.swptr + count) & (q->u.v2.hdr_items-1);
-	if (_ndp_queue_sync(q, &q->sync)) {
-		return 0;
-	}
-	return count;
-}
-
-static inline void nc_ndp_rx_burst_put(struct ndp_queue *q)
-{
 	if (q->version == 2) {
-		nc_ndp_v2_rx_unlock(q);
+		nc_ndp_v2_rx_unlock(priv);
 	} else if (q->version == 1) {
-		/* Unlock when 1/2 of locked bytes readen */
-		if (q->u.v1.total - q->u.v1.bytes > q->size / 2) {
-			nc_ndp_v1_rx_unlock(q);
-		}
+		nc_ndp_v1_rx_burst_put(priv);
 	}
 }

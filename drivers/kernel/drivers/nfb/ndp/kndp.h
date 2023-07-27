@@ -10,9 +10,11 @@
 #include <linux/nfb/ndp.h>
 #include "ndp.h"
 
+#include <netcope/ndp_core_queue.h>
+
 struct ndp_queue;
 int ndp_ctrl_v2_get_vmaps(struct ndp_channel *channel, void **hdr, void **off);
 
-int ndp_queue_open_init(struct nfb_device *dev, struct ndp_queue *q, unsigned index, int type);
+struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir, int flags);
 
 void ndp_close_queue(struct ndp_queue *q);
