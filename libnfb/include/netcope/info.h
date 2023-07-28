@@ -296,6 +296,25 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 		}
 	}
 
+	if (ifc == 0) {
+		info = realloc(mi->ifc, sizeof(*info) * (ifc + 1));
+		if (info == NULL) {
+			goto err_alloc;
+		}
+		mi->ifc = info;
+		info = &mi->ifc[ifc];
+
+		info->id = ifc++;
+		info->subid = -1;
+		info->flags = 0;
+
+		info->flags |= NC_IFC_INFO_FLAG_ACTIVE;
+
+		info->rxq_cnt = 0;
+		info->txq_cnt = 0;
+		info->eth_cnt = 0;
+	}
+
 	/* TODO: Add stream/device helper into DT. Currently we must assume
 	 * each eth is equally distributed to device/streams */
 	for (i = 0; i < ifc; i++) {
@@ -321,19 +340,25 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 		//mi->rxq[q].ep = q / (mi->rxq_cnt / comp_dev_info.ep_count);
 		mi->rxq[q].ep = q * comp_dev_info.ep_count / mi->rxq_cnt;
 		mi->rxq[q].id = q;
-		mi->rxq[q].ifc = -1;
+		i = q * ifc / mi->rxq_cnt;
+		mi->rxq[q].ifc = i;
+		mi->ifc[i].rxq_cnt++;
+
 	}
 	for (q = 0; q < mi->txq_cnt; q++) {
 		/* TODO: connect DMA queue with driver phandle and read pcie prop */
 		//mi->txq[q].ep = q / (mi->txq_cnt / comp_dev_info.ep_count);
 		mi->txq[q].ep = q * comp_dev_info.ep_count / mi->txq_cnt;
 		mi->txq[q].id = q;
-		mi->txq[q].ifc = -1;
+		i = q * ifc / mi->txq_cnt;
+		mi->txq[q].ifc = i;
+		mi->ifc[i].txq_cnt++;
 	}
 
 	/* ****************************************************************** */
 	/* Map DMA queues to ifc */
 
+	#if 0
 	for (ep = 0; ep < comp_dev_info.ep_count; ep++) {
 		int ipe; /* Interfaces per endpoint */
 		int qt;
@@ -422,6 +447,7 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 //		info->flags |= NC_IFC_INFO_FLAG_VIRTUAL
 		info->flags |= (info->rxq_cnt + info->txq_cnt) ? NC_IFC_INFO_FLAG_ACTIVE : 0;
 	}
+	#endif
 
 	mi->ifc_cnt = ifc;
 
