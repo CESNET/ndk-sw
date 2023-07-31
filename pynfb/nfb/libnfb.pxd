@@ -4,8 +4,15 @@ from libc.string cimport memcpy
 from posix.types cimport off_t
 
 
-cdef extern from "cnfb.h":
+cdef extern from "<libfdt.h>":
+    """
+    static inline int c_fdt_totalsize(const void *fdt)
+    {
+        return fdt_totalsize(fdt);
+    }
+    """
     int c_fdt_totalsize(const void *fdt)
+    int fdt_path_offset(const void *fdt, const char *path)
 
 cdef extern from "<nfb/nfb.h>":
     cdef struct nfb_device:
@@ -55,8 +62,6 @@ cdef extern from "<nfb/ndp.h>":
     int ndp_queue_start(ndp_queue *queue)
     int ndp_queue_stop(ndp_queue *queue)
 
-cdef extern from "<libfdt.h>":
-    int fdt_path_offset(const void *fdt, const char *path)
 
 
 cdef class Nfb:
