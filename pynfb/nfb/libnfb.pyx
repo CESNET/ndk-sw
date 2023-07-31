@@ -16,6 +16,8 @@ import fdt
 
 cimport libnetcope
 
+from . import eth
+
 if not hasattr(time, 'time_ns'):
     time_ns = lambda: int(time.time() * 1000000000)
 else:
@@ -28,6 +30,18 @@ def __batched(iterable, n):
     while batch:
         yield batch
         batch = tuple(islice(it, n))
+
+
+def open(path: str = '0') -> Nfb:
+    """Open a handle to NFB device in system
+
+    :param path: Path to device node, default leads to ``/dev/nfb0``
+    :return: The :class:`libnfb.Nfb` object, enhanced by :class:`eth.EthManager`
+    """
+
+    dev = Nfb(path)
+    eth.EthManager(dev)
+    return dev
 
 
 cdef class Nfb:
@@ -266,6 +280,32 @@ cdef class Comp:
             else:
                 time.sleep(delay)
         return True
+
+
+cdef class AbstractBaseComp:
+    """
+    AbstractBaseComp represents common parent for all classes that manages HW components
+
+    Derived class should set it's own `DT_COMPATIBLE`!
+
+    :ivar libnfb.Nfb _dev: NFB object
+    :ivar libnfb.Comp _node: fdt.Node object
+    """
+
+    DT_COMPATIBLE = None
+
+    def __init__(self, dev=Nfb.default_device, node: Optional[fdt.Node]=None, index: int=0):
+        assert self.DT_COMPATIBLE is not None, "DT_COMPATIBLE must be set in derived class"
+
+        self._dev = dev if isinstance(dev, Nfb) else open(dev)
+
+        if node:
+            assert self.DT_COMPATIBLE == node.get_property("compatible").value, "compatible string mismatch"
+        else:
+            node = self._dev.fdt_get_compatible(self.DT_COMPATIBLE)[index]
+
+        self._node = node
+
 
 cdef class QueueManager:
     """

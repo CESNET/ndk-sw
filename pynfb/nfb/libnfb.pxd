@@ -134,3 +134,6 @@ cdef class Nfb:
     cdef public bytes _dtb
 
     cdef dict __dict__
+
+cdef class AbstractBaseComp:
+    cdef dict __dict__
