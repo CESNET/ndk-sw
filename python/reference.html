@@ -68,6 +68,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#nfb.BaseComp"><code class="docutils literal notranslate"><span class="pre">BaseComp</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#nfb.open"><code class="docutils literal notranslate"><span class="pre">open()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-libnfb">nfb.libnfb</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#libnfb.AbstractBaseComp"><code class="docutils literal notranslate"><span class="pre">AbstractBaseComp</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#libnfb.Comp"><code class="docutils literal notranslate"><span class="pre">Comp</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.clr_bit"><code class="docutils literal notranslate"><span class="pre">Comp.clr_bit()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.get_bit"><code class="docutils literal notranslate"><span class="pre">Comp.get_bit()</span></code></a></li>
@@ -83,6 +84,13 @@
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.write32"><code class="docutils literal notranslate"><span class="pre">Comp.write32()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.write64"><code class="docutils literal notranslate"><span class="pre">Comp.write64()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.write8"><code class="docutils literal notranslate"><span class="pre">Comp.write8()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#libnfb.NdpQueue"><code class="docutils literal notranslate"><span class="pre">NdpQueue</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueue.start"><code class="docutils literal notranslate"><span class="pre">NdpQueue.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueue.stats_read"><code class="docutils literal notranslate"><span class="pre">NdpQueue.stats_read()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueue.stats_reset"><code class="docutils literal notranslate"><span class="pre">NdpQueue.stats_reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueue.stop"><code class="docutils literal notranslate"><span class="pre">NdpQueue.stop()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#libnfb.NdpQueueRx"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx</span></code></a><ul>
@@ -112,11 +120,26 @@
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.QueueManager.recvmsg"><code class="docutils literal notranslate"><span class="pre">QueueManager.recvmsg()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.QueueManager.send"><code class="docutils literal notranslate"><span class="pre">QueueManager.send()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.QueueManager.sendmsg"><code class="docutils literal notranslate"><span class="pre">QueueManager.sendmsg()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.QueueManager.start"><code class="docutils literal notranslate"><span class="pre">QueueManager.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.QueueManager.stop"><code class="docutils literal notranslate"><span class="pre">QueueManager.stop()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#libnfb.open"><code class="docutils literal notranslate"><span class="pre">open()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-libnetcope">nfb.libnetcope</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#libnetcope.DmaCtrlNdp"><code class="docutils literal notranslate"><span class="pre">DmaCtrlNdp</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.DmaCtrlNdp.desc0"><code class="docutils literal notranslate"><span class="pre">DmaCtrlNdp.desc0()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.DmaCtrlNdp.desc2"><code class="docutils literal notranslate"><span class="pre">DmaCtrlNdp.desc2()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.DmaCtrlNdp.flush_sdp"><code class="docutils literal notranslate"><span class="pre">DmaCtrlNdp.flush_sdp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.DmaCtrlNdp.flush_sp"><code class="docutils literal notranslate"><span class="pre">DmaCtrlNdp.flush_sp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.DmaCtrlNdp.read_stats"><code class="docutils literal notranslate"><span class="pre">DmaCtrlNdp.read_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.DmaCtrlNdp.start"><code class="docutils literal notranslate"><span class="pre">DmaCtrlNdp.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.DmaCtrlNdp.stop"><code class="docutils literal notranslate"><span class="pre">DmaCtrlNdp.stop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.DmaCtrlNdp.update_hdp"><code class="docutils literal notranslate"><span class="pre">DmaCtrlNdp.update_hdp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.DmaCtrlNdp.update_hhp"><code class="docutils literal notranslate"><span class="pre">DmaCtrlNdp.update_hhp()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#libnetcope.I2c"><code class="docutils literal notranslate"><span class="pre">I2c</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.I2c.read_reg"><code class="docutils literal notranslate"><span class="pre">I2c.read_reg()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.I2c.write_reg"><code class="docutils literal notranslate"><span class="pre">I2c.write_reg()</span></code></a></li>
@@ -213,7 +236,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nfb.open">
-<span class="sig-prename descclassname"><span class="pre">nfb.</span></span><span class="sig-name descname"><span class="pre">open</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'0'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#libnfb.Nfb" title="libnfb.Nfb"><span class="pre">Nfb</span></a></span></span><a class="reference internal" href="../_modules/nfb.html#open"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nfb.open" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nfb.</span></span><span class="sig-name descname"><span class="pre">open</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'0'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#libnfb.Nfb" title="libnfb.Nfb"><span class="pre">Nfb</span></a></span></span><a class="headerlink" href="#nfb.open" title="Permalink to this definition"></a></dt>
 <dd><p>Open a handle to NFB device in system</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -227,6 +250,21 @@
 
 <section id="module-libnfb">
 <span id="nfb-libnfb"></span><h2>nfb.libnfb<a class="headerlink" href="#module-libnfb" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="libnfb.AbstractBaseComp">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnfb.</span></span><span class="sig-name descname"><span class="pre">AbstractBaseComp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Nfb.default_device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fdt.html#fdt.Node" title="fdt.Node"><span class="pre">fdt.Node</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.AbstractBaseComp" title="Permalink to this definition"></a></dt>
+<dd><p>AbstractBaseComp represents common parent for all classes that manages HW components</p>
+<p>Derived class should set it’s own <cite>DT_COMPATIBLE</cite>!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>_dev</strong> (<a class="reference internal" href="#libnfb.Nfb" title="libnfb.Nfb"><em>libnfb.Nfb</em></a>) – NFB object</p></li>
+<li><p><strong>_node</strong> (<a class="reference internal" href="#libnfb.Comp" title="libnfb.Comp"><em>libnfb.Comp</em></a>) – fdt.Node object</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="libnfb.Comp">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnfb.</span></span><span class="sig-name descname"><span class="pre">Comp</span></span><a class="headerlink" href="#libnfb.Comp" title="Permalink to this definition"></a></dt>
@@ -389,6 +427,34 @@
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="libnfb.NdpQueue">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnfb.</span></span><span class="sig-name descname"><span class="pre">NdpQueue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Nfb</span> <span class="pre">nfb:</span> <span class="pre">Nfb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index:</span> <span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueue" title="Permalink to this definition"></a></dt>
+<dd><p>Object representing a NDP queue</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueue.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueue.start" title="Permalink to this definition"></a></dt>
+<dd><p>Start the queue and prepare for transceiving</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueue.stats_read">
+<span class="sig-name descname"><span class="pre">stats_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueue.stats_read" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueue.stats_reset">
+<span class="sig-name descname"><span class="pre">stats_reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueue.stats_reset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueue.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueue.stop" title="Permalink to this definition"></a></dt>
+<dd><p>Stop the queue</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="libnfb.NdpQueueRx">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnfb.</span></span><span class="sig-name descname"><span class="pre">NdpQueueRx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Nfb</span> <span class="pre">nfb:</span> <span class="pre">Nfb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueRx" title="Permalink to this definition"></a></dt>
 <dd><p>Object representing a queue for receiving data from NDP</p>
@@ -413,7 +479,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="libnfb.NdpQueueRx.recvmsg">
-<span class="sig-name descname"><span class="pre">recvmsg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cnt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#libnfb.NdpQueueRx.recvmsg" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">recvmsg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cnt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#libnfb.NdpQueueRx.recvmsg" title="Permalink to this definition"></a></dt>
 <dd><p>Receive messages</p>
 <p>Try to receive messages from the queue.</p>
 <p>With default parameter values receive all currently pending mesages and return.</p>
@@ -641,11 +707,99 @@ It also allows to access to the object representation of the Flattened Device Tr
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.QueueManager.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.QueueManager.start" title="Permalink to this definition"></a></dt>
+<dd><p>Start all Rx and Tx queues</p>
+<p>See <a class="reference internal" href="#libnfb.NdpQueue.start" title="libnfb.NdpQueue.start"><code class="xref py py-func docutils literal notranslate"><span class="pre">NdpQueue.start()</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>i</strong> – list of queue indexes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.QueueManager.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.QueueManager.stop" title="Permalink to this definition"></a></dt>
+<dd><p>Stop all Rx and Tx queues</p>
+<p>See <a class="reference internal" href="#libnfb.NdpQueue.stop" title="libnfb.NdpQueue.stop"><code class="xref py py-func docutils literal notranslate"><span class="pre">NdpQueue.stop()</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>i</strong> – list of queue indexes</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="libnfb.open">
+<span class="sig-prename descclassname"><span class="pre">libnfb.</span></span><span class="sig-name descname"><span class="pre">open</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'0'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#libnfb.Nfb" title="libnfb.Nfb"><span class="pre">Nfb</span></a></span></span><a class="headerlink" href="#libnfb.open" title="Permalink to this definition"></a></dt>
+<dd><p>Open a handle to NFB device in system</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – Path to device node, default leads to <code class="docutils literal notranslate"><span class="pre">/dev/nfb0</span></code></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The <a class="reference internal" href="#libnfb.Nfb" title="libnfb.Nfb"><code class="xref py py-class docutils literal notranslate"><span class="pre">libnfb.Nfb</span></code></a> object, enhanced by <code class="xref py py-class docutils literal notranslate"><span class="pre">eth.EthManager</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
 <section id="module-libnetcope">
 <span id="nfb-libnetcope"></span><h2>nfb.libnetcope<a class="headerlink" href="#module-libnetcope" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="libnetcope.DmaCtrlNdp">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnetcope.</span></span><span class="sig-name descname"><span class="pre">DmaCtrlNdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Nfb</span> <span class="pre">nfb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.DmaCtrlNdp" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.DmaCtrlNdp.desc0">
+<span class="sig-name descname"><span class="pre">desc0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dma_addr_t</span> <span class="pre">phys:</span> <span class="pre">dma_addr_t</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#libnetcope.DmaCtrlNdp.desc0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.DmaCtrlNdp.desc2">
+<span class="sig-name descname"><span class="pre">desc2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dma_addr_t</span> <span class="pre">phys:</span> <span class="pre">dma_addr_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">next:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hdr_length:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#libnetcope.DmaCtrlNdp.desc2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.DmaCtrlNdp.flush_sdp">
+<span class="sig-name descname"><span class="pre">flush_sdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.DmaCtrlNdp.flush_sdp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.DmaCtrlNdp.flush_sp">
+<span class="sig-name descname"><span class="pre">flush_sp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.DmaCtrlNdp.flush_sp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.DmaCtrlNdp.read_stats">
+<span class="sig-name descname"><span class="pre">read_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.DmaCtrlNdp.read_stats" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.DmaCtrlNdp.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dma_addr_t</span> <span class="pre">desc_buffer:</span> <span class="pre">dma_addr_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dma_addr_t</span> <span class="pre">hdr_buffer:</span> <span class="pre">dma_addr_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dma_addr_t</span> <span class="pre">update_buffer:</span> <span class="pre">dma_addr_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_buffer_p:</span> <span class="pre">memoryview</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint32_t</span> <span class="pre">nb_desc:</span> <span class="pre">uint32_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint32_t</span> <span class="pre">nb_hdr:</span> <span class="pre">uint32_t</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.DmaCtrlNdp.start" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.DmaCtrlNdp.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.DmaCtrlNdp.stop" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.DmaCtrlNdp.update_hdp">
+<span class="sig-name descname"><span class="pre">update_hdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.DmaCtrlNdp.update_hdp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.DmaCtrlNdp.update_hhp">
+<span class="sig-name descname"><span class="pre">update_hhp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.DmaCtrlNdp.update_hhp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="libnetcope.I2c">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnetcope.</span></span><span class="sig-name descname"><span class="pre">I2c</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Nfb</span> <span class="pre">nfb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addr=0xA0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.I2c" title="Permalink to this definition"></a></dt>
