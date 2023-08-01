@@ -1,3 +1,9 @@
+* Tue Aug 1 2023 Martin Spinler <spinler@cesnet.cz> - 6.19.0-1
+- [FEATURE] updated documentation (mainly Python)
+- [FEATURE] enable NDP interface for libnfb extension
+- [FEATURE] disable virtual interfaces for multiple PCIe endpoints (DPDK)
+- [BUGFIX] some small fixes and improvements in Python NFB module
+
 * Tue Jul 25 2023 Martin Spinler <spinler@cesnet.cz> - 6.18.2-1
 - [FEATURE] updated documentation (mainly Python)
 - [FEATURE] added Python libnfb extension
