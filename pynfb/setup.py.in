@@ -19,4 +19,7 @@ setup(
     py_modules=['nfb'],
     packages=['nfb'],
     package_dir={'nfb': '${CMAKE_CURRENT_SOURCE_DIR}/nfb'},
+    package_data = {
+        'nfb': ['*.pxd'],
+    },
 )
