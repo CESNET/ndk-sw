@@ -259,16 +259,16 @@ static inline void nc_mdio_etile_config(struct nc_mdio *mdio)
 	/* The E-Tile EHIP doesn't contains configuration registers, thus  */
 	/* the number of lanes&speed are determined by the MDIO register 1.7 */
 	val = mdio->mdio_read(comp, 0, 1, 7);
-	if (val < 0x1f) { /* 10GBASE */
+	if (val <= 0x1f) { /* 10GBASE */
 		mdio->pma_lanes = 1;
 		mdio->speed = 10;
-	} else if (val < 0x26) { /* 40GBASE */
+	} else if (val <= 0x26) { /* 40GBASE */
 		mdio->pma_lanes = 4;
 		mdio->speed = 40;
-	} else if (val < 0x2f) { /* 100GBASE */
+	} else if (val <= 0x2f) { /* 100GBASE */
 		mdio->pma_lanes = 4;
 		mdio->speed = 100;
-	} else if (val < 0x3a) { /* 25GBASE */
+	} else if (val <= 0x3a) { /* 25GBASE */
 		mdio->pma_lanes = 1;
 		mdio->speed = 25;
 	} else { /* other modes are not supported on E-Tile now */
