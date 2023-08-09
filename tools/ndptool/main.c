@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 
 	/* Check if tool was executed from symlink */
 	if (strncmp(basename(argv[0]), "ndp-", 4) == 0 &&
-			strcmp(basename(argv[0]), "ndp-tool") != 0) {
+			strcmp(basename(argv[0]), "ndp-tool") != 0 && strcmp(basename(argv[0]), "ndp-tool-dpdk") != 0) {
 		strmode = basename(argv[0]) + 4;
 	} else if (argc < 2) {
 		errx(-1, "No mode selected");
@@ -263,10 +263,19 @@ int main(int argc, char *argv[])
 
 	rx_queues = ndp_get_rx_queue_count(dev);
 	tx_queues = ndp_get_tx_queue_count(dev);
-
+#ifdef USE_DPDK
+	if (mode == NDP_MODULE_DPDK_GENERATE || mode == NDP_MODULE_DPDK_READ || mode == NDP_MODULE_DPDK_LOOPBACK
+		|| mode == NDP_MODULE_DPDK_RECEIVE || mode == NDP_MODULE_DPDK_TRANSMIT) {
+		params.mode.dpdk.queue_range = queue_range;
+	}
+#endif // USE_DPDK
 	if (module->check)
-		module->check(&params);
+		ret = module->check(&params);
 
+	if (ret) {
+		nfb_close(dev);
+		goto check_fail;
+	}
 	/* register SIGINT signal */
 	signal(SIGINT, sig_usr);
 	signal(SIGUSR1, sig_usr);
@@ -282,16 +291,27 @@ int main(int argc, char *argv[])
 				switch (mode) {
 				case NDP_MODULE_READ:
 				case NDP_MODULE_RECEIVE:
+#ifdef USE_DPDK
+				case NDP_MODULE_DPDK_READ:
+				case NDP_MODULE_DPDK_RECEIVE:
+#endif // USE_DPDK
 					if (ndp_rx_queue_is_available(dev, i))
 						list_range_add_number(&queue_range, i);
 					break;
 				case NDP_MODULE_GENERATE:
 				case NDP_MODULE_TRANSMIT:
+#ifdef USE_DPDK
+				case NDP_MODULE_DPDK_GENERATE:
+				case NDP_MODULE_DPDK_TRANSMIT:
+#endif // USE_DPDK
 					if (ndp_tx_queue_is_available(dev, i))
 						list_range_add_number(&queue_range, i);
 					break;
 				case NDP_MODULE_LOOPBACK_HW:
 				case NDP_MODULE_LOOPBACK:
+#ifdef USE_DPDK
+				case NDP_MODULE_DPDK_LOOPBACK:
+#endif // USE_DPDK
 					if (ndp_rx_queue_is_available(dev, i) && ndp_tx_queue_is_available(dev, i))
 						list_range_add_number(&queue_range, i);
 					break;
@@ -319,12 +339,25 @@ int main(int argc, char *argv[])
 				qri++;
 				qrc = 0;
 			}
-
+			
 			thread_func = module->run_thread;
 			params.queue_index = queue_range.min[qri] + qrc++;
 			ndp_loop_thread_create(&thread_data[i], &params);
 			thread_data[i]->thread_id = i;
-			pthread_create(&thread[i], NULL, thread_func, thread_data[i]);
+		}
+#ifdef USE_DPDK
+		if (mode == NDP_MODULE_DPDK_GENERATE || mode == NDP_MODULE_DPDK_READ ||
+			mode == NDP_MODULE_DPDK_LOOPBACK || mode == NDP_MODULE_DPDK_RECEIVE || mode == NDP_MODULE_DPDK_TRANSMIT) {
+#else
+		if (false) {
+#endif // USE_DPDK
+			for (i = 0; i < thread_cnt; i++) {
+				pthread_create(&thread[i], NULL, thread_func, &thread_data[i]);
+			}
+		} else {
+			for (i = 0; i < thread_cnt; i++) {
+				pthread_create(&thread[i], NULL, thread_func, thread_data[i]);
+			}
 		}
 
 		/* Run loop for printing aggregated stats */
@@ -350,6 +383,7 @@ int main(int argc, char *argv[])
 	if (module->destroy)
 		module->destroy(&params);
 
+check_fail:
 	list_range_destroy(&queue_range);
 
 	return ret;

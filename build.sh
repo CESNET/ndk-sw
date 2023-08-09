@@ -13,6 +13,10 @@ RELTYPE=Release             # Release type (Debug/Release)
 FILENAME_3RDPARTY="3rdparty.tar.gz"
 URL_3RDPARTY="https://github.com/CESNET/ndk-sw/releases/download/v6.16.0/$FILENAME_3RDPARTY"
 
+EPEL8_DPDK_NFB_REPO_REMOTE="https://copr.fedorainfracloud.org/coprs/g/CESNET/dpdk-nfb/repo/epel-8/group_CESNET-dpdk-nfb-epel-8.repo"
+EPEL9_DPDK_NFB_REPO_REMOTE="https://copr.fedorainfracloud.org/coprs/g/CESNET/dpdk-nfb/repo/epel-9/group_CESNET-dpdk-nfb-epel-9.repo"
+DPDK_NFB_REPO_LOCAL="/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_CESNET:dpdk-nfb.repo"
+
 # ----[ USEFUL VARIABLES ]---------------------------------------------------- #
 SCRIPT_PATH="$(dirname $(readlink -f $0))"
 
@@ -32,12 +36,15 @@ usage()
     echo "  --debug         Build a package with debugging enabled"
     echo ""
     echo "ACTIONS"
-    echo "  --bootstrap   Prepare for build (install prerequisities and dependencies)"
-    echo "  --make        Build project"
-    echo "  --clean       Remove build files"
-    echo "  --purge       Remove entire build directory"
-    echo "  --rpm         Build RPM package"
-    echo "  --deb         Build DEB package"
+    echo "  --bootstrap         Prepare for build (install prerequisities and dependencies)"
+    echo "  --bootstrap-dpdk    Install dpdk dependencies (run after bootstrap)"
+    echo "  --make              Build project"
+    echo "  --make-dpdk         Build project with ndp-tool-dpdk (adds -DUSE_DPDK to cmake call)"
+    echo "  --clean             Remove build files"
+    echo "  --purge             Remove entire build directory"
+    echo "  --rpm               Build RPM package"
+    echo "  --deb               Build DEB package"
+    echo "  --rpm-dpdk          Build RPM packages including ndp-tool-dpdk package"
 }
 
 function item_in_list() {
@@ -57,6 +64,15 @@ get_os_version()
     echo "$ID"
 }
 
+get_os_number()
+{
+    . /etc/os-release
+    if [ -z "$VERSION" ]; then
+        echo "unknown"
+        return
+    fi
+    echo $VERSION | cut -d'.' -f1
+}
 
 get_os_id()
 {
@@ -75,6 +91,8 @@ get_os_id()
 
     echo "$ID"
 }
+
+
 
 get_install_command()
 {
@@ -158,6 +176,37 @@ get_dependencies()
     echo $ret
 }
 
+get_dpdk_dependencies()
+{
+    os=$(get_os_id)
+    os_version=$(get_os_version)
+    os_number=$(get_os_number)
+
+    if item_in_list "$os" "centos scientific fedora ol rocky"; then
+        if  item_in_list "$os_number" "8 9" ; then
+            if [ "$os_number" = "8" ] ; then
+                if ! wget "${EPEL8_DPDK_NFB_REPO_REMOTE}" -O "${DPDK_NFB_REPO_LOCAL}"; then
+                    echo >&2 "Could not obtain repository ${EPEL8_DPDK_NFB_REPO_REMOTE}"
+                    return 1
+                fi
+            elif [ "$os_number" = "9" ] ; then
+                if ! wget "${EPEL9_DPDK_NFB_REPO_REMOTE}" -O "${DPDK_NFB_REPO_LOCAL}"; then
+                    echo >&2 "Could not obtain repository ${EPEL9_DPDK_NFB_REPO_REMOTE}"
+                    return 1
+                fi  
+            fi
+            ret=""
+            ret="$ret dpdk-nfb"
+            ret="$ret dpdk-nfb-devel"
+            ret="$ret dpdk-nfb-tools"
+            echo $ret
+        fi
+    else 
+        echo >&2 "ERROR: NFB DPDK libraries only exist for redhat 8 and redhat 9 derived linux"
+        exit 1
+    fi
+}
+
 get_3rdparty_code()
 {
     curl -L $URL_3RDPARTY --output $FILENAME_3RDPARTY
@@ -179,6 +228,14 @@ Build()
     mkdir -p "$SCRIPT_PATH/$BUILDDIR"
     cd "$SCRIPT_PATH/$BUILDDIR"
     $cmake -DCMAKE_BUILD_TYPE=$RELTYPE ..
+    make
+}
+
+Build_dpdk()
+{
+    mkdir -p "$SCRIPT_PATH/$BUILDDIR"
+    cd "$SCRIPT_PATH/$BUILDDIR"
+    $cmake -DCMAKE_BUILD_TYPE=$RELTYPE -DUSE_DPDK=true ..
     make
 }
 
@@ -222,12 +279,21 @@ for opt in "$@"; do
             echo ">> Installing package build dependencies ..."
             $install_cmd $deps
             ;;
+        --bootstrap-dpdk)
+            install_cmd=$(get_install_command)
+            deps=$(get_dpdk_dependencies)
+            echo ">> Installing package build dependencies ..."
+            $install_cmd $deps
+            ;;
         --prepare)
             echo ">> Downloading and extractiong 3rd party code ..."
             get_3rdparty_code
             ;;
         --make)
             Build
+            ;;
+        --make-dpdk)
+            Build_dpdk
             ;;
         --clean)
             cd "$SCRIPT_PATH/$BUILDDIR" || continue
@@ -242,6 +308,14 @@ for opt in "$@"; do
                 exit 1
             fi
             Build
+            $cpack -G RPM --config ./CPackConfig.cmake
+            ;;
+        --rpm-dpdk)
+            if [ "$os" != "centos" ] && [ "$os" != "scientific" ] && [ "$os" != "fedora" ] && [ "$os" != "ol" ] ; then
+                echo >&2 "ERROR: Cannot build RPM package on other OS than CentOS"
+                exit 1
+            fi
+            Build_dpdk
             $cpack -G RPM --config ./CPackConfig.cmake
             ;;
         --deb)

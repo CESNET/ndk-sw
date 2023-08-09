@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <time.h>
+#include <wordexp.h>
 
 #include <nfb/ndp.h>
 #include <netcope/nccommon.h>
@@ -102,6 +103,38 @@ struct ndp_mode_loopback_hw_params {
 	uint32_t pregen_ids  [PREGEN_SEQ_SIZE * 2];
 };
 
+struct ndp_mode_dpdk_queue_data {
+	unsigned queue_id;
+	unsigned port_id;
+	struct rte_mempool *pool;
+};
+
+struct ndp_mode_dpdk_params {
+	// queue indexes as user passed then into the programm
+	struct list_range queue_range;
+	// number of aviable queues
+	unsigned queues_available;
+	// number of initialized queues
+	unsigned queue_count;
+	struct ndp_mode_dpdk_queue_data *queue_data_arr;
+	wordexp_t args;
+
+	// generate
+	struct list_range range;
+	int srand;
+	
+	// receive
+	int ts_mode;                /*!< Timestamp store mode, see TS_MODE_* in pcap.h for possible values */
+	unsigned int trim;          /*!< Packet trim mode. Maximum size of the saved packet. */
+
+	// transmit
+	unsigned long      loops;          /*!< How many time to loop over the PCAP (0 = forever) */
+	bool               do_cache;       /*!< Controls whether to pre-load PCAP file into RAM cache */
+	unsigned long long mbps;           /*!< Replay packets at a given Mbps */
+	bool               multiple_pcaps; /*!< Controls whether PCAP file is specified for each thread with '%d' as thread_id*/
+	unsigned long      min_len;        /*!< Minimal allowed frame length that can be transferred. */
+};
+
 typedef void (*update_stats_t)(struct ndp_packet *packets, int count, struct stats_info *si);
 
 struct ndp_tool_params {
@@ -119,6 +152,7 @@ struct ndp_tool_params {
 		struct ndp_mode_transmit_params transmit;
 		struct ndp_mode_receive_params receive;
 		struct ndp_mode_loopback_hw_params loopback_hw;
+		struct ndp_mode_dpdk_params dpdk;
 	} mode;
 
 	const char *pcap_filename;
@@ -178,6 +212,11 @@ enum ndp_modules {
 	NDP_MODULE_TRANSMIT,
 	NDP_MODULE_LOOPBACK,
 	NDP_MODULE_LOOPBACK_HW,
+	NDP_MODULE_DPDK_GENERATE,
+	NDP_MODULE_DPDK_READ,
+	NDP_MODULE_DPDK_LOOPBACK,
+	NDP_MODULE_DPDK_RECEIVE,
+	NDP_MODULE_DPDK_TRANSMIT,
 	/* NONE module must be last! */
 	NDP_MODULE_NONE,
 };
