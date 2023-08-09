@@ -244,7 +244,7 @@ void update_stats(struct ndp_packet *packets, int count, struct stats_info *si)
 void update_stats_thread(struct ndp_packet *packets, int count, struct stats_info *si)
 {
 	update_print_progress(packets, count, si);
-	
+
 	if (si->packet_cnt > 100000 || count == 0) {
 		/* Update global stats */
 		pthread_spin_lock(&((struct thread_data *)si->priv)->lock);

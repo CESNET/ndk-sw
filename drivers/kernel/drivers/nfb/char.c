@@ -502,4 +502,3 @@ void nfb_char_exit(void)
 	class_destroy(nfb_class);
 	unregister_chrdev(nfb_major, "nfb");
 }
-

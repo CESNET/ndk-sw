@@ -358,8 +358,8 @@ void nfb_hwmon_detach(struct nfb_device *nfb, void *priv)
 #else // #ifdef CONFIG_NFB_ENABLE_HWMON
 #include "../nfb.h"
 #include "nfb_hwmon.h"
-int nfb_hwmon_attach(struct nfb_device *nfb, void **priv) 
-{ 
+int nfb_hwmon_attach(struct nfb_device *nfb, void **priv)
+{
 	return 0;
 }
 void nfb_hwmon_detach(struct nfb_device *nfb, void *priv) { }

@@ -105,5 +105,3 @@ RX
                                           <- - - - - - - - - - - >
                                    items passed from Libnfb to the driver,
                                     but not yet from the driver to the HW
-
-

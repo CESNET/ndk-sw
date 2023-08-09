@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	dev = nfb_open(path);
 
 	bs = nfb_mtd_get_size(dev, index);
-	
+
 	if (address >= bs)
 		err(1, "Address out of Flash range");
 
@@ -78,8 +78,8 @@ int main(int argc, char *argv[])
 	fwrite(buffer, size, 1, stdout);
 
 	free(buffer);
-	
+
 	nfb_close(dev);
-	
+
 	return 0;
 }

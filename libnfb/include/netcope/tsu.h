@@ -26,7 +26,7 @@ struct nc_tsu {
 
 /*!
  * \brief  Time representation used internally by TSU unit
- * 
+ *
  */
 struct nc_tsu_time {
 	uint32_t sec;

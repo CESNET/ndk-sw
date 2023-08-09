@@ -319,5 +319,3 @@ static inline void hexdump(FILE *stream, const char *description, const void *da
 	// Print to Output
 	fprintf(stream,"%s",buff);
 }
-
-

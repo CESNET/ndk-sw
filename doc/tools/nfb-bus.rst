@@ -73,4 +73,3 @@ For that reason this mode must be previously enabled with the parameter of the n
 - **-a** (address) Print also address before readen data.
 
 - **-l** (list) Print list of all available components in firmware, their offsets, compatible strings and Device Tree paths.
-

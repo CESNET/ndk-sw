@@ -312,11 +312,11 @@ void adj_clock_system(struct tclock *cl)
 	cl->incr = double2frac64(new_inc);
 	nc_tsu_set_inc(tsu_comp, cl->incr);
 
-	printf("TSU set inc: 0x%02x:%08x (change from prev: %+6d)\n", 
+	printf("TSU set inc: 0x%02x:%08x (change from prev: %+6d)\n",
 			(unsigned int)(cl->incr >> 32), (unsigned int)(cl->incr & 0xFFFFFFFF), (int)(cl->incr - incr));
-	
+
 	printf("TSU inc:     %.9Lf ns, %.6Lf MHz, drift: %+8.3Lf ppm\n",
-			frac64b2nsd(cl->incr), 1000.0f/frac64b2nsd(cl->incr), 
+			frac64b2nsd(cl->incr), 1000.0f/frac64b2nsd(cl->incr),
 			(1000000000.f/frac64b2nsd(cl->incr) - cl->tsu_gen_frequency));
 }
 

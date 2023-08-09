@@ -216,4 +216,3 @@ static inline void nc_rxqueue_read_status(struct nc_rxqueue *rxqueue, struct nc_
 #endif
 
 #endif /* NETCOPE_RXQUEUE_H */
-

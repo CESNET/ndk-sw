@@ -99,4 +99,4 @@ struct ndp_queue_ops* ndp_queue_get_ops(struct ndp_queue *q);
 } // extern "C"
 #endif
 
-#endif /* LIBNFB_EXTENSION_H */ 
+#endif /* LIBNFB_EXTENSION_H */

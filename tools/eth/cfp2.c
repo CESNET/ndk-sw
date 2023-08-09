@@ -145,7 +145,7 @@ void cfp2_print(struct nfb_device *dev, int nodeoffset, int control_params_node)
 
 	struct nc_mdio *mdio;
 	int mdev = 0;
-	
+
 	prop32 = fdt_getprop(fdt, nodeoffset, "control", &proplen);
 	node_ctrl = fdt_node_offset_by_phandle(fdt, fdt32_to_cpu(*prop32));
 	node_ctrlparam = fdt_subnode_offset(fdt, nodeoffset, "control-param");

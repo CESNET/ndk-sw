@@ -38,9 +38,8 @@ For example:
 - ``nfb-eth -Pc 100GBASE-LR4`` sets the PMA to 100GBASE-LR4 type,
 - ``nfb-eth -Pc "+PMA local loopback"`` enables local loopback feature on all PMAs.
 
-Transceiver section 
+Transceiver section
 ~~~~~~~~~~~~~~~~~~~
 
 Prints transceiver information (if plugged) obtained from port management interface (MDIO or I2C),
 including vendor, compliance, temperature, signal strength and more.
-

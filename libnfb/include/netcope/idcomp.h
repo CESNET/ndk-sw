@@ -48,7 +48,7 @@ static inline int nc_idcomp_sysmon_get_temp(struct nfb_device *dev, int32_t *val
 	nfb_comp_close(comp);
 
 	*val = SYSMON_REG2TEMP(temp);
-	
+
 	return 0;
 }
 
@@ -102,7 +102,7 @@ static inline enum nc_idcomp_repeater nc_idcomp_repeater_get(struct nfb_device *
 	if (!comp)
 		return IDCOMP_REPEATER_UNKNOWN;
 	reg = nfb_comp_read32(comp, IDCOMP_REG_REPEATER);
-	
+
 	nfb_comp_close(comp);
 
 	return (reg >> (index * 2)) & 3;

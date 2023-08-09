@@ -46,7 +46,7 @@ int mdio_list(const void *fdt, int node_offset, int *index)
 
 	compatible = fdt_getprop(fdt, node_offset, "compatible", NULL);
 	if (compatible != NULL && (
-			strcmp(COMP_NETCOPE_DMAP, compatible) == 0 || 
+			strcmp(COMP_NETCOPE_DMAP, compatible) == 0 ||
 			strcmp(COMP_NETCOPE_MDIO, compatible) == 0)) {
 		/* Negative index means print all MDIOs */
 		if (*index < 0) {
@@ -154,6 +154,6 @@ int main(int argc, char *argv[])
 
 	nc_mdio_close(mdio);
 	nfb_close(dev);
-	
+
 	return 0;
 }

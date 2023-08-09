@@ -35,7 +35,7 @@ static int nfb_boot_gecko_wait_ready_data(struct nfb_comp *boot, uint16_t *data)
 {
 	uint32_t reg;
 	int timeout = 20000;
-	
+
 	do {
 		reg = nfb_comp_read32(boot, 0x0);
 		if (reg & NFB_GECKO_CTRL_READY) {

@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 		data = nc_xstrtoul(argv[1], 16);
 		do_write = 1;
 	}
- 	
+
 	if (strcmp(cmdstr, "flash") == 0) {
 		cmd = do_write ? CMD_FLASH_WR : CMD_FLASH_RD;
 	} else if (strcmp(cmdstr, "fctrl") == 0) {
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 
 	if ((dev = nfb_open(file)) == NULL)
                	err(1, "nfb_open failed");
-	
+
 	if ((comp = nfb_comp_open(dev, nfb_comp_find(dev, "netcope,bus,mi", 0))) == NULL)
 		errx(1, "nfb_comp_open failed - MI bus not availible. Try load nfb module with parameter mi_debug=1");
 
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 		} else {
 			printf("Reading address 0x%08x\n", offs);
 		}
-	}	
+	}
 
 	if (do_write) {
                	if (do_write_ff) {
@@ -222,23 +222,23 @@ int main(int argc, char *argv[])
 				}
 
 				/* Issue the write command */
-				nfb_comp_write32(comp, spi_base + DATA_REG, data); 
+				nfb_comp_write32(comp, spi_base + DATA_REG, data);
 				spi_comm(comp, spi_base, cmd, offs);
-				
+
        	                        offs += 1;
                	        }
 			printf("\n");
                	} else {
-			nfb_comp_write32(comp, spi_base + DATA_REG, data); 
+			nfb_comp_write32(comp, spi_base + DATA_REG, data);
 			spi_comm(comp, spi_base, cmd, offs);
-		}	
+		}
 	} else {
 		for (i = 1; i <= count; i++) {
 			spi_comm(comp, spi_base, cmd, (offs+i-1));
 			data = nfb_comp_read32(comp, spi_base + DATA_REG);
 			printf("%08x\n", (data));
 		}
-	} 
+	}
 
         nfb_comp_close(comp);
         nfb_close(dev);

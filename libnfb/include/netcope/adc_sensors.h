@@ -114,7 +114,7 @@ static inline int nc_get_adc_temp_stratix(struct nfb_device *dev, uint8_t channe
 	// Get temperature channel offset
 	output_chn += 4 * channel;
 
-	//The Temperature Sensor IP core returns the Celsius temperature value in signed 
+	//The Temperature Sensor IP core returns the Celsius temperature value in signed
 	//32-bit fixed point binary format, with eight bits below binary point
 	raw = _nc_get_adc_value_stratix(dev, output_chn);
 

@@ -112,7 +112,7 @@ int flash_ident_parse(struct card_ident *ci, const void *from)
 	}
 
 	if (flash_info->name == NULL)
-		warnx("Card type %d not found in DB", ct);	
+		warnx("Card type %d not found in DB", ct);
 
 	ci->serial_number = be32toh(fi->serial_number);
 	ci->chip_id = be32toh(fi->chip_id);

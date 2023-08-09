@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     if (rxq == NULL || txq == NULL)
         errx(1, "Can't open queue");
 
-    /* Start transmission on both queues */ 
+    /* Start transmission on both queues */
     ndp_queue_start(rxq);
     ndp_queue_start(txq);
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
             if (pkts[i].header_length >= 8)
                 printf("Timestamp: %lld\n", *((uint64_t*) (pkts[i].header + 0)));
         }
-        /* We must ensure the return of the processed packets 
+        /* We must ensure the return of the processed packets
            (although this doesn't have to be done for every GET) */
         if ((bursts % 5) == 4)
             ndp_rx_burst_put(rxq);

@@ -7,7 +7,7 @@
 # Path to the binary tool
 TOOL=./nfb-max-spi
 
-# CFM block starting address in flash: AC00 for the MAX10-08 device, 
+# CFM block starting address in flash: AC00 for the MAX10-08 device,
 #                                      12800 for the MAX10-16 device
 CFM_START_ADDR=AC00
 CFM_SIZE=35840
@@ -46,11 +46,11 @@ echo -n "Flash status: "
 $TOOL -s fctrl 0
 # should return fffffc10
 
-# Stop clearing the CFM sector 
+# Stop clearing the CFM sector
 $TOOL -s fctrl 1 37ffffff
 
 echo -n "Writing CFM FLASH......."
-# Write config file 
+# Write config file
 $TOOL -s flash -W $CFM_START_ADDR < max10.cfg.tmp
 echo "done"
 
@@ -59,7 +59,7 @@ $TOOL -s fctrl 1 3fffffff
 
 # verify the flash content
 echo -n "Verifing......"
-$TOOL -s flash -c $CFM_SIZE $CFM_START_ADDR > max10.cfg.dump 
+$TOOL -s flash -c $CFM_SIZE $CFM_START_ADDR > max10.cfg.dump
 echo "done"
 
 diff -q max10.cfg.dump max10.cfg.tmp > /dev/null
@@ -72,4 +72,3 @@ fi
 # Clean up
 rm -f max10.cfg.dump
 rm -f max10.cfg.tmp
-

@@ -19,4 +19,3 @@ For example,
 ``-s 64,100-120,80,200-250``
 can generate sequence of packet length
 64, 110, 80, 220, 64, 115, 80, 210...
-

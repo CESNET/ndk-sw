@@ -199,4 +199,3 @@ static inline int nc_txqueue_read_status(struct nc_txqueue *txqueue, struct nc_t
 #endif
 
 #endif /* NETCOPE_TXQUEUE_H */
-

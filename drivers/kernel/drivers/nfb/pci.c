@@ -57,7 +57,7 @@ const struct nfb_pci_dev nfb_device_infos [] = {
 	[NFB_CARD_FB4CGG3]	= { "FB4CGG3",		0,	0x00000002,	0x00000001,	0x0A },
 
 	[NFB_CARD_TIVOLI]	= { "TIVOLI",	       -1,      -1,             -1,             0x0B },
-        
+
 	[NFB_CARD_COMBO_GENERIC]= { "COMBO-GENERIC",   -1,      -1,             -1,             0x0C },
 	[NFB_CARD_COMBO400G1]	= { "COMBO-400G1",     -1,      -1,             -1,             0x0D },
 	[NFB_CARD_AGI_FH400G]	= { "AGI-FH400G",      -1,      -1,             -1,             0x0E },
@@ -183,7 +183,7 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	node = fdt_path_offset(fdt, "/");
 	node = fdt_add_subnode(fdt, node, "system");
 	node = fdt_add_subnode(fdt, node, "device");
-	
+
 	/* Add index of device in system */
 	fdt_setprop_u32(fdt, node, "card-id", nfb->minor);
 
@@ -826,7 +826,7 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	nfb_fdt_fixups(nfb);
 
 	pci_set_drvdata(pci, nfb);
-	
+
 	/* Publish NFB object */
 	ret = nfb_probe(nfb);
 	if (ret) {

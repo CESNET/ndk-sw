@@ -758,7 +758,7 @@ static inline uint16_t _get_etile_r3400(struct nfb_comp *comp, int prtad, int la
 {
 	uint32_t val;
 	uint16_t tmp = 0;
-        
+
 	if (lane <= 5)
 		val = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x330);
 	else if (lane <= 11)
@@ -832,7 +832,7 @@ static inline uint32_t _get_etile_stats(struct nfb_comp *comp, int prtad, uint16
 	_etile_rsfec_snapshot(comp, prtad);
 	tmp = nc_mdio_etile_rsfec_read(comp, prtad, reg+lane*8);
 	tmp += (((uint64_t)(nc_mdio_etile_rsfec_read(comp, prtad, reg+lane*8+4))) << 32);
-	if (tmp >= 0x100000000) 
+	if (tmp >= 0x100000000)
 		return 0xffffffff;
 	else
 		return (tmp & 0xffffffff);

@@ -317,4 +317,3 @@ void ndp_channel_sync(struct ndp_subscription *sub, struct ndp_subscription_sync
 		ndp_channel_txsync(sub, sync);
 	}
 }
-

@@ -146,7 +146,7 @@ static int ndp_mode_loopback_hw_prepare(struct ndp_tool_params *p)
 		goto err_ndp_start_rx;
 	}
 
-	gettimeofday(&p->si.startTime, NULL); 
+	gettimeofday(&p->si.startTime, NULL);
 	return 0;
 
 	/* Error handling */
@@ -280,7 +280,7 @@ static int check_burst(struct ndp_packet *packets, uint32_t pkt_count, struct nd
 
 			p->si.latency_sum += usec_time1 - usec_time0_host;
 		}
-		
+
 		sp_reconstruct(sp,data_ptr[2],p->queue_index,size, usec_time0);
 
 		if (0 && p->queue_index == 0) {

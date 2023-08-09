@@ -70,4 +70,3 @@ Component functions
 .. doxygenfunction:: nfb_comp_lock
 
 .. doxygenfunction:: nfb_comp_unlock
-

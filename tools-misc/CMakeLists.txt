@@ -36,4 +36,3 @@ foreach(NFB IN ITEMS nfb-flash-read nfb-flash-ident)
 endforeach()
 
 add_executable(nfb-spi-max nfb-spi-max/max-spi.c)
-

@@ -101,4 +101,3 @@ nc_ifc_get_default_mac(struct nfb_device *dev, unsigned ifc_nr, uint8_t *addr_by
 #endif
 
 #endif /* NETCOPE_MAC_H */
-

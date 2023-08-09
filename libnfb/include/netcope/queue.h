@@ -47,4 +47,3 @@ enum queue_type {
 #endif
 
 #endif /* NETCOPE_QUEUE_H */
-

@@ -58,7 +58,7 @@ ssize_t nfb_fw_open_mcs(FILE *fd, void **pdata)
 			size += word_size;
 		}
 	}
-	
+
 	rewind(fd);
 
 	/* malloc exact space for data */

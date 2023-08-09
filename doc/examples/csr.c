@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     nfb_comp_write64(comp, SUPERCORE_REG_DATA, 0xBEEFBEEFBEEFBEEFll);
     nfb_comp_write32(comp, SUPERCORE_REG_CMD, SUPERCORE_REG_CMD_ADD);
 
-    if (nfb_comp_read8(comp, SUPERCORE_REG_STATUS) != 0) 
+    if (nfb_comp_read8(comp, SUPERCORE_REG_STATUS) != 0)
         errx(3, "Operation ADD failed");
 
     /* Cleanup */
