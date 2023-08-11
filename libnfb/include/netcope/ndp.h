@@ -169,6 +169,7 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	ret |= fdt_getprop64(fdt, fdt_offset, "size", &q->size);
 	ret |= fdt_getprop64(fdt, fdt_offset, "mmap_size", &mmap_size);
 	ret |= fdt_getprop64(fdt, fdt_offset, "mmap_base", &mmap_offset);
+	ret |= fdt_getprop32(fdt, fdt_offset, "protocol", &q->protocol);
 
 	if (ret) {
 		ret = EBADFD;
@@ -180,13 +181,7 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 		goto err_zero_mmap_size;
 	}
 
-	if (fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", NULL) == 0) {
-		q->version = 2;
-	} else {
-		q->version = 1;
-	}
-
-	if (q->version == 2) {
+	if (q->protocol == 2) {
 		flags |= NDP_CHANNEL_FLAG_USE_HEADER | NDP_CHANNEL_FLAG_USE_OFFSET;
 	}
 
@@ -226,9 +221,9 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	q->sync.swptr = 0;
 	q->sync.hwptr = 0;
 
-	if (q->version == 2) {
+	if (q->protocol == 2) {
 		ret = nc_ndp_v2_open_queue(q, fdt, fdt_offset);
-	} else if (q->version == 1) {
+	} else if (q->protocol == 1) {
 		ret = nc_ndp_v1_open_queue(q);
 	}
 
@@ -279,7 +274,7 @@ static int nc_ndp_queue_start(void *priv)
 	if ((ret = _ndp_queue_start(q)))
 		return ret;
 
-	if (q->channel.type == NDP_CHANNEL_TYPE_RX && q->version == 2 && (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) == 0) {
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX && q->protocol == 2 && (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) == 0) {
 		if ((ret = _ndp_queue_sync(q, &q->sync)))
 			return ret;
 
@@ -297,7 +292,7 @@ static int nc_ndp_queue_stop(void *priv)
 	if ((ret = _ndp_queue_stop(q)))
 		return ret;
 
-	if (q->version == 1) {
+	if (q->protocol == 1) {
 		q->u.v1.bytes = 0;
 	}
 	return 0;

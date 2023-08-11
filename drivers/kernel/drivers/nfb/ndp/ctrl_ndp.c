@@ -676,6 +676,7 @@ static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
 				"/drivers/ndp/tx_queues" : "/drivers/ndp/rx_queues");
 	node_offset = fdt_subnode_offset(fdt, node_offset, dev_name(&channel->dev));
 
+	fdt_setprop_u32(fdt, node_offset, "protocol", 2);
 	fdt_setprop_u64(fdt, node_offset, "hdr_mmap_base", ctrl->hdr_mmap_offset);
 	fdt_setprop_u64(fdt, node_offset, "hdr_mmap_size", ctrl->hdr_buffer_size * 2);
 

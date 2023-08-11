@@ -354,6 +354,8 @@ static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
 {
 	int ret;
 	int desc_count;
+	int node_offset;
+	void *fdt = channel->ndp->nfb->fdt;
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
 	if (channel->ring.block_count == 0)
@@ -385,6 +387,11 @@ static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
 		ret = -ENOMEM;
 		goto err_alloc_desc;
 	}
+
+	node_offset = fdt_path_offset(fdt, channel->id.type == NDP_CHANNEL_TYPE_TX ?
+				"/drivers/ndp/tx_queues" : "/drivers/ndp/rx_queues");
+	node_offset = fdt_subnode_offset(fdt, node_offset, dev_name(&channel->dev));
+	fdt_setprop_u32(fdt, node_offset, "protocol", 1);
 
 	/* fill descs */
 	ndp_ctrl_desc(ctrl, ctrl->descriptor_ptr);

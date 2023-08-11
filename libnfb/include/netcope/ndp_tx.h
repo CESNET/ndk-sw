@@ -257,9 +257,9 @@ static inline unsigned nc_ndp_tx_burst_get(void *priv, struct ndp_packet *packet
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
-	if (q->version == 2) {
+	if (q->protocol == 2) {
 		return nc_ndp_v2_tx_burst_get(priv, packets, count);
-	} else if (q->version == 1) {
+	} else if (q->protocol == 1) {
 		return nc_ndp_v1_tx_burst_get(priv, packets, count);
 	}
 	return 0;
@@ -269,9 +269,9 @@ static inline void nc_ndp_tx_burst_put(void *priv)
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
-	if (q->version == 2) {
+	if (q->protocol == 2) {
 		nc_ndp_v2_tx_burst_put(priv);
-	} else if (q->version == 1) {
+	} else if (q->protocol == 1) {
 		nc_ndp_v1_tx_burst_put(priv);
 	}
 }
@@ -280,9 +280,9 @@ static inline void nc_ndp_tx_burst_flush(void *priv)
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
-	if (q->version == 2) {
+	if (q->protocol == 2) {
 		nc_ndp_v2_tx_burst_flush(priv);
-	} else if (q->version == 1) {
+	} else if (q->protocol == 1) {
 		nc_ndp_v1_tx_burst_flush(priv);
 	}
 }

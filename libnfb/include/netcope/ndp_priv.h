@@ -66,7 +66,7 @@ struct nc_ndp_queue {
 
 	/* Control path */
 	struct ndp_queue *q;
-	uint32_t version;
+	uint32_t protocol;
 	uint32_t flags;
 
 	struct ndp_channel_request channel;
