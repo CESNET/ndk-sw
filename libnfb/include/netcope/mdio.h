@@ -699,8 +699,10 @@ static inline uint32_t nc_mdio_etile_rsfec_write(struct nfb_comp *comp, int prta
 /* Make PCS stats snapshot */
 static inline void _etile_pcs_snapshot(struct nfb_comp *comp, int prtad)
 {
-	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x108, 0x0f);
-	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x108, 0x00);
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x945, 0x04); /* RX stats snapshot */
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x845, 0x04); /* TX stats snapshot */
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x945, 0x00);
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x845, 0x00);
 }
 
 /* Make RSFEC stats snapshot */
@@ -931,20 +933,23 @@ static inline void nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int p
 	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
 }
 
+/* Perform RX+TX reset of E-tile Ethernet PHY */
+static inline void nc_mdio_etile_reset(struct nfb_comp *comp, int prtad)
+{
+	/* see https://www.intel.com/content/www/us/en/docs/programmable/683468/23-2-24-1-0/phy-registers-67394.html */
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); // soft rx rst + soft tx rst
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x0);
+}
+
 static inline void nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
 {
 	int i;
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
 	uint16_t data = enable ? 0x0301 : 0x0300; // enable or disable loopback?
 	for (i = 0; i < mdio->pma_lanes; i++) {
 		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, data);
 	}
-}
-
-/* Perform RX+TX reset of E-tile Ethernet PHY */
-static inline void nc_mdio_etile_reset(struct nfb_comp *comp, int prtad)
-{
-	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6);
-	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x0);
+	/* TBD: implement this: https://www.intel.com/content/www/us/en/docs/programmable/683723/current/resetting-the-rx-equalization.html */
 }
 
 static inline void nc_mdio_etile_rsfec_off(struct nfb_comp *comp, int prtad, int lanes)
