@@ -928,9 +928,21 @@ static inline void nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int p
 	/* Wait until PMA attribute code request is completed */
 	do {
 		ret = nc_mdio_dmap_drp_read(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_H);
-	} while (((ret & 0x01) != 0) && (++retries < 1000));
+	} while (((ret & 0x01) != 0) && (++retries < 10000));
 	/* Clear PMA attribute code request sent flag */
 	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
+}
+
+
+static inline uint16_t nc_mdio_etile_pma_attribute_read(struct nc_mdio *mdio, int prtad, uint16_t lane)
+{
+	uint32_t page = lane + 1; // page number corresponds to lane number + 1
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+	uint16_t rcode;
+
+	rcode = (nc_mdio_dmap_drp_read(comp, prtad, page, 0x88) & 0xff);
+	rcode |= ((nc_mdio_dmap_drp_read(comp, prtad, page, 0x89) & 0xff) << 8);
+	return rcode;
 }
 
 /* Perform RX+TX reset of E-tile Ethernet PHY */
@@ -941,15 +953,67 @@ static inline void nc_mdio_etile_reset(struct nfb_comp *comp, int prtad)
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x0);
 }
 
+/* Reset Etile RX Equalization parameters */
+static inline void nc_mdio_etile_reset_rxeq(struct nc_mdio *mdio, int prtad, int lane)
+{
+	/* see: https://www.intel.com/content/www/us/en/docs/programmable/683723/current/resetting-the-rx-equalization.html */
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x000a, 0xffff); /* reset RX DFE taps */
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x002c, 0x0d00); /* reset RF_P2 */
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x006c, 0x0000);
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x002c, 0x0d01); /* reset RF_P1 */
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x006c, 0x0000);
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x002c, 0x0d02); /* reset RF_P0 */
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x006c, 0x0000);
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x00ec, 0x0012); /* Load attributes into receiver */
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x00ec, 0x0015); /* Load attributes into receiver */
+}
+
+/* Perform RX initial adaptation. PMA serial loopback must be active prior to this function usage */
+static inline void nc_mdio_etile_rxadapt(struct nc_mdio *mdio, int prtad, int lane)
+{
+	uint32_t ret;
+	int retries = 0;
+
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x0002, 0x0325); /* Enable PRBS data */
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x000a, 0x0001); /* Enable initial coarse adaptation */
+	do {
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x0126, 0x0b00);
+		ret = nc_mdio_etile_pma_attribute_read(mdio, prtad, lane);
+	} while (((ret & 0xff) != 0x80) && (++retries < 100000));
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x0002, 0x03ff); /* Disable PRBS */
+}
+
+/* Enable RX mission mode (= continuous) equalization. Initial adaptation should perform prior to using this function */
+static inline void nc_mdio_etile_rxrun(struct nc_mdio *mdio, int prtad, int lane)
+{
+	uint32_t ret;
+	int retries = 0;
+
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x000a, 0x0006); /* Run continuous adaptive equalization */
+	do {
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x0126, 0x0b00);
+		ret = nc_mdio_etile_pma_attribute_read(mdio, prtad, lane);
+	} while (((ret & 0xff) != 0xe2) && (++retries < 100000));
+}
+
 static inline void nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
 {
 	int i;
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
-	uint16_t data = enable ? 0x0301 : 0x0300; // enable or disable loopback?
+
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); /* Assert EHIP rx+tx soft reset */
 	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, data);
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x400e2, 0x55);           /* rx+tx PMA interface reset */
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, 0x0301); /* Enable the loopback */
+		nc_mdio_etile_reset_rxeq(mdio, prtad, i);   /* Reset RX EQ */
+		nc_mdio_etile_rxadapt(mdio, prtad, i);      /* Run initial adaptation */
+		if (!enable) {
+			nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, 0x0300); /* Disable loopback */
+			nc_mdio_etile_rxrun(mdio, prtad, i);  /* Run continuous equalization */
+		}
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x400e2, 0x0); /* Deassert PMA interface reset */
 	}
-	/* TBD: implement this: https://www.intel.com/content/www/us/en/docs/programmable/683723/current/resetting-the-rx-equalization.html */
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x0); // Deassert EHIP resets
 }
 
 static inline void nc_mdio_etile_rsfec_off(struct nfb_comp *comp, int prtad, int lanes)
