@@ -92,6 +92,7 @@ static inline int              nc_rxmac_read_status(struct nc_rxmac *mac, struct
 static inline int              nc_rxmac_read_counters(struct nc_rxmac *mac, struct nc_rxmac_counters *counters, struct nc_rxmac_etherstats *stats);
 static inline int              nc_rxmac_reset_counters(struct nc_rxmac *mac);
 static inline void             nc_rxmac_mac_filter_enable(struct nc_rxmac *mac, enum nc_rxmac_mac_filter mode);
+static inline unsigned         nc_rxmac_mac_address_count(struct nc_rxmac *mac);
 static inline void             nc_rxmac_set_error_mask(struct nc_rxmac *mac, unsigned error_mask);
 
 
@@ -290,7 +291,7 @@ static inline int nc_rxmac_read_status(struct nc_rxmac *mac, struct nc_rxmac_sta
 
 	s->link_up          = (reg & RXMAC_REG_STATUS_LINK) ? 1 : 0;
 	s->overflow         = (reg & RXMAC_REG_STATUS_OVER) ? 1 : 0;
-	s->mac_addr_count   = mac->mac_addr_count;
+	s->mac_addr_count   = nc_rxmac_mac_address_count(mac);
 
 	s->frame_length_max_capable = mac->mtu;
 
@@ -402,12 +403,12 @@ static inline int _nc_rxmac_set_mac(struct nc_rxmac *mac, int index, unsigned lo
 	struct nfb_comp *comp = nfb_user_to_comp(mac);
 	uint64_t reg64;
 
-	if (index >= (signed) mac->mac_addr_count)
+	if (index >= (signed) nc_rxmac_mac_address_count(mac))
 		return -EINVAL;
 
 	if (index < 0) {
 		/* Find an empty position */
-		for (i = 0; i < mac->mac_addr_count; i++) {
+		for (i = 0; i < nc_rxmac_mac_address_count(mac); i++) {
 			reg64 = nfb_comp_read64(comp, RXMAC_REG_MAC_BASE + i * 8);
 			if ((reg64 & RXMAC_MAC_ADDR_VALID_BIT_MASK) == 0) {
 				index = i;
@@ -457,7 +458,7 @@ static inline int nc_rxmac_get_mac_list(struct nc_rxmac *mac, unsigned long long
 
 	struct nfb_comp *comp = nfb_user_to_comp(mac);
 
-	if (mac_addr_count > mac->mac_addr_count)
+	if (mac_addr_count > nc_rxmac_mac_address_count(mac))
 		return -EINVAL;
 
 	if (!nfb_comp_lock(comp, RXMAC_COMP_LOCK))
@@ -492,7 +493,7 @@ static inline int nc_rxmac_set_mac_list(struct nc_rxmac *mac, unsigned long long
 
 	struct nfb_comp *comp = nfb_user_to_comp(mac);
 
-	if (mac_addr_count > mac->mac_addr_count)
+	if (mac_addr_count > nc_rxmac_mac_address_count(mac))
 		return -EINVAL;
 
 	if (!nfb_comp_lock(comp, RXMAC_COMP_LOCK))
