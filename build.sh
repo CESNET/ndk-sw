@@ -160,6 +160,7 @@ get_dependencies()
         ret="$ret libarchive-devel"
         ret="$ret libconfig"
         ret="$ret libconfig-devel"
+        ret="$ret python3-setuptools"
         if [ "$os_version" = "7" ]; then
             ret="$ret python36-Cython"
         else

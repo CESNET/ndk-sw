@@ -55,6 +55,11 @@ add_executable(ndp-tool
 	ndptool/read.c ndptool/receive.c ndptool/stats.c ndptool/transmit.c
 )
 
+set (PIE_TARGETS nfb-info nfb-boot nfb-bus nfb-dma nfb-eth nfb-tsu nfb-mdio ndp-tool)
+foreach(PIE_TARGET IN LISTS PIE_TARGETS)
+	set_property(TARGET ${PIE_TARGET} PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+endforeach()
+
 target_compile_options(ndp-tool PRIVATE -O3 -funroll-loops)
 target_link_libraries(ndp-tool
 	PRIVATE ${NUMA_LIBRARIES} ${NCURSES_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}
@@ -92,8 +97,10 @@ if(USE_DPDK)
 	ndptool/dpdk/dpdk_receive.c ndptool/dpdk/dpdk_transmit.c
 	)
 
+	set_property(TARGET ndp-tool-dpdk PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+
 	set(DPDK_TARGETS dpdk-generate dpdk-read dpdk-loopback dpdk-receive dpdk-transmit)
-	
+
 	target_compile_options(ndp-tool-dpdk PRIVATE -O3 -funroll-loops ${DPDK_CFLAGS})
 	target_link_libraries(ndp-tool-dpdk
 	PRIVATE ${NUMA_LIBRARIES} ${NCURSES_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${DPDK_LDFLAGS}

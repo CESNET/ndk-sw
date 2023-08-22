@@ -21,6 +21,11 @@ add_executable(nfb-busreplay busreplay/busreplay.c)
 
 add_executable(nfb-xvc nfb-xvc/xvc_pcie.c nfb-xvc/xvcserver.c)
 
+set (PIE_TARGETS nfb-busdebugctl nfb-busdump nfb-busreplay nfb-xvc)
+foreach(PIE_TARGET IN LISTS PIE_TARGETS)
+	set_property(TARGET ${PIE_TARGET} PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+endforeach()
+
 install(
 	TARGETS nfb-busdebugctl nfb-busdump nfb-busreplay nfb-xvc
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
