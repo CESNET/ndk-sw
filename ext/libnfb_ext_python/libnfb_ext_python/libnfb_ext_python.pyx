@@ -204,9 +204,8 @@ cdef int nfb_pyndp_queue_open(nfb_device *dev, void *dev_priv, unsigned index, i
     cdef object t
 
     try:
-        _ndp = wrap.nfb.ndp
-        _d = _ndp.rx if dir == 0 else _ndp.tx
-        queue = _d[index]
+        queue = wrap.nfb.queue_open(index, dir, flags)
+        assert queue is not None
     except:
         return -libc.errno.ENODEV
 
