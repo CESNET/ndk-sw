@@ -1,3 +1,9 @@
+* Tue Aug 22 2023 Martin Spinler <spinler@cesnet.cz> - 6.19.1-1
+- [FEATURE] added DPDK version of ndp-tool
+- [FEATURE] added support for Fedora build: PIE flag for executables
+- [BUGFIX] some fixes for E-Tile MDIO, e.g. loopback
+- [BUGFIX] include .pxd files into Python RPM package
+
 * Tue Aug 1 2023 Martin Spinler <spinler@cesnet.cz> - 6.19.0-1
 - [FEATURE] updated documentation (mainly Python)
 - [FEATURE] enable NDP interface for libnfb extension
