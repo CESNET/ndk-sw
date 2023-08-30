@@ -22,19 +22,26 @@
 
 const char *str_active[2] = {"        ", "[active]"};
 
-struct pma_feature_t {
+struct phy_feature_t {
 	const char *name;
 	int ability_reg;
 	int ability_bit;
 	int control_reg;
 	int control_bit;
-} pma_feature_table [] = {
-	{"Reset",                           0, -1,     0, 15},
-	{"PMA local loopback",              8,  0,     0,  0},
-	{"PMA remote loopback",            13, 15,     0,  1},
-	{"Low power",                       1,  1,     0, 11},
-	{"25G RS-FEC Enable",               0, -1,   200,  2},
-	{NULL,                              0,  0,     0,  0},
+};
+
+static const struct phy_feature_t pma_feature_table [] = {
+	{"Reset",                       0, -1,    0, 15},
+	{"PMA local loopback",          8,  0,    0,  0},
+	{"PMA remote loopback",        13, 15,    0,  1},
+	{"Low power",                   1,  1,    0, 11},
+	{"25G RS-FEC Enable",           0, -1,  200,  2},
+	{NULL,                          0,  0,    0,  0},
+};
+
+static const struct phy_feature_t pcs_feature_table [] = {
+	{"PCS reverse loopback",    16385,  0, 16384, 0},
+	{NULL,                          0,  0,     0, 0},
 };
 
 void pcspma_print_speed(struct nc_mdio *mdio, int portaddr, uint8_t mdev)
@@ -71,7 +78,8 @@ int pcspma_set_feature(struct nc_mdio *mdio, int portaddr, struct eth_params *p)
 {
 	uint16_t reg;
 
-	const struct pma_feature_t *item = pma_feature_table;
+	const struct phy_feature_t *item     = pma_feature_table;
+	const struct phy_feature_t *pcs_item = pcs_feature_table;
 
 	while (item->name) {
 		if (!strcmp(p->string, item->name)) {
@@ -82,6 +90,16 @@ int pcspma_set_feature(struct nc_mdio *mdio, int portaddr, struct eth_params *p)
 		}
 		item++;
 	}
+	while (pcs_item->name) {
+		if (!strcmp(p->string, pcs_item->name)) {
+			reg = nc_mdio_read(mdio, portaddr, 3, pcs_item->control_reg);
+			reg = p->param ? (reg | (1 << pcs_item->control_bit)) : (reg & ~(1 << pcs_item->control_bit));
+			nc_mdio_write(mdio, portaddr, 3, pcs_item->control_reg, reg);
+			return 0;
+		}
+		pcs_item++;
+	}
+
 	return -1;
 }
 
@@ -127,7 +145,7 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 
 	if (p->verbose) {
 		struct cb_print_pma_pmd_type_priv cb_ppptp;
-		const struct pma_feature_t *item;
+		const struct phy_feature_t *item;
 
 		printf("Supported PMA types ->\n");
 
@@ -201,6 +219,20 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 	print_pcspma_common(mdio, portaddr, 3);
 
 	if (p->verbose) {
+		const struct phy_feature_t *item;
+		printf("Supported PCS features ->\n");
+
+		for (item = pcs_feature_table; item->name; item++) {
+			if (item->ability_bit != -1) {
+				reg = nc_mdio_read(mdio, portaddr, 3, item->ability_reg);
+			}
+
+			if (reg & (1 << item->ability_bit) || p->verbose > 1) {
+				reg = nc_mdio_read(mdio, portaddr, 3, item->control_reg);
+				printf(" * %s                : %s\n", str_active[reg & (1 << item->control_bit) ? 1 : 0], item->name);
+			}
+		}
+
 		// PCS status reg 1 -> 32
 		reg = nc_mdio_read(mdio, portaddr, 3, 32);
 		// PCS status reg 2 -> 33
