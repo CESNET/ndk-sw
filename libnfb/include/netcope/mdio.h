@@ -556,7 +556,7 @@ static inline uint16_t nc_mdio_fixup_ftile_rsfec_read(struct nc_mdio *mdio, int 
 		default: break;
 		}
 	}
-	return 0;
+	return mdio->mdio_read(comp, prtad, devad, addr); /* Unknown address: try to read the MGMT */
 }
 
 static inline void _ftile_pcs_snapshot(struct nfb_comp *comp, int prtad, int speed)
@@ -642,6 +642,7 @@ static inline uint16_t nc_mdio_fixup_ftile_pcs_read(struct nc_mdio *mdio, int pr
 		switch (addr) {
 		case 201: return _get_ftile_r1201(comp, prtad, fec_lanes, speed);
 		case 206: return _get_ftile_r1206(comp, prtad, fec_lanes, speed);
+		default: break;
 		}
 	}
 	if (devad == 3) { /* PCS registers */
@@ -656,7 +657,7 @@ static inline uint16_t nc_mdio_fixup_ftile_pcs_read(struct nc_mdio *mdio, int pr
 			return _get_ftile_r3400(comp, prtad, speed, lane);
 		}
 	}
-	return 0;
+	return mdio->mdio_read(comp, prtad, devad, addr); /* Unknown address: try to read the MGMT */
 }
 
 static inline void nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
@@ -869,7 +870,7 @@ static inline uint16_t nc_mdio_fixup_etile_pcs_read(struct nc_mdio *mdio, int pr
 		case 215: return (_get_etile_stats(comp, prtad, 0x240, 2) >> 16);    /* Lane 2 symbol errors high  */
 		case 216: return (_get_etile_stats(comp, prtad, 0x240, 3) & 0xffff); /* Lane 3 symbol errors low   */
 		case 217: return (_get_etile_stats(comp, prtad, 0x240, 3) >> 16);    /* Lane 3 symbol errors high  */
-		default: return 0;
+		default: break;
 		}
 	}
 	if (devad == 3) { /* PCS registers */
@@ -884,7 +885,7 @@ static inline uint16_t nc_mdio_fixup_etile_pcs_read(struct nc_mdio *mdio, int pr
 			return _get_etile_r3400(comp, prtad, lane);
 		}
 	}
-	return 0;
+	return mdio->mdio_read(comp, prtad, devad, addr); /* Unknown address: try to read the MGMT */
 }
 
 static inline void nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int prtad, uint16_t lane, uint16_t code_addr, uint16_t code_val)
