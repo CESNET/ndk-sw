@@ -90,7 +90,7 @@ nc_ifc_get_default_mac(struct nfb_device *dev, unsigned ifc_nr, uint8_t *addr_by
 	addr_bytes[1] = 0x11;
 	addr_bytes[2] = 0x17;
 	addr_bytes[3] = type;
-	addr_bytes[4] = sn >> 8;
+	addr_bytes[4] = sn >> 4;
 	addr_bytes[5] = (sn << 4) | (ifc_nr & 0x0F);
 
 	return 0;
