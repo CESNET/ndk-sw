@@ -53,7 +53,7 @@ nc_ifc_get_default_mac(struct nfb_device *dev, unsigned ifc_nr, uint8_t *addr_by
 
 	fdt = nfb_get_fdt(dev);
         node = fdt_path_offset(fdt, "/board/");
-        prop = fdt_getprop(fdt, node, "card-name", &len);
+        prop = fdt_getprop(fdt, node, "board-name", &len);
 
 	if (prop == NULL)
 		return -ENODEV;
