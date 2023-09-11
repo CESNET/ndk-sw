@@ -11,11 +11,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=8885e90a"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -107,14 +107,14 @@
            <div itemprop="articleBody">
              
   <section id="userspace-access-to-nfb-driver">
-<h1>Userspace access to NFB Driver<a class="headerlink" href="#userspace-access-to-nfb-driver" title="Permalink to this heading"></a></h1>
+<h1>Userspace access to NFB Driver<a class="headerlink" href="#userspace-access-to-nfb-driver" title="Link to this heading"></a></h1>
 <p>Large diversity of hardware boards and firmware blocks needs a flexible system for describing and driving hardware and firmware platform.
 As the main building block for solving this challenge was chosen the Device Tree model (<a class="reference external" href="http://www.devicetree.org">http://www.devicetree.org</a>).
 With well designed Device Tree structure the whole system can react very fast and safely for new hardware or firmware modifications and features.</p>
 <p>NFB Linux driver is designed to be modular.
 It can have user-written modules (either embedded or loadable).</p>
 <section id="device-tree-introduction">
-<h2>Device Tree introduction<a class="headerlink" href="#device-tree-introduction" title="Permalink to this heading"></a></h2>
+<h2>Device Tree introduction<a class="headerlink" href="#device-tree-introduction" title="Link to this heading"></a></h2>
 <p>Device Tree can have several forms.
 DTS is human-readable source format resembling branched C structure. It’s not suitable for machine processing.
 DTB is binary format, which holds string names of properties and nodes.
@@ -125,29 +125,29 @@ Device Tree is explored for known units (typically specified by <code class="doc
 Recognized units are passed into corresponding attached modules.</p>
 </section>
 <section id="fdt-description">
-<h2>FDT description<a class="headerlink" href="#fdt-description" title="Permalink to this heading"></a></h2>
+<h2>FDT description<a class="headerlink" href="#fdt-description" title="Link to this heading"></a></h2>
 <p>This structure describes hardware and module interface of the device.</p>
 <p>It contains typically three sections (nodes):</p>
 <section id="drivers">
-<h3>drivers<a class="headerlink" href="#drivers" title="Permalink to this heading"></a></h3>
+<h3>drivers<a class="headerlink" href="#drivers" title="Link to this heading"></a></h3>
 <p>Here are described all attached modules.
 Embedded modules and their nodes are documented in <span class="xref std std-doc">/modules</span>.</p>
 </section>
 <section id="firmware">
-<h3>firmware<a class="headerlink" href="#firmware" title="Permalink to this heading"></a></h3>
+<h3>firmware<a class="headerlink" href="#firmware" title="Link to this heading"></a></h3>
 <p>Firmware node in NFB Device Tree structure mainly decribes address space of currently programmed firmware.
 Components with <code class="docutils literal notranslate"><span class="pre">reg</span></code> property can be mapped and accessed in user application.
 Other components (virtual or hierarchical) serves for information purposes.</p>
 </section>
 <section id="board">
-<h3>board<a class="headerlink" href="#board" title="Permalink to this heading"></a></h3>
+<h3>board<a class="headerlink" href="#board" title="Link to this heading"></a></h3>
 <p>This node contains physical informations of the device and is not affected by changing firmware.
 Card-specific part of the driver fills it with informations e.g. from Flash.
 These holds information about card name, serial number, birth date, programmable chip name, ethernet interfaces and so on.</p>
 </section>
 </section>
 <section id="character-device">
-<h2>Character device<a class="headerlink" href="#character-device" title="Permalink to this heading"></a></h2>
+<h2>Character device<a class="headerlink" href="#character-device" title="Link to this heading"></a></h2>
 <p>Typical access to the NFB device is through the node in <em>dev</em> filesystem.
 Node is named with the “<code class="file docutils literal notranslate"><span class="pre">nfb%d</span></code>” format string.</p>
 <p>Node supports these basic operations:</p>
@@ -175,7 +175,7 @@ Node is named with the “<code class="file docutils literal notranslate"><span 
 </ul>
 </section>
 <section id="sysfs">
-<h2>sysfs<a class="headerlink" href="#sysfs" title="Permalink to this heading"></a></h2>
+<h2>sysfs<a class="headerlink" href="#sysfs" title="Link to this heading"></a></h2>
 <p>Basic informations about device are located in path <code class="file docutils literal notranslate"><span class="pre">/sys/class/nfb/nfb%d</span></code>.</p>
 <p>Each device contains these entries:</p>
 <ul class="simple">

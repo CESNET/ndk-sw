@@ -11,11 +11,11 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=8885e90a"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -59,10 +59,38 @@
 <li class="toctree-l1"><a class="reference internal" href="libnfb-example.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="libnfb-api-base.html">Base API reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">NDP API reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#basic-structures">Basic structures</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#init-and-deinit-functions">Init and deinit functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#transmission-functions">Transmission functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#miscellaneous-functions">Miscellaneous functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#basic-structures">Basic structures</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv410ndp_packet"><code class="docutils literal notranslate"><span class="pre">ndp_packet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N10ndp_packet4dataE"><code class="docutils literal notranslate"><span class="pre">ndp_packet::data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N10ndp_packet11data_lengthE"><code class="docutils literal notranslate"><span class="pre">ndp_packet::data_length</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N10ndp_packet5flagsE"><code class="docutils literal notranslate"><span class="pre">ndp_packet::flags</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N10ndp_packet6headerE"><code class="docutils literal notranslate"><span class="pre">ndp_packet::header</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N10ndp_packet13header_lengthE"><code class="docutils literal notranslate"><span class="pre">ndp_packet::header_length</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#init-and-deinit-functions">Init and deinit functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv417ndp_open_rx_queueP10nfb_devicej"><code class="docutils literal notranslate"><span class="pre">ndp_open_rx_queue()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv417ndp_open_tx_queueP10nfb_devicej"><code class="docutils literal notranslate"><span class="pre">ndp_open_tx_queue()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv418ndp_close_rx_queueP14ndp_rx_queue_t"><code class="docutils literal notranslate"><span class="pre">ndp_close_rx_queue()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv418ndp_close_tx_queueP14ndp_tx_queue_t"><code class="docutils literal notranslate"><span class="pre">ndp_close_tx_queue()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#transmission-functions">Transmission functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv415ndp_queue_startP9ndp_queue"><code class="docutils literal notranslate"><span class="pre">ndp_queue_start()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv414ndp_queue_stopP9ndp_queue"><code class="docutils literal notranslate"><span class="pre">ndp_queue_stop()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv416ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj"><code class="docutils literal notranslate"><span class="pre">ndp_rx_burst_get()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv416ndp_rx_burst_putP14ndp_rx_queue_t"><code class="docutils literal notranslate"><span class="pre">ndp_rx_burst_put()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv416ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj"><code class="docutils literal notranslate"><span class="pre">ndp_tx_burst_get()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv416ndp_tx_burst_putP14ndp_tx_queue_t"><code class="docutils literal notranslate"><span class="pre">ndp_tx_burst_put()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv417ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj"><code class="docutils literal notranslate"><span class="pre">ndp_tx_burst_copy()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#miscellaneous-functions">Miscellaneous functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv423ndp_queue_get_numa_nodePK9ndp_queue"><code class="docutils literal notranslate"><span class="pre">ndp_queue_get_numa_node()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -103,13 +131,13 @@
            <div itemprop="articleBody">
              
   <section id="ndp-api">
-<h1>NDP API<a class="headerlink" href="#ndp-api" title="Permalink to this heading"></a></h1>
+<h1>NDP API<a class="headerlink" href="#ndp-api" title="Link to this heading"></a></h1>
 <p>This part of the libnfb library is used to access high-speed queues for packet transmissions.</p>
 <section id="basic-structures">
-<h2>Basic structures<a class="headerlink" href="#basic-structures" title="Permalink to this heading"></a></h2>
+<h2>Basic structures<a class="headerlink" href="#basic-structures" title="Link to this heading"></a></h2>
 <dl class="cpp struct">
 <dt class="sig sig-object cpp" id="_CPPv410ndp_packet">
-<span id="_CPPv310ndp_packet"></span><span id="_CPPv210ndp_packet"></span><span id="ndp_packet"></span><span class="target" id="structndp__packet"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_packet</span></span></span><a class="headerlink" href="#_CPPv410ndp_packet" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv310ndp_packet"></span><span id="_CPPv210ndp_packet"></span><span id="ndp_packet"></span><span class="target" id="structndp__packet"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_packet</span></span></span><a class="headerlink" href="#_CPPv410ndp_packet" title="Link to this definition"></a><br /></dt>
 <dd><p>NDP packet. </p>
 <p>NDP packet contains packet data and metadata (header).</p>
 <div class="admonition warning">
@@ -120,31 +148,31 @@
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N10ndp_packet4dataE">
-<span id="_CPPv3N10ndp_packet4dataE"></span><span id="_CPPv2N10ndp_packet4dataE"></span><span id="ndp_packet::data__unsigned-cP"></span><span class="target" id="structndp__packet_1ad684f905b6e24e8872529a96c8bba0fa"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">data</span></span></span><a class="headerlink" href="#_CPPv4N10ndp_packet4dataE" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv3N10ndp_packet4dataE"></span><span id="_CPPv2N10ndp_packet4dataE"></span><span id="ndp_packet::data__unsigned-cP"></span><span class="target" id="structndp__packet_1ad684f905b6e24e8872529a96c8bba0fa"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">data</span></span></span><a class="headerlink" href="#_CPPv4N10ndp_packet4dataE" title="Link to this definition"></a><br /></dt>
 <dd><p>Packet data location. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N10ndp_packet11data_lengthE">
-<span id="_CPPv3N10ndp_packet11data_lengthE"></span><span id="_CPPv2N10ndp_packet11data_lengthE"></span><span id="ndp_packet::data_length__uint32_t"></span><span class="target" id="structndp__packet_1a452685061ec9f09000e7120567acdc56"></span><span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">data_length</span></span></span><a class="headerlink" href="#_CPPv4N10ndp_packet11data_lengthE" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv3N10ndp_packet11data_lengthE"></span><span id="_CPPv2N10ndp_packet11data_lengthE"></span><span id="ndp_packet::data_length__uint32_t"></span><span class="target" id="structndp__packet_1a452685061ec9f09000e7120567acdc56"></span><span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">data_length</span></span></span><a class="headerlink" href="#_CPPv4N10ndp_packet11data_lengthE" title="Link to this definition"></a><br /></dt>
 <dd><p>Packet data length. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N10ndp_packet5flagsE">
-<span id="_CPPv3N10ndp_packet5flagsE"></span><span id="_CPPv2N10ndp_packet5flagsE"></span><span id="ndp_packet::flags__uint16_t"></span><span class="target" id="structndp__packet_1a04cf69a37add6c1d7f270e1d34515c46"></span><span class="n"><span class="pre">uint16_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">flags</span></span></span><a class="headerlink" href="#_CPPv4N10ndp_packet5flagsE" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv3N10ndp_packet5flagsE"></span><span id="_CPPv2N10ndp_packet5flagsE"></span><span id="ndp_packet::flags__uint16_t"></span><span class="target" id="structndp__packet_1a04cf69a37add6c1d7f270e1d34515c46"></span><span class="n"><span class="pre">uint16_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">flags</span></span></span><a class="headerlink" href="#_CPPv4N10ndp_packet5flagsE" title="Link to this definition"></a><br /></dt>
 <dd><p>Packet specific flags. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N10ndp_packet6headerE">
-<span id="_CPPv3N10ndp_packet6headerE"></span><span id="_CPPv2N10ndp_packet6headerE"></span><span id="ndp_packet::header__unsigned-cP"></span><span class="target" id="structndp__packet_1a4c7493cc9c2a301e9758f22f79bc824a"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">header</span></span></span><a class="headerlink" href="#_CPPv4N10ndp_packet6headerE" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv3N10ndp_packet6headerE"></span><span id="_CPPv2N10ndp_packet6headerE"></span><span id="ndp_packet::header__unsigned-cP"></span><span class="target" id="structndp__packet_1a4c7493cc9c2a301e9758f22f79bc824a"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">header</span></span></span><a class="headerlink" href="#_CPPv4N10ndp_packet6headerE" title="Link to this definition"></a><br /></dt>
 <dd><p>Packet metadata location. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N10ndp_packet13header_lengthE">
-<span id="_CPPv3N10ndp_packet13header_lengthE"></span><span id="_CPPv2N10ndp_packet13header_lengthE"></span><span id="ndp_packet::header_length__uint16_t"></span><span class="target" id="structndp__packet_1ae06869d2f440bbb45032bd61f826edd2"></span><span class="n"><span class="pre">uint16_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">header_length</span></span></span><a class="headerlink" href="#_CPPv4N10ndp_packet13header_lengthE" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv3N10ndp_packet13header_lengthE"></span><span id="_CPPv2N10ndp_packet13header_lengthE"></span><span id="ndp_packet::header_length__uint16_t"></span><span class="target" id="structndp__packet_1ae06869d2f440bbb45032bd61f826edd2"></span><span class="n"><span class="pre">uint16_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">header_length</span></span></span><a class="headerlink" href="#_CPPv4N10ndp_packet13header_lengthE" title="Link to this definition"></a><br /></dt>
 <dd><p>Packet metadata length. </p>
 </dd></dl>
 
@@ -153,10 +181,10 @@
 
 </section>
 <section id="init-and-deinit-functions">
-<h2>Init and deinit functions<a class="headerlink" href="#init-and-deinit-functions" title="Permalink to this heading"></a></h2>
+<h2>Init and deinit functions<a class="headerlink" href="#init-and-deinit-functions" title="Link to this heading"></a></h2>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv417ndp_open_rx_queueP10nfb_devicej">
-<span id="_CPPv317ndp_open_rx_queueP10nfb_devicej"></span><span id="_CPPv217ndp_open_rx_queueP10nfb_devicej"></span><span id="ndp_open_rx_queue__nfb_deviceP.unsigned"></span><span class="target" id="group__queue__fn_1ga7325e496ac6cc6d71fe6ffaf52e23371"></span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">ndp_open_rx_queue</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">nfb</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">queue_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_open_rx_queueP10nfb_devicej" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv317ndp_open_rx_queueP10nfb_devicej"></span><span id="_CPPv217ndp_open_rx_queueP10nfb_devicej"></span><span id="ndp_open_rx_queue__nfb_deviceP.unsigned"></span><span class="target" id="group__queue__fn_1ga7325e496ac6cc6d71fe6ffaf52e23371"></span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">ndp_open_rx_queue</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">nfb</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">queue_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_open_rx_queueP10nfb_devicej" title="Link to this definition"></a><br /></dt>
 <dd><p>Open (subscribe) NDP RX queue. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -173,7 +201,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv417ndp_open_tx_queueP10nfb_devicej">
-<span id="_CPPv317ndp_open_tx_queueP10nfb_devicej"></span><span id="_CPPv217ndp_open_tx_queueP10nfb_devicej"></span><span id="ndp_open_tx_queue__nfb_deviceP.unsigned"></span><span class="target" id="group__queue__fn_1gab5c53da19812201db78a21569084959d"></span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">ndp_open_tx_queue</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">nfb</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">queue_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_open_tx_queueP10nfb_devicej" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv317ndp_open_tx_queueP10nfb_devicej"></span><span id="_CPPv217ndp_open_tx_queueP10nfb_devicej"></span><span id="ndp_open_tx_queue__nfb_deviceP.unsigned"></span><span class="target" id="group__queue__fn_1gab5c53da19812201db78a21569084959d"></span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">ndp_open_tx_queue</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">nfb</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">queue_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_open_tx_queueP10nfb_devicej" title="Link to this definition"></a><br /></dt>
 <dd><p>Open (subscribe) NDP TX queue. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -190,7 +218,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv418ndp_close_rx_queueP14ndp_rx_queue_t">
-<span id="_CPPv318ndp_close_rx_queueP14ndp_rx_queue_t"></span><span id="_CPPv218ndp_close_rx_queueP14ndp_rx_queue_t"></span><span id="ndp_close_rx_queue__ndp_rx_queue_tP"></span><span class="target" id="group__queue__fn_1ga93d39579c5732c2b89c4effae4e1781f"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_close_rx_queue</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv418ndp_close_rx_queueP14ndp_rx_queue_t" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv318ndp_close_rx_queueP14ndp_rx_queue_t"></span><span id="_CPPv218ndp_close_rx_queueP14ndp_rx_queue_t"></span><span id="ndp_close_rx_queue__ndp_rx_queue_tP"></span><span class="target" id="group__queue__fn_1ga93d39579c5732c2b89c4effae4e1781f"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_close_rx_queue</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv418ndp_close_rx_queueP14ndp_rx_queue_t" title="Link to this definition"></a><br /></dt>
 <dd><p>Close (unsubscribe) NDP RX queue. </p>
 <p>
 The queue must not be used after this function is called and should be set to NULL by the application. </p>
@@ -203,7 +231,7 @@ The queue must not be used after this function is called and should be set to NU
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv418ndp_close_tx_queueP14ndp_tx_queue_t">
-<span id="_CPPv318ndp_close_tx_queueP14ndp_tx_queue_t"></span><span id="_CPPv218ndp_close_tx_queueP14ndp_tx_queue_t"></span><span id="ndp_close_tx_queue__ndp_tx_queue_tP"></span><span class="target" id="group__queue__fn_1ga576fce7c370d70dee01c09f7c3c26e0e"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_close_tx_queue</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv418ndp_close_tx_queueP14ndp_tx_queue_t" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv318ndp_close_tx_queueP14ndp_tx_queue_t"></span><span id="_CPPv218ndp_close_tx_queueP14ndp_tx_queue_t"></span><span id="ndp_close_tx_queue__ndp_tx_queue_tP"></span><span class="target" id="group__queue__fn_1ga576fce7c370d70dee01c09f7c3c26e0e"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_close_tx_queue</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv418ndp_close_tx_queueP14ndp_tx_queue_t" title="Link to this definition"></a><br /></dt>
 <dd><p>Close (unsubscribe) NDP TX queue. </p>
 <p>
 The queue must not be used after this function is called and should be set to NULL by the application. </p>
@@ -216,10 +244,10 @@ The queue must not be used after this function is called and should be set to NU
 
 </section>
 <section id="transmission-functions">
-<h2>Transmission functions<a class="headerlink" href="#transmission-functions" title="Permalink to this heading"></a></h2>
+<h2>Transmission functions<a class="headerlink" href="#transmission-functions" title="Link to this heading"></a></h2>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv415ndp_queue_startP9ndp_queue">
-<span id="_CPPv315ndp_queue_startP9ndp_queue"></span><span id="_CPPv215ndp_queue_startP9ndp_queue"></span><span id="ndp_queue_start__ndp_queueP"></span><span class="target" id="group__queue__fn_1ga23ce29ef7e099abb6909626b36ecf0f0"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_queue_start</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">ndp_queue</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv415ndp_queue_startP9ndp_queue" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv315ndp_queue_startP9ndp_queue"></span><span id="_CPPv215ndp_queue_startP9ndp_queue"></span><span id="ndp_queue_start__ndp_queueP"></span><span class="target" id="group__queue__fn_1ga23ce29ef7e099abb6909626b36ecf0f0"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_queue_start</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">ndp_queue</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv415ndp_queue_startP9ndp_queue" title="Link to this definition"></a><br /></dt>
 <dd><p>Start traffic on queue. </p>
 <p>
 When this function is called, RX queue become able to receive packets (don’t mistake this with RXMAC control), or TX queue become able to transmit packets. </p>
@@ -235,7 +263,7 @@ When this function is called, RX queue become able to receive packets (don’t m
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv414ndp_queue_stopP9ndp_queue">
-<span id="_CPPv314ndp_queue_stopP9ndp_queue"></span><span id="_CPPv214ndp_queue_stopP9ndp_queue"></span><span id="ndp_queue_stop__ndp_queueP"></span><span class="target" id="group__queue__fn_1ga930ff782d3ee40a7782f83a1e1dd1a89"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_queue_stop</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">ndp_queue</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414ndp_queue_stopP9ndp_queue" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv314ndp_queue_stopP9ndp_queue"></span><span id="_CPPv214ndp_queue_stopP9ndp_queue"></span><span id="ndp_queue_stop__ndp_queueP"></span><span class="target" id="group__queue__fn_1ga930ff782d3ee40a7782f83a1e1dd1a89"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_queue_stop</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">ndp_queue</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414ndp_queue_stopP9ndp_queue" title="Link to this definition"></a><br /></dt>
 <dd><p>Stop traffic on queue. </p>
 <p>
 When this function is called, it stops the delivery of packets to the queue. </p>
@@ -251,7 +279,7 @@ When this function is called, it stops the delivery of packets to the queue. </p
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv416ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj">
-<span id="_CPPv316ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj"></span><span id="_CPPv216ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj"></span><span id="ndp_rx_burst_get__ndp_rx_queue_tP.ndp_packetP.unsigned"></span><span class="target" id="group__rx__functions_1gac26d34e8142ad603983c7d15c89fab0f"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_rx_burst_get</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span>, <span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv410ndp_packet" title="ndp_packet"><span class="n"><span class="pre">ndp_packet</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">packets</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">count</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv316ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj"></span><span id="_CPPv216ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj"></span><span id="ndp_rx_burst_get__ndp_rx_queue_tP.ndp_packetP.unsigned"></span><span class="target" id="group__rx__functions_1gac26d34e8142ad603983c7d15c89fab0f"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_rx_burst_get</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span>, <span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv410ndp_packet" title="ndp_packet"><span class="n"><span class="pre">ndp_packet</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">packets</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">count</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj" title="Link to this definition"></a><br /></dt>
 <dd><p>Get (read) burst of NDP packets from NDP RX queue. </p>
 <p>
 When the function returns nonzero, the NDP packet structs in <code class="docutils literal notranslate"><span class="pre">packets</span></code> are filled with pointers to packet data. This data is valid until <a class="reference internal" href="#group__rx__functions_1gace0138339566803fc51e2e331055caa7"><span class="std std-ref">ndp_rx_burst_put</span></a> is called.</p>
@@ -292,7 +320,7 @@ while (!STOPPED) {
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv416ndp_rx_burst_putP14ndp_rx_queue_t">
-<span id="_CPPv316ndp_rx_burst_putP14ndp_rx_queue_t"></span><span id="_CPPv216ndp_rx_burst_putP14ndp_rx_queue_t"></span><span id="ndp_rx_burst_put__ndp_rx_queue_tP"></span><span class="target" id="group__rx__functions_1gace0138339566803fc51e2e331055caa7"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_rx_burst_put</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_rx_burst_putP14ndp_rx_queue_t" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv316ndp_rx_burst_putP14ndp_rx_queue_t"></span><span id="_CPPv216ndp_rx_burst_putP14ndp_rx_queue_t"></span><span id="ndp_rx_burst_put__ndp_rx_queue_tP"></span><span class="target" id="group__rx__functions_1gace0138339566803fc51e2e331055caa7"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_rx_burst_put</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_rx_burst_putP14ndp_rx_queue_t" title="Link to this definition"></a><br /></dt>
 <dd><p>Put back (end reading) bursts of NDP packets from NDP queue. </p>
 <p>
 This function should be called when the application has finished processing the packets obtained by previous <a class="reference internal" href="#group__rx__functions_1gac26d34e8142ad603983c7d15c89fab0f"><span class="std std-ref">ndp_rx_burst_get</span></a> on the same queue. The amount of data available for processing is limited, so this function should best be called after <strong>every</strong> <a class="reference internal" href="#group__rx__functions_1gac26d34e8142ad603983c7d15c89fab0f"><span class="std std-ref">ndp_rx_burst_get</span></a>.</p>
@@ -310,7 +338,7 @@ This function should be called when the application has finished processing the 
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv416ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj">
-<span id="_CPPv316ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj"></span><span id="_CPPv216ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj"></span><span id="ndp_tx_burst_get__ndp_tx_queue_tP.ndp_packetP.unsigned"></span><span class="target" id="group__tx__functions_1gaf46ae57fa14f5f082b258b18a6464553"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_tx_burst_get</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span>, <span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv410ndp_packet" title="ndp_packet"><span class="n"><span class="pre">ndp_packet</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">packets</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">count</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv316ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj"></span><span id="_CPPv216ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj"></span><span id="ndp_tx_burst_get__ndp_tx_queue_tP.ndp_packetP.unsigned"></span><span class="target" id="group__tx__functions_1gaf46ae57fa14f5f082b258b18a6464553"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_tx_burst_get</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span>, <span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv410ndp_packet" title="ndp_packet"><span class="n"><span class="pre">ndp_packet</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">packets</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">count</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj" title="Link to this definition"></a><br /></dt>
 <dd><p>Get burst of packet placeholders from NDP TX queue. </p>
 <p>
 This function allocates NDP frame <strong>placeholders</strong> in the TX queue and sets the pointers to them to the structs in <code class="docutils literal notranslate"><span class="pre">packets</span></code> parameter. To do this, the user <strong>MUST</strong> fill the <a class="reference internal" href="#structndp__packet_1a452685061ec9f09000e7120567acdc56"><span class="std std-ref">ndp_packet::data_length</span></a> field of the structs in <code class="docutils literal notranslate"><span class="pre">packets</span></code> and <strong>MUST NOT</strong> fill the <a class="reference internal" href="#structndp__packet_1ad684f905b6e24e8872529a96c8bba0fa"><span class="std std-ref">ndp_packet::data</span></a> field, as the pointer is invalid and will be usable after the function returns successfully.</p>
@@ -356,7 +384,7 @@ while (!STOPPED) {
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv416ndp_tx_burst_putP14ndp_tx_queue_t">
-<span id="_CPPv316ndp_tx_burst_putP14ndp_tx_queue_t"></span><span id="_CPPv216ndp_tx_burst_putP14ndp_tx_queue_t"></span><span id="ndp_tx_burst_put__ndp_tx_queue_tP"></span><span class="target" id="group__tx__functions_1ga45a5b38e111c5a1e4e8e7c9acd5928a2"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_tx_burst_put</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_tx_burst_putP14ndp_tx_queue_t" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv316ndp_tx_burst_putP14ndp_tx_queue_t"></span><span id="_CPPv216ndp_tx_burst_putP14ndp_tx_queue_t"></span><span id="ndp_tx_burst_put__ndp_tx_queue_tP"></span><span class="target" id="group__tx__functions_1ga45a5b38e111c5a1e4e8e7c9acd5928a2"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_tx_burst_put</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_tx_burst_putP14ndp_tx_queue_t" title="Link to this definition"></a><br /></dt>
 <dd><p>Put back (write) bursts of NDP packets to NDP TX queue. </p>
 <p>
 This function must be called after (1 or more) call to <a class="reference internal" href="#group__tx__functions_1gaf46ae57fa14f5f082b258b18a6464553"><span class="std std-ref">ndp_tx_burst_get</span></a> to notify the library that the bursts were processed and can be written.</p>
@@ -371,7 +399,7 @@ This function must be called after (1 or more) call to <a class="reference inter
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv417ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj">
-<span id="_CPPv317ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj"></span><span id="_CPPv217ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj"></span><span id="ndp_tx_burst_copy__ndp_tx_queue_tP.ndp_packetP.unsigned"></span><span class="target" id="group__tx__functions_1gae7836241fe13b9354d5787b5a3b5bb25"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_tx_burst_copy</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span>, <span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv410ndp_packet" title="ndp_packet"><span class="n"><span class="pre">ndp_packet</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">packets</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">count</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv317ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj"></span><span id="_CPPv217ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj"></span><span id="ndp_tx_burst_copy__ndp_tx_queue_tP.ndp_packetP.unsigned"></span><span class="target" id="group__tx__functions_1gae7836241fe13b9354d5787b5a3b5bb25"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_tx_burst_copy</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span>, <span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv410ndp_packet" title="ndp_packet"><span class="n"><span class="pre">ndp_packet</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">packets</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">count</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj" title="Link to this definition"></a><br /></dt>
 <dd><p>Write a burst of NDP packets to NDP TX queue with data copying. </p>
 <p>
 This is the slower but simpler way to transmit data. The structs in <code class="docutils literal notranslate"><span class="pre">packets</span></code> must contain full packet information, the data (and metadata) will be copied from the packets to the NDP buffer.</p>
@@ -402,10 +430,10 @@ while (!STOPPED) {
 
 </section>
 <section id="miscellaneous-functions">
-<h2>Miscellaneous functions<a class="headerlink" href="#miscellaneous-functions" title="Permalink to this heading"></a></h2>
+<h2>Miscellaneous functions<a class="headerlink" href="#miscellaneous-functions" title="Link to this heading"></a></h2>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv423ndp_queue_get_numa_nodePK9ndp_queue">
-<span id="_CPPv323ndp_queue_get_numa_nodePK9ndp_queue"></span><span id="_CPPv223ndp_queue_get_numa_nodePK9ndp_queue"></span><span id="ndp_queue_get_numa_node__ndp_queueCP"></span><span class="target" id="group__info__functions_1gae089ffa674a01ce0ebb440a1f1bd4de2"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_queue_get_numa_node</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">ndp_queue</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv423ndp_queue_get_numa_nodePK9ndp_queue" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv323ndp_queue_get_numa_nodePK9ndp_queue"></span><span id="_CPPv223ndp_queue_get_numa_nodePK9ndp_queue"></span><span id="ndp_queue_get_numa_node__ndp_queueCP"></span><span class="target" id="group__info__functions_1gae089ffa674a01ce0ebb440a1f1bd4de2"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_queue_get_numa_node</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">ndp_queue</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv423ndp_queue_get_numa_nodePK9ndp_queue" title="Link to this definition"></a><br /></dt>
 <dd><p>Get number of NDP queue NUMA node. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

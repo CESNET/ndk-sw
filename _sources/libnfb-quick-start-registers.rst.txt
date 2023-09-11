@@ -1,4 +1,4 @@
-libnfb register access 
+libnfb register access
 =======================
 
 libnfb exposes a simple API to the C language.
@@ -42,5 +42,3 @@ Finally, the complete code needs to be compiled and linked with the `-lnfb` swit
 .. note::
     This example is not quite the right way, how to control the RX MAC.
     If we can't use the `nfb-eth -i0 -e1` as we write in C, we should to use the `rxmac` `libnetcope` API.
-
-

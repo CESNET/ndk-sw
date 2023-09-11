@@ -9,7 +9,7 @@ The PCAP file must be set with argument **-f**.
 In case of multi queue run, two modes are available:
 
   - Without **-m** argument each queue sends the same data readen from one PCAP file.
-  - With **-m** argument is possible to send specific PCAP file to each queue. 
+  - With **-m** argument is possible to send specific PCAP file to each queue.
     In this case the filename should contain ``%t`` or ``%d`` string,
     which will be replaced with thread or DMA queue index.
 

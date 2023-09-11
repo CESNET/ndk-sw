@@ -30,7 +30,7 @@ Occupied node: ``/driver/mi``
 
 subnode "PCIx,BARx" for each PCIe endpoint and its associated BAR configured as memory contains:
 
-- property ``mmap_base``: (uint64_t) 
+- property ``mmap_base``: (uint64_t)
 - property ``mmap_size``: (uint64_t)
 
 Memory Map

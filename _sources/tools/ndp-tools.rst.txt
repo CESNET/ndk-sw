@@ -73,4 +73,3 @@ At the end shows summary statistics, which can be disabled with quiet **-q** arg
 .. include:: ndp-loopback.rst
    :start-line: 5
    :end-line: 6
-

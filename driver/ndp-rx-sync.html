@@ -11,11 +11,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=8885e90a"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -95,12 +95,12 @@
            <div itemprop="articleBody">
              
   <section id="ndp-rx-synchronization">
-<span id="ndp-rx-sync"></span><h1>NDP RX synchronization<a class="headerlink" href="#ndp-rx-synchronization" title="Permalink to this heading"></a></h1>
+<span id="ndp-rx-sync"></span><h1>NDP RX synchronization<a class="headerlink" href="#ndp-rx-synchronization" title="Link to this heading"></a></h1>
 <p>When receiving data (RX DMA direction), the driver first tells the DMA Module, where in the computer’s RAM the data can be stored.
 After doing so, the DMA Module informs the driver about how much data has been received.
 The driver passes the data to the user and passes more space to the DMA Module.</p>
 <section id="function-call-map">
-<h2>Function call map<a class="headerlink" href="#function-call-map" title="Permalink to this heading"></a></h2>
+<h2>Function call map<a class="headerlink" href="#function-call-map" title="Link to this heading"></a></h2>
 <p>This section contains a cheatsheet of how functions call each other when using DPDK, Libnfb and NDP driver.
 Each of these parts uses different structure to contain a block of memory space for packet.
 Between the DMA Module and the NDP driver “descriptors” are used.
@@ -112,7 +112,7 @@ Otherwise they run independently in parallel.</p>
 <p>The Libnfb comunicates with the user using the “ndp_packet” structure.
 In DPDK memory blocks are managed using the structure called “Mbuf”.</p>
 <section id="rx">
-<h3>RX<a class="headerlink" href="#rx" title="Permalink to this heading"></a></h3>
+<h3>RX<a class="headerlink" href="#rx" title="Link to this heading"></a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span> rte_eth_rx_burst (dpdk/lib/librte_ethdev/rte_ethdev.h)
 <span class="linenos"> 2</span>     -+
 <span class="linenos"> 3</span>      |
@@ -173,10 +173,10 @@ In DPDK memory blocks are managed using the structure called “Mbuf”.</p>
 </section>
 </section>
 <section id="header-and-offset-buffer">
-<h2>Header and Offset Buffer<a class="headerlink" href="#header-and-offset-buffer" title="Permalink to this heading"></a></h2>
+<h2>Header and Offset Buffer<a class="headerlink" href="#header-and-offset-buffer" title="Link to this heading"></a></h2>
 <p>To better understand the function of individual pointer in the Header and Offset Buffer, here is a cheatsheet for that as well.</p>
 <section id="id1">
-<h3>RX<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<h3>RX<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span>  u.v2.rhp                     sync.hwptr                     sync.swptr
 <span class="linenos"> 2</span>     |   items filled by HW, but   |   created ready items from   |  non-valid items
 <span class="linenos"> 3</span>     V   not read by the SW yet    V   the SW but still empty     V  (freed by the SW)

@@ -9,4 +9,3 @@ It allows to read and write specific MDIO registers in the PCS/PMA/PMD.
 
 Addressing scheme corresponds to conventions in the IEEE802.3 clause 45.
 For example turn on the PMA local loopback is done by ``nfb-mdio 1.0 1``.
-

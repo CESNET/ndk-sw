@@ -11,11 +11,11 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=8885e90a"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -95,31 +95,31 @@
            <div itemprop="articleBody">
              
   <section id="glossary">
-<h1>Glossary<a class="headerlink" href="#glossary" title="Permalink to this heading"></a></h1>
+<h1>Glossary<a class="headerlink" href="#glossary" title="Link to this heading"></a></h1>
 <dl class="glossary">
-<dt id="term-NFB-device">NFB device<a class="headerlink" href="#term-NFB-device" title="Permalink to this term"></a></dt><dd><p>A HW card compatible with the NFB driver.</p>
+<dt id="term-NFB-device">NFB device<a class="headerlink" href="#term-NFB-device" title="Link to this term"></a></dt><dd><p>A HW card compatible with the NFB driver.</p>
 </dd>
-<dt id="term-DMA-channel">DMA channel<a class="headerlink" href="#term-DMA-channel" title="Permalink to this term"></a></dt><dd><p>A part of the DMA Module (device firmware) responsible for control of DMA transfers within one independent DMA Channel.</p>
+<dt id="term-DMA-channel">DMA channel<a class="headerlink" href="#term-DMA-channel" title="Link to this term"></a></dt><dd><p>A part of the DMA Module (device firmware) responsible for control of DMA transfers within one independent DMA Channel.</p>
 </dd>
-<dt id="term-PCI-interface">PCI interface<a class="headerlink" href="#term-PCI-interface" title="Permalink to this term"></a></dt><dd><p>The PCI socket where the device is connected to the host computer.</p>
+<dt id="term-PCI-interface">PCI interface<a class="headerlink" href="#term-PCI-interface" title="Link to this term"></a></dt><dd><p>The PCI socket where the device is connected to the host computer.</p>
 </dd>
-<dt id="term-NDP-driver">NDP driver<a class="headerlink" href="#term-NDP-driver" title="Permalink to this term"></a></dt><dd><div class="line-block">
+<dt id="term-NDP-driver">NDP driver<a class="headerlink" href="#term-NDP-driver" title="Link to this term"></a></dt><dd><div class="line-block">
 <div class="line">The NFB driver module responsible for DMA data transfer.</div>
 <div class="line">Source located in <code class="docutils literal notranslate"><span class="pre">drivers/kernel/drivers/nfb/ndp/</span></code>.</div>
 </div>
 </dd>
-<dt id="term-NDP-ctrl">NDP ctrl<a class="headerlink" href="#term-NDP-ctrl" title="Permalink to this term"></a></dt><dd><div class="line-block">
+<dt id="term-NDP-ctrl">NDP ctrl<a class="headerlink" href="#term-NDP-ctrl" title="Link to this term"></a></dt><dd><div class="line-block">
 <div class="line">The module, which controls the DMA Module from the software.</div>
 <div class="line">Source located in <code class="docutils literal notranslate"><span class="pre">drivers/kernel/drivers/nfb/ndp/ctrl_ndp.c</span></code> and <code class="docutils literal notranslate"><span class="pre">ctrl.c</span></code></div>
 </div>
 </dd>
-<dt id="term-NDP-channel">NDP channel<a class="headerlink" href="#term-NDP-channel" title="Permalink to this term"></a></dt><dd><p>The module which creates interface for other modules to use the NDP Ctrl module. It mainly includes synchronisation between multiple users. (Source located in <code class="docutils literal notranslate"><span class="pre">drivers/kernel/drivers/nfb/ndp/channel.c</span></code>)</p>
+<dt id="term-NDP-channel">NDP channel<a class="headerlink" href="#term-NDP-channel" title="Link to this term"></a></dt><dd><p>The module which creates interface for other modules to use the NDP Ctrl module. It mainly includes synchronisation between multiple users. (Source located in <code class="docutils literal notranslate"><span class="pre">drivers/kernel/drivers/nfb/ndp/channel.c</span></code>)</p>
 </dd>
-<dt id="term-NDP-subscription">NDP subscription<a class="headerlink" href="#term-NDP-subscription" title="Permalink to this term"></a></dt><dd><p>Together with the “Subscriber” module it allows to connect multiple DMA Channels to a single user. In this case it doesn’t have any critical purpose other than abstraction. (Source located in <code class="docutils literal notranslate"><span class="pre">drivers/kernel/drivers/nfb/ndp/subscription.c</span></code>)</p>
+<dt id="term-NDP-subscription">NDP subscription<a class="headerlink" href="#term-NDP-subscription" title="Link to this term"></a></dt><dd><p>Together with the “Subscriber” module it allows to connect multiple DMA Channels to a single user. In this case it doesn’t have any critical purpose other than abstraction. (Source located in <code class="docutils literal notranslate"><span class="pre">drivers/kernel/drivers/nfb/ndp/subscription.c</span></code>)</p>
 </dd>
-<dt id="term-Libnfb">Libnfb<a class="headerlink" href="#term-Libnfb" title="Permalink to this term"></a></dt><dd><p>Library included by the user application which contains easy-to-use functions to communicate with the driver. (Source located in <code class="docutils literal notranslate"><span class="pre">libnfb/</span></code>)</p>
+<dt id="term-Libnfb">Libnfb<a class="headerlink" href="#term-Libnfb" title="Link to this term"></a></dt><dd><p>Library included by the user application which contains easy-to-use functions to communicate with the driver. (Source located in <code class="docutils literal notranslate"><span class="pre">libnfb/</span></code>)</p>
 </dd>
-<dt id="term-User-app">User app<a class="headerlink" href="#term-User-app" title="Permalink to this term"></a></dt><dd><p>An arbitrary user application.</p>
+<dt id="term-User-app">User app<a class="headerlink" href="#term-User-app" title="Link to this term"></a></dt><dd><p>An arbitrary user application.</p>
 </dd>
 </dl>
 </section>

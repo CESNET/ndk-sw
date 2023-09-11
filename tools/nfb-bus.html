@@ -11,11 +11,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=8885e90a"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -110,13 +110,13 @@
            <div itemprop="articleBody">
              
   <section id="nfb-bus">
-<span id="id1"></span><h1>nfb-bus<a class="headerlink" href="#nfb-bus" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><h1>nfb-bus<a class="headerlink" href="#nfb-bus" title="Link to this heading"></a></h1>
 <p>This tool allows reading and writing registers (CSR) implemented in FPGAs firmware and is intended only for debug purposes.</p>
 <p>For the write access, user enters the address and the data as arguments in hexadecimal format.
 For the read access, the data argument is omitted.
 The tool performs 32b access to the specified address regardless of the data argument width.</p>
 <section id="list-of-available-components">
-<h2>List of available components<a class="headerlink" href="#list-of-available-components" title="Permalink to this heading"></a></h2>
+<h2>List of available components<a class="headerlink" href="#list-of-available-components" title="Link to this heading"></a></h2>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nfb-bus<span class="w"> </span>-l
 <span class="go">0x00002000: cesnet,pmci                         /firmware/mi_bus0/ofs_pmci</span>
 <span class="go">0x00000000: cesnet,ofm,mi_test_space            /firmware/mi_bus0/mi_test_space</span>

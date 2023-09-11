@@ -11,11 +11,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=8885e90a"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -116,16 +116,16 @@
            <div itemprop="articleBody">
              
   <section id="base-module">
-<h1>Base module<a class="headerlink" href="#base-module" title="Permalink to this heading"></a></h1>
+<h1>Base module<a class="headerlink" href="#base-module" title="Link to this heading"></a></h1>
 <p>This is a core driver for submodules.
 It holds table of PCI compatible devices, for which it creates character node in /dev/nfb* .</p>
 <section id="component-locking">
-<h2>Component locking<a class="headerlink" href="#component-locking" title="Permalink to this heading"></a></h2>
+<h2>Component locking<a class="headerlink" href="#component-locking" title="Link to this heading"></a></h2>
 <p>When the userspace application or attached module needs to get exclusive access to an component (based on FDT node), it can use the lock functions.
 This ensures, that no other application on module can acquire lock to the same component.</p>
 </section>
 <section id="ioctl">
-<h2>IOCTL<a class="headerlink" href="#ioctl" title="Permalink to this heading"></a></h2>
+<h2>IOCTL<a class="headerlink" href="#ioctl" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p>NFB_LOCK_IOC_TRY_LOCK - Try to lock a component feature in FDT for exclusive access</p></li>
 <li><p>NFB_LOCK_IOC_UNLOCK - Unlock component in FDT</p></li>
@@ -133,10 +133,10 @@ This ensures, that no other application on module can acquire lock to the same c
 </section>
 </section>
 <section id="mi-submodule">
-<h1>MI submodule<a class="headerlink" href="#mi-submodule" title="Permalink to this heading"></a></h1>
+<h1>MI submodule<a class="headerlink" href="#mi-submodule" title="Link to this heading"></a></h1>
 <p>Allows userspace application to map components from <code class="docutils literal notranslate"><span class="pre">/firmware</span></code> node to its virtual space.</p>
 <section id="device-tree">
-<h2>Device Tree<a class="headerlink" href="#device-tree" title="Permalink to this heading"></a></h2>
+<h2>Device Tree<a class="headerlink" href="#device-tree" title="Link to this heading"></a></h2>
 <p>Occupied node: <code class="docutils literal notranslate"><span class="pre">/driver/mi</span></code></p>
 <p>subnode “PCIx,BARx” for each PCIe endpoint and its associated BAR configured as memory contains:</p>
 <ul class="simple">
@@ -145,23 +145,23 @@ This ensures, that no other application on module can acquire lock to the same c
 </ul>
 </section>
 <section id="memory-map">
-<h2>Memory Map<a class="headerlink" href="#memory-map" title="Permalink to this heading"></a></h2>
+<h2>Memory Map<a class="headerlink" href="#memory-map" title="Link to this heading"></a></h2>
 <blockquote>
 <div><p>Region bounded by base and size DT properties.</p>
 </div></blockquote>
 </section>
 <section id="id1">
-<h2>IOCTL<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<h2>IOCTL<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
 <blockquote>
 <div><p>None</p>
 </div></blockquote>
 </section>
 </section>
 <section id="boot-submodule">
-<h1>Boot submodule<a class="headerlink" href="#boot-submodule" title="Permalink to this heading"></a></h1>
+<h1>Boot submodule<a class="headerlink" href="#boot-submodule" title="Link to this heading"></a></h1>
 <p>This module allows to the user completely reconfigure programable device.</p>
 <section id="id2">
-<h2>IOCTL<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
+<h2>IOCTL<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><dl class="simple">
 <dt>NFB_BOOT_IOC_RELOAD</dt><dd><p>Reconfigure device. This command requires the caller to be the last opener of the <code class="docutils literal notranslate"><span class="pre">nfb%d</span></code> character device node.

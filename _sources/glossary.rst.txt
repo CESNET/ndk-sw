@@ -13,7 +13,7 @@ Glossary
       The PCI socket where the device is connected to the host computer.
 
     NDP driver
-      | The NFB driver module responsible for DMA data transfer. 
+      | The NFB driver module responsible for DMA data transfer.
       | Source located in ``drivers/kernel/drivers/nfb/ndp/``.
 
     NDP ctrl

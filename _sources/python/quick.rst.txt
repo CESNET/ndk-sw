@@ -22,4 +22,3 @@ Ethernet port manipulation
 
 .. literalinclude:: ../../pynfb/examples/00-quick-reference.py
   :start-at: 3.A
-

@@ -11,11 +11,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=8885e90a"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -111,13 +111,13 @@
            <div itemprop="articleBody">
              
   <section id="ndp-submodule">
-<h1>NDP submodule<a class="headerlink" href="#ndp-submodule" title="Permalink to this heading"></a></h1>
+<h1>NDP submodule<a class="headerlink" href="#ndp-submodule" title="Link to this heading"></a></h1>
 <p>The NDP driver is an embedded submodule of the NFB driver.
 It is the module responsible for DMA data transfer.</p>
 <figure class="align-default" id="id1" style="width: 100%">
 <span id="ndp-driver-diagram-simple"></span><a class="reference internal image-reference" href="../_images/ndp_scheme.svg"><img alt="../_images/ndp_scheme.svg" src="../_images/ndp_scheme.svg" width="100%" /></a>
 <figcaption>
-<p><span class="caption-text">Diagram of general communication chain between the DMA Module in a NFB device and user applications.</span><a class="headerlink" href="#id1" title="Permalink to this image"></a></p>
+<p><span class="caption-text">Diagram of general communication chain between the DMA Module in a NFB device and user applications.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
 </figcaption>
 </figure>
 <p>The general diagram of the entire communication chain is described in the <a class="reference internal" href="#ndp-driver-diagram-simple"><span class="std std-ref">diagram</span></a> above.</p>
@@ -126,17 +126,17 @@ It also connects DMA controllers inside firmware to NDP queues (channels).</p>
 <p>It allows to connect multiple user space processes (subscribers) to one NDP queue via subscriptions and also allows
 one application to connect to multiple queues.</p>
 <section id="driver-modes">
-<h2>Driver modes<a class="headerlink" href="#driver-modes" title="Permalink to this heading"></a></h2>
+<h2>Driver modes<a class="headerlink" href="#driver-modes" title="Link to this heading"></a></h2>
 <p>The driver currently supports two protocols: the SZE (<em>Straight Zero Copy</em>) and the Packet mode.</p>
 <section id="sze-mode">
-<h3>SZE mode<a class="headerlink" href="#sze-mode" title="Permalink to this heading"></a></h3>
+<h3>SZE mode<a class="headerlink" href="#sze-mode" title="Link to this heading"></a></h3>
 <p>The SZE (also refered to as “<em>version 1</em>” in Libnfb) is a streaming mode supported by older version of DMA controllers.
 In this mode the driver allocates data for packets in the RAM as a single ring buffer where packets are placed one after another.
 This is practical for PCI throughput usage, since, when transfering small packets, you can transfer multiple of them at once in a single PCI transaction.
 The user, however, cannot be expected to work with packets stored in the RAM this way and so the driver has to copy each of them creating unwanted overhead.</p>
 </section>
 <section id="packet-mode">
-<h3>Packet mode<a class="headerlink" href="#packet-mode" title="Permalink to this heading"></a></h3>
+<h3>Packet mode<a class="headerlink" href="#packet-mode" title="Link to this heading"></a></h3>
 <p>In the Packet mode (called “<em>version 2</em>” in Libnfb) each packet is stored in the RAM individualy.
 This prevents the DMA Module from transfering multiple packets in one transaction, but allows them to be handled more easily in software.
 This mode is only currently only supported by the newer DMA module called “DMA Medusa”.</p>
@@ -145,7 +145,7 @@ This frees the user of the responsibility of low-level memory management.</p>
 <p>This mode involves the Header buffer.</p>
 <p>Details of synchronization between NDP driver and userspace library are described in <a class="reference internal" href="ndp-rx-sync.html#ndp-rx-sync"><span class="std std-ref">NDP RX synchronization</span></a> and <a class="reference internal" href="ndp-tx-sync.html#ndp-tx-sync"><span class="std std-ref">NDP TX synchronization</span></a>.</p>
 <section id="device-tree">
-<h4>Device Tree<a class="headerlink" href="#device-tree" title="Permalink to this heading"></a></h4>
+<h4>Device Tree<a class="headerlink" href="#device-tree" title="Link to this heading"></a></h4>
 <p>Occupied node: <code class="docutils literal notranslate"><span class="pre">/drivers/ndp</span></code></p>
 <ul class="simple">
 <li><dl class="simple">
@@ -167,7 +167,7 @@ This frees the user of the responsibility of low-level memory management.</p>
 </dl>
 </section>
 <section id="ioctl">
-<h4>IOCTL<a class="headerlink" href="#ioctl" title="Permalink to this heading"></a></h4>
+<h4>IOCTL<a class="headerlink" href="#ioctl" title="Link to this heading"></a></h4>
 <p>The Subscribe IOCTL call takes the <code class="xref c c-type docutils literal notranslate"><span class="pre">ndp_channel_request</span></code> struct.
 The others IOCTL calls takes the <code class="xref c c-type docutils literal notranslate"><span class="pre">ndp_subscription_sync</span></code> struct.</p>
 <ul class="simple">

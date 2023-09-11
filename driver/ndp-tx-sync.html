@@ -11,11 +11,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=8885e90a"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -95,13 +95,13 @@
            <div itemprop="articleBody">
              
   <section id="ndp-tx-synchronization">
-<span id="ndp-tx-sync"></span><h1>NDP TX synchronization<a class="headerlink" href="#ndp-tx-synchronization" title="Permalink to this heading"></a></h1>
+<span id="ndp-tx-sync"></span><h1>NDP TX synchronization<a class="headerlink" href="#ndp-tx-synchronization" title="Link to this heading"></a></h1>
 <p>When transmitting data from the SW to the device (TX DMA direction), the driver receives data stored in RAM from the user.
 Then tells the DMA Module where they are and how big.
 Once the DMA Module has finished transmitting the data from the RAM, it signals the driver, which frees the data from the RAM.
 It tells the user, that the transmition is completed and waits for more data to be transmitted.</p>
 <section id="pointers-description">
-<h2>Pointers description<a class="headerlink" href="#pointers-description" title="Permalink to this heading"></a></h2>
+<h2>Pointers description<a class="headerlink" href="#pointers-description" title="Link to this heading"></a></h2>
 <p>lib-drv sync:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>            <span class="n">___C__</span>   <span class="n">___B___</span>   <span class="n">___A___</span>
            <span class="o">/</span>      \ <span class="o">/</span>       \ <span class="o">/</span>       \
@@ -117,7 +117,7 @@ It tells the user, that the transmition is completed and waits for more data to 
 </ol>
 </section>
 <section id="example-of-tx-synchronization-run">
-<h2>Example of TX synchronization run<a class="headerlink" href="#example-of-tx-synchronization-run" title="Permalink to this heading"></a></h2>
+<h2>Example of TX synchronization run<a class="headerlink" href="#example-of-tx-synchronization-run" title="Link to this heading"></a></h2>
 <ol class="arabic">
 <li><p>start: actual position HWPTR + SWPTR is undefined:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib:   ? ? ?
@@ -196,7 +196,7 @@ older &gt;-----|··········|------------------&gt; newer
 </ol>
 </section>
 <section id="example-of-tx-multiple-writers">
-<h2>Example of TX multiple writers<a class="headerlink" href="#example-of-tx-multiple-writers" title="Permalink to this heading"></a></h2>
+<h2>Example of TX multiple writers<a class="headerlink" href="#example-of-tx-multiple-writers" title="Link to this heading"></a></h2>
 <ol class="arabic">
 <li><p>start condition: app0 have the lock, app1 just started</p></li>
 <li><p>app1 try lock: app1 request for the lock:</p>
@@ -244,7 +244,7 @@ older &gt;-------|··············|------------------&gt; newer
 </li>
 </ol>
 <section id="function-call-map">
-<h3>Function call map<a class="headerlink" href="#function-call-map" title="Permalink to this heading"></a></h3>
+<h3>Function call map<a class="headerlink" href="#function-call-map" title="Link to this heading"></a></h3>
 <p>This section contains a cheatsheet of how functions call each other when using DPDK, Libnfb and NDP driver.
 Each of these parts uses different structure to contain a block of memory space for packet.
 Between the DMA Module and the NDP driver “descriptors” are used.
@@ -258,7 +258,7 @@ In DPDK memory blocks are managed using the structure called “Mbuf”.</p>
 </section>
 </section>
 <section id="tx">
-<h2>TX<a class="headerlink" href="#tx" title="Permalink to this heading"></a></h2>
+<h2>TX<a class="headerlink" href="#tx" title="Link to this heading"></a></h2>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span> rte_eth_tx_burst (dpdk/lib/librte_ethdev/rte_ethdev.h)
 <span class="linenos"> 2</span>     -+
 <span class="linenos"> 3</span>      |

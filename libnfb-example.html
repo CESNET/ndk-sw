@@ -11,11 +11,11 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=8885e90a"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -101,9 +101,9 @@
            <div itemprop="articleBody">
              
   <section id="libnfb-examples">
-<h1>libnfb examples<a class="headerlink" href="#libnfb-examples" title="Permalink to this heading"></a></h1>
+<h1>libnfb examples<a class="headerlink" href="#libnfb-examples" title="Link to this heading"></a></h1>
 <section id="simple-access-to-the-control-registers">
-<h2>Simple access to the control registers<a class="headerlink" href="#simple-access-to-the-control-registers" title="Permalink to this heading"></a></h2>
+<h2>Simple access to the control registers<a class="headerlink" href="#simple-access-to-the-control-registers" title="Link to this heading"></a></h2>
 <p>This example will perform some writes and reads to the user component in the firmware.</p>
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nfb/nfb.h&gt;</span>
 
@@ -147,7 +147,7 @@
 <span class="w">    </span><span class="n">nfb_comp_write64</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">SUPERCORE_REG_DATA</span><span class="p">,</span><span class="w"> </span><span class="mh">0xBEEFBEEFBEEFBEEFll</span><span class="p">);</span>
 <span class="w">    </span><span class="n">nfb_comp_write32</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">SUPERCORE_REG_CMD</span><span class="p">,</span><span class="w"> </span><span class="n">SUPERCORE_REG_CMD_ADD</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nfb_comp_read8</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">SUPERCORE_REG_STATUS</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nfb_comp_read8</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">SUPERCORE_REG_STATUS</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
 <span class="w">        </span><span class="n">errx</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Operation ADD failed&quot;</span><span class="p">);</span>
 
 <span class="w">    </span><span class="cm">/* Cleanup */</span>
@@ -160,7 +160,7 @@
 <p>Do not forget to compile with <cite>-lnfb</cite> switch.</p>
 </section>
 <section id="ndp-data-transmit-example">
-<h2>NDP data transmit example<a class="headerlink" href="#ndp-data-transmit-example" title="Permalink to this heading"></a></h2>
+<h2>NDP data transmit example<a class="headerlink" href="#ndp-data-transmit-example" title="Link to this heading"></a></h2>
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nfb/nfb.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nfb/ndp.h&gt;</span>
@@ -185,7 +185,7 @@
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rxq</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">txq</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span>
 <span class="w">        </span><span class="n">errx</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Can&#39;t open queue&quot;</span><span class="p">);</span>
 
-<span class="w">    </span><span class="cm">/* Start transmission on both queues */</span><span class="w"> </span>
+<span class="w">    </span><span class="cm">/* Start transmission on both queues */</span>
 <span class="w">    </span><span class="n">ndp_queue_start</span><span class="p">(</span><span class="n">rxq</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ndp_queue_start</span><span class="p">(</span><span class="n">txq</span><span class="p">);</span>
 
@@ -228,7 +228,7 @@
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">header_length</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span>
 <span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Timestamp: %lld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">((</span><span class="kt">uint64_t</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">pkts</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">header</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">0</span><span class="p">)));</span>
 <span class="w">        </span><span class="p">}</span>
-<span class="w">        </span><span class="cm">/* We must ensure the return of the processed packets </span>
+<span class="w">        </span><span class="cm">/* We must ensure the return of the processed packets</span>
 <span class="cm">           (although this doesn&#39;t have to be done for every GET) */</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">bursts</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
 <span class="w">            </span><span class="n">ndp_rx_burst_put</span><span class="p">(</span><span class="n">rxq</span><span class="p">);</span>

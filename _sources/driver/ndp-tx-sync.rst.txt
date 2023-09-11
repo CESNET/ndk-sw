@@ -186,4 +186,3 @@ TX
              - is set as ndp_ctrl_tx_ops.set_swptr
              - creates descriptors from new items in Header and Offset Buffer
              - shifts sdp propagates it to HW
-
