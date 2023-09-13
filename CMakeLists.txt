@@ -50,9 +50,17 @@ configure_file(package/postrm.in package/postrm @ONLY)
 set(RPM_DEP_LIST
 	dkms gcc kernel-devel libarchive libfdt-devel make numactl ncurses
 )
+set(RPM_PYTHON_DEP_LIST
+	nfb-framework
+)
+
 set(DEB_DEP_LIST
 	dkms gcc libarchive-dev libfdt-dev libncurses-dev libnuma-dev linux-headers make
 )
+set(DEB_PYTHON_DEP_LIST
+	nfb-framework
+)
+
 
 # Common package settings
 set(CPACK_PACKAGE_NAME                  "${PROJECT_NAME}")
@@ -80,6 +88,7 @@ set(CPACK_RPM_PACKAGE_RELEASE           ${GIT_VERSION_RELEASE})
 set(CPACK_RPM_PACKAGE_RELEASE_DIST      ON)
 set(CPACK_RPM_PACKAGE_LICENSE           "BSD and GPLv2")
 string(JOIN " " CPACK_RPM_PACKAGE_REQUIRES ${RPM_DEP_LIST})
+string(JOIN " " CPACK_RPM_python_PACKAGE_REQUIRES ${RPM_PYTHON_DEP_LIST})
 
 set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
 	/etc/dracut.conf.d
@@ -116,6 +125,7 @@ set(CPACK_DEBIAN_DEBUGTOOLS_FILE_NAME "nfb-framework-debug-${CPACK_DEBIAN_PACKAG
 set(CPACK_DEBIAN_PYTHON_PACKAGE_NAME "python3-nfb")
 set(CPACK_DEBIAN_PYTHON_FILE_NAME "python3-nfb-${CPACK_DEBIAN_PACKAGE_VERSION}-${CPACK_DEBIAN_PACKAGE_RELEASE}.deb")
 string(JOIN ", " CPACK_DEBIAN_PACKAGE_DEPENDS ${DEB_DEP_LIST})
+string(JOIN ", " CPACK_DEBIAN_PYTHON_PACKAGE_DEPENDS ${DEB_PYTHON_DEP_LIST})
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS      ON)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
 	"${CMAKE_CURRENT_BINARY_DIR}/package/preinst"
