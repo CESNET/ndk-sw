@@ -30,7 +30,14 @@ checkout scm
 			stage("Test to install package") {
 				dir('cmake-build') {
 					if (pkg == 'rpm') {
-						sh 'sudo yum install -y *.rpm'
+						sh "sudo yum install -y yum-plugin-copr"
+						sh "sudo yum copr enable -y @CESNET/nfb-framework"
+						if (osreleasever != '7.9.2009') {
+							sh 'sudo yum install -y python3-fdt'
+							sh 'sudo yum install -y *.rpm'
+						} else {
+							sh 'sudo yum install -y nfb-framework*.rpm'
+						}
 					} else if (pkg == 'deb') {
 						/* Commented out due to missing specific kernel-headers */
 						//sh 'sudo apt-get install -y -f ./*.deb'
