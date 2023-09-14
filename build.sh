@@ -139,7 +139,6 @@ get_dependencies()
     os=$(get_os_id)
     os_version=$(get_os_version)
     os_version_major=$(echo $os_version | cut -d'.' -f1)
-    echo $os_version_major
 
     ret=""
     ret="$ret autoconf"
