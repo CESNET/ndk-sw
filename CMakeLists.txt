@@ -51,7 +51,7 @@ set(RPM_DEP_LIST
 	dkms gcc kernel-devel libarchive libfdt-devel make numactl ncurses
 )
 set(RPM_PYTHON_DEP_LIST
-	nfb-framework
+	nfb-framework python3-fdt
 )
 
 set(DEB_DEP_LIST
