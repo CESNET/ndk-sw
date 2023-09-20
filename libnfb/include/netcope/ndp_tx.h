@@ -143,6 +143,27 @@ static inline unsigned nc_ndp_v1_tx_burst_get(void *priv, struct ndp_packet *pac
 	return cnt;
 }
 
+static inline int nc_ndp_v1_tx_burst_put(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	/* Publish written data if their size is bigger than quarter of buffer size */
+	if (q->u.v1.swptr > q->size / 4) {
+		q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
+		nc_ndp_v1_tx_unlock(q);
+	}
+	return 0;
+}
+
+static inline int nc_ndp_v1_tx_burst_flush(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
+	nc_ndp_v1_tx_unlock(q);
+	return 0;
+}
+
 static inline void nc_ndp_v2_tx_lock(void *priv)
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
@@ -163,25 +184,6 @@ static inline void nc_ndp_v2_tx_lock(void *priv)
 		q->u.v2.off += offset;
 	}
 	q->u.v2.pkts_available = (q->sync.swptr - q->u.v2.rhp) & (q->u.v2.hdr_items-1);
-}
-
-static inline int nc_ndp_v2_tx_burst_flush(void *priv)
-{
-	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
-
-	if (q->u.v2.rhp >= q->u.v2.hdr_items) {
-		q->u.v2.rhp -= q->u.v2.hdr_items;
-		q->u.v2.hdr -= q->u.v2.hdr_items;
-		q->u.v2.off -= q->u.v2.hdr_items;
-	}
-	q->sync.hwptr = q->u.v2.rhp;
-	q->sync.swptr = q->u.v2.rhp;
-	q->u.v2.pkts_available = 0;
-
-	if (_ndp_queue_sync(q, &q->sync)) {
-		return -1;
-	}
-	return 0;
 }
 
 static inline unsigned nc_ndp_v2_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
@@ -248,10 +250,36 @@ static inline unsigned nc_ndp_v2_tx_burst_get(void *priv, struct ndp_packet *pac
 	return count;
 }
 
-static inline int nc_ndp_v1_tx_burst_put(void *priv);
-static inline int nc_ndp_v1_tx_burst_flush(void *priv);
+static inline int nc_ndp_v2_tx_burst_flush(void *priv);
 
-static inline int nc_ndp_v2_tx_burst_put(void *priv);
+static inline int nc_ndp_v2_tx_burst_put(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	if (((q->u.v2.rhp - q->sync.hwptr) & (q->u.v2.hdr_items-1)) > q->u.v2.hdr_items / 4) {
+		nc_ndp_v2_tx_burst_flush(priv);
+	}
+	return 0;
+}
+
+static inline int nc_ndp_v2_tx_burst_flush(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	if (q->u.v2.rhp >= q->u.v2.hdr_items) {
+		q->u.v2.rhp -= q->u.v2.hdr_items;
+		q->u.v2.hdr -= q->u.v2.hdr_items;
+		q->u.v2.off -= q->u.v2.hdr_items;
+	}
+	q->sync.hwptr = q->u.v2.rhp;
+	q->sync.swptr = q->u.v2.rhp;
+	q->u.v2.pkts_available = 0;
+
+	if (_ndp_queue_sync(q, &q->sync)) {
+		return -1;
+	}
+	return 0;
+}
 
 static inline unsigned nc_ndp_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
 {
@@ -285,35 +313,4 @@ static inline void nc_ndp_tx_burst_flush(void *priv)
 	} else if (q->protocol == 1) {
 		nc_ndp_v1_tx_burst_flush(priv);
 	}
-}
-
-static inline int nc_ndp_v1_tx_burst_put(void *priv)
-{
-	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
-
-	/* Publish written data if their size is bigger than quarter of buffer size */
-	if (q->u.v1.swptr > q->size / 4) {
-		q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
-		nc_ndp_v1_tx_unlock(q);
-	}
-	return 0;
-}
-
-static inline int nc_ndp_v2_tx_burst_put(void *priv)
-{
-	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
-
-	if (((q->u.v2.rhp - q->sync.hwptr) & (q->u.v2.hdr_items-1)) > q->u.v2.hdr_items / 4) {
-		nc_ndp_v2_tx_burst_flush(priv);
-	}
-	return 0;
-}
-
-static inline int nc_ndp_v1_tx_burst_flush(void *priv)
-{
-	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
-
-	q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
-	nc_ndp_v1_tx_unlock(q);
-	return 0;
 }
