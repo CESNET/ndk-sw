@@ -63,7 +63,11 @@ set(DEB_PYTHON_DEP_LIST
 
 
 # Common package settings
-set(CPACK_PACKAGE_NAME                  "${PROJECT_NAME}")
+if(USE_DPDK)
+	set(CPACK_PACKAGE_NAME                  "${PROJECT_NAME}+ndp_tools_dpdk")
+else()
+	set(CPACK_PACKAGE_NAME                  "${PROJECT_NAME}")
+endif()
 set(CPACK_PACKAGE_VENDOR                "CESNET")
 set(CPACK_PACKAGE_VERSION_MAJOR         ${GIT_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR         ${GIT_VERSION_MINOR})
@@ -106,7 +110,12 @@ set(CPACK_RPM_DebugTools_PACKAGE_OBSOLETES    "netcope-common-debug")
 set(CPACK_RPM_Main_PACKAGE_PROVIDES           "netcope-common")
 set(CPACK_RPM_DebugTools_PACKAGE_PROVIDES     "netcope-common-debug")
 #set(CPACK_RPM_DebugTools_PACKAGE_REQUIRES "${PACKAGE_NAME} = ${CPACK_PACKAGE_VERSION}-${CPACK_RPM_PACKAGE_RELEASE}")
-set(CPACK_RPM_ndp-tool-dpdk_PACKAGE_REQUIRES "nfb-framework, dpdk-nfb, dpdk-nfb-tools")
+
+if(USE_DPDK)
+	set(CPACK_RPM_ndp-tool-dpdk_PACKAGE_NAME "ndp-tool-dpdk")
+	set(CPACK_RPM_ndp-tool-dpdk_PACKAGE_REQUIRES "nfb-framework, dpdk-nfb, dpdk-nfb-tools")
+	set (CPACK_RPM_SOURCE_PKG_BUILD_PARAMS "-DUSE_DPDK=true")
+endif()
 
 set(CPACK_RPM_Main_PRE_INSTALL_SCRIPT_FILE    "${CMAKE_CURRENT_BINARY_DIR}/package/preinst")
 set(CPACK_RPM_Main_PRE_UNINSTALL_SCRIPT_FILE  "${CMAKE_CURRENT_BINARY_DIR}/package/prerm")
