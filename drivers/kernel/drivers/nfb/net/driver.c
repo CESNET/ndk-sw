@@ -49,10 +49,13 @@ int nfb_tsu_adjfine(struct ptp_clock_info *ptp, long scaled_ppm)
 //	printk("TSU adjfine %ld | mid offset: %lld |INC_REG: %llx <- %llx (change: %+lld)\n", scaled_ppm, offset, inc, inc_prev, inc- inc_prev);
 	return 0;
 }
+
+#ifdef HAVE_PTP_CLOCK_INFO_ADJFREQ
 int nfb_tsu_adjfreq(struct ptp_clock_info *ptp, s32 delta)
 {
 	return -EOPNOTSUPP;
 }
+#endif
 
 int nfb_tsu_adjtime(struct ptp_clock_info *ptp, s64 delta)
 {
@@ -198,7 +201,9 @@ int nfb_net_attach(struct nfb_device *nfbdev, void **priv)
 	snprintf(module->ptp_info.name, PTP_CLOCK_NAME_LEN, "nfb%d_tsu_ptp", nfbdev->minor);
 	module->ptp_info.owner = THIS_MODULE;
 	module->ptp_info.adjfine = nfb_tsu_adjfine;
+#ifdef HAVE_PTP_CLOCK_INFO_ADJFREQ
 	module->ptp_info.adjfreq = nfb_tsu_adjfreq;
+#endif
 	module->ptp_info.adjtime = nfb_tsu_adjtime;
 	module->ptp_info.gettimex64 = nfb_tsu_gettimex64;
 	module->ptp_info.settime64 = nfb_tsu_settime64;

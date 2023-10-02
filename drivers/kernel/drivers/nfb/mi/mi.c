@@ -67,7 +67,11 @@ int nfb_mi_mmap(struct vm_area_struct *vma, unsigned long offset, unsigned long 
 #ifdef pgprot_noncached
 			vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 #endif
+#ifdef CONFIG_HAVE_VM_FLAGS_SET
+			vm_flags_set(vma, VM_IO);
+#else
 			vma->vm_flags |= VM_IO;
+#endif
 			return io_remap_pfn_range(vma, vma->vm_start,
 					(mi_node->mem_phys + (offset - mi_node->mmap_offset)) >> PAGE_SHIFT,
 					size, vma->vm_page_prot);

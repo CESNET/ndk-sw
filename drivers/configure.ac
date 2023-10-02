@@ -101,6 +101,24 @@ struct device dev;
 void test(void) {devm_kstrdup_const(&dev, "test", GFP_KERNEL);}
 ]],[AC_DEFINE([CONFIG_NFB_ENABLE_HWMON], [1], [Define if kernel has devm_kstrdup_const()]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
+AC_MSG_CHECKING([whether kernel has vm_flags_set])
+KERNEL_TRY_COMPILE([[
+#include <linux/mm.h>
+void test(void) {vm_flags_set(NULL, 0);}
+]],[AC_DEFINE([CONFIG_HAVE_VM_FLAGS_SET], [1], [Define if kernel has vm_flags_set()]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
+AC_MSG_CHECKING([whether struct ptp_clock_info has adjfreq])
+KERNEL_TRY_COMPILE([[
+#include <linux/ptp_clock_kernel.h>
+void test(void) {struct ptp_clock_info ci; ci.ajdfreq = NULL;}
+]],[AC_DEFINE([CONFIG_HAVE_PTP_CLOCK_INFO_ADJFREQ], [1], [Define if struct ptp_clock_info has adjfreq]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
+AC_MSG_CHECKING([whether class_create has only one parameter])
+KERNEL_TRY_COMPILE([[
+#include <linux/device.h>
+void test(void) {struct class *c = class_create(""); if (c) {} }
+]],[AC_DEFINE([CONFIG_CLASS_CREATE_HAVE_ONE_PARAMETER], [1], [Define if class_create has only one parameter]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
 AC_SUBST(KDIR)
 AC_SUBST(KSRC)
 
