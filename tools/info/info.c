@@ -15,24 +15,30 @@
 #include <stdio.h>
 #include <time.h>
 #include <inttypes.h>
+#include <dirent.h>
 
 #include <libfdt.h>
 #include <nfb/nfb.h>
 #include <nfb/ndp.h>
 
 #include <nfb/boot.h>
+#include <netcope/info.h>
 #include <netcope/adc_sensors.h>
 #include <netcope/eth.h>
 #include <netcope/nccommon.h>
 
-#define ARGUMENTS "d:q:hvV"
+#define ARGUMENTS "d:q:hlvV"
 
 #define BUFFER_SIZE 64
+
+#define NFB_PATH_MAXLEN 64
+#define NFB_BASE_DEV_PATH "/dev/nfb/"
 
 enum commands {
 	CMD_PRINT_STATUS,
 	CMD_USAGE,
 	CMD_VERSION,
+	CMD_LIST,
 };
 
 // this enum need to corespond with queries[] array
@@ -94,6 +100,81 @@ void print_version()
 #else
 	printf("Unknown\n");
 #endif
+}
+
+void print_device_list()
+{
+	int ret;
+	int len;
+	int fdt_offset;
+
+	DIR * d;
+	struct dirent *dir;
+	struct nc_composed_device_info info;
+	struct nfb_device *dev;
+
+	char path[128];
+	char lpath[PATH_MAX];
+
+	const void *fdt;
+	const char *prop;
+	const uint32_t *prop32;
+
+	d = opendir(NFB_BASE_DEV_PATH "by-pci-slot/");
+	if (d == NULL)
+		return;
+
+	printf("ID  Base path   PCI address   Card name         Serial number   Firmware info - project\n");
+
+	while ((dir = readdir(d)) != NULL) {
+		ret = snprintf(path, NFB_PATH_MAXLEN, NFB_BASE_DEV_PATH "by-pci-slot/%s", dir->d_name);
+		if (ret <= 0 || ret == NFB_PATH_MAXLEN) {
+			continue;
+		}
+
+		realpath(path, lpath);
+
+		dev = nfb_open(path);
+		if (dev) {
+			fdt = nfb_get_fdt(dev);
+			fdt_offset = fdt_path_offset(fdt, "/firmware/");
+
+			ret = nc_get_composed_device_info_by_pci(dev, NULL, &info);
+
+			prop = fdt_getprop(fdt, fdt_offset, "card-name", &len);
+			printf("% 2d  %-10s  %s  %-16s",
+					ret == 0 ? info.nfb_id : -1,
+					lpath, dir->d_name, len > 0 ? prop : "");
+
+
+			fdt_offset = fdt_path_offset(fdt, "/board/");
+			prop = fdt_getprop(fdt, fdt_offset, "serial-number-string", &len);
+			if (len > 0) {
+				printf("  %-16s", prop);
+			} else {
+				prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
+				if (len == sizeof(*prop32))
+					printf("  %-16d", fdt32_to_cpu(*prop32));
+				else
+					printf("  %16s", "");
+			}
+
+			fdt_offset = fdt_path_offset(fdt, "/firmware/");
+			prop = fdt_getprop(fdt, fdt_offset, "project-name", &len);
+			if (len > 0)
+				printf("%s", prop);
+			prop = fdt_getprop(fdt, fdt_offset, "project-variant", &len);
+			if (len > 0)
+				printf("  %s", prop);
+			prop = fdt_getprop(fdt, fdt_offset, "project-version", &len);
+			if (len > 0)
+				printf("  %s", prop);
+
+			printf("\n");
+
+			nfb_close(dev);
+		}
+	}
 }
 
 int print_specific_info(struct nfb_device *dev, int query)
@@ -411,6 +492,9 @@ int main(int argc, char *argv[])
 		case 'h':
 			command = CMD_USAGE;
 			break;
+		case 'l':
+			command = CMD_LIST;
+			break;
 		case 'v':
 			verbose++;
 			break;
@@ -431,7 +515,11 @@ int main(int argc, char *argv[])
 	} else if (command == CMD_VERSION) {
 		print_version();
 		return 0;
+	} else if (command == CMD_LIST) {
+		print_device_list();
+		return 0;
 	}
+
 	argc -= optind;
 	argv += optind;
 
