@@ -199,16 +199,10 @@ struct nc_ifc_map_info {
 
 static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct nc_ifc_map_info* mi)
 {
-	int i, q, ep;
-	int unassigned_queue;
+	int i, q;
 	int ret;
-	int ifc_cnt_real;
-	int port_cnt;
 	const void *fdt;
-	const char *prop;
-	int node, subnode, pmdnode;
-	int proplen;
-	int channel_cnt;
+	int node;
 
 	int ifc = 0;
 	int eth = 0;
@@ -232,8 +226,6 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 	mi->eth = NULL;
 
 	mi->eth_cnt = 0;
-
-	port_cnt = 0;
 
 	fdt_for_each_compatible_node(fdt, node, COMP_NETCOPE_ETH) {
 		/* Alloc interface info for each Ethernet channel */

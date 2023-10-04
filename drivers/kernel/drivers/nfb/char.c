@@ -478,7 +478,11 @@ int nfb_char_init(void)
 		goto err_register_chrdev;
 	}
 
+#ifdef CONFIG_CLASS_CREATE_HAVE_ONE_PARAMETER
+	nfb_class = class_create("nfb");
+#else
 	nfb_class = class_create(THIS_MODULE, "nfb");
+#endif
 	if (IS_ERR(nfb_class)) {
 		ret = PTR_ERR(nfb_class);
 		printk(KERN_ERR "nfb: class_create failed: %d\n", ret);
