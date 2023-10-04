@@ -293,9 +293,10 @@ cdef class DmaCtrlNdp:
         return (imin, imax)
 
     cdef __desc2uint(self, nc_ndp_desc desc):
-        cdef nc_ndp_desc d = desc
-        cdef uint64_t *pi = (<uint64_t*> &d)
-        cdef uint64_t i = pi[0]
+        cdef uint64_t i
+        cdef nc_ndp_desc *d = (<nc_ndp_desc*> &i)
+        d[0] = desc
+
         return int(i)
 
     def desc0(self, phys: dma_addr_t) -> int:
