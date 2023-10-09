@@ -73,8 +73,6 @@ struct nc_ndp_queue {
 #ifdef __KERNEL__
 	struct ndp_subscriber *subscriber;
 #endif
-	struct ndp_queue_ops ops;
-	void *priv;
 };
 
 #endif
