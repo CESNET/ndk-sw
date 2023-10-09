@@ -317,9 +317,11 @@ cdef class QueueManager:
 
     def __init__(self, nfb):
         compatibles = ([
+            (NdpQueueRx, "cesnet,dma_ctrl_calypte_rx", 0),
             (NdpQueueRx, "netcope,dma_ctrl_ndp_rx", 0),
             (NdpQueueRx, "netcope,dma_ctrl_sze_rx", 0),
         ], [
+            (NdpQueueTx, "cesnet,dma_ctrl_calypte_tx", 1),
             (NdpQueueTx, "netcope,dma_ctrl_ndp_tx", 1),
             (NdpQueueTx, "netcope,dma_ctrl_sze_tx", 1),
         ])

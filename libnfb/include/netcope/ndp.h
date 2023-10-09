@@ -5,6 +5,7 @@
  * Copyright (C) 2018-2022 CESNET
  * Author(s):
  *   Martin Spinler <spinler@cesnet.cz>
+ *   Vladislav Valek <valekv@cesnet.cz>
  */
 
 #include <nfb/ndp.h>
@@ -141,6 +142,67 @@ err_fdt_getprop:
 	return ret;
 }
 
+static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt,  int fdt_offset)
+{
+#ifndef __KERNEL__
+	int prot;
+	int ret = 0;
+	size_t hdr_mmap_size = 0;
+	off_t hdr_mmap_offset = 0;
+
+	size_t hdr_buff_size = 0;
+	size_t data_buff_size = 0;
+
+	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
+#endif
+
+	q->u.v3.pkts_available = 0;
+	q->u.v3.sdp = 0;
+	q->u.v3.shp = 0;
+
+#ifndef __KERNEL__
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_size", &hdr_mmap_size);
+		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", &hdr_mmap_offset);
+
+		if (ret)
+			return -EBADFD;
+	} else {
+		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_size", &hdr_mmap_size);
+		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", &hdr_mmap_offset);
+		ret |= fdt_getprop32(fdt, fdt_offset, "data_buff_size", &data_buff_size);
+		ret |= fdt_getprop32(fdt, fdt_offset, "hdr_buff_size", &hdr_buff_size);
+
+		if (ret)
+			return -EBADFD;
+	}
+
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		ops->burst.rx.get = nc_ndp_v3_rx_burst_get;
+		ops->burst.rx.put = nc_ndp_v3_rx_burst_put;
+	} else {
+		ops->burst.tx.get = nc_ndp_v3_tx_burst_get;
+		ops->burst.tx.put = nc_ndp_v3_tx_burst_put;
+		ops->burst.tx.flush = nc_ndp_v3_tx_burst_flush;
+	}
+
+	prot = PROT_READ | PROT_WRITE;
+
+	q->u.v3.hdrs = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
+	if (q->u.v3.hdrs == MAP_FAILED) {
+		return -EBADFD;
+	}
+
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		q->u.v3.hdr_ptr_mask = ((hdr_mmap_size / 2) / sizeof(struct ndp_v3_packethdr)) - 1; // "- 1" to create a mask for AND operations
+	} else {
+		q->u.v3.data_ptr_mask = data_buff_size/2 -1;
+		q->u.v3.hdr_ptr_mask = hdr_buff_size/(2*sizeof(struct ndp_v3_packethdr)) -1;
+	}
+#endif
+	return 0;
+}
+
 static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queue *q, unsigned index, int dir, ndp_open_flags_t ndp_flags)
 {
 	int ret = 0;
@@ -220,7 +282,9 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	q->sync.swptr = 0;
 	q->sync.hwptr = 0;
 
-	if (q->protocol == 2) {
+	if (q->protocol == 3) {
+		ret = nc_ndp_v3_open_queue(q, fdt, fdt_offset);
+	} else if (q->protocol == 2) {
 		ret = nc_ndp_v2_open_queue(q, fdt, fdt_offset);
 	} else if (q->protocol == 1) {
 		ret = nc_ndp_v1_open_queue(q);
@@ -257,7 +321,6 @@ static inline void nc_ndp_queue_close(struct nc_ndp_queue *q)
 		ndp_subscription_destroy(q->sub);
 		q->sub = NULL;
 	}
-
 #else
 	munmap(q->buffer, q->size * 2);
 #endif
