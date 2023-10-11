@@ -13,8 +13,6 @@
 #ifndef _NC_NDP_H_
 #define _NC_NDP_H_
 
-#define NDP_PACKET_HEADER_SIZE 4
-
 void ndp_close_queue(struct ndp_queue *q);
 
 int _ndp_queue_sync(struct nc_ndp_queue *q, struct ndp_subscription_sync *sync);
@@ -24,6 +22,7 @@ int _ndp_queue_stop(struct nc_ndp_queue *q);
 static int nc_ndp_queue_start(void *priv);
 static int nc_ndp_queue_stop(void *priv);
 
+#include "dma_ctrl_ndp.h"
 #include "ndp_rx.h"
 #include "ndp_tx.h"
 

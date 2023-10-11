@@ -2,9 +2,10 @@
 /*
  * Network component library - DMA controller - NDP/v2 type
  *
- * Copyright (C) 2020-2022 CESNET
+ * Copyright (C) 2020-2023 CESNET
  * Author(s):
  *   Martin Spinler <spinler@cesnet.cz>
+ *   Vladislav Valek <valekv@cesnet.cz>
  */
 
 #ifndef NETCOPE_DMA_CTRL_NDP_H
@@ -14,7 +15,6 @@
 #define COMP_NC_DMA_CTRL_NDP_RX "netcope,dma_ctrl_ndp_rx"
 #define COMP_NC_DMA_CTRL_NDP_TX "netcope,dma_ctrl_ndp_tx"
 
-#define NDP_CTRL_DESC_UPPER_ADDR(addr) (((uint64_t)addr) & 0xFFFFFFFFc0000000ull)
 
 #define NDP_CTRL_REG_CONTROL            0x00
         #define NDP_CTRL_REG_CONTROL_STOP       0x0
@@ -24,13 +24,29 @@
 #define NDP_CTRL_REG_SDP                0x10
 #define NDP_CTRL_REG_SHP                0x14
 #define NDP_CTRL_REG_HDP                0x18
-#define NDP_CTRL_REG_HHP                0x1c
-#define NDP_CTRL_REG_TIMEOUT            0x20
-#define NDP_CTRL_REG_DESC               0x40
-#define NDP_CTRL_REG_HDR                0x48
-#define NDP_CTRL_REG_UPDATE             0x50
+#define NDP_CTRL_REG_HHP                0x1C
+#define NDP_CTRL_REG_DESC_BASE          0x40
+#define NDP_CTRL_REG_HDR_BASE           0x48
+#define NDP_CTRL_REG_UPDATE_BASE        0x50
 #define NDP_CTRL_REG_MDP                0x58
-#define NDP_CTRL_REG_MHP                0x5c
+#define NDP_CTRL_REG_MHP                0x5C
+
+// --------------- NDP specific registers --------------
+#define NDP_CTRL_REG_TIMEOUT            0x20
+
+// -------------- NDP Counters -----------------
+// Processed packets on TX
+#define NDP_CTRL_REG_CNTR_SENT          0x60
+// Processed packets on RX
+#define NDP_CTRL_REG_CNTR_RECV          0x60
+// Discarded packets
+#define NDP_CTRL_REG_CNTR_DISC          0x70
+
+// -------------- Data transmission parameters ---------
+#define NDP_CTRL_UPDATE_SIZE    4
+#define NDP_PACKET_HEADER_SIZE  4
+
+#define NDP_CTRL_DESC_UPPER_ADDR(addr) (((uint64_t)addr) & 0xFFFFFFFFc0000000ull)
 
 #define NDP_CTRL_ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -259,13 +275,13 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 	}
 
 	/* Set address of first descriptor */
-	nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_DESC, sp->desc_buffer);
+	nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_DESC_BASE, sp->desc_buffer);
 
 	/* Set address of RAM hwptr address */
-	nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_UPDATE, sp->update_buffer);
+	nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_UPDATE_BASE, sp->update_buffer);
 
 	if (ctrl->dir == 0)
-		nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_HDR, sp->hdr_buffer);
+		nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_HDR_BASE, sp->hdr_buffer);
 
 	/* Set buffer size (mask) */
 	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MDP, ctrl->mdp);

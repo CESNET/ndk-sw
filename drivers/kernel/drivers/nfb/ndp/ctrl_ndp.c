@@ -22,22 +22,19 @@
 
 #include <netcope/dma_ctrl_ndp.h>
 
-#define NDP_CTRL_UPDATE_SIZE 	(4)
-
 #define NDP_CTRL_TX_DESC_SIZE	(sizeof(struct nc_ndp_desc))
 #define NDP_CTRL_RX_DESC_SIZE	(sizeof(struct nc_ndp_desc))
 #define NDP_CTRL_RX_HDR_SIZE	(sizeof(struct nc_ndp_hdr))
 
-#define NDP_TX_BURST (64u)
 #define NDP_CTRL_RX_DESC_BURST (64u)
 
-#define NDP_CTRL_MODE_PACKET_SIMPLE	0 /* One desc per packet only, except desc type0 */
-#define NDP_CTRL_MODE_STREAM		1 /* More packets in one descriptor with 8B padding */
-#define NDP_CTRL_MODE_USER  		2 /* User provides descriptors in offset + header buffer */
-
-#define virt_to_phys_shift(x) (virt_to_phys(x) >> PAGE_SHIFT)
+#define NDP_CTRL_MODE_PACKET_SIMPLE  0 /* One desc per packet only, except desc type0 */
+#define NDP_CTRL_MODE_STREAM         1 /* More packets in one descriptor with 8B padding */
+#define NDP_CTRL_MODE_USER           2 /* User provides descriptors in offset + header buffer */
 
 #define NDP_CTRL_NEXT_SDP_AGE_MAX 16
+
+#define virt_to_phys_shift(x) (virt_to_phys(x) >> PAGE_SHIFT)
 
 typedef uint64_t ndp_offset_t;
 
