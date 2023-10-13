@@ -80,15 +80,15 @@ struct nc_ndp_ctrl {
 };
 
 struct nc_ndp_ctrl_start_params {
-	dma_addr_t desc_buffer;
-	dma_addr_t hdr_buffer;
-	dma_addr_t update_buffer;
+	uint64_t desc_buffer;
+	uint64_t hdr_buffer;
+	uint64_t update_buffer;
 	uint32_t *update_buffer_virt;
 	uint32_t nb_desc;
 	uint32_t nb_hdr;
 };
 
-static inline struct nc_ndp_desc nc_ndp_rx_desc0(dma_addr_t phys)
+static inline struct nc_ndp_desc nc_ndp_rx_desc0(uint64_t phys)
 {
 	struct nc_ndp_desc desc;
 
@@ -99,7 +99,7 @@ static inline struct nc_ndp_desc nc_ndp_rx_desc0(dma_addr_t phys)
 	return desc;
 }
 
-static inline struct nc_ndp_desc nc_ndp_rx_desc2(dma_addr_t phys, uint16_t len, int next)
+static inline struct nc_ndp_desc nc_ndp_rx_desc2(uint64_t phys, uint16_t len, int next)
 {
 	struct nc_ndp_desc desc;
 
@@ -115,12 +115,12 @@ static inline struct nc_ndp_desc nc_ndp_rx_desc2(dma_addr_t phys, uint16_t len, 
 	return desc;
 }
 
-static inline struct nc_ndp_desc nc_ndp_tx_desc0(dma_addr_t phys)
+static inline struct nc_ndp_desc nc_ndp_tx_desc0(uint64_t phys)
 {
 	return nc_ndp_rx_desc0(phys);
 }
 
-static inline struct nc_ndp_desc nc_ndp_tx_desc2(dma_addr_t phys, uint16_t len, uint16_t meta, int next)
+static inline struct nc_ndp_desc nc_ndp_tx_desc2(uint64_t phys, uint16_t len, uint16_t meta, int next)
 {
 	struct nc_ndp_desc desc;
 
