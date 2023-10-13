@@ -1,3 +1,8 @@
+* Fri Oct 13 2023 Martin Spinler <spinler@cesnet.cz> - 6.19.4-1
+- [FEATURE] enable COPR build for DPDK version of ndp-tool
+- [BUGFIX] some fixes in MDIO
+- [BUGFIX] package dependencies
+
 * Tue Aug 22 2023 Martin Spinler <spinler@cesnet.cz> - 6.19.1-1
 - [FEATURE] added DPDK version of ndp-tool
 - [FEATURE] added support for Fedora build: PIE flag for executables
