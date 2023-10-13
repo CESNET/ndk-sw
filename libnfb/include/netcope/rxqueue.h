@@ -20,6 +20,7 @@ extern "C" {
 /* ~~~~[ DATA TYPES ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 struct nc_rxqueue {
 	enum queue_type type;
+	const char *name;
 };
 
 struct nc_rxqueue_status {
@@ -36,6 +37,7 @@ struct nc_rxqueue_status {
 
 	unsigned long long desc_base;
 	unsigned long long pointer_base;
+	unsigned long long hdr_base;
 
 	unsigned ctrl_running  : 1;
 	unsigned ctrl_discard  : 1;
@@ -44,7 +46,6 @@ struct nc_rxqueue_status {
 	unsigned stat_desc_rdy : 1;
 	unsigned stat_data_rdy : 1;
 	unsigned stat_ring_rdy : 1;
-	unsigned have_dp : 1;
 };
 
 struct nc_rxqueue_counters {
@@ -65,8 +66,9 @@ static inline void               nc_rxqueue_read_counters(struct nc_rxqueue *rxq
 static inline void               nc_rxqueue_read_status(struct nc_rxqueue *rxqueue, struct nc_rxqueue_status *status);
 
 /* ~~~~[ MACROS ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-#define COMP_NETCOPE_RXQUEUE_SZE  "netcope,dma_ctrl_sze_rx"
-#define COMP_NETCOPE_RXQUEUE_NDP  "netcope,dma_ctrl_ndp_rx"
+#define COMP_NETCOPE_RXQUEUE_SZE        "netcope,dma_ctrl_sze_rx"
+#define COMP_NETCOPE_RXQUEUE_NDP        "netcope,dma_ctrl_ndp_rx"
+#define COMP_NETCOPE_RXQUEUE_CALYPTE    "cesnet,dma_ctrl_calypte_rx"
 
 #define RXQUEUE_COMP_LOCK (1 << 0)
 
@@ -77,7 +79,8 @@ static inline struct nc_rxqueue *nc_rxqueue_open(struct nfb_device *dev, int fdt
 	struct nfb_comp *comp;
 
 	if (fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, COMP_NETCOPE_RXQUEUE_SZE) &&
-			fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, COMP_NETCOPE_RXQUEUE_NDP))
+			fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, COMP_NETCOPE_RXQUEUE_NDP) &&
+			fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, COMP_NETCOPE_RXQUEUE_CALYPTE))
 		return NULL;
 
 	comp = nfb_comp_open_ext(dev, fdt_offset, sizeof(struct nc_rxqueue));
@@ -85,7 +88,20 @@ static inline struct nc_rxqueue *nc_rxqueue_open(struct nfb_device *dev, int fdt
 		return NULL;
 
 	rxqueue = (struct nc_rxqueue *) nfb_comp_to_user(comp);
-	rxqueue->type = fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, COMP_NETCOPE_RXQUEUE_SZE) ? QUEUE_TYPE_NDP : QUEUE_TYPE_SZE;
+	if (!fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, COMP_NETCOPE_RXQUEUE_SZE)) {
+		rxqueue->type = QUEUE_TYPE_SZE;
+		rxqueue->name = "SZE";
+	} else if (!fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, COMP_NETCOPE_RXQUEUE_NDP)) {
+		rxqueue->type = QUEUE_TYPE_NDP;
+		rxqueue->name = "NDP";
+	} else if (!fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, COMP_NETCOPE_RXQUEUE_CALYPTE)) {
+		rxqueue->type = QUEUE_TYPE_CALYPTE;
+		rxqueue->name = "CALYPTE";
+	} else {
+		rxqueue->type = QUEUE_TYPE_UNDEF;
+		rxqueue->name = "UNDEFINED";
+	}
+
 	return rxqueue;
 }
 
@@ -93,13 +109,19 @@ static inline struct nc_rxqueue *nc_rxqueue_open_index(struct nfb_device *dev, u
 		enum queue_type type)
 {
 	int fdt_offset;
+
 	if (type == QUEUE_TYPE_UNDEF) {
-		if (nfb_comp_count(dev, COMP_NETCOPE_RXQUEUE_SZE) > 0)
+		if (nfb_comp_count(dev, COMP_NETCOPE_RXQUEUE_SZE) > 0) {
 			type = QUEUE_TYPE_SZE;
-		else
+			fdt_offset = nfb_comp_find(dev, COMP_NETCOPE_RXQUEUE_SZE, index);
+		} else if (nfb_comp_count(dev, COMP_NETCOPE_RXQUEUE_CALYPTE) > 0) {
+			type = QUEUE_TYPE_CALYPTE;
+			fdt_offset = nfb_comp_find(dev, COMP_NETCOPE_RXQUEUE_CALYPTE, index);
+		} else {
 			type = QUEUE_TYPE_NDP;
+			fdt_offset = nfb_comp_find(dev, COMP_NETCOPE_RXQUEUE_NDP, index);
+		}
 	}
-	fdt_offset = nfb_comp_find(dev, (type == QUEUE_TYPE_SZE) ? COMP_NETCOPE_RXQUEUE_SZE : COMP_NETCOPE_RXQUEUE_NDP, index);
 	return nc_rxqueue_open(dev, fdt_offset);
 }
 
@@ -110,7 +132,7 @@ static inline void nc_rxqueue_close(struct nc_rxqueue *rxqueue)
 
 static inline void nc_rxqueue_reset_counters(struct nc_rxqueue *rxqueue)
 {
-	if (rxqueue->type == QUEUE_TYPE_NDP) {
+	if (rxqueue->type == QUEUE_TYPE_NDP || rxqueue->type == QUEUE_TYPE_CALYPTE) {
 		nfb_comp_write32(nfb_user_to_comp(rxqueue), NDP_CTRL_REG_CNTR_RECV, CNTR_CMD_RST);
 	} else {
 		nfb_comp_write32(nfb_user_to_comp(rxqueue), SZE_CTRL_REG_CNTR_RECV, CNTR_CMD_STRB);
@@ -120,7 +142,7 @@ static inline void nc_rxqueue_reset_counters(struct nc_rxqueue *rxqueue)
 static inline void _nc_rxqueue_read_counters(struct nc_rxqueue *rxqueue, struct nc_rxqueue_counters *c, int cmd)
 {
 	struct nfb_comp *comp = nfb_user_to_comp(rxqueue);
-	if (rxqueue->type == QUEUE_TYPE_NDP) {
+	if (rxqueue->type == QUEUE_TYPE_NDP || rxqueue->type == QUEUE_TYPE_CALYPTE) {
 		nfb_comp_write32(nfb_user_to_comp(rxqueue), NDP_CTRL_REG_CNTR_RECV, cmd);
 		c->received             = nfb_comp_read64(comp, NDP_CTRL_REG_CNTR_RECV);
 		c->received_bytes       = nfb_comp_read64(comp, NDP_CTRL_REG_CNTR_RECV+8);
@@ -138,7 +160,7 @@ static inline void _nc_rxqueue_read_counters(struct nc_rxqueue *rxqueue, struct 
 
 static inline int nc_rxqueue_read_and_reset_counters(struct nc_rxqueue *queue, struct nc_rxqueue_counters *c)
 {
-	if (queue->type == QUEUE_TYPE_NDP) {
+	if (queue->type == QUEUE_TYPE_NDP || queue->type == QUEUE_TYPE_CALYPTE) {
 		_nc_rxqueue_read_counters(queue, c, CNTR_CMD_STRB_RST);
 	} else {
 		return -ENXIO;
@@ -169,6 +191,22 @@ static inline void nc_rxqueue_read_status(struct nc_rxqueue *rxqueue, struct nc_
 		s->max_request       = 0;
 		s->desc_base         = nfb_comp_read64(comp, NDP_CTRL_REG_DESC_BASE);
 		s->pointer_base      = nfb_comp_read64(comp, NDP_CTRL_REG_UPDATE_BASE);
+		s->ctrl_running      = (s->_ctrl_raw & 1) ? 1 : 0;
+		s->stat_running      = (s->_stat_raw & 1) ? 1 : 0;
+	} else if (rxqueue->type == QUEUE_TYPE_CALYPTE) {
+		s->_ctrl_raw         = nfb_comp_read32(comp, NDP_CTRL_REG_CONTROL);
+		s->_stat_raw         = nfb_comp_read32(comp, NDP_CTRL_REG_STATUS);
+		s->sw_pointer        = nfb_comp_read32(comp, NDP_CTRL_REG_SHP);
+		s->hw_pointer        = nfb_comp_read32(comp, NDP_CTRL_REG_HHP);
+		s->pointer_mask      = nfb_comp_read32(comp, NDP_CTRL_REG_MHP);
+		s->sd_pointer        = nfb_comp_read32(comp, NDP_CTRL_REG_SDP);
+		s->hd_pointer        = nfb_comp_read32(comp, NDP_CTRL_REG_HDP);
+		s->desc_pointer_mask = nfb_comp_read32(comp, NDP_CTRL_REG_MDP);
+		s->timeout           = 0;
+		s->max_request       = 0;
+		s->desc_base         = nfb_comp_read64(comp, NDP_CTRL_REG_DESC_BASE);
+		s->hdr_base          = nfb_comp_read64(comp, NDP_CTRL_REG_HDR_BASE);
+		s->pointer_base      = 0;
 		s->ctrl_running      = (s->_ctrl_raw & 1) ? 1 : 0;
 		s->stat_running      = (s->_stat_raw & 1) ? 1 : 0;
 	} else {

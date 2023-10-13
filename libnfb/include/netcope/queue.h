@@ -21,7 +21,8 @@ extern "C" {
 enum queue_type {
 	QUEUE_TYPE_UNDEF = -1,
 	QUEUE_TYPE_SZE = 0,
-	QUEUE_TYPE_NDP
+	QUEUE_TYPE_NDP = 1,
+	QUEUE_TYPE_CALYPTE
 };
 
 // -------------- Counter control commands --------------------
