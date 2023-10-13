@@ -64,7 +64,7 @@ set(DEB_PYTHON_DEP_LIST
 
 # Common package settings
 if(USE_DPDK)
-	set(CPACK_PACKAGE_NAME                  "${PROJECT_NAME}+ndp_tools_dpdk")
+	set(CPACK_PACKAGE_NAME                  "temp-${PROJECT_NAME}+ndp_tools_dpdk")
 else()
 	set(CPACK_PACKAGE_NAME                  "${PROJECT_NAME}")
 endif()

@@ -22,21 +22,21 @@ checkout scm
 
 		buildImage.inside {
 			stage("Build RPMs") {
-			sh './build.sh --purge'
-			sh './build.sh --prepare'
-			sh "./build.sh --${pkg}"
+				sh './build.sh --purge'
+				sh './build.sh --prepare'
+				sh "./build.sh --${pkg}"
 			}
 
 			stage("Test to install package") {
 				dir('cmake-build') {
 					if (pkg == 'rpm') {
+						sh 'sudo yum localinstall -y nfb-framework-*.rpm'
+
 						sh "sudo yum install -y yum-plugin-copr"
 						sh "sudo yum copr enable -y @CESNET/nfb-framework"
 						if (osreleasever != '7.9.2009') {
 							sh 'sudo yum install -y python3-fdt'
-							sh 'sudo yum install -y *.rpm'
-						} else {
-							sh 'sudo yum install -y nfb-framework*.rpm'
+							sh 'sudo yum localinstall -y python3-nfb-*.rpm'
 						}
 					} else if (pkg == 'deb') {
 						/* Commented out due to missing specific kernel-headers */
@@ -51,15 +51,15 @@ checkout scm
 
 			if (osreleasever != '7.9.2009' && osreleasever != 'focal') {
 				stage("Build dpdk RPMs") {
-						sh './build.sh --purge'
-						sh 'sudo ./build.sh --bootstrap-dpdk'
-						sh "./build.sh --${pkg}-dpdk"
+					sh './build.sh --purge'
+					sh 'sudo ./build.sh --bootstrap-dpdk'
+					sh "./build.sh --${pkg}-dpdk"
 				}
 
 				stage("Test to install dpdk package") {
 					dir('cmake-build') {
 						if (pkg == 'rpm') {
-							sh 'sudo yum install -y *.rpm'
+							sh 'sudo yum localinstall -y ndp-tool-dpdk-*.rpm'
 						} else if (pkg == 'deb') {
 							/* Commented out due to missing specific kernel-headers */
 							//sh 'sudo apt-get install -y -f ./*.deb'
