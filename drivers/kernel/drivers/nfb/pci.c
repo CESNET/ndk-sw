@@ -25,6 +25,7 @@
 #include "mi/mi.h"
 #include "ndp/ndp.h"
 
+#define NFB_FDT_BURSTSIZE (16384)
 #define NFB_FDT_MAXSIZE (65536)
 #define NFB_FDT_FIXUP_NODE_NAME_LEN 16
 
@@ -472,8 +473,8 @@ static void *nfb_pci_read_fdt(struct pci_dev *pci)
 	}
 
 	buffer.out_pos = 0;
-	buffer.out_size = NFB_FDT_MAXSIZE;
-	buffer.out = kzalloc(NFB_FDT_MAXSIZE, GFP_KERNEL);
+	buffer.out_size = NFB_FDT_BURSTSIZE;
+	buffer.out = kzalloc(buffer.out_size, GFP_KERNEL);
 	if (buffer.out == NULL) {
 		ret = -ENOMEM;
 		goto err_alloc_out_buffer;
@@ -495,40 +496,62 @@ static void *nfb_pci_read_fdt(struct pci_dev *pci)
 	}
 
 	/* Initialize a single-call decoder */
-	decoder = xz_dec_init(XZ_SINGLE, 0);
+	decoder = xz_dec_init(XZ_DYNALLOC, (u32)-1);
 	if (decoder == NULL) {
 		ret = -ENOMEM;
 		goto err_dec_init;
 	}
 
 	/* Run DTB decompression */
-	xzret = xz_dec_run(decoder, &buffer);
+	buffer.out_size = NFB_FDT_BURSTSIZE / 2;
+	buffer.out = NULL;
+	do {
+		buffer.out_size *= 2;
+		buffer.out = krealloc(buffer.out, buffer.out_size, GFP_KERNEL);
+		if (buffer.out == NULL) {
+			ret = -ENOMEM;
+			goto err_dec_run;
+		}
+		xzret = xz_dec_run(decoder, &buffer);
+	} while (xzret == XZ_OK);
+
 	if (xzret != XZ_STREAM_END) {
 		ret = -EBADF;
 		dev_err(&pci->dev, "Unable to decompress FDT, %d.\n", xzret);
 		goto err_dec_run;
 	}
+
 	if (fdt_check_header(buffer.out)) {
 		ret = -EBADF;
 		dev_err(&pci->dev, "FDT check header failed.\n");
 		goto err_fdt_check_header;
 	}
 
+	/* Increase size for driver usage */
+	buffer.out_size *= 4;
+	buffer.out = krealloc(buffer.out, buffer.out_size, GFP_KERNEL);
+	if (buffer.out == NULL) {
+		ret = -ENOMEM;
+		goto err_fdt_final_realloc;
+	}
+
 	xz_dec_end(decoder);
 	kfree(buffer.in);
 
 	fdt = buffer.out;
-	fdt_set_totalsize(fdt, NFB_FDT_MAXSIZE);
+	dev_info(&pci->dev, "FDT loaded, size: %u, allocated buffer size: %zu\n", fdt_totalsize(fdt), buffer.out_size);
+	fdt_set_totalsize(fdt, buffer.out_size);
 
-	dev_info(&pci->dev, "FDT loaded.\n");
 	return fdt;
 
+err_fdt_final_realloc:
 err_fdt_check_header:
 err_dec_run:
 	xz_dec_end(decoder);
 err_dec_init:
 err_read:
-	kfree(buffer.out);
+	if (buffer.out)
+		kfree(buffer.out);
 err_alloc_out_buffer:
 	kfree(buffer.in);
 err_alloc_in_buffer:
