@@ -254,11 +254,13 @@ void rxqueue_print_status(struct nc_rxqueue *q, const char *compatible, int inde
 			printf("HW header pointer          : 0x%08lX\n", s.hw_pointer);
 			printf("Header pointer mask        : 0x%08lX\n", s.pointer_mask);
 			printf("* Header buffer size       : "); print_size(s.pointer_mask ? s.pointer_mask + 1 : 0); printf("\n");
+			printf("* Fillable headers in HW   : 0x%08lX\n", (s.sw_pointer - s.hw_pointer - 1) & s.pointer_mask);
 
 			printf("SW descriptor pointer      : 0x%08lX\n", s.sd_pointer);
 			printf("HW descriptor pointer      : 0x%08lX\n", s.hd_pointer);
 			printf("Descriptor pointer mask    : 0x%08lX\n", s.desc_pointer_mask);
 			printf("* Descriptor buffer size   : "); print_size(s.desc_pointer_mask ? s.desc_pointer_mask + 1 : 0); printf("\n");
+			printf("* Usable descriptors in HW : 0x%08lX\n", (s.sd_pointer - s.hd_pointer) & s.desc_pointer_mask);
 		} else {
 			printf("SW pointer                 : 0x%08lX\n", s.sw_pointer);
 			printf("HW pointer                 : 0x%08lX\n", s.hw_pointer);
@@ -316,15 +318,11 @@ void txqueue_print_status(struct nc_txqueue *q, const char *compatible, int inde
 				s.stat_running ? "Running " : "Stopped ");
 
 		if (s.have_dp) {
-			printf("SW header pointer          : 0x%08lX\n", s.sw_pointer);
-			printf("HW header pointer          : 0x%08lX\n", s.hw_pointer);
-			printf("Header pointer mask        : 0x%08lX\n", s.pointer_mask);
-			printf("* Header buffer size       : "); print_size(s.pointer_mask ? s.pointer_mask + 1 : 0); printf("\n");
-
 			printf("SW descriptor pointer      : 0x%08lX\n", s.sd_pointer);
 			printf("HW descriptor pointer      : 0x%08lX\n", s.hd_pointer);
 			printf("Descriptor pointer mask    : 0x%08lX\n", s.desc_pointer_mask);
 			printf("* Descriptor buffer size   : "); print_size(s.desc_pointer_mask ? s.desc_pointer_mask + 1 : 0); printf("\n");
+			printf("* Usable descriptors in HW : 0x%08lX\n", (s.sd_pointer - s.hd_pointer) & s.desc_pointer_mask);
 		} else {
 			printf("SW pointer                 : 0x%08lX\n", s.sw_pointer);
 			printf("HW pointer                 : 0x%08lX\n", s.hw_pointer);
