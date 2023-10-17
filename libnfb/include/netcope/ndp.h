@@ -212,7 +212,7 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	int flags = 0;
 
 	off_t mmap_offset;
-	size_t mmap_size;
+	size_t mmap_size = 0;
 
 	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
 
