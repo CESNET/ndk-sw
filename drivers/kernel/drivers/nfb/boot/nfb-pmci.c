@@ -66,6 +66,9 @@
 #define PMCI_FIFO_MAX_WORDS (PMCI_FIFO_MAX_BYTES / 4)
 
 
+#if !defined(CONFIG_HAVE_READ_POLL_TIMEOUT_ATOMIC)
+#define read_poll_timeout_atomic read_poll_timeout
+#endif
 
 struct indirect_ctx {
 	struct device *dev;
@@ -80,7 +83,7 @@ static int indirect_bus_clr_cmd(struct indirect_ctx *ctx)
 
 	nfb_comp_write32(ctx->comp, ctx->offset + INDIRECT_CMD_OFF, 0);
 
-	ret = read_poll_timeout(nfb_comp_read32, cmd, (!cmd), INDIRECT_INT_US, INDIRECT_TIMEOUT_US, false, ctx->comp, (ctx->offset + INDIRECT_CMD_OFF));
+	ret = read_poll_timeout_atomic(nfb_comp_read32, cmd, (!cmd), INDIRECT_INT_US, INDIRECT_TIMEOUT_US, false, ctx->comp, (ctx->offset + INDIRECT_CMD_OFF));
 
 	if (ret)
 		dev_err(ctx->dev, "%s timed out on clearing cmd 0x%xn", __func__, cmd);
@@ -104,7 +107,7 @@ static int indirect_bus_reg_read(void *context, unsigned int reg,
 
 	nfb_comp_write32(ctx->comp, ctx->offset + INDIRECT_CMD_OFF, INDIRECT_CMD_RD);
 
-	ret = read_poll_timeout(nfb_comp_read32, cmd, (cmd & INDIRECT_CMD_ACK), INDIRECT_INT_US, INDIRECT_TIMEOUT_US, false, ctx->comp, (ctx->offset + INDIRECT_CMD_OFF));
+	ret = read_poll_timeout_atomic(nfb_comp_read32, cmd, (cmd & INDIRECT_CMD_ACK), INDIRECT_INT_US, INDIRECT_TIMEOUT_US, false, ctx->comp, (ctx->offset + INDIRECT_CMD_OFF));
 
 	*val = nfb_comp_read32(ctx->comp, ctx->offset + INDIRECT_RD_OFF);
 
@@ -135,7 +138,7 @@ static int indirect_bus_reg_write(void *context, unsigned int reg,
 
 	nfb_comp_write32(ctx->comp, ctx->offset + INDIRECT_CMD_OFF, INDIRECT_CMD_WR);
 
-	ret = read_poll_timeout(nfb_comp_read32, cmd, (cmd & INDIRECT_CMD_ACK), INDIRECT_INT_US, INDIRECT_TIMEOUT_US, false, ctx->comp, (ctx->offset + INDIRECT_CMD_OFF));
+	ret = read_poll_timeout_atomic(nfb_comp_read32, cmd, (cmd & INDIRECT_CMD_ACK), INDIRECT_INT_US, INDIRECT_TIMEOUT_US, false, ctx->comp, (ctx->offset + INDIRECT_CMD_OFF));
 
 	if (ret)
 		dev_err(ctx->dev, "%s timed out on reg 0x%x cmd 0x%x\n", __func__, reg, cmd);
@@ -197,7 +200,7 @@ pmci_get_write_space(struct pmci_device *pmci, u32 size)
 	u32 count, val;
 	int ret;
 
-	ret = read_poll_timeout(nfb_comp_read32, val,
+	ret = read_poll_timeout_atomic(nfb_comp_read32, val,
 				FIELD_GET(PMCI_FLASH_FIFO_SPACE, val) ==
 				PMCI_FIFO_MAX_WORDS,
 				PMCI_FLASH_INT_US, PMCI_FLASH_TIMEOUT_US,
@@ -251,7 +254,7 @@ pmci_flash_bulk_read(struct intel_m10bmc *m10bmc, void *buf,
 		/* First check of PMCI_FLASH_CTRL reg is too soon after write and doesn't have valid PMCI_FLASH_BUSY flag: */
 		nfb_comp_read32(pmci->comp, PMCI_FLASH_ADDR);
 
-		ret = read_poll_timeout(nfb_comp_read32, val,
+		ret = read_poll_timeout_atomic(nfb_comp_read32, val,
 				!(val & PMCI_FLASH_BUSY),
 				PMCI_FLASH_INT_US, PMCI_FLASH_TIMEOUT_US,
 				false, pmci->comp, PMCI_FLASH_CTRL);

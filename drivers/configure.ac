@@ -119,6 +119,12 @@ KERNEL_TRY_COMPILE([[
 void test(void) {struct class *c = class_create(""); if (c) {} }
 ]],[AC_DEFINE([CONFIG_CLASS_CREATE_HAVE_ONE_PARAMETER], [1], [Define if class_create has only one parameter]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
+AC_MSG_CHECKING([whether kernel has read_poll_timeout_atomic])
+KERNEL_TRY_COMPILE([[
+#include <linux/iopoll.h>
+int trd(off_t a) {return 0;} void test(void) {int ret; read_poll_timeout_atomic(trd, ret, (!ret), 1, 2, false, 0);}
+]],[AC_DEFINE([CONFIG_HAVE_READ_POLL_TIMEOUT_ATOMIC], [1], [Define if kernel has read_poll_timeout_atomic]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
 AC_SUBST(KDIR)
 AC_SUBST(KSRC)
 
