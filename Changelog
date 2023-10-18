@@ -1,3 +1,7 @@
+* Wed Oct 18 2023 Martin Spinler <spinler@cesnet.cz> - 6.19.5-1
+- [BUGFIX] fixed flashing of N6010 card on newer kernels
+- [BUGFIX] correctly decode control / status register in nfb-dma
+
 * Fri Oct 13 2023 Martin Spinler <spinler@cesnet.cz> - 6.19.4-1
 - [FEATURE] enable COPR build for DPDK version of ndp-tool
 - [BUGFIX] some fixes in MDIO
