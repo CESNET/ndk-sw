@@ -236,29 +236,43 @@ void rxqueue_print_status(struct nc_rxqueue *q, const char *compatible, int inde
 		nc_rxqueue_read_status(q, &s);
 
 		printf("Control reg                : 0x%.8X", s._ctrl_raw);
-		printf(" | %s | %s",
-				s.ctrl_running ? "Run     " : "Stop    ",
-				s.ctrl_discard ? "Discard " : "Block   ");
-
-		printf(" | EpMsk %.2X | VFID  %.2X |\n", (s._ctrl_raw >> 16) & 0xFF, (s._ctrl_raw >> 24) & 0xFF);
+		if (q->type == QUEUE_TYPE_NDP) {
+			printf(" | %s |",
+					s.ctrl_running ? "Run     " : "Stop    ");
+		} else if (q->type == QUEUE_TYPE_SZE) {
+			printf(" | %s | %s | EpMsk %.2X | VFID  %.2X |",
+					s.ctrl_running ? "Run     " : "Stop    ",
+					s.ctrl_discard ? "Discard " : "Block   ",
+					(s._ctrl_raw >> 16) & 0xFF,
+					(s._ctrl_raw >> 24) & 0xFF);
+		}
+		printf("\n");
 
 		printf("Status reg                 : 0x%.8X", s._stat_raw);
-		printf(" | %s | %s | %s | %s |\n",
-				s.stat_running ? "Running " : "Stopped ",
-				s.stat_desc_rdy ? "Desc RDY" : "Desc  - ",
-				s.stat_data_rdy ? "Data RDY" : "Data  - ",
-				s.stat_ring_rdy ? "SW RDY  " : "SW Full ");
+		if (q->type == QUEUE_TYPE_NDP) {
+			printf(" | %s |",
+					s.stat_running ? "Running " : "Stopped ");
+		} else if (q->type == QUEUE_TYPE_SZE) {
+			printf(" | %s | %s | %s | %s |",
+					s.stat_running ? "Running " : "Stopped ",
+					s.stat_desc_rdy ? "Desc RDY" : "Desc  - ",
+					s.stat_data_rdy ? "Data RDY" : "Data  - ",
+					s.stat_ring_rdy ? "SW RDY  " : "SW Full ");
+		}
+		printf("\n");
 
 		if (s.have_dp) {
 			printf("SW header pointer          : 0x%08lX\n", s.sw_pointer);
 			printf("HW header pointer          : 0x%08lX\n", s.hw_pointer);
 			printf("Header pointer mask        : 0x%08lX\n", s.pointer_mask);
 			printf("* Header buffer size       : "); print_size(s.pointer_mask ? s.pointer_mask + 1 : 0); printf("\n");
+			printf("* Fillable headers in HW   : 0x%08lX\n", (s.sw_pointer - s.hw_pointer - 1) & s.pointer_mask);
 
 			printf("SW descriptor pointer      : 0x%08lX\n", s.sd_pointer);
 			printf("HW descriptor pointer      : 0x%08lX\n", s.hd_pointer);
 			printf("Descriptor pointer mask    : 0x%08lX\n", s.desc_pointer_mask);
 			printf("* Descriptor buffer size   : "); print_size(s.desc_pointer_mask ? s.desc_pointer_mask + 1 : 0); printf("\n");
+			printf("* Usable descriptors in HW : 0x%08lX\n", (s.sd_pointer - s.hd_pointer) & s.desc_pointer_mask);
 		} else {
 			printf("SW pointer                 : 0x%08lX\n", s.sw_pointer);
 			printf("HW pointer                 : 0x%08lX\n", s.hw_pointer);
@@ -306,25 +320,34 @@ void txqueue_print_status(struct nc_txqueue *q, const char *compatible, int inde
 	if (verbose > 0) {
 		nc_txqueue_read_status(q, &s);
 		printf("Control reg                : 0x%.8X", s._ctrl_raw);
-		printf(" | %s",
-				s.ctrl_running ? "Run     " : "Stop    ");
 
-		printf(" | EpMsk %.2X | VFID  %.2X |\n", (s._ctrl_raw >> 16) & 0xFF, (s._ctrl_raw >> 24) & 0xFF);
+		if (q->type == QUEUE_TYPE_NDP) {
+			printf(" | %s |",
+					s.ctrl_running ? "Run     " : "Stop    ");
+		} else if (q->type == QUEUE_TYPE_SZE) {
+			printf(" | %s | EpMsk %.2X | VFID  %.2X |",
+					s.ctrl_running ? "Run     " : "Stop    ",
+					(s._ctrl_raw >> 16) & 0xFF,
+					(s._ctrl_raw >> 24) & 0xFF);
+		}
+		printf("\n");
 
 		printf("Status reg                 : 0x%.8X", s._stat_raw);
-		printf(" | %s |\n",
-				s.stat_running ? "Running " : "Stopped ");
+		if (q->type == QUEUE_TYPE_NDP) {
+			printf(" | %s |",
+					s.stat_running ? "Running " : "Stopped ");
+		} else if (q->type == QUEUE_TYPE_SZE) {
+			printf(" | %s |",
+					s.stat_running ? "Running " : "Stopped ");
+		}
+		printf("\n");
 
 		if (s.have_dp) {
-			printf("SW header pointer          : 0x%08lX\n", s.sw_pointer);
-			printf("HW header pointer          : 0x%08lX\n", s.hw_pointer);
-			printf("Header pointer mask        : 0x%08lX\n", s.pointer_mask);
-			printf("* Header buffer size       : "); print_size(s.pointer_mask ? s.pointer_mask + 1 : 0); printf("\n");
-
 			printf("SW descriptor pointer      : 0x%08lX\n", s.sd_pointer);
 			printf("HW descriptor pointer      : 0x%08lX\n", s.hd_pointer);
 			printf("Descriptor pointer mask    : 0x%08lX\n", s.desc_pointer_mask);
 			printf("* Descriptor buffer size   : "); print_size(s.desc_pointer_mask ? s.desc_pointer_mask + 1 : 0); printf("\n");
+			printf("* Usable descriptors in HW : 0x%08lX\n", (s.sd_pointer - s.hd_pointer) & s.desc_pointer_mask);
 		} else {
 			printf("SW pointer                 : 0x%08lX\n", s.sw_pointer);
 			printf("HW pointer                 : 0x%08lX\n", s.hw_pointer);
