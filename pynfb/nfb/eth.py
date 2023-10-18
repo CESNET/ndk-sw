@@ -60,6 +60,15 @@ class Eth:
         else:
             raise AttributeError
 
+    def __setattr__(self, name, value):
+        if name in ["link"]:
+            raise AttributeError(f"'Eth' object attribute '{name}' is read-only")
+        elif name in ["pma_local_loopback"]:
+            return setattr(self.pcspma, name, value)
+        else:
+            object.__setattr__(self, name, value)
+
+
 class Transceiver:
     """
     Object representing a transciever interface
