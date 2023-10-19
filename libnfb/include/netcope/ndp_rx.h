@@ -5,6 +5,7 @@
  * Copyright (C) 2018-2022 CESNET
  * Author(s):
  *   Martin Spinler <spinler@cesnet.cz>
+ *   Vladislav Valek <valekv@cesnet.cz>
  */
 
 static inline int nc_ndp_v1_rx_lock(void *priv)
@@ -229,13 +230,101 @@ static inline int nc_ndp_v2_rx_burst_put(void *priv)
 	return nc_ndp_v2_rx_unlock(priv);
 }
 
+static inline unsigned nc_ndp_v3_rx_lock(void *priv)
+{
+	int ret;
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	if ((ret = _ndp_queue_sync(q, &q->sync))) {
+		return ret;
+	}
+
+	q->u.v3.pkts_available = (q->sync.hwptr - q->u.v3.shp) & (q->u.v3.hdr_ptr_mask);
+
+	return 0;
+}
+
+static inline int nc_ndp_v3_rx_unlock(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	q->sync.swptr = q->u.v3.shp & (q->u.v3.hdr_ptr_mask);
+	return _ndp_queue_sync(q, &q->sync);
+}
+
+static inline unsigned nc_ndp_v3_rx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
+{
+	unsigned i = 0;
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	struct ndp_v3_packethdr *hdr_base;
+	unsigned char *data_base;
+
+	if (unlikely(q->u.v3.pkts_available < count)) {
+		nc_ndp_v3_rx_lock(q);
+		count = min(q->u.v3.pkts_available, count);
+		if (count == 0)
+			return 0;
+	}
+
+	hdr_base = q->u.v3.hdrs + q->u.v3.shp;
+	data_base = q->buffer;
+	__builtin_prefetch(hdr_base);
+	__builtin_prefetch(data_base);
+
+	for (i = 0; i < count; i++) {
+		unsigned packet_size;
+		unsigned header_size = 0;
+		struct ndp_v3_packethdr *hdr;
+		unsigned char *data;
+
+		hdr = hdr_base + i;
+
+		if (!hdr->valid) {
+			break;
+		}
+
+		if (!(hdr->metadata & NDP_CALYPTE_METADATA_NOT_VALID))
+			header_size = hdr->metadata & NDP_CALYPTE_METADATA_HDR_SIZE_MASK;
+
+		packet_size = le16_to_cpu(hdr->frame_len) - header_size;
+
+		data = data_base + hdr->frame_ptr * NDP_RX_CALYPTE_BLOCK_SIZE;
+		/* Assign pointer and length of header */
+		packets[i].header = data;
+		packets[i].header_length = header_size;
+
+		data += header_size;
+
+		/* Assign pointer and length of data */
+		packets[i].data = data;
+		packets[i].data_length = packet_size;
+
+		hdr->valid = 0;
+		q->u.v3.sdp += (hdr->frame_len + (NDP_RX_CALYPTE_BLOCK_SIZE - 1)) & (~(NDP_RX_CALYPTE_BLOCK_SIZE -1));
+	}
+
+	q->u.v3.sdp &= q->u.v3.hdr_ptr_mask;
+	q->u.v3.shp = (q->u.v3.shp + count) & q->u.v3.hdr_ptr_mask;
+	q->u.v3.pkts_available -= count;
+
+	return count;
+}
+
+static inline int nc_ndp_v3_rx_burst_put(void *priv)
+{
+	return nc_ndp_v3_rx_unlock(priv);
+}
+
 static inline unsigned nc_ndp_rx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
-	if (q->version == 2) {
+	if (q->protocol == 3) {
+		return nc_ndp_v3_rx_burst_get(priv, packets, count);
+	} else if (q->protocol == 2) {
 		return nc_ndp_v2_rx_burst_get(priv, packets, count);
-	} else if (q->version == 1) {
+	} else if (q->protocol == 1) {
 		return nc_ndp_v1_rx_burst_get(priv, packets, count);
 	}
 	return 0;
@@ -245,9 +334,11 @@ static inline void nc_ndp_rx_burst_put(void *priv)
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
-	if (q->version == 2) {
+	if (q->protocol == 3) {
+		nc_ndp_v3_rx_unlock(priv);
+	} else if (q->protocol == 2) {
 		nc_ndp_v2_rx_unlock(priv);
-	} else if (q->version == 1) {
+	} else if (q->protocol == 1) {
 		nc_ndp_v1_rx_burst_put(priv);
 	}
 }

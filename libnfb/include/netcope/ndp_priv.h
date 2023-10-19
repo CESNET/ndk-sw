@@ -5,6 +5,7 @@
  * Copyright (C) 2018-2022 CESNET
  * Author(s):
  *   Martin Spinler <spinler@cesnet.cz>
+ *   Vladislav Valek <valekv@cesnet.cz>
  */
 
 #include <nfb/ndp.h>
@@ -27,6 +28,13 @@ struct ndp_v2_offsethdr {
 	__u64	offset;
 };
 
+struct ndp_v3_packethdr {
+	__u16 frame_len;        /**< size of the packet */
+	__u16 frame_ptr;        /**< index into the data array */
+	__u8 valid : 1;         /**< bit indicating the validity of the header/packet */
+	unsigned reserved : 7;  /**< bits reserved for future use */
+	unsigned metadata:24;   /**< user metadata */
+} __attribute((packed));
 
 struct ndp_queue;
 
@@ -52,6 +60,29 @@ struct nc_ndp_queue {
 			struct ndp_v2_packethdr *hdr;
 			struct ndp_v2_offsethdr *off;
 		} v2;
+
+		struct {
+			// DMA Calypte data and header buffer
+			struct nfb_comp *tx_hdr_buff;
+			struct nfb_comp *tx_data_buff;
+
+			// Used to indicate the number of packets that are
+			// locked in the queue. It also means the number of free
+			// headers.
+			unsigned pkts_available;
+			uint32_t bytes_available;
+			unsigned pkts_to_send;
+
+			uint32_t sdp;
+			uint32_t shp;
+			uint32_t data_ptr_mask;
+			uint32_t hdr_ptr_mask;
+
+			// Packet descriptions
+			struct ndp_packet *packets;
+			// Buffer for headers
+			struct ndp_v3_packethdr *hdrs;
+		} v3;
 	} u;
 
 	int fd;
@@ -66,15 +97,13 @@ struct nc_ndp_queue {
 
 	/* Control path */
 	struct ndp_queue *q;
-	uint32_t version;
+	uint32_t protocol;
 	uint32_t flags;
 
 	struct ndp_channel_request channel;
 #ifdef __KERNEL__
 	struct ndp_subscriber *subscriber;
 #endif
-	struct ndp_queue_ops ops;
-	void *priv;
 };
 
 #endif

@@ -27,9 +27,13 @@
 
 /*! Acceptable command line arguments */
 /*! -d path to device file */
-/*! -i RX or TX index; -r use only RX; -t use only TX; */
+/*! -i RX or TX index */
+/*! -r use only RX; */
+/*! -t use only TX; */
 /*! -R reset counters */
-/*! -h print help; -v verbose mode; -V version */
+/*! -h print help; */
+/*! -v verbose mode; */
+/*! -V version */
 
 #define ARGUMENTS			"d:i:q:rtRS:vh"
 
@@ -45,10 +49,12 @@ enum commands {
 const char *rx_ctrl_name[] = {
 	COMP_NETCOPE_RXQUEUE_SZE,
 	COMP_NETCOPE_RXQUEUE_NDP,
+	COMP_NETCOPE_RXQUEUE_CALYPTE,
 };
 const char *tx_ctrl_name[] = {
 	COMP_NETCOPE_TXQUEUE_SZE,
 	COMP_NETCOPE_TXQUEUE_NDP,
+	COMP_NETCOPE_TXQUEUE_CALYPTE,
 };
 
 // this enum need to corespond with queries[] array
@@ -59,6 +65,8 @@ enum queries {
 	RX_DISCARDED_BYTES,
 	TX_SENT,
 	TX_SENT_BYTES,
+	TX_DISCARDED,
+	TX_DISCARDED_BYTES
 };
 static const char * const queries[] = {
 	"rx_received",
@@ -66,7 +74,9 @@ static const char * const queries[] = {
 	"rx_discarded",
 	"rx_discarded_bytes",
 	"tx_sent",
-	"tx_sent_bytes"
+	"tx_sent_bytes",
+	"tx_discarded",
+	"tx_discarded_bytes"
 };
 
 /*!
@@ -135,7 +145,7 @@ int query_print(struct nfb_device *dev, struct list_range index_range,
 	char *queries, int size)
 {
 	struct nc_rxqueue *rxq;
-	struct nc_txqueue *txq;
+	struct nc_txqueue *txq = NULL;
 	struct nc_rxqueue_counters cr = {0, };
 	struct nc_txqueue_counters ct = {0, };
 	int rx_size = ndp_get_rx_queue_count(dev);
@@ -172,6 +182,8 @@ int query_print(struct nfb_device *dev, struct list_range index_range,
 						} break;
 					case TX_SENT:
 					case TX_SENT_BYTES:
+					case TX_DISCARDED:
+					case TX_DISCARDED_BYTES:
 						if (txc_valid)
 							break;
 
@@ -210,6 +222,14 @@ int query_print(struct nfb_device *dev, struct list_range index_range,
 						if (!ct.have_bytes)
 							warnx("queue doesn't have byte counter");
 						printf("%llu\n", ct.sent_bytes); break;
+					case TX_DISCARDED:
+						if (!ct.have_tx_discard)
+							warnx("queue doesn't have TX discard counter");
+						printf("%llu\n", ct.discarded); break;
+					case TX_DISCARDED_BYTES:
+						if (!ct.have_tx_discard)
+							warnx("queue doesn't have TX discard counter");
+						printf("%llu\n", ct.discarded_bytes); break;
 					default: break;
 				}
 			}
@@ -223,20 +243,18 @@ int query_print(struct nfb_device *dev, struct list_range index_range,
  *
  * \param *tx_dma    structure from which are data read
  */
-void rxqueue_print_status(struct nc_rxqueue *q, const char *compatible, int index, int verbose, enum commands cmd)
+void rxqueue_print_status(struct nc_rxqueue *q, int index, int verbose, enum commands cmd)
 {
-	int packet = strstr(compatible, "_pac_") ? 1 : 0;
-
 	struct nc_rxqueue_status s;
 	struct nc_rxqueue_counters c;
 
+	printf("------------------------------ RX%02d %s controller ----\n", index, q->name);
 
-	printf("------------------------------ RX%02d %s controller ----\n", index, packet ? "PAC" : "NDP");
 	if (verbose > 0) {
 		nc_rxqueue_read_status(q, &s);
 
 		printf("Control reg                : 0x%.8X", s._ctrl_raw);
-		if (q->type == QUEUE_TYPE_NDP) {
+		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
 			printf(" | %s |",
 					s.ctrl_running ? "Run     " : "Stop    ");
 		} else if (q->type == QUEUE_TYPE_SZE) {
@@ -249,7 +267,7 @@ void rxqueue_print_status(struct nc_rxqueue *q, const char *compatible, int inde
 		printf("\n");
 
 		printf("Status reg                 : 0x%.8X", s._stat_raw);
-		if (q->type == QUEUE_TYPE_NDP) {
+		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
 			printf(" | %s |",
 					s.stat_running ? "Running " : "Stopped ");
 		} else if (q->type == QUEUE_TYPE_SZE) {
@@ -261,7 +279,7 @@ void rxqueue_print_status(struct nc_rxqueue *q, const char *compatible, int inde
 		}
 		printf("\n");
 
-		if (s.have_dp) {
+		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
 			printf("SW header pointer          : 0x%08lX\n", s.sw_pointer);
 			printf("HW header pointer          : 0x%08lX\n", s.hw_pointer);
 			printf("Header pointer mask        : 0x%08lX\n", s.pointer_mask);
@@ -280,11 +298,13 @@ void rxqueue_print_status(struct nc_rxqueue *q, const char *compatible, int inde
 			printf("* Buffer size              : "); print_size(s.pointer_mask ? s.pointer_mask + 1 : 0); printf("\n");
 		}
 
-		//printf("Interrupt reg:          0x%.8X\n", (reg = nfb_comp_read32(comp, 0x14)));
-		printf("Timeout reg                : 0x%08lX\n", s.timeout);
+		if (q->type == QUEUE_TYPE_SZE || q->type == QUEUE_TYPE_NDP)
+			printf("Timeout reg                : 0x%08lX\n", s.timeout);
 
-		printf("Max request                : 0x%04lX     | ", s.max_request);
-		print_size(s.max_request); printf("\n");
+		if (q->type == QUEUE_TYPE_SZE) {
+			printf("Max request                : 0x%04lX     | ", s.max_request);
+			print_size(s.max_request); printf("\n");
+		}
 	}
 
 	if (cmd == CMD_COUNTER_READ_AND_RESET) {
@@ -296,6 +316,7 @@ void rxqueue_print_status(struct nc_rxqueue *q, const char *compatible, int inde
 	} else {
 		nc_rxqueue_read_counters(q, &c);
 	}
+
 	printf("Received                   : %llu\n", c.received);
 	if (c.have_bytes)
 		printf("Received bytes             : %llu\n", c.received_bytes);
@@ -305,23 +326,25 @@ void rxqueue_print_status(struct nc_rxqueue *q, const char *compatible, int inde
 
 	if (verbose > 1) {
 		printf("Desc base                  : 0x%.16llX\n", s.desc_base);
-		printf("Pointer base               : 0x%.16llX\n", s.pointer_base);
+		if (q->type == QUEUE_TYPE_CALYPTE)
+			printf("Header base                : 0x%.16llX\n", s.hdr_base);
+		else
+			printf("Pointer base               : 0x%.16llX\n", s.pointer_base);
 	}
 }
 
-void txqueue_print_status(struct nc_txqueue *q, const char *compatible, int index, int verbose, enum commands cmd)
+void txqueue_print_status(struct nc_txqueue *q, int index, int verbose, enum commands cmd)
 {
-	int packet = strstr(compatible, "_pac_") ? 1 : 0;
-
 	struct nc_txqueue_status s;
 	struct nc_txqueue_counters c;
 
-	printf("------------------------------ TX%02d %s controller ----\n", index, packet ? "PAC" : "NDP");
+	printf("------------------------------ TX%02d %s controller ----\n", index, q->name);
+
 	if (verbose > 0) {
 		nc_txqueue_read_status(q, &s);
 		printf("Control reg                : 0x%.8X", s._ctrl_raw);
 
-		if (q->type == QUEUE_TYPE_NDP) {
+		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
 			printf(" | %s |",
 					s.ctrl_running ? "Run     " : "Stop    ");
 		} else if (q->type == QUEUE_TYPE_SZE) {
@@ -333,7 +356,7 @@ void txqueue_print_status(struct nc_txqueue *q, const char *compatible, int inde
 		printf("\n");
 
 		printf("Status reg                 : 0x%.8X", s._stat_raw);
-		if (q->type == QUEUE_TYPE_NDP) {
+		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
 			printf(" | %s |",
 					s.stat_running ? "Running " : "Stopped ");
 		} else if (q->type == QUEUE_TYPE_SZE) {
@@ -342,7 +365,15 @@ void txqueue_print_status(struct nc_txqueue *q, const char *compatible, int inde
 		}
 		printf("\n");
 
-		if (s.have_dp) {
+		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
+			if (q->type == QUEUE_TYPE_CALYPTE) {
+				printf("SW header pointer          : 0x%08lX\n", s.sw_pointer);
+				printf("HW header pointer          : 0x%08lX\n", s.hw_pointer);
+				printf("Header pointer mask        : 0x%08lX\n", s.pointer_mask);
+				printf("* Header buffer size       : "); print_size(s.pointer_mask ? s.pointer_mask + 1 : 0); printf("\n");
+				printf("* Fillable headers in HW   : 0x%08lX\n", (s.sw_pointer - s.hw_pointer - 1) & s.pointer_mask);
+			}
+
 			printf("SW descriptor pointer      : 0x%08lX\n", s.sd_pointer);
 			printf("HW descriptor pointer      : 0x%08lX\n", s.hd_pointer);
 			printf("Descriptor pointer mask    : 0x%08lX\n", s.desc_pointer_mask);
@@ -355,11 +386,13 @@ void txqueue_print_status(struct nc_txqueue *q, const char *compatible, int inde
 			printf("* Buffer size              : "); print_size(s.pointer_mask ? s.pointer_mask + 1 : 0); printf("\n");
 		}
 
-		//printf("Interrupt reg:          0x%.8X\n", (reg = nfb_comp_read32(comp, 0x14)));
-		printf("Timeout reg                : 0x%08lX\n", s.timeout);
+		if (q->type == QUEUE_TYPE_SZE || q->type == QUEUE_TYPE_NDP)
+			printf("Timeout reg                : 0x%08lX\n", s.timeout);
 
-		printf("Max request                : 0x%04lX     | ", s.max_request);
-		print_size(s.max_request); printf("\n");
+		if (q->type == QUEUE_TYPE_SZE) {
+			printf("Max request                : 0x%04lX     | ", s.max_request);
+			print_size(s.max_request); printf("\n");
+		}
 	}
 
 	if (cmd == CMD_COUNTER_READ_AND_RESET) {
@@ -376,11 +409,15 @@ void txqueue_print_status(struct nc_txqueue *q, const char *compatible, int inde
 	if (c.have_bytes)
 		printf("Sent bytes                 : %llu\n", c.sent_bytes);
 
-	if (verbose > 1) {
+	if (c.have_tx_discard) {
+		printf("Discarded                  : %llu\n", c.discarded);
+		printf("Discarded bytes            : %llu\n", c.discarded_bytes);
+	}
+
+	if (verbose > 1 && q->type != QUEUE_TYPE_CALYPTE) {
 		printf("Desc base                  : 0x%.16llX\n", s.desc_base);
 		printf("Pointer base               : 0x%.16llX\n", s.pointer_base);
 	}
-
 }
 
 /*!
@@ -506,7 +543,7 @@ int main(int argc, char *argv[])
 							break;
 						case CMD_COUNTER_READ_AND_RESET:
 						case CMD_PRINT_STATUS:
-							rxqueue_print_status(rxq, rx_ctrl_name[ctrl], i, verbose, cmd);
+							rxqueue_print_status(rxq, i, verbose, cmd);
 							printf("\n");
 							break;
 						case CMD_SET_RING_SIZE:
@@ -538,10 +575,12 @@ int main(int argc, char *argv[])
 							break;
 						case CMD_COUNTER_READ_AND_RESET:
 						case CMD_PRINT_STATUS:
-							txqueue_print_status(txq, tx_ctrl_name[ctrl], i, verbose, cmd);
+							txqueue_print_status(txq, i, verbose, cmd);
 							printf("\n");
 							break;
 						case CMD_SET_RING_SIZE:
+							if (txq->type == QUEUE_TYPE_CALYPTE)
+								err(errno, "TX Calypte controller does not support setting of ring buffer size.");
 							set_ring_size(dev, 1, i, csize);
 							break;
 						default:

@@ -5,6 +5,7 @@
  * Copyright (C) 2018-2022 CESNET
  * Author(s):
  *   Martin Spinler <spinler@cesnet.cz>
+ *   Vladislav Valek <valekv@cesnet.cz>
  */
 
 #include <nfb/ndp.h>
@@ -12,8 +13,6 @@
 
 #ifndef _NC_NDP_H_
 #define _NC_NDP_H_
-
-#define NDP_PACKET_HEADER_SIZE 4
 
 void ndp_close_queue(struct ndp_queue *q);
 
@@ -24,12 +23,13 @@ int _ndp_queue_stop(struct nc_ndp_queue *q);
 static int nc_ndp_queue_start(void *priv);
 static int nc_ndp_queue_stop(void *priv);
 
+#include "dma_ctrl_ndp.h"
 #include "ndp_rx.h"
 #include "ndp_tx.h"
 
-static inline int nc_nfb_fdt_queue_offset(const void *fdt, unsigned index, int type)
+static inline int nc_nfb_fdt_queue_offset(const void *fdt, unsigned index, int dir)
 {
-	const char * dir_str = type ? "tx" : "rx";
+	const char * dir_str = dir ? "tx" : "rx";
 	char path[64];
 
 	index &= 0x0FFFFFFF;
@@ -142,7 +142,68 @@ err_fdt_getprop:
 	return ret;
 }
 
-static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queue *q, unsigned index, int type, ndp_open_flags_t ndp_flags)
+static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt,  int fdt_offset)
+{
+#ifndef __KERNEL__
+	int prot;
+	int ret = 0;
+	size_t hdr_mmap_size = 0;
+	off_t hdr_mmap_offset = 0;
+
+	size_t hdr_buff_size = 0;
+	size_t data_buff_size = 0;
+
+	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
+#endif
+
+	q->u.v3.pkts_available = 0;
+	q->u.v3.sdp = 0;
+	q->u.v3.shp = 0;
+
+#ifndef __KERNEL__
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_size", &hdr_mmap_size);
+		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", &hdr_mmap_offset);
+
+		if (ret)
+			return -EBADFD;
+	} else {
+		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_size", &hdr_mmap_size);
+		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", &hdr_mmap_offset);
+		ret |= fdt_getprop32(fdt, fdt_offset, "data_buff_size", &data_buff_size);
+		ret |= fdt_getprop32(fdt, fdt_offset, "hdr_buff_size", &hdr_buff_size);
+
+		if (ret)
+			return -EBADFD;
+	}
+
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		ops->burst.rx.get = nc_ndp_v3_rx_burst_get;
+		ops->burst.rx.put = nc_ndp_v3_rx_burst_put;
+	} else {
+		ops->burst.tx.get = nc_ndp_v3_tx_burst_get;
+		ops->burst.tx.put = nc_ndp_v3_tx_burst_put;
+		ops->burst.tx.flush = nc_ndp_v3_tx_burst_flush;
+	}
+
+	prot = PROT_READ | PROT_WRITE;
+
+	q->u.v3.hdrs = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
+	if (q->u.v3.hdrs == MAP_FAILED) {
+		return -EBADFD;
+	}
+
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		q->u.v3.hdr_ptr_mask = ((hdr_mmap_size / 2) / sizeof(struct ndp_v3_packethdr)) - 1; // "- 1" to create a mask for AND operations
+	} else {
+		q->u.v3.data_ptr_mask = data_buff_size/2 -1;
+		q->u.v3.hdr_ptr_mask = hdr_buff_size/(2*sizeof(struct ndp_v3_packethdr)) -1;
+	}
+#endif
+	return 0;
+}
+
+static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queue *q, unsigned index, int dir, ndp_open_flags_t ndp_flags)
 {
 	int ret = 0;
 	int fdt_offset;
@@ -151,13 +212,13 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	int flags = 0;
 
 	off_t mmap_offset;
-	size_t mmap_size;
+	size_t mmap_size = 0;
 
 	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
 
 	(void) ndp_flags;
 
-	fdt_offset = nc_nfb_fdt_queue_offset(fdt, index, type);
+	fdt_offset = nc_nfb_fdt_queue_offset(fdt, index, dir);
 
 	/* Fetch controller parameters */
 	q->frame_size_min = q->frame_size_max = 0;
@@ -169,6 +230,7 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	ret |= fdt_getprop64(fdt, fdt_offset, "size", &q->size);
 	ret |= fdt_getprop64(fdt, fdt_offset, "mmap_size", &mmap_size);
 	ret |= fdt_getprop64(fdt, fdt_offset, "mmap_base", &mmap_offset);
+	ret |= fdt_getprop32(fdt, fdt_offset, "protocol", &q->protocol);
 
 	if (ret) {
 		ret = EBADFD;
@@ -180,20 +242,14 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 		goto err_zero_mmap_size;
 	}
 
-	if (fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", NULL) == 0) {
-		q->version = 2;
-	} else {
-		q->version = 1;
-	}
-
-	if (q->version == 2) {
+	if (q->protocol == 2) {
 		flags |= NDP_CHANNEL_FLAG_USE_HEADER | NDP_CHANNEL_FLAG_USE_OFFSET;
 	}
 
 	q->flags = flags;
 
 	q->channel.index = index;
-	q->channel.type = type;
+	q->channel.type = dir;
 	q->channel.flags = q->flags;
 
 #ifdef __KERNEL__
@@ -215,7 +271,7 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	/* Map the memory of buffer space. Driver ensures that the mmap_size
 	 * is 2 times larger than q->size and the buffer space is shadowed.
 	 * Due to this feature user normally needs not to check buffer boundary. */
-	q->buffer = mmap(NULL, q->size * 2, PROT_READ | (type ? PROT_WRITE : 0),
+	q->buffer = mmap(NULL, q->size * 2, PROT_READ | (dir ? PROT_WRITE : 0),
 			MAP_FILE | MAP_SHARED, q->fd, mmap_offset);
 	if (q->buffer == MAP_FAILED) {
 		goto err_mmap;
@@ -226,9 +282,11 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	q->sync.swptr = 0;
 	q->sync.hwptr = 0;
 
-	if (q->version == 2) {
+	if (q->protocol == 3) {
+		ret = nc_ndp_v3_open_queue(q, fdt, fdt_offset);
+	} else if (q->protocol == 2) {
 		ret = nc_ndp_v2_open_queue(q, fdt, fdt_offset);
-	} else if (q->version == 1) {
+	} else if (q->protocol == 1) {
 		ret = nc_ndp_v1_open_queue(q);
 	}
 
@@ -263,7 +321,6 @@ static inline void nc_ndp_queue_close(struct nc_ndp_queue *q)
 		ndp_subscription_destroy(q->sub);
 		q->sub = NULL;
 	}
-
 #else
 	munmap(q->buffer, q->size * 2);
 #endif
@@ -279,7 +336,7 @@ static int nc_ndp_queue_start(void *priv)
 	if ((ret = _ndp_queue_start(q)))
 		return ret;
 
-	if (q->channel.type == NDP_CHANNEL_TYPE_RX && q->version == 2 && (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) == 0) {
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX && q->protocol == 2 && (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) == 0) {
 		if ((ret = _ndp_queue_sync(q, &q->sync)))
 			return ret;
 
@@ -297,7 +354,7 @@ static int nc_ndp_queue_stop(void *priv)
 	if ((ret = _ndp_queue_stop(q)))
 		return ret;
 
-	if (q->version == 1) {
+	if (q->protocol == 1) {
 		q->u.v1.bytes = 0;
 	}
 	return 0;

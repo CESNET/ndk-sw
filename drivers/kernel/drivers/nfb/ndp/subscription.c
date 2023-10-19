@@ -57,8 +57,6 @@ int ndp_subscription_start(struct ndp_subscription *sub,
 	if (sub->channel->id.type == NDP_CHANNEL_TYPE_RX) {
 		sync->hwptr = sub->hwptr;
 		sync->swptr = sub->swptr;
-	} else {
-
 	}
 
 	sub->status = NDP_SUB_STATUS_RUNNING;

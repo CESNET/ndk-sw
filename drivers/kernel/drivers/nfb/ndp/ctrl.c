@@ -20,30 +20,10 @@
 #include "ndp.h"
 #include "../nfb.h"
 
-#define NDP_CTRL_UPDATE_SIZE (PAGE_SIZE)
+#include <netcope/dma_ctrl_sze.h>
 
-#define NDP_CTRL_REG_CONTROL		0x00
-#define NDP_CTRL_REG_CONTROL_STOP	0x0
-#define NDP_CTRL_REG_CONTROL_START	0x1
-#define NDP_CTRL_REG_CONTROL_DISCARD	0x2
-
-#define NDP_CTRL_REG_STATUS		0x04
-#define NDP_CTRL_REG_STATUS_RUNNING	0x1
-
-#define NDP_CTRL_REG_SWPTR		0x08
-#define NDP_CTRL_REG_HWPTR		0x0c
-#define NDP_CTRL_REG_BUFSIZE		0x10
-#define NDP_CTRL_REG_IRQ		0x14
-#define NDP_CTRL_REG_DESC		0x20
-#define NDP_CTRL_REG_UPDATE		0x28
-#define NDP_CTRL_REG_IRQ_TIMEOUTE	0x1
-#define NDP_CTRL_REG_IRQ_PTRE		0x2
-#define NDP_CTRL_REG_IRQ_PTR(p)	((p) & ~0x3)
-#define NDP_CTRL_REG_TIMEOUT		0x18
-#define NDP_CTRL_REG_TIMEOUT_NS(ns)	((ns) / 5)
-#define NDP_CTRL_REG_MAXREQSIZE		0x1C
-
-#define NDP_CTRL_DESC_PTR		0x1
+#define SZE_CTRL_REG_IRQ_PTR(p)	((p) & ~0x3)
+#define SZE_CTRL_REG_TIMEOUT_NS(ns)	((ns) / 5)
 
 struct ndp_ctrl {
 	struct nfb_comp* comp;
@@ -190,7 +170,7 @@ static int ndp_ctrl_desc(struct ndp_ctrl *ctrl, uint64_t *desc)
 
 	/* one descriptor for round-trip */
 	if (desc) {
-		*(desc + desc_count) = cpu_to_le64((ctrl->descriptor_phys + second_stage_offset) | NDP_CTRL_DESC_PTR);
+		*(desc + desc_count) = cpu_to_le64((ctrl->descriptor_phys + second_stage_offset) | SZE_CTRL_DESC_PTR);
 	}
 	desc_count++;
 
@@ -210,7 +190,7 @@ static void ndp_ctrl_set_swptr(struct ndp_channel *channel, uint64_t ptr)
 {
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 	ptr = (ptr - ctrl->initial_offset) & channel->ptrmask;
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_SWPTR, ptr);
+	nfb_comp_write32(ctrl->comp, SZE_CTRL_REG_SW_POINTER, ptr);
 	ctrl->swptr = ptr;
 }
 
@@ -220,8 +200,8 @@ static int ndp_ctrl_start(struct ndp_channel *channel, uint64_t *hwptr)
 	unsigned int param;
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
-	status = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_STATUS);
-	if (status & NDP_CTRL_REG_STATUS_RUNNING) {
+	status = nfb_comp_read32(ctrl->comp, SZE_CTRL_REG_STATUS);
+	if (status & SZE_CTRL_REG_STATUS_RUNNING) {
 		dev_warn(ctrl->comp->nfb->dev, "NDP queue %s is in dirty state, can't be started\n",
 			dev_name(&channel->dev));
 		return -1;
@@ -234,28 +214,28 @@ static int ndp_ctrl_start(struct ndp_channel *channel, uint64_t *hwptr)
 	*((uint64_t*) ctrl->update_ptr) = 0;
 
 	/* Set address of first descriptor */
-	nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_DESC, ctrl->descriptor_phys);
+	nfb_comp_write64(ctrl->comp, SZE_CTRL_REG_DESC_BASE, ctrl->descriptor_phys);
 
 	/* Set address of RAM hwptr address */
-	nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_UPDATE, ctrl->update_phys);
+	nfb_comp_write64(ctrl->comp, SZE_CTRL_REG_UPDATE_BASE, ctrl->update_phys);
 
 	/* Set buffer size (mask) */
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_BUFSIZE, channel->ptrmask);
+	nfb_comp_write32(ctrl->comp, SZE_CTRL_REG_BUFFER_SIZE, channel->ptrmask);
 
 	/* Zero buffer ptr */
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_SWPTR, 0);
+	nfb_comp_write32(ctrl->comp, SZE_CTRL_REG_SW_POINTER, 0);
 
 	/* Timeout */
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_TIMEOUT, timeout);
+	nfb_comp_write32(ctrl->comp, SZE_CTRL_REG_TIMEOUT, timeout);
 
 	/* Max size */
 	param = channel->id.type == NDP_CHANNEL_TYPE_RX ? ndp_ctrl_rx_request_size : ndp_ctrl_tx_request_size;
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MAXREQSIZE, param);
+	nfb_comp_write32(ctrl->comp, SZE_CTRL_REG_MAX_REQUEST, param);
 
 	/* Start controller */
-	param  = NDP_CTRL_REG_CONTROL_START;
-	param |= (ctrl->flags & NDP_CHANNEL_FLAG_DISCARD) ? NDP_CTRL_REG_CONTROL_DISCARD : 0;
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_CONTROL, param);
+	param  = SZE_CTRL_REG_CONTROL_START;
+	param |= (ctrl->flags & NDP_CHANNEL_FLAG_DISCARD) ? SZE_CTRL_REG_CONTROL_DISCARD : 0;
+	nfb_comp_write32(ctrl->comp, SZE_CTRL_REG_CONTROL, param);
 
 	*hwptr = ctrl->initial_offset;
 	return 0;
@@ -267,8 +247,8 @@ static uint64_t ndp_ctrl_get_flags(struct ndp_channel *channel)
 	uint32_t reg;
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
-	reg = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_CONTROL);
-	if (reg & NDP_CTRL_REG_CONTROL_DISCARD)
+	reg = nfb_comp_read32(ctrl->comp, SZE_CTRL_REG_CONTROL);
+	if (reg & SZE_CTRL_REG_CONTROL_DISCARD)
 		ret |= NDP_CHANNEL_FLAG_DISCARD;
 
 	return ret;
@@ -282,13 +262,13 @@ static uint64_t ndp_ctrl_set_flags(struct ndp_channel *channel, uint64_t flags)
 
 	ctrl->flags = flags;
 
-	regwr = reg = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_CONTROL);
-	regwr &= ~(NDP_CTRL_REG_CONTROL_DISCARD);
+	regwr = reg = nfb_comp_read32(ctrl->comp, SZE_CTRL_REG_CONTROL);
+	regwr &= ~(SZE_CTRL_REG_CONTROL_DISCARD);
 
-	regwr |= (ctrl->flags & NDP_CHANNEL_FLAG_DISCARD) ? NDP_CTRL_REG_CONTROL_DISCARD : 0;
+	regwr |= (ctrl->flags & NDP_CHANNEL_FLAG_DISCARD) ? SZE_CTRL_REG_CONTROL_DISCARD : 0;
 
 	if (reg != regwr)
-		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_CONTROL, regwr);
+		nfb_comp_write32(ctrl->comp, SZE_CTRL_REG_CONTROL, regwr);
 
 	ret = flags;
 	ret &= ~NDP_CHANNEL_FLAG_DISCARD;
@@ -325,8 +305,8 @@ static int ndp_ctrl_stop(struct ndp_channel *channel, int force)
 		}
 	}
 
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_CONTROL,
-			NDP_CTRL_REG_CONTROL_STOP | NDP_CTRL_REG_CONTROL_DISCARD);
+	nfb_comp_write32(ctrl->comp, SZE_CTRL_REG_CONTROL,
+			SZE_CTRL_REG_CONTROL_STOP | SZE_CTRL_REG_CONTROL_DISCARD);
 
 	if (channel->id.type == NDP_CHANNEL_TYPE_RX) {
 		ndp_ctrl_set_swptr(channel, ndp_ctrl_get_hwptr(channel));
@@ -335,8 +315,8 @@ static int ndp_ctrl_stop(struct ndp_channel *channel, int force)
 	cnt = 0;
 	while (1) {
 		uint32_t status;
-		status = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_STATUS);
-		if (dirty || !(status & NDP_CTRL_REG_STATUS_RUNNING))
+		status = nfb_comp_read32(ctrl->comp, SZE_CTRL_REG_STATUS);
+		if (dirty || !(status & SZE_CTRL_REG_STATUS_RUNNING))
 			break;
 		if (cnt++ > 100) {
 			dev_warn(ctrl->comp->nfb->dev,
@@ -354,12 +334,14 @@ static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
 {
 	int ret;
 	int desc_count;
+	int node_offset;
+	void *fdt = channel->ndp->nfb->fdt;
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
 	if (channel->ring.block_count == 0)
 		return 0;
 
-	ctrl->update_ptr = dma_alloc_coherent(channel->ring.dev, NDP_CTRL_UPDATE_SIZE,
+	ctrl->update_ptr = dma_alloc_coherent(channel->ring.dev, SZE_CTRL_UPDATE_SIZE,
 			&ctrl->update_phys, GFP_KERNEL);
 	if (ctrl->update_ptr == NULL) {
 		ret = -ENOMEM;
@@ -386,6 +368,11 @@ static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
 		goto err_alloc_desc;
 	}
 
+	node_offset = fdt_path_offset(fdt, channel->id.type == NDP_CHANNEL_TYPE_TX ?
+				"/drivers/ndp/tx_queues" : "/drivers/ndp/rx_queues");
+	node_offset = fdt_subnode_offset(fdt, node_offset, dev_name(&channel->dev));
+	fdt_setprop_u32(fdt, node_offset, "protocol", 1);
+
 	/* fill descs */
 	ndp_ctrl_desc(ctrl, ctrl->descriptor_ptr);
 
@@ -395,7 +382,7 @@ static int ndp_ctrl_attach_ring(struct ndp_channel *channel)
 
 err_alloc_desc:
 err_desc_count:
-	dma_free_coherent(channel->ring.dev, NDP_CTRL_UPDATE_SIZE,
+	dma_free_coherent(channel->ring.dev, SZE_CTRL_UPDATE_SIZE,
 			ctrl->update_ptr, ctrl->update_phys);
 err_alloc_update:
 	return ret;
@@ -415,7 +402,7 @@ static void ndp_ctrl_detach_ring(struct ndp_channel *channel)
 	}
 
 	if (ctrl->update_ptr) {
-		dma_free_coherent(channel->ring.dev, NDP_CTRL_UPDATE_SIZE,
+		dma_free_coherent(channel->ring.dev, SZE_CTRL_UPDATE_SIZE,
 				ctrl->update_ptr, ctrl->update_phys);
 		ctrl->update_ptr = NULL;
 	}

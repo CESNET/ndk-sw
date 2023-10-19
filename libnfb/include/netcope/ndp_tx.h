@@ -5,6 +5,7 @@
  * Copyright (C) 2018-2022 CESNET
  * Author(s):
  *   Martin Spinler <spinler@cesnet.cz>
+ *   Vladislav Valek <valekv@cesnet.cz>
  */
 
 #define NDP_TX_BURST_COPY_ATTEMPTS 1000
@@ -143,6 +144,27 @@ static inline unsigned nc_ndp_v1_tx_burst_get(void *priv, struct ndp_packet *pac
 	return cnt;
 }
 
+static inline int nc_ndp_v1_tx_burst_put(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	/* Publish written data if their size is bigger than quarter of buffer size */
+	if (q->u.v1.swptr > q->size / 4) {
+		q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
+		nc_ndp_v1_tx_unlock(q);
+	}
+	return 0;
+}
+
+static inline int nc_ndp_v1_tx_burst_flush(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
+	nc_ndp_v1_tx_unlock(q);
+	return 0;
+}
+
 static inline void nc_ndp_v2_tx_lock(void *priv)
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
@@ -163,25 +185,6 @@ static inline void nc_ndp_v2_tx_lock(void *priv)
 		q->u.v2.off += offset;
 	}
 	q->u.v2.pkts_available = (q->sync.swptr - q->u.v2.rhp) & (q->u.v2.hdr_items-1);
-}
-
-static inline int nc_ndp_v2_tx_burst_flush(void *priv)
-{
-	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
-
-	if (q->u.v2.rhp >= q->u.v2.hdr_items) {
-		q->u.v2.rhp -= q->u.v2.hdr_items;
-		q->u.v2.hdr -= q->u.v2.hdr_items;
-		q->u.v2.off -= q->u.v2.hdr_items;
-	}
-	q->sync.hwptr = q->u.v2.rhp;
-	q->sync.swptr = q->u.v2.rhp;
-	q->u.v2.pkts_available = 0;
-
-	if (_ndp_queue_sync(q, &q->sync)) {
-		return -1;
-	}
-	return 0;
 }
 
 static inline unsigned nc_ndp_v2_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
@@ -248,56 +251,7 @@ static inline unsigned nc_ndp_v2_tx_burst_get(void *priv, struct ndp_packet *pac
 	return count;
 }
 
-static inline int nc_ndp_v1_tx_burst_put(void *priv);
-static inline int nc_ndp_v1_tx_burst_flush(void *priv);
-
-static inline int nc_ndp_v2_tx_burst_put(void *priv);
-
-static inline unsigned nc_ndp_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
-{
-	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
-
-	if (q->version == 2) {
-		return nc_ndp_v2_tx_burst_get(priv, packets, count);
-	} else if (q->version == 1) {
-		return nc_ndp_v1_tx_burst_get(priv, packets, count);
-	}
-	return 0;
-}
-
-static inline void nc_ndp_tx_burst_put(void *priv)
-{
-	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
-
-	if (q->version == 2) {
-		nc_ndp_v2_tx_burst_put(priv);
-	} else if (q->version == 1) {
-		nc_ndp_v1_tx_burst_put(priv);
-	}
-}
-
-static inline void nc_ndp_tx_burst_flush(void *priv)
-{
-	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
-
-	if (q->version == 2) {
-		nc_ndp_v2_tx_burst_flush(priv);
-	} else if (q->version == 1) {
-		nc_ndp_v1_tx_burst_flush(priv);
-	}
-}
-
-static inline int nc_ndp_v1_tx_burst_put(void *priv)
-{
-	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
-
-	/* Publish written data if their size is bigger than quarter of buffer size */
-	if (q->u.v1.swptr > q->size / 4) {
-		q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
-		nc_ndp_v1_tx_unlock(q);
-	}
-	return 0;
-}
+static inline int nc_ndp_v2_tx_burst_flush(void *priv);
 
 static inline int nc_ndp_v2_tx_burst_put(void *priv)
 {
@@ -309,11 +263,221 @@ static inline int nc_ndp_v2_tx_burst_put(void *priv)
 	return 0;
 }
 
-static inline int nc_ndp_v1_tx_burst_flush(void *priv)
+static inline int nc_ndp_v2_tx_burst_flush(void *priv)
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
-	q->sync.hwptr = (q->sync.hwptr + q->u.v1.swptr) & (q->size-1);
-	nc_ndp_v1_tx_unlock(q);
+	if (q->u.v2.rhp >= q->u.v2.hdr_items) {
+		q->u.v2.rhp -= q->u.v2.hdr_items;
+		q->u.v2.hdr -= q->u.v2.hdr_items;
+		q->u.v2.off -= q->u.v2.hdr_items;
+	}
+	q->sync.hwptr = q->u.v2.rhp;
+	q->sync.swptr = q->u.v2.rhp;
+	q->u.v2.pkts_available = 0;
+
+	if (_ndp_queue_sync(q, &q->sync)) {
+		return -1;
+	}
 	return 0;
+}
+
+// Figure out, how many packets can be stored in a queue right now.
+static inline void nc_ndp_v3_tx_lock(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	signed offset;
+	int lock_valid = q->sync.swptr == q->sync.hwptr ? 0 : 1;
+
+	// This assignment allows to determine the amount of free headers in the buffer
+	q->sync.swptr = (q->sync.hwptr - 1) & (q->u.v3.hdr_ptr_mask);
+
+	if (_ndp_queue_sync(q, &q->sync))
+		return;
+
+	if (!lock_valid) {
+		offset = q->sync.hwptr - q->u.v3.shp;
+
+		q->u.v3.shp  += offset;
+		q->u.v3.hdrs += offset;
+	}
+
+	q->u.v3.pkts_available  = (q->sync.swptr - q->u.v3.shp) & (q->u.v3.hdr_ptr_mask);
+	q->u.v3.bytes_available = q->sync.size;
+}
+
+static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	unsigned i;
+
+	// Pointer of buffer bases
+	unsigned char *data_base;
+	struct ndp_v3_packethdr *hdr_base;
+
+	// Iterator pointers
+	uint32_t sdp_int;
+
+	// All previously reserved packets need to be sent before new reservation takes place
+	if (unlikely(q->u.v3.pkts_to_send != 0))
+		return 0;
+
+	__builtin_prefetch(q->u.v3.hdrs);
+
+	if (unlikely(q->u.v3.pkts_available < count)) {
+		// Figure out the current state of the queue in terms of its free space
+		nc_ndp_v3_tx_lock(q);
+
+		if (unlikely(q->u.v3.pkts_available < count || count == 0))
+			return 0;
+	}
+
+	sdp_int = q->u.v3.sdp;
+
+	data_base = q->buffer;
+	hdr_base = q->u.v3.hdrs;
+
+	for (i = 0; i < count; i++) {
+		struct ndp_v3_packethdr *hdr;
+		unsigned packet_size;
+		unsigned header_size;
+
+		hdr = hdr_base + i;
+
+		header_size = packets[i].header_length;
+		packet_size = packets[i].data_length + header_size;
+
+		if (unlikely(packet_size < q->frame_size_min)) {
+			/* Enlarge packets smaller than min size & clean remaining data */
+			memset(data_base + sdp_int + header_size + packet_size, 0, q->frame_size_min - packet_size);
+			packet_size = q->frame_size_min;
+		} else if (unlikely(packet_size > q->frame_size_max)) {
+			/* Can't handle packets larger than max size */
+			return 0;
+		}
+
+		/* Write DMA TX header */
+		hdr->metadata = 0;
+		hdr->frame_len = cpu_to_le16(packet_size);
+		hdr->frame_ptr = sdp_int & q->u.v3.data_ptr_mask;
+
+		/* Set pointers, where user can write packet content */
+		packets[i].header = data_base + sdp_int;
+		packets[i].data = data_base + sdp_int + header_size;
+
+		// Ceil SDP to the multiple of NDP_TX_CALYPTE_BLOCK_SIZE
+		sdp_int = ((sdp_int + packet_size + (NDP_TX_CALYPTE_BLOCK_SIZE -1)) & (~(NDP_TX_CALYPTE_BLOCK_SIZE -1)));
+	}
+
+	// For pointer synchronization
+	q->u.v3.hdrs           += count;
+	q->u.v3.sdp             = sdp_int & q->u.v3.data_ptr_mask;
+	q->u.v3.shp            += count;
+	q->u.v3.pkts_available -= count;
+
+	// For packet sending
+	q->u.v3.packets = packets;
+	q->u.v3.pkts_to_send += count;
+	return count;
+}
+
+static inline int nc_ndp_v3_tx_burst_flush(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	if (q->u.v3.shp >= (q->u.v3.hdr_ptr_mask +1)) {
+		q->u.v3.shp  -= (q->u.v3.hdr_ptr_mask + 1);
+		q->u.v3.hdrs -= (q->u.v3.hdr_ptr_mask + 1);
+	}
+
+	// Synchronize pointers after all packets in a burst have been sent
+	q->sync.swptr = q->u.v3.shp;
+	q->sync.hwptr = q->u.v3.shp;
+	q->u.v3.pkts_available = 0;
+
+	if (_ndp_queue_sync(q, &q->sync))
+		return -1;
+
+	return 0;
+}
+
+static inline int nc_ndp_v3_tx_burst_put(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	unsigned i;
+	uint32_t frame_len_ceil;
+	struct ndp_packet *packet = q->u.v3.packets;
+	struct ndp_v3_packethdr *hdr = q->u.v3.hdrs - q->u.v3.pkts_to_send;
+	uint32_t shp = q->u.v3.shp - q->u.v3.pkts_to_send;
+
+
+	for (i = 0; i < q->u.v3.pkts_to_send; i++) {
+
+		frame_len_ceil = (hdr[i].frame_len + (NDP_TX_CALYPTE_BLOCK_SIZE -1)) & (~(NDP_TX_CALYPTE_BLOCK_SIZE -1));
+
+		while (q->u.v3.bytes_available < frame_len_ceil) {
+			q->sync.hwptr = shp;
+
+			if (_ndp_queue_sync(q, &q->sync))
+				return -1;
+
+			q->u.v3.bytes_available = q->sync.size;
+		}
+
+		nfb_comp_write(q->u.v3.tx_data_buff, packet[i].header, hdr[i].frame_len, hdr[i].frame_ptr);
+		q->u.v3.bytes_available -= frame_len_ceil;
+
+
+		nfb_comp_write(q->u.v3.tx_hdr_buff, &hdr[i], 8, (uint64_t)shp*8);
+		// This below line needs to updated somewhere
+		shp = (shp + 1) & (q->u.v3.hdr_ptr_mask);
+	}
+	q->u.v3.packets -= q->u.v3.pkts_to_send;
+	q->u.v3.pkts_to_send = 0;
+	nc_ndp_v3_tx_burst_flush(priv);
+
+	return 0;
+}
+
+static inline unsigned nc_ndp_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	if (q->protocol == 3) {
+		return nc_ndp_v3_tx_burst_get(priv, packets, count);
+	} else if (q->protocol == 2) {
+		return nc_ndp_v2_tx_burst_get(priv, packets, count);
+	} else if (q->protocol == 1) {
+		return nc_ndp_v1_tx_burst_get(priv, packets, count);
+	}
+	return 0;
+}
+
+static inline void nc_ndp_tx_burst_put(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	if (q->protocol == 3) {
+		nc_ndp_v3_tx_burst_put(priv);
+	} else if (q->protocol == 2) {
+		nc_ndp_v2_tx_burst_put(priv);
+	} else if (q->protocol == 1) {
+		nc_ndp_v1_tx_burst_put(priv);
+	}
+}
+
+static inline void nc_ndp_tx_burst_flush(void *priv)
+{
+	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
+
+	if (q->protocol == 3) {
+		nc_ndp_v3_tx_burst_flush(priv);
+	} else if (q->protocol == 2) {
+		nc_ndp_v2_tx_burst_flush(priv);
+	} else if (q->protocol == 1) {
+		nc_ndp_v1_tx_burst_flush(priv);
+	}
 }

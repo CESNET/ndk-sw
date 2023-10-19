@@ -36,12 +36,16 @@ struct ndp_channel *ndp_ctrl_v1_create_rx(struct ndp *ndp, int index, int node_o
 struct ndp_channel *ndp_ctrl_v1_create_tx(struct ndp *ndp, int index, int node_offset);
 struct ndp_channel *ndp_ctrl_v2_create_rx(struct ndp *ndp, int index, int node_offset);
 struct ndp_channel *ndp_ctrl_v2_create_tx(struct ndp *ndp, int index, int node_offset);
+struct ndp_channel *ndp_ctrl_v3_create_rx(struct ndp *ndp, int index, int node_offset);
+struct ndp_channel *ndp_ctrl_v3_create_tx(struct ndp *ndp, int index, int node_offset);
 
 struct ndp_ctrl_create ndp_ctrls[] = {
 	{.compatible = "netcope,dma_ctrl_sze_rx", .create = ndp_ctrl_v1_create_rx},
 	{.compatible = "netcope,dma_ctrl_sze_tx", .create = ndp_ctrl_v1_create_tx},
 	{.compatible = "netcope,dma_ctrl_ndp_rx", .create = ndp_ctrl_v2_create_rx},
 	{.compatible = "netcope,dma_ctrl_ndp_tx", .create = ndp_ctrl_v2_create_tx},
+	{.compatible = "cesnet,dma_ctrl_calypte_rx", .create = ndp_ctrl_v3_create_rx},
+	{.compatible = "cesnet,dma_ctrl_calypte_tx", .create = ndp_ctrl_v3_create_tx},
 };
 
 static void ndp_create_channels_from_ctrl(struct ndp *ndp, struct ndp_ctrl_create *ctrl)

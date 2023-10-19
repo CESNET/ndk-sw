@@ -105,6 +105,7 @@ struct ndp_channel_ops {
 	void (*set_swptr)(struct ndp_channel *channel, uint64_t ptr);
 	uint64_t (*get_flags)(struct ndp_channel *channel);
 	uint64_t (*set_flags)(struct ndp_channel *channel, uint64_t flags);
+	uint64_t (*get_free_space)(struct ndp_channel *channel);
 };
 
 struct ndp_channel_id {
@@ -232,6 +233,8 @@ int ndp_subscriber_poll(struct ndp_subscriber *subscriber, struct file *filp, st
 
 int ndp_channel_start(struct ndp_subscription *sub);
 int ndp_channel_stop(struct ndp_subscription *sub, int force);
+void ndp_channel_txsync(struct ndp_subscription *sub, struct ndp_subscription_sync *sync);
+void ndp_channel_rxsync(struct ndp_subscription *sub, struct ndp_subscription_sync *sync);
 void ndp_channel_sync(struct ndp_subscription *sub, struct ndp_subscription_sync *sync);
 
 extern struct ndp_channel *ndp_channel_create(struct ndp *ndp, struct ndp_channel_ops *ctrl_ops,

@@ -36,6 +36,8 @@ static inline unsigned min(unsigned a, unsigned b)
 
 #include <netcope/ndp.h>
 
+#include "ndp_calypte.h"
+
 inline int _ndp_queue_sync(struct nc_ndp_queue *q, struct ndp_subscription_sync *sync)
 {
 #ifdef __KERNEL__
@@ -56,6 +58,7 @@ inline int _ndp_queue_start(struct nc_ndp_queue *q)
 #else
 	if (ioctl(q->fd, NDP_IOC_START, &q->sync))
 		return errno;
+
 	return 0;
 #endif
 }
@@ -66,6 +69,7 @@ inline int _ndp_queue_stop(struct nc_ndp_queue *q)
 	ndp_subscription_stop(ndp_subscription_by_id(q->subscriber, q->sync.id), 1);
 #else
 	int ret;
+
 	do {
 		errno = 0;
 		ret = ioctl(q->fd, NDP_IOC_STOP, &q->sync);
@@ -84,6 +88,7 @@ int ndp_base_queue_open(struct nfb_device *dev, void *dev_priv, unsigned index, 
 	int32_t numa;
 	struct nc_ndp_queue *q_nc;
 	struct ndp_queue *q;
+	const void *fdt = nfb_get_fdt(dev);
 #ifdef __KERNEL__
 	struct ndp * ndp;
 #endif
@@ -91,7 +96,7 @@ int ndp_base_queue_open(struct nfb_device *dev, void *dev_priv, unsigned index, 
 
 	(void) dev_priv;
 
-	fdt_offset = nc_nfb_fdt_queue_offset(nfb_get_fdt(dev), index, dir);
+	fdt_offset = nc_nfb_fdt_queue_offset(fdt, index, dir);
 	if (fdt_getprop32(nfb_get_fdt(dev), fdt_offset, "numa", &numa)) {
 		numa = -1;
 	}
@@ -121,13 +126,18 @@ int ndp_base_queue_open(struct nfb_device *dev, void *dev_priv, unsigned index, 
 #endif
 
 	ndp_queue_set_priv(q, q_nc);
-	if ((ret = nc_ndp_queue_open_init_ext(nfb_get_fdt(dev), q_nc, index, dir, flags))) {
+	if ((ret = nc_ndp_queue_open_init_ext(fdt, q_nc, index, dir, flags))) {
 		goto err_open;
 	}
+
+	// Open buffers (nfb_comp structures) for TX DMA Calypte
+	if ((ret = ndp_queue_calypte_open_buffers(dev, q_nc, fdt, fdt_offset)))
+		goto err_calypt_open_buffers;
 
 	*pq = q;
 	return 0;
 
+err_calypt_open_buffers:
 err_open:
 #ifdef __KERNEL__
 	ndp_subscriber_destroy(q_nc->subscriber);
@@ -144,6 +154,9 @@ void ndp_base_queue_close(void *priv)
 {
 	struct nc_ndp_queue *q = priv;
 	struct ndp_queue *ndp_q = q->q;
+
+	// Close buffers for TX DMA Calypte
+	ndp_queue_calypte_close_buffers(q);
 
 	nc_ndp_queue_close(q);
 #ifdef __KERNEL__

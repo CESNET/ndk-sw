@@ -25,8 +25,9 @@ struct ndp_queue {
 	struct nfb_device *dev;
 	enum ndp_queue_status status;
 	int numa;
-	uint16_t type;
+	uint16_t dir;
 	uint16_t index;
+
 #ifdef __KERNEL__
 	int alloc;
 #endif
