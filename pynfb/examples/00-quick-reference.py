@@ -54,7 +54,7 @@ msgs_q = ndp.recvmsg(cnt=1, i=0, timeout=1)
 
 # 2.C NDP queues statistics
 txq.stats_reset()
-assert txq.stats_read()["packets"] == 0
+assert txq.stats_read()["sent"] == 0
 
 # 3.A Single Ethernet port manipulation
 eth = dev.eth[0]

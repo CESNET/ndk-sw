@@ -133,7 +133,7 @@ assert len(msgs) == 0 or (
 #######################
 
 try:
-    # stats == {'packets': 4, 'bytes': 276}
+    # stats == {'sent': 4, 'sent_bytes': 276}
     stats = txq.stats_read()
 
     # Reset Queue statistics
