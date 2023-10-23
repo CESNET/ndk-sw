@@ -516,22 +516,56 @@ const struct nfb_device *nfb_comp_get_device(struct nfb_comp *comp)
 	return comp->dev;
 }
 
+//#define NFB_DEBUG_MI
+
+#ifdef NFB_DEBUG_MI
+static void nfb_bus_mi_dump(const char *type, const void *buf, size_t nbyte, off_t offset)
+{
+	size_t i;
+	for (i = 0; i < nbyte; i++) {
+		if (i == 0)
+			fprintf(stderr, "libnfb: MI %s: % 4zdB -> [0x%08jx] |", type, nbyte, offset);
+
+		fprintf(stderr, " %02x", ((unsigned char*)buf)[i]);
+		if (i % 4 == 3)
+			fprintf(stderr, " |");
+
+		if (i == nbyte - 1)
+			fprintf(stderr, "\n");
+		else if (i % 16 == 15)
+			fprintf(stderr, "\nlibnfb:                                  ");
+	}
+
+}
+#endif
+
 ssize_t nfb_comp_read(const struct nfb_comp *comp, void *buf, size_t nbyte, off_t offset)
 {
+	ssize_t ret;
 	if (offset + nbyte > comp->size)
 		return -1;
 
 	if (comp->bus.type == NFB_BUS_TYPE_MI) {
-		return nfb_bus_mi_read(comp->bus.priv, buf, nbyte, offset + comp->base);
+		ret = nfb_bus_mi_read(comp->bus.priv, buf, nbyte, offset + comp->base);
 	} else {
-		return comp->bus.ops.read(comp->bus.priv, buf, nbyte, offset + comp->base);
+		ret = comp->bus.ops.read(comp->bus.priv, buf, nbyte, offset + comp->base);
 	}
+
+#ifdef NFB_DEBUG_MI
+	nfb_bus_mi_dump("Read ", buf, nbyte, offset);
+#endif
+
+	return ret;
 }
 
 ssize_t nfb_comp_write(const struct nfb_comp *comp, const void *buf, size_t nbyte, off_t offset)
 {
 	if (offset + nbyte > comp->size)
 		return -1;
+
+#ifdef NFB_DEBUG_MI
+	nfb_bus_mi_dump("Write", buf, nbyte, offset);
+#endif
 
 	if (comp->bus.type == NFB_BUS_TYPE_MI) {
 		return nfb_bus_mi_write(comp->bus.priv, buf, nbyte, offset + comp->base);
