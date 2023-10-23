@@ -441,7 +441,7 @@ static uint64_t ndp_ctrl_medusa_tx_get_hwptr(struct ndp_channel *channel)
 
 	desc = ctrl->desc_buffer_v + hdp;
 	for (i = 0; i < count; i++) {
-		if (desc[i].type2.type == 2)
+		if (desc[i].d.type2.type == 2)
 			free_hdrs++;
 
 	}

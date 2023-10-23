@@ -87,7 +87,7 @@ struct nc_ndp_desc {
 			int next0 : 1;
 			unsigned type : 2;
 		} type2;
-	};
+	} d;
 } __attribute__((__packed__));
 
 struct nc_calypte_hdr {
@@ -131,9 +131,9 @@ static inline struct nc_ndp_desc nc_ndp_rx_desc0(uint64_t phys)
 {
 	struct nc_ndp_desc desc;
 
-	desc.type0.phys = phys >> 30;
-	desc.type0.rsvd = 0;
-	desc.type0.type = 0;
+	desc.d.type0.phys = phys >> 30;
+	desc.d.type0.rsvd = 0;
+	desc.d.type0.type = 0;
 
 	return desc;
 }
@@ -142,14 +142,14 @@ static inline struct nc_ndp_desc nc_ndp_rx_desc2(uint64_t phys, uint16_t len, in
 {
 	struct nc_ndp_desc desc;
 
-	desc.type2.type = 2;
-	desc.type2.phys = phys;
-	desc.type2.rsvd0 = 0;
-	desc.type2.int0 = 0;
-	desc.type2.len = len;
-	desc.type2.meta = 0;
-	desc.type2.shrd0 = 0;
-	desc.type2.next0 = next;
+	desc.d.type2.type = 2;
+	desc.d.type2.phys = phys;
+	desc.d.type2.rsvd0 = 0;
+	desc.d.type2.int0 = 0;
+	desc.d.type2.len = len;
+	desc.d.type2.meta = 0;
+	desc.d.type2.shrd0 = 0;
+	desc.d.type2.next0 = next;
 
 	return desc;
 }
@@ -163,14 +163,14 @@ static inline struct nc_ndp_desc nc_ndp_tx_desc2(uint64_t phys, uint16_t len, ui
 {
 	struct nc_ndp_desc desc;
 
-	desc.type2.type = 2;
-	desc.type2.phys = phys;
-	desc.type2.rsvd0 = 0;
-	desc.type2.int0 = 0;
-	desc.type2.len = len;
-	desc.type2.meta = meta;
-	desc.type2.shrd0 = 0;
-	desc.type2.next0 = next;
+	desc.d.type2.type = 2;
+	desc.d.type2.phys = phys;
+	desc.d.type2.rsvd0 = 0;
+	desc.d.type2.int0 = 0;
+	desc.d.type2.len = len;
+	desc.d.type2.meta = meta;
+	desc.d.type2.shrd0 = 0;
+	desc.d.type2.next0 = next;
 
 	return desc;
 }
