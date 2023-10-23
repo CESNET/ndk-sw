@@ -113,8 +113,7 @@ class PcsPma:
 
     def __init__(self, nfb, node):
         ctrl = nfb.fdt_get_phandle(node.get_property('control').value)
-        prop_ctrl_param = node.get_property('control-param')
-        ctrl_param = nfb.fdt_get_phandle(prop_ctrl_param.value) if prop_ctrl_param else None
+        ctrl_param = node.get_subnode('control-param')
         self.mdio = libnetcope.Mdio(nfb, ctrl, ctrl_param)
         # FIXME: Check and enable!!!
         self.mdio_portad = ctrl_param.get_property("dev").value if ctrl_param and ctrl_param.get_property("dev") else 0
