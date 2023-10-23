@@ -9,7 +9,10 @@
 cmake_minimum_required(VERSION 3.12)
 cmake_policy(VERSION 3.12)
 
-OPTION (LIB_GRPC "Add library for grpc" OFF)
-if (LIB_GRPC)
+find_program(_PROTOBUF_PROTOC protoc)
+find_library(_GRPC_LIB grpc)
+if (EXISTS ${_PROTOBUF_PROTOC} AND EXISTS ${_GRPC_LIB})
     add_subdirectory(libnfb_ext_grpc)
+else()
+    message(STATUS "library grpc or binary protoc not found, gRPC features disabled")
 endif()
