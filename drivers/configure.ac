@@ -88,11 +88,13 @@ KERNEL_TRY_COMPILE([[
 void test(void) {eth_hw_addr_set(NULL, NULL);}
 ]],[AC_DEFINE([CONFIG_HAVE_ETH_HW_ADDR_SET], [1], [Define if kernel have eth_hw_addr_set]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
-AC_MSG_CHECKING([whether kernel has regmap_reg_range])
+AC_MSG_CHECKING([whether kernel has regmap_reg_range and read_poll_timeout])
 KERNEL_TRY_COMPILE([[
 #include <linux/regmap.h>
+#include <linux/iopoll.h>
 static const struct regmap_range regmap_range_test[] = {regmap_reg_range(0,0)};
-]],[AC_DEFINE([CONFIG_NFB_ENABLE_PMCI], [1], [Define if kernel have regmap_reg_range]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+int trd(off_t a) {return 0;} void test(void) {int ret; read_poll_timeout(trd, ret, (!ret), 1, 2, false, 0);}
+]],[AC_DEFINE([CONFIG_NFB_ENABLE_PMCI], [1], [Define if kernel have regmap_reg_range and read_poll_timeout]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([whether kernel has devm_kstrdup_const])
 KERNEL_TRY_COMPILE([[
