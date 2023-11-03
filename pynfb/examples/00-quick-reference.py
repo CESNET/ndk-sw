@@ -71,7 +71,8 @@ eth.pcspma.pma_local_loopback = True
 
 val = eth.pmd.vendor_name
 eth.pcspma.mdio.write(1, 0, 1)
-val = eth.pmd.mdio.read(1, 0)
+if hasattr(eth.pmd, 'i2c'):
+    val = eth.pmd.i2c.read_reg(1, 0)
 
 # 3.C Aggregated Ethernet ports manipulation
 assert eth.link == eth.rxmac.link

@@ -8,7 +8,7 @@ import nfb
 
 
 class IdComp(nfb.BaseComp):
-    DT_COMPATIBLE = "netcope,idcomp"
+    DT_COMPATIBLE = "cesnet,ofm,mi_test_space"
 
     # MI registers addresses
     _REG_TEST = 0

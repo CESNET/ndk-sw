@@ -51,9 +51,9 @@ print(node.path + "/" + node.name)
 # use fdt node directly
 comp = dev.comp_open(node)
 # use compatible string, default index of compatible component in DT is 0
-comp = dev.comp_open("netcope,idcomp")
+comp = dev.comp_open("cesnet,ofm,mi_test_space")
 # use specific index of compatible component in DT
-comp = dev.comp_open("netcope,idcomp", 0)
+comp = dev.comp_open("cesnet,ofm,mi_test_space", 0)
 
 
 # write access
