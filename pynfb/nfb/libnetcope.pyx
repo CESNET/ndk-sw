@@ -169,10 +169,10 @@ cdef class Mdio:
         if self._mdio is not NULL:
             nc_mdio_close(self._mdio)
 
-    def read(self, prtad: int, devad: int, reg: int):
+    def read(self, devad: int, reg: int, prtad: int=0):
         return nc_mdio_read(self._mdio, prtad, devad, reg)
 
-    def write(self, prtad: int, devad: int, reg: int, val: int):
+    def write(self, devad: int, reg: int, val: int, prtad: int=0):
         nc_mdio_write(self._mdio, prtad, devad, reg, val)
 
 cdef class I2c:
