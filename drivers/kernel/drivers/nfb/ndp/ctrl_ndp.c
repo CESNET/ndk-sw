@@ -41,7 +41,7 @@
 typedef uint64_t ndp_offset_t;
 
 /* Size of buffer for one packet in ring */
-static const int buffer_size = 4096;
+static int buffer_size = 4096;
 
 struct ndp_ctrl {
 	struct nc_ndp_ctrl c;
@@ -728,12 +728,22 @@ static int ndp_ctrl_medusa_attach_ring(struct ndp_channel *channel)
 
 	struct device *dev = channel->ring.dev;
 
+	const int min_buffer_items = PAGE_SIZE / min(NDP_CTRL_RX_DESC_SIZE, NDP_CTRL_RX_NDP_HDR_SIZE);
+
 	if (channel->ring.size == 0)
 		return -EINVAL;
 
+	if (buffer_size == 0 || !ispow2(buffer_size)) {
+		dev_err(ctrl->nfb->dev, "NDP queue %s: ndp_ctrl_buffer_size value must be power of two, but is %d.\n",
+				dev_name(&channel->dev), buffer_size);
+                return -EINVAL;
+	}
+
 	ctrl->desc_count = channel->ring.size / buffer_size;
-	if (ctrl->desc_count * min(NDP_CTRL_RX_DESC_SIZE, NDP_CTRL_RX_NDP_HDR_SIZE) < PAGE_SIZE) {
-		/* Can't do shadow-map for this ring size */
+	if (ctrl->desc_count < min_buffer_items) {
+		/* Can't do shadow-map for this desc/hdr ring size */
+		dev_err(ctrl->nfb->dev, "NDP queue %s: descriptor buffer size must be at least %d items, but is %d.\n",
+				dev_name(&channel->dev), min_buffer_items, ctrl->desc_count);
 		return -EINVAL;
 	}
 
@@ -1171,3 +1181,6 @@ struct ndp_channel *ndp_ctrl_v3_create_tx(struct ndp *ndp, int index, int node_o
 	struct ndp_channel_id id = {.index = index, .type = NDP_CHANNEL_TYPE_TX};
 	return ndp_ctrl_create(ndp, id, ndp_ctrl_attr_tx_groups, &ndp_ctrl_calypte_tx_ops, node_offset);
 }
+
+module_param_cb(ndp_ctrl_buffer_size, &ndp_param_size_ops, &buffer_size, S_IRUGO);
+MODULE_PARM_DESC(ndp_ctrl_buffer_size, "Size of buffer for one packet in NDP ring (max size of RX/TX packet) [4096]");

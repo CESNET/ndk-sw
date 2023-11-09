@@ -193,6 +193,8 @@ int ndp_ring_mmap(struct vm_area_struct *vma, unsigned long offset, unsigned lon
 ssize_t ndp_channel_get_ring_size(struct device *dev, struct device_attribute *attr, char *buf);
 ssize_t ndp_channel_set_ring_size(struct device *dev, struct device_attribute *attr, const char *buf, size_t size);
 
+extern const struct kernel_param_ops ndp_param_size_ops;
+
 /* channel.c */
 void ndp_channel_init(struct ndp_channel *channel, struct ndp_channel_id);
 int ndp_channel_add(struct ndp_channel *channel, struct ndp *ndp, uint32_t phandle);

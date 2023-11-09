@@ -338,7 +338,7 @@ static int ndp_param_size_set(const char *val, const struct kernel_param *kp)
 	return 0;
 }
 
-static const struct kernel_param_ops ndp_param_size_ops = {
+const struct kernel_param_ops ndp_param_size_ops = {
 	.set	= ndp_param_size_set,
 	.get	= param_get_int,
 };
