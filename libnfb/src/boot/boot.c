@@ -361,6 +361,10 @@ int nfb_fw_load_fpga_image_load(const struct nfb_device *dev, void *data, size_t
 			ret = errno;
 			goto err_ioctl_status;
 		}
+		if (fs.err_code != 0) {
+			ret = fs.err_code;
+			goto err_ioctl_status;
+		}
 		if (flags & NFB_FW_LOAD_FLAG_VERBOSE) {
 			if (prev_progress != fs.progress) {
 				if (text) {
