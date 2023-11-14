@@ -1,3 +1,9 @@
+* Tue Nov 14 2023 Martin Spinler <spinler@cesnet.cz> - 6.20.0-1
+- [FEATURE] base support for DMA Calypte controllers
+- [BUGFIX] fixes E-Tile loopback operation
+- [BUGFIX] better booting experience on N6010 card
+- [BUGFIX] fixed some issues in Python NFB module
+
 * Wed Oct 18 2023 Martin Spinler <spinler@cesnet.cz> - 6.19.5-1
 - [BUGFIX] fixed flashing of N6010 card on newer kernels
 - [BUGFIX] correctly decode control / status register in nfb-dma
