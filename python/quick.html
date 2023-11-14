@@ -161,7 +161,7 @@
 
 <span class="c1"># 2.C NDP queues statistics</span>
 <span class="n">txq</span><span class="o">.</span><span class="n">stats_reset</span><span class="p">()</span>
-<span class="k">assert</span> <span class="n">txq</span><span class="o">.</span><span class="n">stats_read</span><span class="p">()[</span><span class="s2">&quot;packets&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
+<span class="k">assert</span> <span class="n">txq</span><span class="o">.</span><span class="n">stats_read</span><span class="p">()[</span><span class="s2">&quot;sent&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
 
 </pre></div>
 </div>
@@ -183,7 +183,8 @@
 
 <span class="n">val</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">pmd</span><span class="o">.</span><span class="n">vendor_name</span>
 <span class="n">eth</span><span class="o">.</span><span class="n">pcspma</span><span class="o">.</span><span class="n">mdio</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">val</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">pmd</span><span class="o">.</span><span class="n">mdio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">eth</span><span class="o">.</span><span class="n">pmd</span><span class="p">,</span> <span class="s1">&#39;i2c&#39;</span><span class="p">):</span>
+    <span class="n">val</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">pmd</span><span class="o">.</span><span class="n">i2c</span><span class="o">.</span><span class="n">read_reg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
 <span class="c1"># 3.C Aggregated Ethernet ports manipulation</span>
 <span class="k">assert</span> <span class="n">eth</span><span class="o">.</span><span class="n">link</span> <span class="o">==</span> <span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="o">.</span><span class="n">link</span>
