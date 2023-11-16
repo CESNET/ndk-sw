@@ -25,7 +25,7 @@ cdef class RxMac:
         if self._mac is NULL:
             PyErr_SetFromErrno(OSError)
 
-    def __del__(self):
+    def __dealloc__(self):
         if self._mac is not NULL:
             nc_rxmac_close(self._mac)
 
@@ -112,7 +112,7 @@ cdef class TxMac:
         if self._mac is NULL:
             PyErr_SetFromErrno(OSError)
 
-    def __del__(self):
+    def __dealloc__(self):
         if self._mac is not NULL:
             nc_txmac_close(self._mac)
 
@@ -174,7 +174,7 @@ cdef class Mdio:
         if self._mdio is NULL:
             PyErr_SetFromErrno(OSError)
 
-    def __del__(self):
+    def __dealloc__(self):
         if self._mdio is not NULL:
             nc_mdio_close(self._mdio)
 
@@ -194,7 +194,7 @@ cdef class I2c:
         self._ctrl = nc_i2c_open(self._handle._dev, nfb._fdt_path_offset(node))
         nc_i2c_set_addr(self._ctrl, addr)
 
-    def __del__(self):
+    def __dealloc__(self):
         if self._ctrl is not NULL:
             nc_i2c_close(self._ctrl)
 
@@ -247,7 +247,7 @@ cdef class DmaCtrlNdp:
             self._ctrl.comp = NULL
             PyErr_SetFromErrno(OSError)
 
-    def __del__(self):
+    def __dealloc__(self):
         if self._ctrl.comp is not NULL:
             if self._ctrl_queue:
                 if self._ctrl.dir == 0:
