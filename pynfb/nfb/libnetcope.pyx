@@ -11,12 +11,17 @@ from cpython.exc cimport PyErr_SetFromErrno
 import libnfb
 cimport libnfb
 
+from libnfb cimport NfbDeviceHandle
+
+
 cdef class RxMac:
+    cdef NfbDeviceHandle _handle
     cdef nc_rxmac *_mac
 
     def __init__(self, libnfb.Nfb nfb, node):
+        self._handle = nfb._handle
         self._mac = NULL
-        self._mac = nc_rxmac_open(nfb._dev, nfb._fdt_path_offset(node))
+        self._mac = nc_rxmac_open(self._handle._dev, nfb._fdt_path_offset(node))
         if self._mac is NULL:
             PyErr_SetFromErrno(OSError)
 
@@ -97,11 +102,13 @@ cdef class RxMac:
         }
 
 cdef class TxMac:
+    cdef NfbDeviceHandle _handle
     cdef nc_txmac *_mac
 
     def __init__(self, libnfb.Nfb nfb, node):
+        self._handle = nfb._handle
         self._mac = NULL
-        self._mac = nc_txmac_open(nfb._dev, nfb._fdt_path_offset(node))
+        self._mac = nc_txmac_open(self._handle._dev, nfb._fdt_path_offset(node))
         if self._mac is NULL:
             PyErr_SetFromErrno(OSError)
 
@@ -157,11 +164,13 @@ cdef class TxMac:
         }
 
 cdef class Mdio:
+    cdef NfbDeviceHandle _handle
     cdef nc_mdio *_mdio
 
     def __init__(self, libnfb.Nfb nfb, node, param_node = None):
+        self._handle = nfb._handle
         self._mdio = NULL
-        self._mdio = nc_mdio_open(nfb._dev, nfb._fdt_path_offset(node), nfb._fdt_path_offset(param_node) if param_node else -1)
+        self._mdio = nc_mdio_open(self._handle._dev, nfb._fdt_path_offset(node), nfb._fdt_path_offset(param_node) if param_node else -1)
         if self._mdio is NULL:
             PyErr_SetFromErrno(OSError)
 
@@ -176,11 +185,13 @@ cdef class Mdio:
         nc_mdio_write(self._mdio, prtad, devad, reg, val)
 
 cdef class I2c:
+    cdef NfbDeviceHandle _handle
     cdef nc_i2c_ctrl *_ctrl
 
     def __init__(self, libnfb.Nfb nfb, node, addr = 0xA0):
+        self._handle = nfb._handle
         self._ctrl = NULL
-        self._ctrl = nc_i2c_open(nfb._dev, nfb._fdt_path_offset(node))
+        self._ctrl = nc_i2c_open(self._handle._dev, nfb._fdt_path_offset(node))
         nc_i2c_set_addr(self._ctrl, addr)
 
     def __del__(self):
@@ -206,6 +217,7 @@ cdef class I2c:
         ret = nc_i2c_write_reg(self._ctrl, reg, c_data8, len(data))
 
 cdef class DmaCtrlNdp:
+    cdef NfbDeviceHandle _handle
     cdef nc_ndp_ctrl _ctrl
     cdef void *_ctrl_queue
     cdef nc_rxqueue *_ctrl_tx
@@ -215,17 +227,20 @@ cdef class DmaCtrlNdp:
 
     def __init__(self, libnfb.Nfb nfb, node):
         cdef int ret
+        cdef nfb_device *dev
+
         self._ctrl_queue = NULL
 
-        self.__nfb = nfb
-        ret = nc_ndp_ctrl_open(nfb._dev, nfb._fdt_path_offset(node), &self._ctrl)
+        self._handle = nfb._handle
+        dev = self._handle._dev
+        ret = nc_ndp_ctrl_open(dev, nfb._fdt_path_offset(node), &self._ctrl)
         if ret != 0:
             PyErr_SetFromErrno(OSError)
 
         if self._ctrl.dir == 0:
-            self._ctrl_queue = nc_rxqueue_open(nfb._dev, nfb._fdt_path_offset(node))
+            self._ctrl_queue = nc_rxqueue_open(dev, nfb._fdt_path_offset(node))
         else: #if self._ctrl.dir == 1:
-            self._ctrl_queue = nc_txqueue_open(nfb._dev, nfb._fdt_path_offset(node))
+            self._ctrl_queue = nc_txqueue_open(dev, nfb._fdt_path_offset(node))
 
         if self._ctrl_queue == NULL != 0:
             nc_ndp_ctrl_close(&self._ctrl)

@@ -127,11 +127,15 @@ cdef extern from "<nfb/ext.h>":
     cdef ndp_queue_ops* ndp_queue_get_ops(ndp_queue *q)
 
 
+cdef class NfbDeviceHandle:
+    #cdef object __weakref__
+    cdef nfb_device* _dev
+
 cdef class Nfb:
+    cdef NfbDeviceHandle _handle
+    # Deprecated. Use _handle._dev
     cdef nfb_device* _dev
     cdef const void* _fdt
-    cdef const char* _fdtc
-    cdef public bytes _dtb
 
     cdef dict __dict__
 

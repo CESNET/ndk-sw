@@ -43,6 +43,16 @@ def open(path: str = '0') -> Nfb:
     eth.EthManager(dev)
     return dev
 
+cdef class NfbDeviceHandle:
+    def __cinit__(self, path: str):
+        self._dev = nfb_open(path.encode())
+        if self._dev is NULL:
+            PyErr_SetFromErrno(OSError)
+
+    def __dealloc__(self):
+        if self._dev is not NULL:
+            nfb_close(self._dev)
+
 
 cdef class Nfb:
     """
@@ -58,21 +68,22 @@ cdef class Nfb:
 
     default_device = '/dev/nfb0'
 
-    def __cinit__(self, path: str):
-        self._dev = nfb_open(path.encode())
-        if self._dev is NULL:
-            PyErr_SetFromErrno(OSError)
+    def __init__(self, path: str):
+        cdef const char* _fdtc
 
-        self._fdt = nfb_get_fdt(self._dev)
-        self._fdtc = <const char*>self._fdt
-        self._dtb = <bytes>self._fdtc[:c_fdt_totalsize(self._fdt)]
-        self.fdt = fdt.parse_dtb(self._dtb)
+        self._handle = NfbDeviceHandle(path)
+        # Deprecated. Use _handle._dev
+        self._dev = self._handle._dev
+
+        self._fdt = nfb_get_fdt(self._handle._dev)
+        fdtc = <const char*>self._fdt
+        dtb = <bytes>fdtc[:c_fdt_totalsize(self._fdt)]
+        self.fdt = fdt.parse_dtb(dtb)
 
         self.ndp = QueueManager(self)
 
     def __dealloc__(self):
-        if self._dev is not NULL:
-            nfb_close(self._dev)
+        pass
 
     def comp_open(self, comp: Union[str, fdt.items.Node], index: cython.int = 0) -> Comp:
         """
@@ -85,7 +96,7 @@ cdef class Nfb:
 
         cdef int fdt_offset
         if isinstance(comp, str):
-            fdt_offset = nfb_comp_find(self._dev, comp.encode(), index)
+            fdt_offset = nfb_comp_find(self._handle._dev, comp.encode(), index)
         elif isinstance(comp, fdt.items.Node):
             fdt_offset = self._fdt_path_offset(comp)
         else:
@@ -133,10 +144,10 @@ cdef class Comp:
     """
 
     cdef nfb_comp* _comp
-    cdef Nfb _nfb_dev
+    cdef NfbDeviceHandle _nfb_dev
 
     def __cinit__(self, Nfb nfb_dev, int fdt_offset):
-        self._nfb_dev = nfb_dev
+        self._nfb_dev = nfb_dev._handle
         self._comp = nfb_comp_open(self._nfb_dev._dev, fdt_offset)
         if self._comp is NULL:
             PyErr_SetFromErrno(OSError)
@@ -460,16 +471,14 @@ cdef class NdpQueue:
     Object representing a NDP queue
     """
 
+    cdef NfbDeviceHandle _handle
     cdef ndp_queue *_q
-    cdef nfb_device *_dev
     cdef dict __dict__
-    cdef Nfb _nfb
     cdef int _index
     cdef bool _running
 
     def __init__(self, nfb: Nfb, node, index: int):
-        self._nfb = nfb
-        self._dev = nfb._dev
+        self._handle = nfb._handle
         self._index = index
         self._q = NULL
         self._running = False
@@ -478,7 +487,7 @@ cdef class NdpQueue:
     cdef _check_running(self):
         if not self._running:
             if self._q is NULL:
-                p1, p2 = self._nfb._dev, self._index
+                p1, p2 = self._handle._dev, self._index
                 self._q = ndp_open_tx_queue(p1, p2) if self._dir else ndp_open_rx_queue(p1, p2)
                 if self._q is NULL:
                     PyErr_SetFromErrno(OSError)
@@ -513,7 +522,7 @@ cdef class NdpQueueRx(NdpQueue):
     def __init__(self, nfb: Nfb, node, index):
         self._dir = 0
         NdpQueue.__init__(self, nfb, node, index)
-        self._nc_queue = libnetcope.nc_rxqueue_open(nfb._dev, nfb._fdt_path_offset(node))
+        self._nc_queue = libnetcope.nc_rxqueue_open(self._handle._dev, nfb._fdt_path_offset(node))
 
     def stats_reset(self):
         """Reset statistic counters"""
@@ -625,7 +634,7 @@ cdef class NdpQueueTx(NdpQueue):
     def __init__(self, nfb: Nfb, node, index):
         self._dir = 1
         NdpQueue.__init__(self, nfb, node, index)
-        self._nc_queue = libnetcope.nc_txqueue_open(nfb._dev, nfb._fdt_path_offset(node))
+        self._nc_queue = libnetcope.nc_txqueue_open(self._handle._dev, nfb._fdt_path_offset(node))
 
     def stats_reset(self):
         """Reset statistic counters"""
