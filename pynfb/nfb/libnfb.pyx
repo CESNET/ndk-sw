@@ -484,6 +484,13 @@ cdef class NdpQueue:
         self._running = False
         self._node = node
 
+    def __dealloc__(self):
+        if self._q is not NULL:
+            if self._dir:
+                ndp_close_tx_queue(self._q)
+            else:
+                ndp_close_rx_queue(self._q)
+
     cdef _check_running(self):
         if not self._running:
             if self._q is NULL:
@@ -523,6 +530,12 @@ cdef class NdpQueueRx(NdpQueue):
         self._dir = 0
         NdpQueue.__init__(self, nfb, node, index)
         self._nc_queue = libnetcope.nc_rxqueue_open(self._handle._dev, nfb._fdt_path_offset(node))
+        if self._nc_queue is NULL:
+            PyErr_SetFromErrno(OSError)
+
+    def __dealloc__(self):
+        if self._nc_queue is not NULL:
+            libnetcope.nc_rxqueue_close(self._nc_queue)
 
     def stats_reset(self):
         """Reset statistic counters"""
@@ -635,6 +648,12 @@ cdef class NdpQueueTx(NdpQueue):
         self._dir = 1
         NdpQueue.__init__(self, nfb, node, index)
         self._nc_queue = libnetcope.nc_txqueue_open(self._handle._dev, nfb._fdt_path_offset(node))
+        if self._nc_queue is NULL:
+            PyErr_SetFromErrno(OSError)
+
+    def __dealloc__(self):
+        if self._nc_queue is not NULL:
+            libnetcope.nc_txqueue_close(self._nc_queue)
 
     def stats_reset(self):
         """Reset statistic counters"""
