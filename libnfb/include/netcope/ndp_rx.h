@@ -230,26 +230,78 @@ static inline int nc_ndp_v2_rx_burst_put(void *priv)
 	return nc_ndp_v2_rx_unlock(priv);
 }
 
+static inline void _ndp_queue_rx_sync_v3_us(struct nc_ndp_queue *q)
+{
+#ifndef __KERNEL__
+	struct ndp_v3_packethdr *hdr_base;
+
+	if (q->sync.swptr != q->u.v3.uspace_shp) {
+#if 0
+		q->u.v3.uspace_shp = q->sync.swptr & q->u.v3.hdr_ptr_mask;
+		nfb_comp_write64(q->u.v3.comp, NDP_CTRL_REG_SDP, q->u.v3.sdp | (((uint64_t) q->u.v3.uspace_shp) << 32));
+#else
+		unsigned i;
+		unsigned count_blks = 0;
+		unsigned count = (q->sync.swptr - q->u.v3.uspace_shp) & q->u.v3.uspace_mhp;
+
+		hdr_base = q->u.v3.hdrs + q->u.v3.uspace_shp;
+		for (i = 0; i < count; i++) {
+			count_blks += (hdr_base[i].frame_len + NDP_RX_CALYPTE_BLOCK_SIZE - 1) / NDP_RX_CALYPTE_BLOCK_SIZE;
+		}
+
+		q->u.v3.uspace_shp = q->sync.swptr;
+		q->u.v3.uspace_sdp = (q->u.v3.uspace_sdp + count_blks) & q->u.v3.uspace_mdp;
+		q->u.v3.uspace_acc += count;
+
+		/* TODO: magic number */
+		if (q->u.v3.uspace_acc >= 32) {
+			q->u.v3.uspace_acc = 0;
+			////nc_ndp_ctrl_sp_flush(q->u.v3.comp);
+			nfb_comp_write64(q->u.v3.comp, NDP_CTRL_REG_SDP, q->u.v3.uspace_sdp | (((uint64_t) q->u.v3.uspace_shp) << 32));
+		}
+#endif
+	}
+
+	do {
+		hdr_base = q->u.v3.hdrs + q->u.v3.uspace_hhp;
+		if (hdr_base->valid == 0)
+			break;
+		q->u.v3.uspace_hhp = (q->u.v3.uspace_hhp + 1) & q->u.v3.uspace_mhp;
+	} while (1);
+	q->sync.hwptr = q->u.v3.uspace_hhp;
+#endif
+}
+
 static inline unsigned nc_ndp_v3_rx_lock(void *priv)
 {
-	int ret;
+	int ret = 0;
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
-	if ((ret = _ndp_queue_sync(q, &q->sync))) {
-		return ret;
+	if (q->flags & NDP_CHANNEL_FLAG_USERSPACE) {
+		_ndp_queue_rx_sync_v3_us(q);
+	} else {
+		if ((ret = _ndp_queue_sync(q, &q->sync))) {
+			return ret;
+		}
 	}
 
 	q->u.v3.pkts_available = (q->sync.hwptr - q->u.v3.shp) & (q->u.v3.hdr_ptr_mask);
 
-	return 0;
+	return ret;
 }
 
 static inline int nc_ndp_v3_rx_unlock(void *priv)
 {
+	int ret = 0;
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
 	q->sync.swptr = q->u.v3.shp & (q->u.v3.hdr_ptr_mask);
-	return _ndp_queue_sync(q, &q->sync);
+	if (q->flags & NDP_CHANNEL_FLAG_USERSPACE) {
+		_ndp_queue_rx_sync_v3_us(q);
+	} else {
+		ret = _ndp_queue_sync(q, &q->sync);
+	}
+	return ret;
 }
 
 static inline unsigned nc_ndp_v3_rx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)

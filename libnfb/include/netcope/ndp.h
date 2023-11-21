@@ -142,7 +142,7 @@ err_fdt_getprop:
 	return ret;
 }
 
-static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt,  int fdt_offset)
+static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt,  int fdt_offset, int ctrl_offset, int dir)
 {
 #ifndef __KERNEL__
 	int prot;
@@ -161,6 +161,19 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	q->u.v3.shp = 0;
 
 #ifndef __KERNEL__
+	q->u.v3.uspace_shp = 0;
+	q->u.v3.uspace_hhp = 0;
+	q->u.v3.uspace_hdp = 0;
+	q->u.v3.uspace_sdp = 0;
+	q->u.v3.uspace_free = 0;
+	q->u.v3.uspace_acc = 0;
+
+	if (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) {
+		q->u.v3.comp = nfb_comp_open(q->dev, ctrl_offset);
+		if (q->u.v3.comp == NULL)
+			return -ENODEV;
+	}
+
 	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
 		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_size", &hdr_mmap_size);
 		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", &hdr_mmap_offset);
@@ -198,6 +211,22 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	} else {
 		q->u.v3.data_ptr_mask = data_buff_size/2 -1;
 		q->u.v3.hdr_ptr_mask = hdr_buff_size/(2*sizeof(struct ndp_v3_packethdr)) -1;
+	}
+#endif
+
+#ifndef __KERNEL__
+	if (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) {
+		q->u.v3.uspace_hdrs = q->u.v3.hdrs;
+	}
+#endif
+	return 0;
+}
+
+static inline int nc_ndp_v3_close_queue(struct nc_ndp_queue *q)
+{
+#ifndef __KERNEL__
+	if (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) {
+		nfb_comp_close(q->u.v3.comp);
 	}
 #endif
 	return 0;
@@ -283,7 +312,7 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	q->sync.hwptr = 0;
 
 	if (q->protocol == 3) {
-		ret = nc_ndp_v3_open_queue(q, fdt, fdt_offset);
+		ret = nc_ndp_v3_open_queue(q, fdt, fdt_offset, ctrl_offset, dir);
 	} else if (q->protocol == 2) {
 		ret = nc_ndp_v2_open_queue(q, fdt, fdt_offset);
 	} else if (q->protocol == 1) {
@@ -316,6 +345,10 @@ static inline int nc_ndp_queue_open_init(const void *fdt, struct nc_ndp_queue *q
 
 static inline void nc_ndp_queue_close(struct nc_ndp_queue *q)
 {
+	if (q->protocol == 3) {
+		nc_ndp_v3_close_queue(q);
+	}
+
 #ifdef __KERNEL__
 	if (q->sub) {
 		ndp_subscription_destroy(q->sub);
@@ -342,6 +375,18 @@ static int nc_ndp_queue_start(void *priv)
 
 		q->u.v2.rhp = q->sync.hwptr;
 	}
+
+#ifndef __KERNEL__
+	if (q->protocol == 3 && q->flags & NDP_CHANNEL_FLAG_USERSPACE) {
+		q->u.v3.uspace_mdp = nfb_comp_read32(q->u.v3.comp, NDP_CTRL_REG_MDP);
+		q->u.v3.uspace_mhp = nfb_comp_read32(q->u.v3.comp, NDP_CTRL_REG_MHP);
+
+		/* This is used in TX only */
+		/* Should be the same */
+		q->u.v3.uspace_free = (q->u.v3.uspace_mdp + 1) - NDP_TX_CALYPTE_BLOCK_SIZE;
+		//q->u.v3.uspace_free = q->u.v3.uspace_mdp & ~(NDP_TX_CALYPTE_BLOCK_SIZE-1)
+	}
+#endif
 
 	return ret;
 }

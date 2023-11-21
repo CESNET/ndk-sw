@@ -82,6 +82,18 @@ struct nc_ndp_queue {
 			struct ndp_packet *packets;
 			// Buffer for headers
 			struct ndp_v3_packethdr *hdrs;
+#ifndef __KERNEL__
+			struct ndp_v3_packethdr *uspace_hdrs;
+			struct nfb_comp *comp;
+			uint32_t uspace_shp;
+			uint32_t uspace_hhp;
+			uint32_t uspace_sdp;
+			uint32_t uspace_hdp;
+			uint32_t uspace_mhp;
+			uint32_t uspace_mdp;
+			uint32_t uspace_free;
+			uint32_t uspace_acc;
+#endif
 		} v3;
 	} u;
 

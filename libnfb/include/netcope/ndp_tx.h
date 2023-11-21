@@ -282,6 +282,80 @@ static inline int nc_ndp_v2_tx_burst_flush(void *priv)
 	return 0;
 }
 
+static inline void _ndp_queue_tx_sync_v3_us(struct nc_ndp_queue *q)
+{
+#ifndef __KERNEL__
+	uint64_t hwpointers;
+	uint32_t hdp;
+	uint32_t hhp;
+
+	uint32_t count;
+
+	uint32_t new_hwptr = q->sync.hwptr;
+	{
+		uint32_t i;
+		uint32_t frame_space;
+	        uint32_t sdp = q->u.v3.uspace_sdp;
+		uint32_t shp = q->u.v3.uspace_shp;
+		struct ndp_v3_packethdr *hdr;
+
+		count = (new_hwptr - shp) & q->u.v3.uspace_mhp;
+
+		for (i = 0; i < count; i++) {
+			hdr = q->u.v3.uspace_hdrs + shp + i;
+			frame_space = (hdr->frame_len + (NDP_TX_CALYPTE_BLOCK_SIZE - 1)) & (~(NDP_TX_CALYPTE_BLOCK_SIZE - 1));
+			q->u.v3.uspace_free -= frame_space;
+			sdp += frame_space;
+		}
+
+		if (count) {
+			q->u.v3.uspace_sdp = sdp & q->u.v3.uspace_mdp;
+			q->u.v3.uspace_shp = new_hwptr;
+
+			q->u.v3.uspace_acc += count;
+			/* TODO: magic number */
+			if (q->u.v3.uspace_acc >= 32) {
+				q->u.v3.uspace_acc = 0;
+				nfb_comp_write64(q->u.v3.comp, NDP_CTRL_REG_SDP, q->u.v3.uspace_sdp | (((uint64_t) q->u.v3.uspace_shp) << 32));
+			}
+		}
+	}
+
+	{
+		uint32_t hdp_prev;
+		hdp_prev = q->u.v3.uspace_hdp;
+
+		uint32_t chlen = (q->u.v3.uspace_hhp - q->u.v3.uspace_shp - 1) & q->u.v3.uspace_mhp;
+		/* TODO: magic number */
+		if (chlen < 512 || q->u.v3.uspace_free <= 4096) {
+			hwpointers = nfb_comp_read64(q->u.v3.comp, NDP_CTRL_REG_HDP);
+			hdp = ((uint32_t)hwpointers);
+			hhp = ((uint32_t)(hwpointers >> 32));
+
+			count = (hdp - hdp_prev) & q->u.v3.uspace_mdp;
+			q->u.v3.uspace_hdp = hdp;
+			q->u.v3.uspace_hhp = hhp;
+
+			q->u.v3.uspace_free += count;
+		}
+	}
+
+	{
+		uint32_t len;
+		uint32_t chlen = (q->u.v3.uspace_hhp - q->u.v3.uspace_shp - 1) & q->u.v3.uspace_mhp;
+
+                /* Subscriber tries to lock LENGTH items */
+                len = (q->sync.swptr - q->sync.hwptr /*swptr_new - hwptr_new*/) & q->u.v3.uspace_mhp;
+                len = min(len, chlen);
+
+                q->sync.hwptr = q->u.v3.uspace_hhp;
+                q->sync.swptr = (q->sync.hwptr + len) & q->u.v3.uspace_mhp;
+
+		q->sync.size = q->u.v3.uspace_free;
+	}
+#endif
+}
+
 // Figure out, how many packets can be stored in a queue right now.
 static inline void nc_ndp_v3_tx_lock(void *priv)
 {
@@ -293,8 +367,12 @@ static inline void nc_ndp_v3_tx_lock(void *priv)
 	// This assignment allows to determine the amount of free headers in the buffer
 	q->sync.swptr = (q->sync.hwptr - 1) & (q->u.v3.hdr_ptr_mask);
 
-	if (_ndp_queue_sync(q, &q->sync))
-		return;
+	if (q->flags & NDP_CHANNEL_FLAG_USERSPACE) {
+		_ndp_queue_tx_sync_v3_us(q);
+	} else {
+		if (_ndp_queue_sync(q, &q->sync))
+			return;
+	}
 
 	if (!lock_valid) {
 		offset = q->sync.hwptr - q->u.v3.shp;
@@ -305,6 +383,19 @@ static inline void nc_ndp_v3_tx_lock(void *priv)
 
 	q->u.v3.pkts_available  = (q->sync.swptr - q->u.v3.shp) & (q->u.v3.hdr_ptr_mask);
 	q->u.v3.bytes_available = q->sync.size;
+}
+
+static inline int nc_ndp_v3_tx_request_space(struct nc_ndp_queue *q, uint32_t shp)
+{
+	q->sync.hwptr = shp;
+	if (q->flags & NDP_CHANNEL_FLAG_USERSPACE) {
+		_ndp_queue_tx_sync_v3_us(q);
+	} else {
+		if (_ndp_queue_sync(q, &q->sync))
+			return -1;
+	}
+	q->u.v3.bytes_available = q->sync.size;
+	return 0;
 }
 
 static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
@@ -393,12 +484,30 @@ static inline int nc_ndp_v3_tx_burst_flush(void *priv)
 	}
 
 	// Synchronize pointers after all packets in a burst have been sent
-	q->sync.swptr = q->u.v3.shp;
-	q->sync.hwptr = q->u.v3.shp;
-	q->u.v3.pkts_available = 0;
 
-	if (_ndp_queue_sync(q, &q->sync))
-		return -1;
+	/* TX is flushed anyway by writing of header */
+	if (q->flags & NDP_CHANNEL_FLAG_USERSPACE) {
+#ifndef __KERNEL__
+		if (q->sync.hwptr == q->u.v3.shp)
+			return 0;
+
+		q->sync.hwptr = q->u.v3.shp;
+		/* Always request more data (no noeed for real 'unlock all') */
+		q->sync.swptr = (q->u.v3.shp + 64) & q->u.v3.hdr_ptr_mask;
+
+		_ndp_queue_tx_sync_v3_us(q);
+
+		q->u.v3.pkts_available  = (q->sync.swptr - q->sync.hwptr) & (q->u.v3.hdr_ptr_mask);
+		q->u.v3.bytes_available = q->sync.size;
+#endif
+	} else {
+		q->sync.swptr = q->u.v3.shp;
+		q->sync.hwptr = q->u.v3.shp;
+		q->u.v3.pkts_available = 0;
+
+		if (_ndp_queue_sync(q, &q->sync))
+			return -1;
+	}
 
 	return 0;
 }
@@ -419,12 +528,8 @@ static inline int nc_ndp_v3_tx_burst_put(void *priv)
 		frame_len_ceil = (hdr[i].frame_len + (NDP_TX_CALYPTE_BLOCK_SIZE -1)) & (~(NDP_TX_CALYPTE_BLOCK_SIZE -1));
 
 		while (q->u.v3.bytes_available < frame_len_ceil) {
-			q->sync.hwptr = shp;
-
-			if (_ndp_queue_sync(q, &q->sync))
+			if (nc_ndp_v3_tx_request_space(q, shp))
 				return -1;
-
-			q->u.v3.bytes_available = q->sync.size;
 		}
 
 		nfb_comp_write(q->u.v3.tx_data_buff, packet[i].header, hdr[i].frame_len, hdr[i].frame_ptr);
