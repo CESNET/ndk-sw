@@ -19,17 +19,17 @@ This is necessary especially for TX as the DMA/application core typically get st
 The tool can configure the maximum and minimum allowed packet length (**-L** and **-l** arguments)
 and MAC address based filtration (**-M**: *add*, *remove*, *show*, *clear, *fill* commands operates on MAC address table, *normal* (unicast), *broadcast*, *multicast*, and *promiscuous* sets the required mode).
 
-PMA section
-~~~~~~~~~~~
+PMA/PCS section
+~~~~~~~~~~~~~~~
 
 The **-P** argument is intended to configure Ethernet modes.
-If no command is entered, PCS/PMA status is printed, including PMA type, speed and link status.
+If no command is entered, PMA and PCS status is printed, including PMA type, speed and link status.
 
 Currently used PMA type can be configured with **-c** argument whereas the exact PMA identification string must be entered.
 List of PMA types can vary with used firmware/hardware and can be obtained in verbose output (**-v** argument),
-together with list of PMA features.
+together with list of PMA and PCS features.
 
-The PMA features that can be activated with **-c** argument as well.
+The PMA/PCS features that can be activated with **-c** argument as well.
 However the feature can be activated and deactivated with *+* or *-* prefixes of its name.
 
 For example:
@@ -37,6 +37,7 @@ For example:
 - ``nfb-eth -Pv`` prints all supported PMA types/modes and features,
 - ``nfb-eth -Pc 100GBASE-LR4`` sets the PMA to 100GBASE-LR4 type,
 - ``nfb-eth -Pc "+PMA local loopback"`` enables local loopback feature on all PMAs.
+- ``nfb-eth -Pc -i 0 "+PCS reverse loopback"`` enables remote loopback feature on the first PCS.
 
 Transceiver section
 ~~~~~~~~~~~~~~~~~~~
