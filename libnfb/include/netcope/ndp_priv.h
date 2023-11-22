@@ -69,9 +69,9 @@ struct nc_ndp_queue {
 			// Used to indicate the number of packets that are
 			// locked in the queue. It also means the number of free
 			// headers.
-			unsigned pkts_available;
-			uint32_t bytes_available;
-			unsigned pkts_to_send;
+			uint32_t pkts_available;
+			uint32_t pkts_to_send;
+			uint64_t bytes_available;
 
 			uint32_t sdp;
 			uint32_t shp;

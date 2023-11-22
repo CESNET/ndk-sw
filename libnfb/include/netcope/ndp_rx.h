@@ -301,10 +301,10 @@ static inline unsigned nc_ndp_v3_rx_burst_get(void *priv, struct ndp_packet *pac
 		packets[i].data_length = packet_size;
 
 		hdr->valid = 0;
-		q->u.v3.sdp += (hdr->frame_len + (NDP_RX_CALYPTE_BLOCK_SIZE - 1)) & (~(NDP_RX_CALYPTE_BLOCK_SIZE -1));
+		q->u.v3.sdp += (hdr->frame_len + NDP_RX_CALYPTE_BLOCK_SIZE - 1) / NDP_RX_CALYPTE_BLOCK_SIZE;
 	}
 
-	q->u.v3.sdp &= q->u.v3.hdr_ptr_mask;
+	q->u.v3.sdp &= q->u.v3.data_ptr_mask;
 	q->u.v3.shp = (q->u.v3.shp + count) & q->u.v3.hdr_ptr_mask;
 	q->u.v3.pkts_available -= count;
 
