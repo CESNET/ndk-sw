@@ -514,7 +514,20 @@ static uint64_t ndp_ctrl_get_flags(struct ndp_channel *channel)
 
 static uint64_t ndp_ctrl_set_flags(struct ndp_channel *channel, uint64_t flags)
 {
-	return ndp_ctrl_get_flags(channel);
+	uint64_t ret;
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+	ret = ndp_ctrl_get_flags(channel);
+
+	if (ctrl->c.type == DMA_TYPE_CALYPTE) {
+		if (flags & NDP_CHANNEL_FLAG_USERSPACE) {
+			ret |= NDP_CHANNEL_FLAG_USERSPACE;
+			ctrl->flags |= NDP_CHANNEL_FLAG_USERSPACE;
+		} else {
+			ctrl->flags &= ~NDP_CHANNEL_FLAG_USERSPACE;
+		}
+	}
+
+	return ret;
 }
 
 static int ndp_ctrl_start(struct ndp_ctrl *ctrl, struct nc_ndp_ctrl_start_params *sp)
@@ -628,6 +641,13 @@ static int ndp_ctrl_stop(struct ndp_channel *channel, int force)
 	int cnt = 0;
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
+	if (ctrl->c.type == DMA_TYPE_CALYPTE && ctrl->c.dir != 0 && ctrl->flags & NDP_CHANNEL_FLAG_USERSPACE) {
+		nc_ndp_ctrl_hp_update(&ctrl->c);
+		ctrl->c.sdp = ctrl->c.hdp;
+		ctrl->c.shp = ctrl->c.hhp;
+		nc_ndp_ctrl_sp_flush(&ctrl->c);
+	}
+
 	while (cnt < 10 || (!ndp_kill_signal_pending(current) && !force)) {
 		ret = nc_ndp_ctrl_stop(&ctrl->c);
 		if (ret == 0) {
@@ -648,6 +668,9 @@ static int ndp_ctrl_stop(struct ndp_channel *channel, int force)
 			"This may be due to firmware error.\n",
 			dev_name(&channel->dev), cnt * 10);
 	}
+
+	ctrl->flags &= ~NDP_CHANNEL_FLAG_USERSPACE;
+
 	return 0;
 }
 
