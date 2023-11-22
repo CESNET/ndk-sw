@@ -319,10 +319,20 @@ static uint64_t ndp_ctrl_rx_get_hwptr(struct ndp_channel *channel)
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
 	hhp = ctrl->c.hhp;
-	nc_ndp_ctrl_hhp_update(&ctrl->c);
 
-	if (ctrl->c.type == DMA_TYPE_CALYPTE)
+	if (ctrl->c.type == DMA_TYPE_CALYPTE) {
+		struct nc_calypte_hdr *hdr_base;
+		uint32_t hwptr = ctrl->c.hhp;
+		do {
+			hdr_base = ctrl->ts.calypte.hdr_buffer + hwptr;
+			if (hdr_base->valid == 0)
+				break;
+			hwptr++;
+		} while (hwptr < ctrl->hdr_buffer_size * 2);
+		ctrl->c.hhp = hwptr & channel->ptrmask;
 		return ctrl->c.hhp;
+	}
+	nc_ndp_ctrl_hhp_update(&ctrl->c);
 
 	hhp_new = ctrl->c.hhp;
 	count = (hhp_new - hhp) & ctrl->c.mhp;
@@ -615,6 +625,7 @@ static int ndp_ctrl_calypte_start(struct ndp_channel *channel, uint64_t *hwptr)
 	struct nc_ndp_ctrl_start_params sp;
 
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+	struct nc_calypte_hdr *hdr_base;
 
 	// Only one block is used, therefore the physical address of the first one in "blocks"
 	// list is used.
@@ -624,6 +635,11 @@ static int ndp_ctrl_calypte_start(struct ndp_channel *channel, uint64_t *hwptr)
 	sp.nb_hdr = ctrl->hdr_count;
 
 	ctrl->ts.calypte.hdr_buffer = ctrl->hdr_buffer_v;
+
+	for (ret = 0; ret < ctrl->hdr_count; ret++) {
+		hdr_base = ctrl->ts.calypte.hdr_buffer + ret;
+		hdr_base->valid = 0;
+	}
 
 	ret = ndp_ctrl_start(ctrl, &sp);
 	if (ret)
