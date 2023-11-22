@@ -224,7 +224,8 @@ static int ndp_mode_transmit_loop(struct ndp_tool_params *p, struct pcap_src *sr
 
 		cnt = ndp_tx_burst_get(tx, packets, pkts_ready);
 		while (cnt == 0 && !stop) {
-			delay_nsecs(1);
+			if (p->use_delay_nsec)
+				delay_nsecs(1);
 			cnt = ndp_tx_burst_get(tx, packets, pkts_ready);
 		}
 
@@ -254,7 +255,8 @@ static int ndp_mode_transmit_loop(struct ndp_tool_params *p, struct pcap_src *sr
 						/* We have to pause sending packets for a while */
 						//update_stats(packets, 0, si);
 						ndp_tx_burst_flush(tx);
-						delay_nsecs(1);
+						if (p->use_delay_nsec)
+							delay_nsecs(1);
 					} else {
 						break;
 					}

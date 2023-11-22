@@ -392,7 +392,8 @@ static int ndp_mode_loopback_hw_loop(struct ndp_tool_params *p)
 					return ret;
 				if (0 && p->queue_index==0)
 					printf("TX stall\n");
-				delay_nsecs(1);
+				if (p->use_delay_nsec)
+					delay_nsecs(1);
 				cnt = ndp_tx_burst_get(tx,packets,tx_burst_size);
 			}
 

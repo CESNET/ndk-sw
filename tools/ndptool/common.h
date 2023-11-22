@@ -162,6 +162,7 @@ struct ndp_tool_params {
 	long long unsigned limit_bytes;
 
 	int verbose;
+	unsigned use_delay_nsec: 1;
 };
 
 struct thread_data {
