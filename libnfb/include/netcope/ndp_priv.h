@@ -97,6 +97,7 @@ struct nc_ndp_queue {
 
 	/* Control path */
 	struct ndp_queue *q;
+	struct nfb_device *dev;
 	uint32_t protocol;
 	uint32_t flags;
 

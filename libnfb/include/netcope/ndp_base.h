@@ -114,6 +114,7 @@ int ndp_base_queue_open(struct nfb_device *dev, void *dev_priv, unsigned index, 
 	}
 
 	q_nc->q = q;
+	q_nc->dev = dev;
 #ifdef __KERNEL__
 	ndp = (struct ndp *) dev->list_drivers[NFB_DRIVER_NDP].priv;
 	q_nc->subscriber = ndp_subscriber_create(ndp);
