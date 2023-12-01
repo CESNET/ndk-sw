@@ -24,7 +24,7 @@
 
 #include "common.h"
 
-#define ARGUMENTS "d:i:hD:I:Rqp:b:B:P"
+#define ARGUMENTS "d:i:hD:I:Rqp:b:B:PU"
 
 volatile int stop = 0;
 volatile int stats = 0;
@@ -73,6 +73,7 @@ static void usage(char *me, int mode_preset)
 	printf("  -B size       Read and write packets in bursts of <size> [default: RX=%u, TX=%u]\n",
             RX_BURST, TX_BURST);
 	printf("  -P            Performance mode (do not use delay/sleep when idle)\n");
+	printf("  -U            Userspace mode (do not sync with kernel/NDP driver)\n");
 
 	printf("Packet output parameters: (available for one queue only)\n");
 	printf("  -D dump       Dump packet content to stdout (char, all, header, data)\n");
@@ -156,6 +157,7 @@ int main(int argc, char *argv[])
 	params.pcap_filename = NULL;
 	params.limit_bytes = 0;
 	params.limit_packets = 0;
+	params.use_userspace_flag = 0;
 	params.use_delay_nsec = 1;
 
 	list_range_init(&queue_range);
@@ -236,6 +238,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'P':
 			params.use_delay_nsec = 0;
+			break;
+		case 'U':
+			params.use_userspace_flag = 1;
 			break;
 		case 'h':
 			usage(argv[0], strmode == argv[1]);

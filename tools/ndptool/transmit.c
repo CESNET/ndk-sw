@@ -119,7 +119,7 @@ static int ndp_mode_transmit_prepare(struct ndp_tool_params *p, struct pcap_src 
 		goto err_nfb_open;
 	}
 
-	p->tx = ndp_open_tx_queue(p->dev, p->queue_index);
+	p->tx = ndp_open_tx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
 	if (p->tx == NULL) {
 		warnx("ndp_open_tx_queue(%d) failed.", p->queue_index);
 		goto err_ndp_open_tx;

@@ -85,7 +85,7 @@ static int ndp_mode_receive_prepare(struct ndp_tool_params *p)
 		goto err_nfb_open;
 	}
 
-	p->rx = ndp_open_rx_queue(p->dev, p->queue_index);
+	p->rx = ndp_open_rx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
 	if (p->rx == NULL) {
 		warnx("ndp_open_rx_queue(%d) failed.", p->queue_index);
 		goto err_ndp_open_rx;
