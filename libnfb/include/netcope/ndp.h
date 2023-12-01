@@ -238,7 +238,7 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	int fdt_offset;
 	int ctrl_offset;
 	int ctrl_params_offset;
-	int flags = 0;
+	int flags = ndp_flags;
 
 	off_t mmap_offset;
 	size_t mmap_size = 0;

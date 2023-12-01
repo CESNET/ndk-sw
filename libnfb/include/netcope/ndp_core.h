@@ -127,10 +127,15 @@ static void nfb_queue_remove(struct ndp_queue *q)
 #endif
 }
 
-struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir, int flags)
+struct ndp_queue *ndp_open_queue(struct nfb_device *dev, unsigned index, int dir, int in_flags)
 {
 	int ret;
+	int flags = 0;
 	struct ndp_queue *q = NULL;
+
+	if (in_flags & NDP_OPEN_FLAG_USERSPACE) {
+		flags |= NDP_CHANNEL_FLAG_EXCLUSIVE | NDP_CHANNEL_FLAG_USERSPACE;
+	}
 
 #ifndef __KERNEL__
 	if (!dev->ops.ndp_queue_open || !dev->ops.ndp_queue_close) {
