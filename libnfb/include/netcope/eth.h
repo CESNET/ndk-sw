@@ -34,11 +34,11 @@ static inline int nc_eth_get_pcspma_control_node(const void *fdt, int nodeoffset
 	int proplen;
 	const fdt32_t *prop32;
 
-	prop32 = fdt_getprop(fdt, nodeoffset, "pcspma", &proplen);
+	prop32 = (const fdt32_t*) fdt_getprop(fdt, nodeoffset, "pcspma", &proplen);
 	if (proplen == sizeof(*prop32))
 		node_pcspma = fdt_node_offset_by_phandle(fdt, fdt32_to_cpu(*prop32));
 
-	prop32 = fdt_getprop(fdt, node_pcspma, "control", &proplen);
+	prop32 = (const fdt32_t*) fdt_getprop(fdt, node_pcspma, "control", &proplen);
 	if (proplen == sizeof(*prop32))
 		node_ctrl = fdt_node_offset_by_phandle(fdt, fdt32_to_cpu(*prop32));
 

@@ -457,13 +457,13 @@ static inline int nc_ndp_ctrl_get_mtu(struct nc_ndp_ctrl *ctrl, unsigned int *mi
         ctrl_offset = fdt_path_offset(fdt, nfb_comp_path(ctrl->comp));
         ctrl_params_offset = fdt_node_offset_by_phandle_ref(fdt, ctrl_offset, "params");
 
-	prop = fdt_getprop(fdt, ctrl_params_offset, "frame_size_min", &proplen);
+	prop = (const fdt32_t*) fdt_getprop(fdt, ctrl_params_offset, "frame_size_min", &proplen);
 	if (proplen == sizeof(*prop))
 		*min = fdt32_to_cpu(*prop);
 	else
 		ret -= 1;
 
-	prop = fdt_getprop(fdt, ctrl_params_offset, "frame_size_max", &proplen);
+	prop = (const fdt32_t*) fdt_getprop(fdt, ctrl_params_offset, "frame_size_max", &proplen);
 	if (proplen == sizeof(*prop))
 		*max = fdt32_to_cpu(*prop);
 	else

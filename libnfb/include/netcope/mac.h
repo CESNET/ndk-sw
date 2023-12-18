@@ -53,7 +53,7 @@ nc_ifc_get_default_mac(struct nfb_device *dev, unsigned ifc_nr, uint8_t *addr_by
 
 	fdt = nfb_get_fdt(dev);
         node = fdt_path_offset(fdt, "/board/");
-        prop = fdt_getprop(fdt, node, "board-name", &len);
+        prop = (const char*) fdt_getprop(fdt, node, "board-name", &len);
 
 	if (prop == NULL)
 		return -ENODEV;
@@ -80,7 +80,7 @@ nc_ifc_get_default_mac(struct nfb_device *dev, unsigned ifc_nr, uint8_t *addr_by
 	if (type == -1)
 		return -ENODEV;
 
-	prop32 = fdt_getprop(fdt, node, "serial-number", &len);
+	prop32 = (const uint32_t*) fdt_getprop(fdt, node, "serial-number", &len);
 	if (len < 0)
 		return -ENODEV;
 

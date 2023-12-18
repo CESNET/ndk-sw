@@ -37,12 +37,12 @@ static inline struct nc_nic_rss *nc_nic_rss_open(struct nfb_device *dev, int fdt
 
 	rss = (struct nc_nic_rss*) nfb_comp_to_user(comp);
 
-	prop = fdt_getprop(nfb_get_fdt(dev), fdt_offset, "reta_capacity", &proplen);
+	prop = (const fdt32_t*) fdt_getprop(nfb_get_fdt(dev), fdt_offset, "reta_capacity", &proplen);
 	if (proplen != sizeof(*prop))
 		goto err_prop;
 	rss->reta_capacity = fdt32_to_cpu(*prop);
 
-	prop = fdt_getprop(nfb_get_fdt(dev), fdt_offset, "key_size", &proplen);
+	prop = (const fdt32_t*) fdt_getprop(nfb_get_fdt(dev), fdt_offset, "key_size", &proplen);
 	if (proplen != sizeof(*prop))
 		goto err_prop;
 	rss->key_size = fdt32_to_cpu(*prop);

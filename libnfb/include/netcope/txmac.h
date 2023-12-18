@@ -10,6 +10,7 @@
 #ifndef NETCOPE_TXMAC_H
 #define NETCOPE_TXMAC_H
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -124,7 +125,7 @@ static inline int nc_txmac_read_status(struct nc_txmac *mac, struct nc_txmac_sta
 	s->enabled          = nfb_comp_read32(comp, TXMAC_REG_ENABLE);
 	reg                 = nfb_comp_read32(comp, TXMAC_REG_STATUS);
 
-	s->speed = (reg >> 4) & 0x7;
+	s->speed = (enum nc_mac_speed) ((reg >> 4) & 0x7);
 	switch (s->speed) {
 		case MAC_SPEED_10G:
 		case MAC_SPEED_40G:

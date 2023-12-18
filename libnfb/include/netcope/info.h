@@ -102,7 +102,7 @@ static inline int nc_get_composed_device_info_by_pci(struct nfb_device *dev,
 			prop = fdt_getprop(fdt, subnode, "pci-slot", NULL);
 			if (device_found == 0) {
 				info->ep_index++;
-				if (pciname && prop && strcmp(prop, pciname) == 0) {
+				if (pciname && prop && strcmp((const char*) prop, pciname) == 0) {
 					device_found = 1;
 				}
 			}
@@ -229,7 +229,7 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 
 	fdt_for_each_compatible_node(fdt, node, COMP_NETCOPE_ETH) {
 		/* Alloc interface info for each Ethernet channel */
-		info = realloc(mi->ifc, sizeof(*info) * (ifc + 1));
+		info = (struct nc_ifc_info *) realloc(mi->ifc, sizeof(*info) * (ifc + 1));
 		if (info == NULL) {
 			goto err_alloc;
 		}
@@ -247,7 +247,7 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 		info->eth_cnt = 1;
 
 		/* Assign Ethernet channel to interface */
-		eth_info = realloc(mi->eth, sizeof(*eth_info) * (eth + 1));
+		eth_info = (struct nc_ifc_eth_map_info*) realloc(mi->eth, sizeof(*eth_info) * (eth + 1));
 		if (eth_info == NULL) {
 			goto err_alloc;
 		}
@@ -289,7 +289,7 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 	}
 
 	if (ifc == 0) {
-		info = realloc(mi->ifc, sizeof(*info) * (ifc + 1));
+		info = (struct nc_ifc_info*) realloc(mi->ifc, sizeof(*info) * (ifc + 1));
 		if (info == NULL) {
 			goto err_alloc;
 		}
@@ -320,7 +320,7 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 	mi->rxq_cnt = ndp_get_rx_queue_count(nfb);
 	mi->txq_cnt = ndp_get_tx_queue_count(nfb);
 
-	mi->rxq = malloc(sizeof(*mi->rxq) * (mi->rxq_cnt + mi->txq_cnt));
+	mi->rxq = (struct nc_ifc_queue_map_info*) malloc(sizeof(*mi->rxq) * (mi->rxq_cnt + mi->txq_cnt));
 	if (mi->rxq == NULL) {
 		goto err_alloc;
 	}

@@ -80,4 +80,8 @@ static inline int ieee802_3_get_pcs_speed_value(struct mdio_if_info *if_info)
 	}
 }
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif /* NETCOPE_IEEE802_3_H */
