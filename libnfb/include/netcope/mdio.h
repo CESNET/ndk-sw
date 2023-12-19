@@ -293,7 +293,7 @@ static inline struct nc_mdio *nc_mdio_open(const struct nfb_device *dev, int fdt
 	int e_tile = 0;
 	int f_tile = 0;
 
-	prop = fdt_getprop(nfb_get_fdt(dev), fdt_offset_ctrlparam, "ip-name", &proplen);
+	prop = (const char*) fdt_getprop(nfb_get_fdt(dev), fdt_offset_ctrlparam, "ip-name", &proplen);
 	if (proplen > 0) {
 		if (strcmp(prop, "E_TILE") == 0) {
 			e_tile = 1;

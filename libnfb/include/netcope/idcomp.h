@@ -63,7 +63,7 @@ static inline void nc_idcomp_repeater_set(struct nfb_device *dev, unsigned index
 
 	node = nfb_comp_find(dev, COMP_NETCOPE_ETH, index);
 	if (node >= 0) {
-		prop32 = fdt_getprop(nfb_get_fdt(dev), node, "repeater-reg-index", &len);
+		prop32 = (const fdt32_t*) fdt_getprop(nfb_get_fdt(dev), node, "repeater-reg-index", &len);
 		if (len == sizeof(*prop32))
 			index = fdt32_to_cpu(*prop32);
 	}
@@ -92,7 +92,7 @@ static inline enum nc_idcomp_repeater nc_idcomp_repeater_get(struct nfb_device *
 
 	node = nfb_comp_find(dev, COMP_NETCOPE_ETH, index);
 	if (node >= 0) {
-		prop32 = fdt_getprop(nfb_get_fdt(dev), node, "repeater-reg-index", &len);
+		prop32 = (const fdt32_t*) fdt_getprop(nfb_get_fdt(dev), node, "repeater-reg-index", &len);
 		if (len == sizeof(*prop32))
 			index = fdt32_to_cpu(*prop32);
 	}
@@ -105,7 +105,7 @@ static inline enum nc_idcomp_repeater nc_idcomp_repeater_get(struct nfb_device *
 
 	nfb_comp_close(comp);
 
-	return (reg >> (index * 2)) & 3;
+	return (enum nc_idcomp_repeater) ((reg >> (index * 2)) & 3);
 }
 
 #ifdef __cplusplus

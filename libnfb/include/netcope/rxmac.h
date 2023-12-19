@@ -218,13 +218,13 @@ static inline struct nc_rxmac *nc_rxmac_open(struct nfb_device *dev, int fdt_off
 
 	mac = (struct nc_rxmac *) nfb_comp_to_user(comp);
 
-	prop = fdt_getprop(nfb_get_fdt(dev), fdt_offset, "version", &proplen);
+	prop = (const fdt32_t*) fdt_getprop(nfb_get_fdt(dev), fdt_offset, "version", &proplen);
 	if (proplen == sizeof(*prop))
 		version = fdt32_to_cpu(*prop);
 
 	mac->has_counter_below_64 = version >= 0x00000002;
 
-	prop = fdt_getprop(nfb_get_fdt(dev), fdt_offset, "mtu", &proplen);
+	prop = (const fdt32_t*) fdt_getprop(nfb_get_fdt(dev), fdt_offset, "mtu", &proplen);
 
 	if (proplen == sizeof(*prop))
 		mac->mtu = fdt32_to_cpu(*prop);
@@ -282,7 +282,7 @@ static inline int nc_rxmac_read_status(struct nc_rxmac *mac, struct nc_rxmac_sta
 
 	s->enabled          = nfb_comp_read32(comp, RXMAC_REG_ENABLE);
 	s->error_mask       = nfb_comp_read32(comp, RXMAC_REG_ERROR_MASK);
-	s->mac_filter       = nfb_comp_read32(comp, RXMAC_REG_MAC_FILTER);
+	s->mac_filter       = (enum nc_rxmac_mac_filter) nfb_comp_read32(comp, RXMAC_REG_MAC_FILTER);
 	s->frame_length_min = nfb_comp_read32(comp, RXMAC_REG_FRAME_LEN_MIN);
 	s->frame_length_max = nfb_comp_read32(comp, RXMAC_REG_FRAME_LEN_MAX);
 
@@ -295,7 +295,7 @@ static inline int nc_rxmac_read_status(struct nc_rxmac *mac, struct nc_rxmac_sta
 
 	s->frame_length_max_capable = mac->mtu;
 
-	s->speed = (reg >> 4) & 0x7;
+	s->speed = (enum nc_mac_speed) ((reg >> 4) & 0x7);
 	switch (s->speed) {
 		case MAC_SPEED_10G:
 		case MAC_SPEED_40G:
