@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>nfb-eth &mdash; NFB Software User Guide 6.16.0 documentation</title>
-      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -56,7 +58,7 @@
 <li class="toctree-l2"><a class="reference internal" href="nfb-boot.html">nfb-boot</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">nfb-eth</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#mac-section">MAC section</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#pma-section">PMA section</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pma-pcs-section">PMA/PCS section</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#transceiver-section">Transceiver section</a></li>
 </ul>
 </li>
@@ -124,20 +126,21 @@ This is necessary especially for TX as the DMA/application core typically get st
 <p>The tool can configure the maximum and minimum allowed packet length (<strong>-L</strong> and <strong>-l</strong> arguments)
 and MAC address based filtration (<strong>-M</strong>: <em>add</em>, <em>remove</em>, <em>show</em>, <em>clear, *fill</em> commands operates on MAC address table, <em>normal</em> (unicast), <em>broadcast</em>, <em>multicast</em>, and <em>promiscuous</em> sets the required mode).</p>
 </section>
-<section id="pma-section">
-<h2>PMA section<a class="headerlink" href="#pma-section" title="Link to this heading"></a></h2>
+<section id="pma-pcs-section">
+<h2>PMA/PCS section<a class="headerlink" href="#pma-pcs-section" title="Link to this heading"></a></h2>
 <p>The <strong>-P</strong> argument is intended to configure Ethernet modes.
-If no command is entered, PCS/PMA status is printed, including PMA type, speed and link status.</p>
+If no command is entered, PMA and PCS status is printed, including PMA type, speed and link status.</p>
 <p>Currently used PMA type can be configured with <strong>-c</strong> argument whereas the exact PMA identification string must be entered.
 List of PMA types can vary with used firmware/hardware and can be obtained in verbose output (<strong>-v</strong> argument),
-together with list of PMA features.</p>
-<p>The PMA features that can be activated with <strong>-c</strong> argument as well.
+together with list of PMA and PCS features.</p>
+<p>The PMA/PCS features that can be activated with <strong>-c</strong> argument as well.
 However the feature can be activated and deactivated with <em>+</em> or <em>-</em> prefixes of its name.</p>
 <p>For example:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">nfb-eth</span> <span class="pre">-Pv</span></code> prints all supported PMA types/modes and features,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">nfb-eth</span> <span class="pre">-Pc</span> <span class="pre">100GBASE-LR4</span></code> sets the PMA to 100GBASE-LR4 type,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">nfb-eth</span> <span class="pre">-Pc</span> <span class="pre">&quot;+PMA</span> <span class="pre">local</span> <span class="pre">loopback&quot;</span></code> enables local loopback feature on all PMAs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nfb-eth</span> <span class="pre">-Pc</span> <span class="pre">-i</span> <span class="pre">0</span> <span class="pre">&quot;+PCS</span> <span class="pre">reverse</span> <span class="pre">loopback&quot;</span></code> enables remote loopback feature on the first PCS.</p></li>
 </ul>
 </section>
 <section id="transceiver-section">
