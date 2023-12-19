@@ -1,3 +1,8 @@
+* Tue Dec 19 2023 Martin Spinler <spinler@cesnet.cz> - 6.20.1-1
+- [BUGFIX] fixes pynfb circular reference in Nfb class
+- [BUGFIX] fixes E-Tile RX EQ adaptation on return from loopback  
+- [BUGFIX] convert types explicitly for c++ build without -fpermissive
+
 * Tue Nov 14 2023 Martin Spinler <spinler@cesnet.cz> - 6.20.0-1
 - [FEATURE] base support for DMA Calypte controllers
 - [BUGFIX] fixes E-Tile loopback operation
