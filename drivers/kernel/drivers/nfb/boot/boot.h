@@ -24,12 +24,14 @@
 
 #include "sdm.h"
 #include "nfb-pmci.h"
+#include "nfb-spi.h"
 
 struct nfb_boot {
 	struct nfb_comp *comp;
 	struct spi_device *spi;
 	struct nfb_device *nfb;
 	struct pmci_device *pmci;
+	struct m10bmc_spi_nfb_device *m10bmc_spi;
 
 	int num_image;
 

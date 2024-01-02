@@ -179,6 +179,9 @@ int nfb_boot_reload(void *arg)
 	if (boot->pmci) {
 		boot->pmci->image_load[boot->num_image].load_image(boot->pmci->sec);
 		reload_time_ms = 5000;
+	} else if (boot->m10bmc_spi) {
+		boot->m10bmc_spi->image_load[boot->num_image].load_image(boot->m10bmc_spi->sec);
+		reload_time_ms = 5000;
 	} else if (boot->sdm && boot->sdm_boot_en) {
 		sdm_rsu_image_update(boot->sdm, boot->num_image);
 	} else if (boot->comp) {

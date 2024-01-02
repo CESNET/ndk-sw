@@ -423,17 +423,23 @@ int nfb_pmci_init()
 	if (ret)
 		goto err_log;
 
-	ret = platform_driver_register(&nfb_intel_m10bmc_sec_driver);
-	if (ret)
-		goto err_sec;
+	if (driver_find(nfb_intel_m10bmc_sec_driver.driver.name, &platform_bus_type) == NULL) {
+		ret = platform_driver_register(&nfb_intel_m10bmc_sec_driver);
+		if (ret)
+			goto err_sec;
+	}
 
-	ret = platform_driver_register(&nfb_intel_m10bmc_hwmon_driver);
-	if (ret)
-		goto err_hwmon;
+	if (driver_find(nfb_intel_m10bmc_hwmon_driver.driver.name, &platform_bus_type) == NULL) {
+		ret = platform_driver_register(&nfb_intel_m10bmc_hwmon_driver);
+		if (ret)
+			goto err_hwmon;
+	}
 
-	ret = platform_driver_register(&nfb_intel_m10bmc);
-	if (ret)
-		goto err_pdr;
+	if (driver_find(nfb_intel_m10bmc.driver.name, &platform_bus_type) == NULL) {
+		ret = platform_driver_register(&nfb_intel_m10bmc);
+		if (ret)
+			goto err_pdr;
+	}
 
 	return 0;
 
