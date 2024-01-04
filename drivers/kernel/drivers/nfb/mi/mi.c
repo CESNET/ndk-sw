@@ -89,8 +89,10 @@ int nfb_mi_attach_bus(struct nfb_device *nfb, void *priv, int node_offset)
 	struct nfb_pci_device *pci_device;
 
 	int pci_index, bar;
+	uint32_t is_wc_mapped = 0;
 
 	const void *prop;
+	int proplen;
 	char nodename[16];
 
 	prop = fdt_getprop(nfb->fdt, node_offset, "resource", NULL);
@@ -100,6 +102,9 @@ int nfb_mi_attach_bus(struct nfb_device *nfb, void *priv, int node_offset)
 	ret = sscanf(prop, "PCI%d,BAR%d", &pci_index, &bar);
 	if (ret != 2)
 		return -EINVAL;
+
+	prop = fdt_getprop(nfb->fdt, node_offset, "map-as-wc", &proplen);
+	is_wc_mapped = prop && proplen == 0;
 
 	/* Find corresponding PCI device in list */
 	ret = -ENODEV;
@@ -134,12 +139,18 @@ int nfb_mi_attach_bus(struct nfb_device *nfb, void *priv, int node_offset)
 	/* Map PCI memory region */
 	mi_node->mem_phys = pci_resource_start(pci_device->pci, mi_node->bar);
 	mi_node->mem_len = pci_resource_len(pci_device->pci, mi_node->bar);
+
 	if (request_mem_region(mi_node->mem_phys, mi_node->mem_len, "nfb") == NULL) {
 		dev_err(&nfb->pci->dev, "unable to grab memory region 0x%llx-0x%llx\n",
 			(u64)mi_node->mem_phys, (u64)(mi_node->mem_phys + mi_node->mem_len - 1));
 		goto err_request_mem_region;
 	}
-	mi_node->mem_virt = ioremap(mi_node->mem_phys, mi_node->mem_len);
+
+	if (is_wc_mapped)
+		mi_node->mem_virt = ioremap_wc(mi_node->mem_phys, mi_node->mem_len);
+	else
+		mi_node->mem_virt = ioremap(mi_node->mem_phys, mi_node->mem_len);
+
 	if (mi_node->mem_virt == NULL) {
 		dev_err(&nfb->pci->dev, "unable to remap memory region 0x%llx-0x%llx\n",
 			(u64)mi_node->mem_phys, (u64)(mi_node->mem_phys + mi_node->mem_len - 1));

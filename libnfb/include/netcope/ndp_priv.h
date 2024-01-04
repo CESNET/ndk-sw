@@ -69,9 +69,9 @@ struct nc_ndp_queue {
 			// Used to indicate the number of packets that are
 			// locked in the queue. It also means the number of free
 			// headers.
-			unsigned pkts_available;
-			uint32_t bytes_available;
-			unsigned pkts_to_send;
+			uint32_t pkts_available;
+			uint32_t pkts_to_send;
+			uint64_t bytes_available;
 
 			uint32_t sdp;
 			uint32_t shp;
@@ -82,6 +82,18 @@ struct nc_ndp_queue {
 			struct ndp_packet *packets;
 			// Buffer for headers
 			struct ndp_v3_packethdr *hdrs;
+#ifndef __KERNEL__
+			struct ndp_v3_packethdr *uspace_hdrs;
+			struct nfb_comp *comp;
+			uint32_t uspace_shp;
+			uint32_t uspace_hhp;
+			uint32_t uspace_sdp;
+			uint32_t uspace_hdp;
+			uint32_t uspace_mhp;
+			uint32_t uspace_mdp;
+			uint32_t uspace_free;
+			uint32_t uspace_acc;
+#endif
 		} v3;
 	} u;
 
@@ -97,6 +109,7 @@ struct nc_ndp_queue {
 
 	/* Control path */
 	struct ndp_queue *q;
+	struct nfb_device *dev;
 	uint32_t protocol;
 	uint32_t flags;
 

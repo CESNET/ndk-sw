@@ -319,10 +319,20 @@ static uint64_t ndp_ctrl_rx_get_hwptr(struct ndp_channel *channel)
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 
 	hhp = ctrl->c.hhp;
-	nc_ndp_ctrl_hhp_update(&ctrl->c);
 
-	if (ctrl->c.type == DMA_TYPE_CALYPTE)
+	if (ctrl->c.type == DMA_TYPE_CALYPTE) {
+		struct nc_calypte_hdr *hdr_base;
+		uint32_t hwptr = ctrl->c.hhp;
+		do {
+			hdr_base = ctrl->ts.calypte.hdr_buffer + hwptr;
+			if (hdr_base->valid == 0)
+				break;
+			hwptr++;
+		} while (hwptr < ctrl->hdr_buffer_size * 2);
+		ctrl->c.hhp = hwptr & channel->ptrmask;
 		return ctrl->c.hhp;
+	}
+	nc_ndp_ctrl_hhp_update(&ctrl->c);
 
 	hhp_new = ctrl->c.hhp;
 	count = (hhp_new - hhp) & ctrl->c.mhp;
@@ -514,7 +524,20 @@ static uint64_t ndp_ctrl_get_flags(struct ndp_channel *channel)
 
 static uint64_t ndp_ctrl_set_flags(struct ndp_channel *channel, uint64_t flags)
 {
-	return ndp_ctrl_get_flags(channel);
+	uint64_t ret;
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+	ret = ndp_ctrl_get_flags(channel);
+
+	if (ctrl->c.type == DMA_TYPE_CALYPTE) {
+		if (flags & NDP_CHANNEL_FLAG_USERSPACE) {
+			ret |= NDP_CHANNEL_FLAG_USERSPACE;
+			ctrl->flags |= NDP_CHANNEL_FLAG_USERSPACE;
+		} else {
+			ctrl->flags &= ~NDP_CHANNEL_FLAG_USERSPACE;
+		}
+	}
+
+	return ret;
 }
 
 static int ndp_ctrl_start(struct ndp_ctrl *ctrl, struct nc_ndp_ctrl_start_params *sp)
@@ -602,6 +625,7 @@ static int ndp_ctrl_calypte_start(struct ndp_channel *channel, uint64_t *hwptr)
 	struct nc_ndp_ctrl_start_params sp;
 
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+	struct nc_calypte_hdr *hdr_base;
 
 	// Only one block is used, therefore the physical address of the first one in "blocks"
 	// list is used.
@@ -611,6 +635,11 @@ static int ndp_ctrl_calypte_start(struct ndp_channel *channel, uint64_t *hwptr)
 	sp.nb_hdr = ctrl->hdr_count;
 
 	ctrl->ts.calypte.hdr_buffer = ctrl->hdr_buffer_v;
+
+	for (ret = 0; ret < ctrl->hdr_count; ret++) {
+		hdr_base = ctrl->ts.calypte.hdr_buffer + ret;
+		hdr_base->valid = 0;
+	}
 
 	ret = ndp_ctrl_start(ctrl, &sp);
 	if (ret)
@@ -627,6 +656,13 @@ static int ndp_ctrl_stop(struct ndp_channel *channel, int force)
 	int ret;
 	int cnt = 0;
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	if (ctrl->c.type == DMA_TYPE_CALYPTE && ctrl->c.dir != 0 && ctrl->flags & NDP_CHANNEL_FLAG_USERSPACE) {
+		nc_ndp_ctrl_hp_update(&ctrl->c);
+		ctrl->c.sdp = ctrl->c.hdp;
+		ctrl->c.shp = ctrl->c.hhp;
+		nc_ndp_ctrl_sp_flush(&ctrl->c);
+	}
 
 	while (cnt < 10 || (!ndp_kill_signal_pending(current) && !force)) {
 		ret = nc_ndp_ctrl_stop(&ctrl->c);
@@ -648,6 +684,9 @@ static int ndp_ctrl_stop(struct ndp_channel *channel, int force)
 			"This may be due to firmware error.\n",
 			dev_name(&channel->dev), cnt * 10);
 	}
+
+	ctrl->flags &= ~NDP_CHANNEL_FLAG_USERSPACE;
+
 	return 0;
 }
 

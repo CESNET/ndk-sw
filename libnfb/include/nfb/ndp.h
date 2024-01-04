@@ -93,6 +93,7 @@ enum ndp_print_option {
  */
 typedef int ndp_open_flags_t;
 #define NDP_OPEN_FLAG_NO_BUFFER (1 <<  0) /*!< Open queue (RX or TX) in NO_BUFFER mode where packet data space is supplied by the user and not by the driver */
+#define NDP_OPEN_FLAG_USERSPACE (1 <<  1)
 
 /* ~~~~[ PROTOTYPES ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 

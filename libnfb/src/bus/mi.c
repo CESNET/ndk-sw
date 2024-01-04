@@ -16,8 +16,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <libfdt.h>
+
+#include <emmintrin.h>
+#include <immintrin.h>
 
 #include "../nfb.h"
 
@@ -26,6 +30,7 @@ struct nfb_bus_mi_priv
 	size_t mmap_size;
 	off_t mmap_offset;
 	void * space;
+	bool is_wc_mapped;
 };
 
 /*
@@ -34,84 +39,125 @@ struct nfb_bus_mi_priv
  * Here is a workaround for these issues
  */
 
-static inline void nfb_bus_mi_memcopy(void *dst, const void *src, size_t nbyte, size_t offset)
+#define _NFB_BUS_MI_MEMCPY_CYCLE_ITER(nbyte, size, src, dst, mtype, wc_used, wc_instr) \
+do {							\
+	if (nbyte == (size)) {				\
+		if (wc_instr)				\
+			wc_used = true;			\
+		return wc_used;				\
+	}						\
+	(src) = (const mtype *) (src) + 1; 		\
+	(dst) = (mtype *) (dst) + 1; 			\
+	nbyte -= size;					\
+} while (0)
+
+#define _NFB_BUS_MI_MEMCPY_CYCLE_LS(nbyte, size, src, dst, mtype, load, store, wc_used, wc_instr) \
+do {							\
+	mtype tmp;					\
+	while (nbyte >= (size)) {			\
+		tmp = load(src);			\
+		store(dst, tmp);			\
+		_NFB_BUS_MI_MEMCPY_CYCLE_ITER(nbyte, size, src, dst, mtype, wc_used, wc_instr);	\
+	}						\
+} while (0)
+
+#define _NFB_BUS_MI_MEMCPY_CYCLE_ST(nbyte, size, src, dst, mtype, stream, wc_used, wc_instr) \
+do {							\
+	while (nbyte >= (size)) {			\
+		stream(dst, *(const mtype *) src);	\
+		_NFB_BUS_MI_MEMCPY_CYCLE_ITER(nbyte, size, src, dst, mtype, wc_used, wc_instr);	\
+	}						\
+} while (0)
+
+#define _NFB_BUS_MI_MEMCPY_CYCLE_AS(nbyte, size, src, dst, mtype, wc_used, wc_instr) \
+do {							\
+	while (nbyte >= (size)) {			\
+		*(mtype *) dst = *(const mtype *) src;	\
+		_NFB_BUS_MI_MEMCPY_CYCLE_ITER(nbyte, size, src, dst, mtype, wc_used, wc_instr);	\
+	}						\
+} while (0)
+
+
+static inline bool nfb_bus_mi_memcopy(void *dst, const void *src, size_t nbyte, size_t offset)
 {
+	bool wc_used = false;
+
 	if (nbyte == 4) {
 		*(uint32_t *) dst = *(const uint32_t *) src;
-		return;
+		return false;
 	} else if (nbyte == 8) {
 		*(uint64_t *) dst = *(const uint64_t *) src;
-		return;
+		return false;
 	}
 
+	/* The offset variable is just for alignment check. The dst variable is alredy offseted. */
 	/* Align access on 4/8B boundary first */
 	if (offset & 0x03) {
 		if (offset & 0x01 && nbyte >= 1) {
 			*(uint8_t *) dst = *(const uint8_t *) src;
-			if (nbyte == 1)
-				return;
-			src = ((const uint8_t *) src + 1);
-			dst = ((uint8_t *) dst + 1);
-			nbyte -= 1;
+			_NFB_BUS_MI_MEMCPY_CYCLE_ITER(nbyte, 1, src, dst, uint8_t, wc_used, false);
 			offset += 1;
 		}
 		if (offset & 0x02 && nbyte >= 2) {
 			*(uint16_t *) dst = *(const uint16_t *) src;
-			if (nbyte == 2)
-				return;
-			src = ((const uint16_t *) src + 1);
-			dst = ((uint16_t *) dst + 1);
-			nbyte -= 2;
+			_NFB_BUS_MI_MEMCPY_CYCLE_ITER(nbyte, 2, src, dst, uint16_t, wc_used, false);
 			offset += 2;
 		}
 	}
-	#ifdef MI_ACCESS_ALIGN32
+
 	if (offset & 0x04 && nbyte >= 4) {
 		*(uint32_t *) dst = *(const uint32_t *) src;
-		if (nbyte == 4)
-			return;
-		src = ((const uint32_t *) src + 1);
-		dst = ((uint32_t *) dst + 1);
-		nbyte -= 4;
+		_NFB_BUS_MI_MEMCPY_CYCLE_ITER(nbyte, 4, src, dst, uint32_t, wc_used, false);
 		offset += 4;
 	}
-	#endif
 
-	/* Loop with 64b accesses */
-	while (nbyte >= 8) {
-		*(uint64_t *) dst = *(const uint64_t *) src;
-		if (nbyte == 8)
-			return;
-		src = ((const uint64_t *) src + 1);
-		dst = ((uint64_t *) dst + 1);
-		nbyte -= 8;
+	bool src256a = ((uintptr_t) src & 0x1F) ? false : true;
+	bool dst256a = ((uintptr_t) dst & 0x1F) ? false : true;
+	bool src128a = ((uintptr_t) src & 0x0F) ? false : true;
+	bool dst128a = ((uintptr_t) dst & 0x0F) ? false : true;
+
+
+	/* The _mm_stream* instructions are using the non-temporal hint.
+	 * The non-temporal hint is implemented by using a write combining (WC) memory type protocol.
+	 * The WC protocol uses a weakly-ordered memory consistency model, fencing operation should be used. */
+
+	if (src256a && dst256a) {
+		_NFB_BUS_MI_MEMCPY_CYCLE_ST(nbyte, 32, src, dst, __m256i, _mm256_stream_si256, wc_used, true);
+	} else if (src256a && !dst256a) {
+		_NFB_BUS_MI_MEMCPY_CYCLE_LS(nbyte, 32, src, dst, __m256i, _mm256_stream_load_si256, _mm256_storeu_si256, wc_used, false);
+	} else if (!src256a && dst256a) {
+		_NFB_BUS_MI_MEMCPY_CYCLE_LS(nbyte, 32, src, dst, __m256i, _mm256_loadu_si256, _mm256_store_si256, wc_used, false);
+	} else {
+		_NFB_BUS_MI_MEMCPY_CYCLE_LS(nbyte, 32, src, dst, __m256i, _mm256_loadu_si256, _mm256_storeu_si256, wc_used, false);
 	}
+
+	if (src128a && dst128a) {
+		_NFB_BUS_MI_MEMCPY_CYCLE_ST(nbyte, 16, src, dst, __m128i, _mm_stream_si128, wc_used, true);
+	} else if (src128a && !dst128a) {
+		_NFB_BUS_MI_MEMCPY_CYCLE_LS(nbyte, 16, src, dst, __m128i, _mm_load_si128, _mm_storeu_si128, wc_used, false);
+	} else if (!src128a && dst128a) {
+		_NFB_BUS_MI_MEMCPY_CYCLE_LS(nbyte, 16, src, dst, __m128i, _mm_loadu_si128, _mm_stream_si128, wc_used, false);
+	} else {
+		_NFB_BUS_MI_MEMCPY_CYCLE_LS(nbyte, 16, src, dst, __m128i, _mm_loadu_si128, _mm_storeu_si128, wc_used, false);
+	}
+
+	_NFB_BUS_MI_MEMCPY_CYCLE_AS(nbyte, 8, src, dst, uint64_t, wc_used, false);
 
 	/* Access the remaining bytes */
 	if (nbyte >= 4) {
 		*(uint32_t *) dst = *(const uint32_t *) src;
-		if (nbyte == 4)
-			return;
-		src = ((const uint32_t *) src + 1);
-		dst = ((uint32_t *) dst + 1);
-		nbyte -= 4;
+		_NFB_BUS_MI_MEMCPY_CYCLE_ITER(nbyte, 4, src, dst, uint32_t, wc_used, false);
 	}
 	if (nbyte >= 2) {
 		*(uint16_t *) dst = *(const uint16_t *) src;
-		if (nbyte == 2)
-			return;
-		src = ((const uint16_t *) src + 1);
-		dst = ((uint16_t *) dst + 1);
-		nbyte -= 2;
+		_NFB_BUS_MI_MEMCPY_CYCLE_ITER(nbyte, 2, src, dst, uint16_t, wc_used, false);
 	}
 	if (nbyte >= 1) {
 		*(uint8_t *) dst = *(const uint8_t *) src;
-		if (nbyte == 1)
-			return;
-		src = ((const uint8_t *) src + 1);
-		dst = ((uint8_t *) dst + 1);
-		nbyte -= 1;
+		_NFB_BUS_MI_MEMCPY_CYCLE_ITER(nbyte, 1, src, dst, uint8_t, wc_used, false);
 	}
+
+	return wc_used;
 }
 
 ssize_t nfb_bus_mi_read(void *bus_priv, void *buf, size_t nbyte, off_t offset)
@@ -123,8 +169,12 @@ ssize_t nfb_bus_mi_read(void *bus_priv, void *buf, size_t nbyte, off_t offset)
 
 ssize_t nfb_bus_mi_write(void *bus_priv, const void *buf, size_t nbyte, off_t offset)
 {
+	bool do_fence;
 	struct nfb_bus_mi_priv *bus = bus_priv;
-	nfb_bus_mi_memcopy((uint8_t*) bus->space + offset, buf, nbyte, offset);
+	do_fence = nfb_bus_mi_memcopy((uint8_t*) bus->space + offset, buf, nbyte, offset);
+
+	if (bus->is_wc_mapped || do_fence)
+		_mm_mfence();
 	return nbyte;
 }
 
@@ -158,6 +208,9 @@ int nfb_bus_open_mi(void *dev_priv, int bus_node, int comp_node, void **bus_priv
 	if (bus == NULL) {
 		goto err_priv_alloc;
 	}
+
+	prop = fdt_getprop(fdt, bus_node, "map-as-wc", &proplen);
+	bus->is_wc_mapped = prop && proplen == 0;
 
 	/* Find MI driver node in FDT */
 	fdt_offset = fdt_path_offset(fdt, path);

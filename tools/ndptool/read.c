@@ -75,7 +75,7 @@ static int ndp_mode_read_prepare(struct ndp_tool_params *p)
 		goto err_nfb_open;
 	}
 
-	p->rx = ndp_open_rx_queue(p->dev, p->queue_index);
+	p->rx = ndp_open_rx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
 	if (p->rx == NULL) {
 		warnx("ndp_open_rx_queue(%d) failed.", p->queue_index);
 		goto err_ndp_open_rx;
@@ -140,7 +140,8 @@ static int ndp_mode_read_loop(struct ndp_tool_params *p)
 		update_stats(packets, cnt, si);
 
 		if (cnt == 0) {
-			delay_nsecs(1);
+			if (p->use_delay_nsec)
+				delay_nsecs(1);
 			continue;
 		}
 		ndp_rx_burst_put(rx);

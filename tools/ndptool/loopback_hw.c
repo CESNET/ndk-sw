@@ -122,13 +122,13 @@ static int ndp_mode_loopback_hw_prepare(struct ndp_tool_params *p)
 		goto err_nfb_open;
 	}
 
-	p->rx = ndp_open_rx_queue(p->dev, p->queue_index);
+	p->rx = ndp_open_rx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
 	if (p->rx == NULL) {
 		warnx("ndp_open_rx_queue(%d) failed.", p->queue_index);
 		goto err_ndp_open_rx;
 	}
 
-	p->tx = ndp_open_tx_queue(p->dev, p->queue_index);
+	p->tx = ndp_open_tx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
 	if (p->tx == NULL) {
 		warnx("ndp_open_tx_queue(%d) failed.", p->queue_index);
 		goto err_ndp_open_tx;
@@ -392,7 +392,8 @@ static int ndp_mode_loopback_hw_loop(struct ndp_tool_params *p)
 					return ret;
 				if (0 && p->queue_index==0)
 					printf("TX stall\n");
-				delay_nsecs(1);
+				if (p->use_delay_nsec)
+					delay_nsecs(1);
 				cnt = ndp_tx_burst_get(tx,packets,tx_burst_size);
 			}
 
