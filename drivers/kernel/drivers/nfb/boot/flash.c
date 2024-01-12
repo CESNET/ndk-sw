@@ -35,8 +35,6 @@
 
 #include "sdm.h"
 
-#define QSPI_OVERRIDE_COMMANDS
-
 inline uint16_t nfb_boot_flash_read16(struct nfb_boot *boot)
 {
 	int i = 0;
@@ -341,13 +339,13 @@ static ssize_t axi_qspi_transfer(struct spi_nor *nor, uint8_t opcode, loff_t add
 		memcpy(tx + 1 + addr_width, tx_buf, len);
 	memset(rx, 0, t.len);
 
-#ifdef QSPI_OVERRIDE_COMMANDS
-	ret = xilinx_spi_txrx_bufs_continuous(boot->spi, &t);
-#else
-	xilinx_spi_chipselect(boot->spi, 1);
-	ret = xilinx_spi_txrx_bufs(boot->spi, &t);
-	xilinx_spi_chipselect(boot->spi, 0);
-#endif
+	if (1 || NFB_IS_TIVOLI(boot->nfb)) {
+		ret = xilinx_spi_txrx_bufs_continuous(boot->spi, &t);
+	} else {
+		xilinx_spi_chipselect(boot->spi, 1);
+		ret = xilinx_spi_txrx_bufs(boot->spi, &t);
+		xilinx_spi_chipselect(boot->spi, 0);
+	}
 
 	if (rx_buf)
 		memcpy(rx_buf, rx + 1 + addr_width + rx_dummy, len);
@@ -364,11 +362,14 @@ static int axi_qspi_read_reg(struct spi_nor *nor, u8 opcode, u8 *buf, int len)
 
 static int axi_qspi_write_reg(struct spi_nor *nor, u8 opcode, u8 *buf, int len)
 {
-#ifdef QSPI_OVERRIDE_COMMANDS
-	if (opcode == SPINOR_OP_EN4B) {
-		return 0;
+	struct nfb_boot *boot = (struct nfb_boot *)nor->priv;
+
+	if (NFB_IS_TIVOLI(boot->nfb)) {
+		if (opcode == SPINOR_OP_EN4B) {
+			return 0;
+		}
 	}
-#endif
+
 	axi_qspi_transfer(nor, opcode, 0, 0, 0, len, NULL, buf);
 	return 0;
 }
@@ -379,16 +380,19 @@ static ssize_t axi_qspi_read(struct spi_nor *nor, loff_t from, size_t len, u_cha
 	ssize_t ret;
 	int addr_width = nor->addr_width;
 	int read_dummy = nor->read_dummy;
-#ifdef QSPI_OVERRIDE_COMMANDS
-	uint8_t segment = from / (16*1024*1024);
-	addr_width = 3;
-	read_dummy = 4;
-	axi_qspi_write_reg(nor, SPINOR_OP_WREN, 0, 0);
-	axi_qspi_write_reg(nor, SPINOR_OP_WREAR, (uint8_t*)&segment, 1);
-	ret = axi_qspi_transfer(nor, SPINOR_OP_READ_1_1_4, from, addr_width, read_dummy, len, buf, NULL);
-#else
-	ret = axi_qspi_transfer(nor, nor->read_opcode, from, nor->addr_width, nor->read_dummy, len, buf, NULL);
-#endif
+
+	struct nfb_boot *boot = (struct nfb_boot *)nor->priv;
+
+	if (NFB_IS_TIVOLI(boot->nfb)) {
+		uint8_t segment = from / (16*1024*1024);
+		addr_width = 3;
+		read_dummy = 4;
+		axi_qspi_write_reg(nor, SPINOR_OP_WREN, 0, 0);
+		axi_qspi_write_reg(nor, SPINOR_OP_WREAR, (uint8_t*)&segment, 1);
+		ret = axi_qspi_transfer(nor, SPINOR_OP_READ_1_1_4, from, addr_width, read_dummy, len, buf, NULL);
+	} else {
+		ret = axi_qspi_transfer(nor, nor->read_opcode, from, nor->addr_width, nor->read_dummy, len, buf, NULL);
+	}
 	if (ret <= 0)
 		return ret;
 
@@ -399,33 +403,38 @@ static ssize_t axi_qspi_write(struct spi_nor *nor, loff_t to, size_t len, const 
 {
 	ssize_t ret;
 	int addr_width = nor->addr_width;
-#ifdef QSPI_OVERRIDE_COMMANDS
-	uint8_t segment = to / (16 * 1024 * 1024);
-	addr_width = 3;
-	axi_qspi_write_reg(nor, SPINOR_OP_WREAR, (uint8_t*)&segment, 1);
-	axi_qspi_write_reg(nor, SPINOR_OP_WREN, 0, 0);
-	ret = axi_qspi_transfer(nor, SPINOR_OP_PP_1_1_4, to, 3, 0, len, NULL, buf);
-#else
-	ret = axi_qspi_transfer(nor, nor->program_opcode, to, addr_width, 0, len, NULL, buf);
-#endif
+
+	struct nfb_boot *boot = (struct nfb_boot *)nor->priv;
+
+	if (NFB_IS_TIVOLI(boot->nfb)) {
+		uint8_t segment = to / (16 * 1024 * 1024);
+		addr_width = 3;
+		axi_qspi_write_reg(nor, SPINOR_OP_WREAR, (uint8_t*)&segment, 1);
+		axi_qspi_write_reg(nor, SPINOR_OP_WREN, 0, 0);
+		ret = axi_qspi_transfer(nor, SPINOR_OP_PP_1_1_4, to, 3, 0, len, NULL, buf);
+	} else {
+		ret = axi_qspi_transfer(nor, nor->program_opcode, to, addr_width, 0, len, NULL, buf);
+	}
 	if (ret <= 0)
 		return ret;
 	return max_t(ssize_t, 0, ret - 1 - addr_width);
 }
 
-#ifdef QSPI_OVERRIDE_COMMANDS
 static int axi_qspi_erase(struct spi_nor *nor, loff_t off)
 {
 	int addr_width = nor->addr_width;
-	uint8_t segment = off / (16*1024*1024);
-	addr_width = 3;
-	axi_qspi_write_reg(nor, SPINOR_OP_WREN, 0, 0);
-	axi_qspi_write_reg(nor, SPINOR_OP_WREAR, (uint8_t*)&segment, 1);
+	struct nfb_boot *boot = (struct nfb_boot *)nor->priv;
+
+	if (NFB_IS_TIVOLI(boot->nfb)) {
+		uint8_t segment = off / (16*1024*1024);
+		addr_width = 3;
+		axi_qspi_write_reg(nor, SPINOR_OP_WREN, 0, 0);
+		axi_qspi_write_reg(nor, SPINOR_OP_WREAR, (uint8_t*)&segment, 1);
+	}
 	axi_qspi_write_reg(nor, SPINOR_OP_WREN, 0, 0);
 	axi_qspi_transfer(nor, SPINOR_OP_SE, off, addr_width, 0, 0, 0, 0);
 	return 0;
 }
-#endif
 
 int nfb_boot_mtd_init(struct nfb_boot *nfb_boot)
 {
@@ -479,17 +488,20 @@ int nfb_boot_mtd_init(struct nfb_boot *nfb_boot)
 				nor->erase = sdm_qspi_erase;
 				nor->mtd.name = "sdm_qspi_nor";
 			} else {
+				nor->mtd.name = "axi_qspi_nor";
+
 				nor->read = axi_qspi_read;
 				nor->read_reg = axi_qspi_read_reg;
 				nor->write = axi_qspi_write;
 				nor->write_reg = axi_qspi_write_reg;
-#ifdef QSPI_OVERRIDE_COMMANDS
-				nor->erase = axi_qspi_erase;
-#endif
 
-				nor->mtd.name = "axi_qspi_nor";
+				if (NFB_IS_TIVOLI(nfb_boot->nfb)) {
+					nor->erase = axi_qspi_erase;
 
-				/* Workaround for HW bug? Dummy read */
+					/* Workaround for HW bug? Dummy read */
+					axi_qspi_read_reg(nor, SPINOR_OP_RDFSR, (uint8_t*)&ret, 1);
+				}
+
 				axi_qspi_read_reg(nor, SPINOR_OP_RDFSR, (uint8_t*)&ret, 1);
 			}
 
