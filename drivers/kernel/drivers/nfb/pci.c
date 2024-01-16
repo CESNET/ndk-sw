@@ -310,6 +310,23 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 			n6010_binary_slot_prepare(fdt, subnode, "\x00\x00\x01\x00", "\xff\xff\xff\xff", 4);
 			subnode = nfb_fdt_create_binary_slot(fdt, node, "image0", "fpga_user1",   0, 3, -1, 0, 0);
 			n6010_binary_slot_prepare(fdt, subnode, "\x00\x00\x00\x00", "\xff\xff\xff\xff", 4);
+		} else if (!strcmp(card_name, "ALVEO_U200") || !strcmp(card_name, "ALVEO_U250") || !strcmp(card_name, "ALVEO_U55C")) {
+			prop32 = cpu_to_fdt32(1);
+			fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
+			prop32 = cpu_to_fdt32(128 * 1024 * 1024);
+			fdt_appendprop(fdt, node, "mtd_size", &prop32, sizeof(prop32));
+
+			nfb_fdt_create_binary_slot(fdt, node, "image0", "application0" , 0, 0, 0, 0x01002000, 0x04000000);
+
+			nfb_fdt_create_boot_type(fdt, node, "SPI", 4);
+		} else if (!strcmp(card_name, "ALVEO_UL3524")) {
+			prop32 = cpu_to_fdt32(1);
+			fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
+			prop32 = cpu_to_fdt32(256 * 1024 * 1024);
+			fdt_appendprop(fdt, node, "mtd_size", &prop32, sizeof(prop32));
+			nfb_fdt_create_binary_slot(fdt, node, "image0", "application0" , 0, 0, 0, 0x01002000, 0x04000000);
+
+			nfb_fdt_create_boot_type(fdt, node, "SPI", 4);
 		}
 	}
 }
