@@ -142,6 +142,20 @@ struct spi_controller *sc;
 void test(void);
 void test(void) {spi_get_chipselect(NULL, 0);}]],[AC_DEFINE([CONFIG_HAVE_SPI_CONTROLLER], [1], [Define if kernel has struct spi_controller]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
+AC_MSG_CHECKING([whether kernel has altera_spi_init_master])
+KERNEL_TRY_COMPILE([[
+#include <linux/spi/altera.h>
+struct spi_controller sc;
+void test(void);
+void test(void) {altera_spi_init_master(&sc);}]],[AC_DEFINE([CONFIG_HAVE_SPI_INIT_MASTER], [1], [Define if kernel has altera_spi_init_master]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
+AC_MSG_CHECKING([whether kernel has altera_spi_init_host])
+KERNEL_TRY_COMPILE([[
+#include <linux/spi/altera.h>
+struct spi_controller sc;
+void test(void);
+void test(void) {altera_spi_init_host(&sc);}]],[AC_DEFINE([CONFIG_HAVE_SPI_INIT_HOST], [1], [Define if kernel has altera_spi_init_host]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
 AC_MSG_CHECKING([whether kernel has simplified eventfd_signal])
 KERNEL_TRY_COMPILE([[
 #include <linux/eventfd.h>

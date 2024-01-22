@@ -13,7 +13,7 @@
  *   Copyright (C) 2020 Intel Corporation, Inc.
  *   Authors:
  *     Matthew Gerlach <matthew.gerlach@linux.intel.com>
- * 
+ *
  * Copyright (C) 2024 BrnoLogic
  * Author(s):
  *   Vlastimil Kosar <kosar@brnologic.com>
@@ -46,7 +46,9 @@
 #include <linux/fpga/nfb-fpga-image-load.h>
 
 #include <linux/spi/spi.h>
-#include <linux/spi/altera.h>
+
+#include "../../spi/altera.h"
+#include "../../base/regmap/regmap.h"
 
 #include "nfb-spi.h"
 
@@ -95,7 +97,7 @@ static int indirect_bus_reg_read(void *context, unsigned int reg,
 		dev_err(ctx->dev, "%s timed out on reg 0x%x with loops %d\n", __func__, reg, loops);
 		return -ETIME;
 	}
-	
+
 	v = nfb_comp_read32(ctx->comp, ctx->offset + INDIRECT_RD_DATA);
 	*val = v & INDIRECT_DATA_MASK;
 
@@ -110,7 +112,7 @@ static int indirect_bus_reg_write(void *context, unsigned int reg,
 
 	nfb_comp_write32(ctx->comp, ctx->offset + INDIRECT_WR_DATA, val);
 	nfb_comp_write32(ctx->comp, ctx->offset + INDIRECT_ADDR, (reg >> 2) | INDIRECT_WR);
-    
+
 	loops = 0;
 	while ((nfb_comp_read32(ctx->comp, ctx->offset + INDIRECT_ADDR) & INDIRECT_WR) &&
 	       (loops++ < INDIRECT_TIMEOUT))
@@ -120,7 +122,7 @@ static int indirect_bus_reg_write(void *context, unsigned int reg,
 		dev_err(ctx->dev, "%s timed out on reg 0x%x with loops %d\n", __func__, reg, loops);
 		return -ETIME;
 	}
-	
+
 	return 0;
 }
 
@@ -197,7 +199,7 @@ int nfb_spi_attach(struct nfb_boot *boot)
 	struct spi_controller *host;
 	struct altera_spi *hw;
 	struct spi_device *spi_dev;
-    
+
 	int fdt_offset;
 	int ret = 0;
 
@@ -229,14 +231,14 @@ int nfb_spi_attach(struct nfb_boot *boot)
 		ret = -ENOMEM;
 		goto err_alloc_master;
 	}
-	
-	
+
+
 	host->bus_num = -1;
 
 	hw = spi_controller_get_devdata(host);
 
 	hw->dev = &m10bmc_spi->pd->dev;
-	
+
 	config_spi_host(m10bmc_spi->comp, 0, host);
 	dev_dbg(&m10bmc_spi->pd->dev, "%s cs %u bpm 0x%x mode 0x%x\n", __func__,
 		host->num_chipselect, host->bits_per_word_mask,
@@ -251,9 +253,11 @@ int nfb_spi_attach(struct nfb_boot *boot)
 	}
 
 	hw->irq = -EINVAL;
-
+#ifdef CONFIG_HAVE_SPI_INIT_MASTER
+	altera_spi_init_master(host);
+#else
 	altera_spi_init_host(host);
-    
+#endif
 	ret = devm_spi_register_controller(&m10bmc_spi->pd->dev, host);
 	if (ret) {
 		dev_err(&m10bmc_spi->pd->dev, "%s failed to register spi host %d\n", __func__, ret);
@@ -264,20 +268,20 @@ int nfb_spi_attach(struct nfb_boot *boot)
 	board_info.max_speed_hz = 12500000;
 	board_info.bus_num = 0;
 	board_info.chip_select = 0;
-    
+
 	spi_dev = spi_new_device(host, &board_info);
 	if (!spi_dev) {
 		dev_err(&m10bmc_spi->pd->dev, "%s failed to create SPI device: %s\n",
 			__func__, board_info.modalias);
 	}
-	
+
 	m10bmc_spi->m10bmc.regmap = devm_regmap_init_spi_avmm(spi_dev, &m10bmc_spi_regmap_config);
 	if (IS_ERR(m10bmc_spi->m10bmc.regmap)) {
 		ret = PTR_ERR(m10bmc_spi->m10bmc.regmap);
 		dev_err(&m10bmc_spi->pd->dev, "%s Failed to allocate regmap: %d\n", __func__, ret);
 		goto err_regmap_register_avmm;
 	}
-    
+
 	ret = devm_device_add_groups(&m10bmc_spi->pd->dev, nfb_m10bmc_dev_groups);
 	if (ret)
 		goto err_dev_addgroups;
@@ -332,13 +336,13 @@ struct platform_driver nfb_intel_m10bmc_spi = {
 
 static int nfb_intel_m10_bmc_spi_probe(struct spi_device *spi)
 {
-	struct device *dev = &spi->dev;
 	int ret = 0;
-	#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0) && RHEL_RELEASE_CODE < 0x803
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0) && RHEL_RELEASE_CODE < 0x803
+	struct device *dev = &spi->dev;
 	ret = device_add_groups(dev, nfb_m10bmc_dev_groups);
 	if (ret)
 		return ret;
-	#endif
+#endif
 	return ret;
 }
 
