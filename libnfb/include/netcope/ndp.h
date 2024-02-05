@@ -144,6 +144,7 @@ err_fdt_getprop:
 
 static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt,  int fdt_offset, int ctrl_offset, int dir)
 {
+	(void)dir;
 #ifndef __KERNEL__
 	int prot;
 	int ret = 0;
