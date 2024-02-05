@@ -153,6 +153,7 @@ get_dependencies()
         ret="$ret python3-dev"
         ret="$ret python3-setuptools"
         ret="$ret cython3"
+        ret="$ret libpci-dev"
     elif item_in_list "$os" "centos scientific fedora ol rocky"; then
         ret="$ret libfdt-devel"
         ret="$ret numactl-devel"
@@ -160,6 +161,8 @@ get_dependencies()
         ret="$ret libarchive-devel"
         ret="$ret libconfig"
         ret="$ret libconfig-devel"
+        ret="$ret pciutils-devel pciutils-libs"
+        ret="$ret python3-devel"
         ret="$ret python3-setuptools"
         if [ "$os_version" = "7" ]; then
             ret="$ret python36-Cython"
@@ -172,6 +175,7 @@ get_dependencies()
         ret="$ret ncurses"
         ret="$ret libarchive"
         ret="$ret libconfig"
+        ret="$ret pciutils"
     fi
 
     echo $ret
