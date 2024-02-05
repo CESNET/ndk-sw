@@ -304,7 +304,7 @@ for opt in "$@"; do
             rm -rf "$SCRIPT_PATH/$BUILDDIR"
             ;;
         --rpm)
-            if [ "$os" != "centos" ] && [ "$os" != "scientific" ] && [ "$os" != "fedora" ] && [ "$os" != "ol" ] ; then
+            if ! item_in_list "$os" "centos scientific fedora ol rocky"; then
                 echo >&2 "ERROR: Cannot build RPM package on other OS than CentOS"
                 exit 1
             fi
@@ -312,7 +312,7 @@ for opt in "$@"; do
             $cpack -G RPM --config ./CPackConfig.cmake
             ;;
         --rpm-dpdk)
-            if [ "$os" != "centos" ] && [ "$os" != "scientific" ] && [ "$os" != "fedora" ] && [ "$os" != "ol" ] ; then
+            if ! item_in_list "$os" "centos scientific fedora ol rocky"; then
                 echo >&2 "ERROR: Cannot build RPM package on other OS than CentOS"
                 exit 1
             fi
