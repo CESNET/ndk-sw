@@ -395,8 +395,9 @@ int sdm_qspi_read_reg(struct spi_nor *nor, u8 opcode, u8 *buf, int len)
 	struct nfb_boot *boot = (struct nfb_boot *)nor->priv;
 
 	// max number of bytes to read
-	int len_base = 8;
-	u8 buf_base[len_base];
+	#define SDM_QSPI_RR_LEN_BASE 8
+	int len_base = SDM_QSPI_RR_LEN_BASE;
+	u8 buf_base[SDM_QSPI_RR_LEN_BASE];
 
 	int vendor_id;
 	int device_id;
