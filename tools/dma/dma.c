@@ -170,18 +170,19 @@ int query_print(struct nfb_device *dev, struct list_range index_range,
 							break;
 
 						rxc_valid = 1;
-						if (ndp_rx_queue_is_available(dev, i)) {
-							rxq = nc_rxqueue_open_index(dev, i, QUEUE_TYPE_UNDEF);
-							if (rxq == NULL) {
+						rxq = nc_rxqueue_open_index(dev, i, QUEUE_TYPE_UNDEF);
+						if (rxq == NULL) {
+							if (ndp_rx_queue_is_available(dev, i)) {
 								warnx("problem opening rx_queue");
-								return EXIT_FAILURE;
+							} else {
+								warnx("rx_queue doesn't exist");
 							}
-							nc_rxqueue_read_counters(rxq, &cr);
-							nc_rxqueue_close(rxq);
-						} else {
-							warnx("rx_queue doesn't exist");
 							return EXIT_FAILURE;
-						} break;
+						}
+						nc_rxqueue_read_counters(rxq, &cr);
+						nc_rxqueue_close(rxq);
+						break;
+
 					case TX_SENT:
 					case TX_SENT_BYTES:
 					case TX_DISCARDED:
@@ -190,19 +191,21 @@ int query_print(struct nfb_device *dev, struct list_range index_range,
 							break;
 
 						txc_valid = 1;
-						if (ndp_tx_queue_is_available(dev, i)) {
-							txq = nc_txqueue_open_index(dev, i, QUEUE_TYPE_UNDEF);
-							if (txq == NULL) {
+						txq = nc_txqueue_open_index(dev, i, QUEUE_TYPE_UNDEF);
+						if (txq == NULL) {
+							if (ndp_tx_queue_is_available(dev, i)) {
 								warnx("problem opening tx_queue");
-								return EXIT_FAILURE;
+
+							} else {
+								warnx("tx_queue doesn't exist");
 							}
-							nc_txqueue_read_counters(txq, &ct);
-							nc_txqueue_close(txq);
-						} else {
-							warnx("tx_queue doesn't exist");
 							return EXIT_FAILURE;
-						} break;
-						default: break;
+						}
+						nc_txqueue_read_counters(txq, &ct);
+						nc_txqueue_close(txq);
+						break;
+
+					default: break;
 				}
 
 				switch (queries[j]) {
@@ -559,10 +562,8 @@ int main(int argc, char *argv[])
 			i = 0;
 			fdt_for_each_compatible_node(nfb_get_fdt(dev), fdt_offset, rx_ctrl_name[ctrl]) {
 				if (list_range_empty(&index_range) || list_range_contains(&index_range, i)) {
-					if (ndp_rx_queue_is_available(dev, i)) {
-						rxq = nc_rxqueue_open(dev, fdt_offset);
-						if (rxq == NULL)
-							continue;
+					rxq = nc_rxqueue_open(dev, fdt_offset);
+					if (rxq) {
 
 						switch (cmd) {
 						case CMD_COUNTER_RESET:
@@ -600,10 +601,8 @@ int main(int argc, char *argv[])
 			i = 0;
 			fdt_for_each_compatible_node(nfb_get_fdt(dev), fdt_offset, tx_ctrl_name[ctrl]) {
 				if (list_range_empty(&index_range) || list_range_contains(&index_range, i)) {
-					if (ndp_tx_queue_is_available(dev, i)) {
-						txq = nc_txqueue_open(dev, fdt_offset);
-						if (txq == NULL)
-							continue;
+					txq = nc_txqueue_open(dev, fdt_offset);
+					if (txq) {
 						switch (cmd) {
 						case CMD_COUNTER_RESET:
 							nc_txqueue_reset_counters(txq);
