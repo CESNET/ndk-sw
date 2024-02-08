@@ -1,0 +1,11 @@
+from setuptools import setup
+
+setup(
+    packages=["nfbmeter"],
+    package_dir={'nfbmeter': '${CMAKE_CURRENT_SOURCE_DIR}/nfbmeter'},
+    entry_points={
+        'console_scripts': [
+            'nfb-meter = nfbmeter.nfbmeter:main',
+        ],
+    },
+)

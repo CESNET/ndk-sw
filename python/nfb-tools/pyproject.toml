@@ -1,0 +1,10 @@
+[project]
+name = "nfb-tools"
+version = "0.1.0"
+dependencies = []
+
+[project.scripts]
+nfb-meter = "nfbmeter.nfbmeter:main"
+
+[tool.setuptools]
+packages = ["nfbmeter"]

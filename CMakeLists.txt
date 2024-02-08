@@ -41,6 +41,9 @@ add_subdirectory(tools-debug)
 add_subdirectory(tools-misc)
 add_subdirectory(utils)
 add_subdirectory(pynfb)
+add_subdirectory(python/nfb-tools)
+
+include(python/nfb-tools/nfb-tools.cmake)
 
 configure_file(package/preinst.in package/preinst @ONLY)
 configure_file(package/postinst.in package/postinst @ONLY)
