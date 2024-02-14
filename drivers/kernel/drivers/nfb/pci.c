@@ -22,6 +22,7 @@
 
 #include "nfb.h"
 #include "pci.h"
+#include "misc.h"
 #include "mi/mi.h"
 #include "ndp/ndp.h"
 
@@ -791,6 +792,8 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	struct nfb_device *nfb;
 	struct nfb_pci_device *pci_device = NULL;
 
+	void * nfb_dtb_inject = nfb_dtb_inject_get_pci(pci_name(pci));
+
 	if (pci_is_root_bus(pci->bus)) {
 		dev_err(&pci->dev, "attaching an nfb card to the root PCI bus is not supported\n");
 		ret = -EOPNOTSUPP;
@@ -818,7 +821,7 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 
 	/* Check presence of driver_data parameter */
 	ret = nfb_pci_read_enpoint_id(pci);
-	if ((struct nfb_pci_dev*) id->driver_data == NULL || ret > 0) {
+	if (((struct nfb_pci_dev*) id->driver_data == NULL || ret > 0) && nfb_dtb_inject == NULL) {
 		dev_info(&pci->dev, "successfully initialized only for DMA transfers\n");
 		return 0;
 	}
@@ -861,8 +864,11 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		pci->irq = -1;
 	}
 
-	/* Populate device tree */
-	nfb->fdt = nfb_pci_read_fdt(pci);
+	nfb->fdt = nfb_dtb_inject;
+	if (nfb->fdt == NULL) {
+		/* Populate device tree */
+		nfb->fdt = nfb_pci_read_fdt(pci);
+	}
 	if (IS_ERR(nfb->fdt)) {
 		ret = PTR_ERR(nfb->fdt);
 		dev_err(&pci->dev, "unable to read firmware description - DTB\n");
@@ -872,6 +878,7 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		else
 			nfb->fdt = NULL;
 	}
+
 	/* Create fallback or modify existing FDT to support booting */
 	if (fallback_fdt)
 		nfb_pci_create_fallback_fdt(nfb);
@@ -974,6 +981,19 @@ int nfb_pci_init(void)
 	int ret;
 	INIT_LIST_HEAD(&global_pci_device_list);
 	ret = pci_register_driver(&nfb_driver);
+	if (ret)
+		goto err_register;
+
+	ret = nfb_dtb_inject_init(&nfb_driver);
+	if (ret)
+		goto err_inject_init;
+
+	return ret;
+
+	//nfb_dtb_inject_exit();
+err_inject_init:
+	pci_unregister_driver(&nfb_driver);
+err_register:
 	return ret;
 }
 
@@ -983,6 +1003,8 @@ int nfb_pci_init(void)
 void nfb_pci_exit(void)
 {
 	struct nfb_pci_device *pci_device, *temp;
+
+	nfb_dtb_inject_exit(&nfb_driver);
 
 	pci_unregister_driver(&nfb_driver);
 
