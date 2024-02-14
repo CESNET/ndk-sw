@@ -22,11 +22,12 @@
 
 #include <nfb/nfb.h>
 #include <nfb/boot.h>
+#include <zlib.h>
 
 #include <netcope/nccommon.h>
 
 /* define input arguments of tool */
-#define ARGUMENTS	"d:w:f:b:F:i:lqvh"
+#define ARGUMENTS	"d:w:f:b:F:i:I:lqvh"
 
 #define PRINT_WARNING_WHEN_USING_BITSTREAM 0
 #define REQUIRE_FORCE_WHEN_USING_BITSTREAM 0
@@ -52,6 +53,7 @@ enum commands {
 	CMD_BOOT,
 	CMD_WRITE,
 	CMD_QUICK_BOOT,
+	CMD_INJECT_DTB,
 };
 
 void usage(const char *me)
@@ -63,6 +65,8 @@ void usage(const char *me)
 	printf("-f slot file    Write configuration from file to device slot and boot device\n");
 	printf("-b slot file    Quick boot, see below\n");
 	printf("-i file         Print information about configuration file\n");
+	printf("-I dtb          Inject DTB to PCI device\n");
+	printf("                The device arg should be in BDF+domain notation: dddd:BB:DD.F\n");
 	printf("-q              Do not show boot progress\n");
 	printf("-v              Be verbose\n");
 	printf("-l              Print list of available slots\n");
@@ -72,6 +76,163 @@ void usage(const char *me)
 	printf("Boot the device from selected slot and check if the signature\n");
 	printf("of running firmware is equal to the requested configuration file.\n");
 	printf("If is not equal, do the write + boot action, as with parameter -f\n");
+}
+
+int inject_fdt(const char *device, const char *dtb_filename, int flags)
+{
+	size_t ret;
+	char buf[512];
+
+	FILE *f;
+	void *dtb;
+	const void *fdt;
+	int fdt_offset;
+	size_t dtb_size;
+	struct nfb_device *dev = NULL;
+
+	char pci_dev[32] = {0};
+	uint32_t csum;
+
+	(void) flags;
+
+	/* Read DTB */
+	f = fopen(dtb_filename, "r");
+	if (f == NULL) {
+		ret = -ENOENT;
+		goto err_dtb_open;
+	}
+
+	fseek(f, 0L, SEEK_END);
+	dtb_size = ftell(f);
+	fseek(f, 0L, SEEK_SET);
+
+	dtb = malloc(dtb_size);
+	if (dtb == NULL) {
+		fclose(f);
+		ret = -ENOMEM;
+		goto err_dtb_alloc;
+	}
+
+	ret = fread(dtb, 1, dtb_size, f);
+	fclose(f);
+	if (ret != dtb_size) {
+		ret = -EBADF;
+		goto err_dtb_read;
+	}
+
+	csum = crc32(0x80000000, dtb, dtb_size);
+
+
+	/* Try to open the NFB device associated with PCIe slot */
+	/* - try as classic NFB path */
+	dev = nfb_open(device);
+	if (dev == NULL) {
+		/* - try as BDF notation */
+		snprintf(buf, sizeof(buf), "/dev/nfb/by-pci-slot/%s", device);
+		dev = nfb_open(buf);
+		/* If dev is still invalid, assume the device is not attached to kernel driver */
+	}
+
+	if (dev) {
+		fdt = nfb_get_fdt(dev);
+		fdt_offset = fdt_path_offset(fdt, "/system/device/endpoint0");
+		strncpy(pci_dev, fdt_getprop(fdt, fdt_offset, "pci-slot", NULL), sizeof(pci_dev)-1);
+
+		nfb_close(dev);
+
+		/* Open the device in exclusive mode: ensure no other userspace tool is running */
+		dev = nfb_open_ext(device, O_APPEND);
+		if (!dev) {
+			warnx("Can't open the NFB device in exclusive mode!");
+			ret = errno;
+			goto err_open_dev;
+		}
+
+		/* This is not optimal as there is a time gap when other tool can open the device */
+		nfb_close(dev);
+	} else {
+		/* Can't open NFB device: assume the device is in the BDF format */
+		strncpy(pci_dev, device, sizeof(pci_dev)-1);
+	}
+
+	ret = -EBADF;
+
+	snprintf(buf, sizeof(buf), "/sys/bus/pci/devices/%s/", pci_dev);
+	if (access(buf, F_OK) != 0) {
+		ret = -EINVAL;
+		warnx("The device path doesn't exists: %s", buf);
+		goto err_unbind;
+	}
+
+	/* Unbind device from any driver */
+	snprintf(buf, sizeof(buf), "/sys/bus/pci/devices/%s/driver/unbind", pci_dev);
+	/* If the device is not bound, it is not error */
+	if (access(buf, F_OK) == 0) {
+		if (access(buf, W_OK) != 0) {
+			ret = -EACCES;
+			warnx("Insufficient privileges");
+			goto err_unbind;
+		}
+		snprintf(buf, sizeof(buf), "echo %s > /sys/bus/pci/devices/%s/driver/unbind", pci_dev, pci_dev);
+		if (system(buf)) {
+			warnx("device unbind from driver failed");
+			goto err_unbind;
+		}
+	}
+
+	/* Write device tree metadata */
+	snprintf(buf, sizeof(buf),
+			"echo \"len=%lu crc32=%lu busname=%s busaddr=%s\" > /sys/bus/pci/drivers/nfb/dtb_inject_meta",
+			dtb_size, (long unsigned) csum, "pci", pci_dev);
+	if (system(buf)) {
+		warnx("dtb metadata write failed");
+		goto err_dtb_write;
+	}
+
+	/* Write device tree */
+	f = fopen("/sys/bus/pci/drivers/nfb/dtb_inject", "wb");
+	if (f == NULL) {
+		ret = -EBADF;
+		goto err_dtb_write;
+	}
+	ret = fwrite(dtb, dtb_size, 1, f);
+	fclose(f);
+	if (ret != 1) {
+		ret = -EBADF;
+		goto err_dtb_write;
+	}
+
+	ret = -EBADF;
+
+	/* Probe device into NFB driver */
+	snprintf(buf, sizeof(buf), "echo nfb > /sys/bus/pci/devices/%s/driver_override", pci_dev);
+	if (system(buf)) {
+		warnx("driver override failed");
+		goto err_dtb_write;
+	}
+
+	snprintf(buf, sizeof(buf), "echo %s > /sys/bus/pci/drivers_probe", pci_dev);
+	if (system(buf)) {
+		warnx("drivers probe failed");
+		goto err_dtb_write;
+	}
+
+	snprintf(buf, sizeof(buf), "echo > /sys/bus/pci/devices/%s/driver_override", pci_dev);
+	if (system(buf)) {
+		warnx("driver override restore failed");
+	}
+
+	return 0;
+
+
+err_dtb_write:
+err_open_dev:
+err_unbind:
+err_dtb_read:
+	free(dtb);
+err_dtb_alloc:
+err_dtb_open:
+	return ret;
 }
 
 ssize_t archive_read_first_file_with_extension(const char *filename, const char *ext, void **outp)
@@ -518,6 +679,10 @@ int main(int argc, char *argv[])
 			cmd = CMD_PRINT_INFO;
 			filename = optarg;
 			break;
+		case 'I':
+			cmd = CMD_INJECT_DTB;
+			filename = optarg;
+			break;
 		case 'q':
 			flags |= FLAG_QUIET;
 			break;
@@ -558,6 +723,9 @@ int main(int argc, char *argv[])
 		break;
 	case CMD_QUICK_BOOT:
 		ret = do_quick_boot(path, slot, filename, flags);
+		break;
+	case CMD_INJECT_DTB:
+		ret = inject_fdt(path, filename, flags);
 		break;
 	case CMD_UNKNOWN:
 		warnx("no command");
