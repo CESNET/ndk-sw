@@ -1,3 +1,8 @@
+* Tue Feb 27 2024 Martin Spinler <spinler@cesnet.cz> - 6.21.0-1
+- [OPT] added performance and userspace mode in ndp-tool
+- [OPT] some optimalitazions for DMA Calypte controllers
+- [FEATURE] added support for some Alveo cards
+
 * Tue Dec 19 2023 Martin Spinler <spinler@cesnet.cz> - 6.20.1-1
 - [BUGFIX] fixes pynfb circular reference in Nfb class
 - [BUGFIX] fixes E-Tile RX EQ adaptation on return from loopback  
