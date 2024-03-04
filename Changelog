@@ -1,3 +1,6 @@
+* Mon Mar 4 2024 Martin Spinler <spinler@cesnet.cz> - 6.21.1-1
+- [FEATURE] added nfb-meter python tool
+
 * Tue Feb 27 2024 Martin Spinler <spinler@cesnet.cz> - 6.21.0-1
 - [OPT] added performance and userspace mode in ndp-tool
 - [OPT] some optimalitazions for DMA Calypte controllers
