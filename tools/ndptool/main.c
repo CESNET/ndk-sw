@@ -40,7 +40,7 @@ struct ndptool_module *module = NULL;
  */
 static void sig_usr(int signo)
 {
-	if (signo == SIGINT) {
+	if (signo == SIGINT || signo == SIGTERM) {
 		stop = 1;
 	} else if (signo == SIGUSR1) {
 		stats = 1;
@@ -288,6 +288,7 @@ int main(int argc, char *argv[])
 	}
 	/* register SIGINT signal */
 	signal(SIGINT, sig_usr);
+	signal(SIGTERM, sig_usr);
 	signal(SIGUSR1, sig_usr);
 
 	/* Use single queue = don't use threads (at this moment) */
