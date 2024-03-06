@@ -10,4 +10,6 @@
 include $(DRIVER_TOPDIR)/Makefile.conf
 
 obj-$(CONFIG_NFB)       += nfb/
-obj-$(CONFIG_NFB_XVC)   += xvc/
+
+# The nfb-xvc now uses the libpci and doesn't needs xvc kernel driver anymore.
+#obj-$(CONFIG_NFB_XVC)   += xvc/

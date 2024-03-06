@@ -73,16 +73,17 @@ struct nc_ndp_hdr {
 struct nc_ndp_desc {
 	union {
 		struct __attribute__((__packed__)) {
-			uint64_t phys : 34;
-			uint32_t rsvd : 28;
+			unsigned phys_lo : 32;
+			unsigned phys_hi : 2;
+			unsigned rsvd : 28;
 			unsigned type : 2;
 		} type0;
 		struct __attribute__((__packed__)) {
-			uint64_t phys : 30;
+			unsigned phys : 30;
 			int int0 : 1;
 			int rsvd0 : 1;
-			uint16_t len : 16;
-			uint16_t meta : 12;
+			unsigned len : 16;
+			unsigned meta : 12;
 			int shrd0 : 1;
 			int next0 : 1;
 			unsigned type : 2;
@@ -131,7 +132,9 @@ static inline struct nc_ndp_desc nc_ndp_rx_desc0(uint64_t phys)
 {
 	struct nc_ndp_desc desc;
 
-	desc.d.type0.phys = phys >> 30;
+	desc.d.type0.phys_lo = phys >> (30);
+	desc.d.type0.phys_hi = phys >> (30 + 32);
+
 	desc.d.type0.rsvd = 0;
 	desc.d.type0.type = 0;
 

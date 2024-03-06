@@ -51,14 +51,14 @@ configure_file(package/prerm.in package/prerm @ONLY)
 configure_file(package/postrm.in package/postrm @ONLY)
 
 set(RPM_DEP_LIST
-	dkms gcc kernel-devel libarchive libfdt-devel make numactl ncurses
+	dkms gcc kernel-devel libarchive libfdt-devel make numactl ncurses pciutils-libs
 )
 set(RPM_PYTHON_DEP_LIST
 	nfb-framework python3-fdt
 )
 
 set(DEB_DEP_LIST
-	dkms gcc libarchive-dev libfdt-dev libncurses-dev libnuma-dev linux-headers make
+	dkms gcc libarchive-dev libfdt-dev libncurses-dev libnuma-dev linux-headers make libpci3
 )
 set(DEB_PYTHON_DEP_LIST
 	nfb-framework
