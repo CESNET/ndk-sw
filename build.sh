@@ -176,6 +176,10 @@ get_dependencies()
         ret="$ret libarchive"
         ret="$ret libconfig"
         ret="$ret pciutils"
+        ret="$ret python-setuptools"
+        ret="$ret cython"
+        # for packaging
+        ret="$ret fakeroot pkgconfig"
     fi
 
     echo $ret
