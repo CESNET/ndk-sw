@@ -390,7 +390,7 @@ static void ndp_ctrl_medusa_tx_set_swptr(struct ndp_channel *channel, uint64_t p
 		}
 		if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(addr) != last_upper_addr)) {
 			while (ctrl->free_desc == 0) {
-				usleep_range(10, 50);
+				udelay(10);
 				ndp_ctrl_medusa_tx_get_hwptr(channel);
 
 				if (unlikely(ndp_kill_signal_pending(current))) {
@@ -409,7 +409,7 @@ static void ndp_ctrl_medusa_tx_set_swptr(struct ndp_channel *channel, uint64_t p
 		}
 
 		while (ctrl->free_desc == 0) {
-			usleep_range(10, 50);
+			udelay(10);
 			ndp_ctrl_medusa_tx_get_hwptr(channel);
 			if (ndp_kill_signal_pending(current)) {
 				dirty = 1;
