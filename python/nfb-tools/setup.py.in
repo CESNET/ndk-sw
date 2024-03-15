@@ -1,11 +1,18 @@
 from setuptools import setup
 
 setup(
-    packages=["nfbmeter"],
-    package_dir={'nfbmeter': '${CMAKE_CURRENT_SOURCE_DIR}/nfbmeter'},
+    packages=[
+        "nfbmeter",
+        "nfbbootstrap", "nfbbootstrap.pypcie",
+    ],
+    package_dir={
+        'nfbmeter': '${CMAKE_CURRENT_SOURCE_DIR}/nfbmeter',
+        'nfbbootstrap': '${CMAKE_CURRENT_SOURCE_DIR}/nfbbootstrap',
+    },
     entry_points={
         'console_scripts': [
             'nfb-meter = nfbmeter.nfbmeter:main',
+            'nfb-bootstrap = nfbbootstrap.nfb_bootstrap:main',
         ],
     },
 )
