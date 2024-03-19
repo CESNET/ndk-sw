@@ -71,6 +71,7 @@ struct ndp_mode_generate_params {
 	int srand;
 	bool clear_data;
 	fwmode_t mode;
+	unsigned long long mbps;           /*!< Replay packets at a given Mbps */
 };
 
 /*!

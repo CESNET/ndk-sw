@@ -128,6 +128,9 @@ static int ndp_mode_generate_loop(struct ndp_tool_params *p)
 	const bool limit_bytes   = p->limit_bytes > 0 ? true : false;
 	const bool limit_packets = p->limit_packets > 0 ? true : false;
 
+	/* Check throughput only every N cycles */
+	unsigned status_num_of_loops = p->mode.generate.mbps / 10000u;
+
 	/* Clear length of packet header */
 	for (i = 0; i < burst_size; i++) {
 		packets[i].flags = 0;
@@ -200,6 +203,8 @@ static int ndp_mode_generate_loop(struct ndp_tool_params *p)
 
 		/* Release packet descriptors */
 		ndp_tx_burst_put(tx);
+
+		adjust_tx_throughput(status_num_of_loops, p->mode.generate.mbps, p->use_delay_nsec, si, tx);
 	}
 
 	return 0;
@@ -208,6 +213,7 @@ static int ndp_mode_generate_loop(struct ndp_tool_params *p)
 int ndp_mode_generate_init(struct ndp_tool_params *p)
 {
 	list_range_init(&p->mode.generate.range);
+	p->mode.generate.mbps = 0;
 	return 0;
 }
 
@@ -216,19 +222,32 @@ void ndp_mode_generate_print_help()
 	printf("Generate parameters:\n");
 	printf("  -s size       Packet size - list or random from range, e.g \"64,128-256\"\n");
 	printf("  -C            Clear packet data before send\n");
+	printf("  --speed Mbps  Replay packets at a given speed\n");
 /*	printf("  -T content    Packet content [george, dns]\n"); */
 }
 
 int ndp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg,
-		int option_index __attribute__((unused)))
+		int option_index)
 {
 	switch (opt) {
+	case 0:
+		if (!strcmp(module->long_options[option_index].name, "speed")) {
+			if (nc_strtoull(optarg, &p->mode.generate.mbps))
+				errx(-1, "Cannot parse --speed parameter");
+		} else {
+			errx(-1, "Unknown long option");
+		}
+		break;
 	case 's':
 		if (list_range_parse(&p->mode.generate.range, optarg) < 0)
 			errx(-1, "Cannot parse size range");
 		break;
 	case 'C':
 		p->mode.generate.clear_data = 1;
+		break;
+	case 'S':
+		if (nc_strtoull(optarg, &p->mode.generate.mbps))
+			errx(-1, "Cannot parse mbps parameter");
 		break;
 	default:
 		return -1;
