@@ -39,7 +39,7 @@ static ssize_t nfb_char_get_serial(struct device *dev, struct device_attribute *
 static ssize_t nfb_char_get_cardname(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct nfb_device *nfb = dev_get_drvdata(dev);
-	return scnprintf(buf, PAGE_SIZE, "%s\n", nfb->nfb_pci_dev->name);
+	return scnprintf(buf, PAGE_SIZE, "%s\n", nfb->pci_name);
 }
 static ssize_t nfb_char_get_pcislot(struct device *dev, struct device_attribute *attr, char *buf)
 {
