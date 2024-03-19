@@ -199,6 +199,9 @@ extern unsigned TX_BURST;
 void delay_usecs(unsigned int us);
 void delay_nsecs(unsigned int ns);
 
+void adjust_tx_throughput(unsigned status_num_of_loops, unsigned long long throughput_mbps,
+		bool use_delay_nsec, struct stats_info *si, struct ndp_queue *tx);
+
 void update_stats(struct ndp_packet *packets, int count, struct stats_info *si);
 void update_stats_thread(struct ndp_packet *packets, int count, struct stats_info *si);
 

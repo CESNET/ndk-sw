@@ -175,12 +175,10 @@ static int ndp_mode_transmit_loop(struct ndp_tool_params *p, struct pcap_src *sr
 	struct ndp_packet packets[burst_size];
 	struct ndp_queue *tx = p->tx;
 	struct stats_info *si = &p->si;
-	struct timeval status_time;
 	bool min_invalid = false;
 
 	/* Check throughput only every N cycles */
 	unsigned status_num_of_loops = p->mode.transmit.mbps / 10000u;
-	unsigned status_loop = status_num_of_loops;
 
 	update_stats_t update_stats = p->update_stats;
 
@@ -234,35 +232,7 @@ static int ndp_mode_transmit_loop(struct ndp_tool_params *p, struct pcap_src *sr
 		update_stats(packets, pkts_filled, si);
 		ndp_tx_burst_put(tx);
 
- 		/* zero Mbps = unlimited throughput */
-		if (p->mode.transmit.mbps != 0) {
-			/* Check throughput only every N cycles */
-			if (status_loop != 0) {
-				status_loop--;
-			} else {
-				status_loop = status_num_of_loops;
-				do {
-					/* calculate elapsed time and expected bits */
-					gettimeofday(&status_time, NULL);
-					double elapsed_time = ((status_time.tv_sec - si->startTime.tv_sec) * 1000000) + (status_time.tv_usec - si->startTime.tv_usec);
-					double expected_bits = elapsed_time * p->mode.transmit.mbps;
-
-					/* total number of transferred bits by this thread */
-					double transferred_bits = si->thread_total_bytes_cnt * 8;
-
-					/* check threshold */
-					if (expected_bits / transferred_bits < 1.0) {
-						/* We have to pause sending packets for a while */
-						//update_stats(packets, 0, si);
-						ndp_tx_burst_flush(tx);
-						if (p->use_delay_nsec)
-							delay_nsecs(1);
-					} else {
-						break;
-					}
-				} while(true);
-			}
-		}
+		adjust_tx_throughput(status_num_of_loops, p->mode.transmit.mbps, p->use_delay_nsec, si, tx);
 	}
 	ndp_tx_burst_flush(tx);
 	return 0;
