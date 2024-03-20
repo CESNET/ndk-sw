@@ -257,12 +257,21 @@ void ndp_mode_transmit_print_help()
 	printf("  -m            Load PCAP file for each thread. -f parameter should contain %%t for thread_id or %%d fo dma_id\n");
 	printf("  -s Mbps       Replay packets at a given speed\n");
 	printf("  -L bytes      Minimal allowed frame length\n");
+	printf("  --speed Mbps  Replay packets at a given speed\n");
 }
 
 int ndp_mode_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg,
-		int option_index __attribute__((unused)))
+		int option_index)
 {
 	switch (opt) {
+	case 0:
+		if (!strcmp(module->long_options[option_index].name, "speed")) {
+			if (nc_strtoull(optarg, &p->mode.transmit.mbps))
+				errx(-1, "Cannot parse --speed parameter");
+		} else {
+			errx(-1, "Unknown long option");
+		}
+		break;
 	case 'f':
 		p->pcap_filename = optarg;
 		break;

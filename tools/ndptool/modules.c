@@ -137,6 +137,7 @@ struct ndptool_module modules[] = {
 		.check = ndp_mode_transmit_check,
 		.run_single = ndp_mode_transmit,
 		.run_thread = ndp_mode_transmit_thread,
+		.long_options = long_options_speed,
 	},
 	[NDP_MODULE_LOOPBACK] = {
 		.name = "loopback",
