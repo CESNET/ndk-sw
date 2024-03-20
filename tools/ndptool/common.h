@@ -14,6 +14,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <wordexp.h>
+#include <getopt.h>
 
 #include <nfb/ndp.h>
 #include <netcope/nccommon.h>
@@ -182,11 +183,12 @@ struct ndptool_module {
 	void (*print_help)(void);
 	int (*init)(struct ndp_tool_params *p);
 	int (*check)(struct ndp_tool_params *p);
-	int (*parse_opt)(struct ndp_tool_params *p, int opt, char *optarg);
+	int (*parse_opt)(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 	int (*run_single)(struct ndp_tool_params *p);
 	void *(*run_thread)(void *tmp);
 	void (*destroy)(struct ndp_tool_params *p);
 	void (*stats_cb)(struct stats_info *si);
+	struct option *long_options;
 };
 
 extern volatile int stop;

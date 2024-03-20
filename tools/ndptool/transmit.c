@@ -259,7 +259,8 @@ void ndp_mode_transmit_print_help()
 	printf("  -L bytes      Minimal allowed frame length\n");
 }
 
-int ndp_mode_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg)
+int ndp_mode_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg,
+		int option_index __attribute__((unused)))
 {
 	switch (opt) {
 	case 'f':
