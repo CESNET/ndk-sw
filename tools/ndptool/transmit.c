@@ -255,7 +255,7 @@ void ndp_mode_transmit_print_help()
 	printf("  -l loops      Loop over the PCAP file <loops> times (0 for forever)\n");
 	printf("  -Z            Do not preload file in cache (slower, consumes less memory)\n");
 	printf("  -m            Load PCAP file for each thread. -f parameter should contain %%t for thread_id or %%d fo dma_id\n");
-	printf("  -s Mbps       Replay packets at a given speed\n");
+	printf("  -s Mbps       Replay packets at a given speed (deprecated, --speed long opt should be used instead)\n");
 	printf("  -L bytes      Minimal allowed frame length\n");
 	printf("  --speed Mbps  Replay packets at a given speed\n");
 }
