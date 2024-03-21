@@ -123,6 +123,8 @@ void ndp_loop_thread_destroy(struct thread_data *thread_data)
 
 int main(int argc, char *argv[])
 {
+	struct option default_long_options[] = {{0, 0, 0, 0}};
+	struct option *long_options;
 	unsigned i;
 	int opt;
 	int qri, qrc;
@@ -143,6 +145,8 @@ int main(int argc, char *argv[])
 	void *(*thread_func) (void *);
 	const char *strmode;
 	char *args;
+
+	int option_index = 0;
 
 	int ret = 0;
 
@@ -198,8 +202,12 @@ int main(int argc, char *argv[])
 	strcpy(args, ARGUMENTS);
 	strcat(args, module->args);
 
+	long_options = module->long_options == NULL
+		? default_long_options
+		: module->long_options;
+
 	/* argument handling */
-	while ((opt = getopt(argc, argv, args)) >= 0) {
+	while ((opt = getopt_long(argc, argv, args, long_options, &option_index)) >= 0) {
 		switch (opt) {
 		case 'd':
 			params.nfb_path = optarg;
@@ -254,7 +262,7 @@ int main(int argc, char *argv[])
 				errx(-1, "Cannot parse packet limit parameter");
 			break;
 		default:
-			if (module->parse_opt == NULL || module->parse_opt(&params, opt, optarg))
+			if (module->parse_opt == NULL || module->parse_opt(&params, opt, optarg, option_index))
 				errx(-1, "Unknown parameter");
 		}
 	}

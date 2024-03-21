@@ -196,7 +196,8 @@ void ndp_mode_receive_print_help()
 	printf("  -r trim       Maximum number of bytes per packet to save\n");
 }
 
-int ndp_mode_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg)
+int ndp_mode_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg,
+		int option_index __attribute__((unused)))
 {
 	switch (opt) {
 	case 'f':

@@ -62,10 +62,10 @@ void ndp_mode_transmit_print_help(void);
 void ndp_mode_loopback_hw_print_help(void);
 void ndp_mode_loopback_hw_print_latency(struct stats_info *si);
 
-int ndp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
-int ndp_mode_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
-int ndp_mode_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
-int ndp_mode_loopback_hw_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int ndp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
+int ndp_mode_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
+int ndp_mode_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
+int ndp_mode_loopback_hw_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 
 int ndp_mode_generate_check(struct ndp_tool_params *p);
 int ndp_mode_receive_check(struct ndp_tool_params *p);
@@ -90,6 +90,11 @@ void *ndp_mode_loopback_hw_thread(void *tmp);
 void ndp_mode_generate_destroy(struct ndp_tool_params *p);
 void ndp_mode_loopback_hw_destroy(struct ndp_tool_params *p);
 
+struct option long_options_speed[] = {
+	{"speed", required_argument, 0, 0},
+	{0, 0, 0, 0},
+};
+
 struct ndptool_module modules[] = {
 	[NDP_MODULE_READ] = {
 		.name = "read",
@@ -109,6 +114,7 @@ struct ndptool_module modules[] = {
 		.run_single = ndp_mode_generate,
 		.run_thread = ndp_mode_generate_thread,
 		.destroy = ndp_mode_generate_destroy,
+		.long_options = long_options_speed,
 	},
 	[NDP_MODULE_RECEIVE] = {
 		.name = "receive",
@@ -131,6 +137,7 @@ struct ndptool_module modules[] = {
 		.check = ndp_mode_transmit_check,
 		.run_single = ndp_mode_transmit,
 		.run_thread = ndp_mode_transmit_thread,
+		.long_options = long_options_speed,
 	},
 	[NDP_MODULE_LOOPBACK] = {
 		.name = "loopback",

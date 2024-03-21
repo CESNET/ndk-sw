@@ -480,7 +480,8 @@ void ndp_mode_loopback_hw_print_latency(struct stats_info *si){
 	printf("Avg latency (ms)           : % 24.3f\n", (si->latency_sum/si->packet_cnt)/1000.0f);
 }
 
-int ndp_mode_loopback_hw_parseopt(struct ndp_tool_params *p, int32_t opt, char *optarg)
+int ndp_mode_loopback_hw_parseopt(struct ndp_tool_params *p, int32_t opt, char *optarg,
+		int option_index __attribute__((unused)))
 {
 	switch (opt) {
 	case 's':
