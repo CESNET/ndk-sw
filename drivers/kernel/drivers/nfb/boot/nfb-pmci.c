@@ -298,11 +298,14 @@ static struct regmap_config m10bmc_pmci_regmap_config = {
 
 int nfb_pmci_attach(struct nfb_boot *boot)
 {
+	char * pmci_bom_info, *snc;
+
 	struct nfb_device *nfb = boot->nfb;
 	struct pmci_device *pmci;
 
 	int fdt_offset;
 	int ret = 0;
+	int sn;
 
 	pmci = kzalloc(sizeof(*pmci), GFP_KERNEL);
 	if (!pmci) {
@@ -348,6 +351,23 @@ int nfb_pmci_attach(struct nfb_boot *boot)
 		goto err_m10bmc_init;
 
 	boot->pmci = pmci;
+
+	/* Read SN */
+	if (pmci->m10bmc.ops.flash_read) {
+		pmci_bom_info = kzalloc(PMCI_BOM_INFO_SIZE+1+1, GFP_KERNEL);
+		if (pmci_bom_info) {
+			pmci_bom_info[0] = '\n';
+			pmci_bom_info[PMCI_BOM_INFO_SIZE+1] = 0;
+			pmci->m10bmc.ops.flash_read(&pmci->m10bmc, pmci_bom_info+1, PMCI_BOM_INFO_ADDR, PMCI_BOM_INFO_SIZE);
+			while ((snc = strstr(pmci_bom_info, "\nSN,"))) {
+				if (sscanf(snc, "\nSN,%d\n", &sn) == 1) {
+					boot->nfb->serial = sn;
+					break;
+				}
+			}
+			kfree(pmci_bom_info);
+		}
+	}
 	return ret;
 
 err_m10bmc_init:
