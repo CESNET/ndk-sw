@@ -378,6 +378,7 @@ void nfb_pmci_detach(struct nfb_boot *boot)
 
 extern struct platform_driver nfb_intel_m10bmc_sec_driver;
 extern struct platform_driver nfb_intel_m10bmc_hwmon_driver;
+extern struct platform_driver nfb_intel_m10bmc_log_driver;
 
 struct platform_driver nfb_intel_m10bmc = {
 	.driver = {
@@ -388,6 +389,9 @@ struct platform_driver nfb_intel_m10bmc = {
 int nfb_pmci_init()
 {
 	int ret;
+	ret = platform_driver_register(&nfb_intel_m10bmc_log_driver);
+	if (ret)
+		goto err_log;
 
 	ret = platform_driver_register(&nfb_intel_m10bmc_sec_driver);
 	if (ret)
@@ -408,6 +412,8 @@ err_pdr:
 err_hwmon:
 	platform_driver_unregister(&nfb_intel_m10bmc_sec_driver);
 err_sec:
+	platform_driver_unregister(&nfb_intel_m10bmc_log_driver);
+err_log:
 	return ret;
 
 }
@@ -417,6 +423,7 @@ void nfb_pmci_exit()
 	platform_driver_unregister(&nfb_intel_m10bmc);
 	platform_driver_unregister(&nfb_intel_m10bmc_hwmon_driver);
 	platform_driver_unregister(&nfb_intel_m10bmc_sec_driver);
+	platform_driver_unregister(&nfb_intel_m10bmc_log_driver);
 }
 
 #endif
