@@ -56,6 +56,7 @@ struct nfb_comp;
  * device handle to be passed to other functions.
  */
 struct nfb_device *nfb_open(const char *path);
+struct nfb_device *nfb_open_ext(const char *devname, int oflags);
 
 /*!
  * \brief   Close the NFB device

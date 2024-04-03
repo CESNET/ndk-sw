@@ -60,7 +60,7 @@ static void nfb_boot_read_serial_number(struct nfb_device *nfb, struct nfb_boot 
 	int ret;
 
 	/* some cards don't have MTD or they don't support reading serial numbers */
-	if (nfb->nfb_pci_dev->idstruct_mtd == -1 ||
+	if (nfb->nfb_pci_dev == NULL || nfb->nfb_pci_dev->idstruct_mtd == -1 ||
 			nfb->nfb_pci_dev->idstruct_serialno_addr == -1)
 		return;
 
@@ -92,7 +92,7 @@ static void nfb_boot_read_card_subtype(struct nfb_device *nfb, struct nfb_boot *
 	int i;
 
 	/* some cards don't have and don't support reading subtype */
-	if (nfb->nfb_pci_dev->idstruct_mtd == -1 ||
+	if (nfb->nfb_pci_dev == NULL || nfb->nfb_pci_dev->idstruct_mtd == -1 ||
 			nfb->nfb_pci_dev->idstruct_subtype_addr == -1)
 		return;
 
@@ -273,7 +273,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	boot->sdm_boot_en = 0;
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,intel_sdm_controller");
 	if (fdt_offset >= 0) {
-		boot->sdm = sdm_init(nfb, fdt_offset, nfb->nfb_pci_dev->name);
+		boot->sdm = sdm_init(nfb, fdt_offset, nfb->pci_name);
 
 		prop32 = fdt_getprop(nfb->fdt, fdt_offset, "boot_en", &len);
 		if (boot->sdm && len == sizeof(*prop32) && fdt32_to_cpu(*prop32) != 0) {
@@ -356,10 +356,10 @@ have_boot_controller:
 	/* Backward compatibility with firmware, which doesn't have card-name property in DT */
 	fdt_offset = fdt_path_offset(nfb->fdt, "/firmware");
 	if (fdt_getprop(nfb->fdt, fdt_offset, "card-name", &len) == NULL)
-		fdt_setprop_string(nfb->fdt, fdt_offset, "card-name", nfb->nfb_pci_dev->name);
+		fdt_setprop_string(nfb->fdt, fdt_offset, "card-name", nfb->pci_name);
 
 	fdt_offset = fdt_path_offset(nfb->fdt, "/board");
-	fdt_setprop_string(nfb->fdt, fdt_offset, "board-name", nfb->nfb_pci_dev->name);
+	fdt_setprop_string(nfb->fdt, fdt_offset, "board-name", nfb->pci_name);
 	fdt_setprop_u32(nfb->fdt, fdt_offset, "serial-number", nfb->serial);
 
 	dev_info(&nfb->pci->dev, "nfb_boot: Attached successfully\n");

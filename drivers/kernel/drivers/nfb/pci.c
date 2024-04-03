@@ -22,12 +22,14 @@
 
 #include "nfb.h"
 #include "pci.h"
+#include "misc.h"
 #include "mi/mi.h"
 #include "ndp/ndp.h"
 
 #define NFB_FDT_BURSTSIZE (16384)
 #define NFB_FDT_MAXSIZE (65536)
 #define NFB_FDT_FIXUP_NODE_NAME_LEN 16
+#define NFB_CARD_NAME_GENERIC "COMBO-GENERIC"
 
 static bool fallback_fdt = 1;
 static bool fallback_fdt_boot = 0;
@@ -36,6 +38,7 @@ static bool flash_recovery_ro = 1;
 struct list_head global_pci_device_list;
 
 extern struct nfb_driver_ops nfb_registered_drivers[NFB_DRIVERS_MAX];
+static const char *const nfb_card_name_generic = NFB_CARD_NAME_GENERIC;
 
 
 const struct nfb_pci_dev nfb_device_infos [] = {
@@ -59,7 +62,7 @@ const struct nfb_pci_dev nfb_device_infos [] = {
 
 	[NFB_CARD_TIVOLI]	= { "TIVOLI",	       -1,      -1,             -1,             0x0B },
 
-	[NFB_CARD_COMBO_GENERIC]= { "COMBO-GENERIC",   -1,      -1,             -1,             0x0C },
+	[NFB_CARD_COMBO_GENERIC]= { nfb_card_name_generic, -1,  -1,             -1,             0x0C },
 	[NFB_CARD_COMBO400G1]	= { "COMBO-400G1",     -1,      -1,             -1,             0x0D },
 	[NFB_CARD_AGI_FH400G]	= { "AGI-FH400G",      -1,      -1,             -1,             0x0E },
 
@@ -164,8 +167,8 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	uint32_t prop32;
 	struct nfb_pci_device *pci_device = NULL;
 
-	const char *name = nfb->nfb_pci_dev->name;
-	const char *card_name = "";
+	const char *name;
+	const char *card_name;
 	void *fdt = nfb->fdt;
 
 	enum pci_bus_speed speed;
@@ -180,6 +183,8 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 		"netcope,intel_sdm_controller",
 		"cesnet,pmci",
 	};
+
+	name = nfb->pci_name;
 
 	node = fdt_path_offset(fdt, "/");
 	node = fdt_add_subnode(fdt, node, "system");
@@ -203,6 +208,8 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 	node = fdt_path_offset(fdt, "/firmware");
 	card_name = fdt_getprop(fdt, node, "card-name", &proplen);
+	if (proplen <= 0)
+		card_name = "";
 
 	for (node = -1, i = 0; i < ARRAY_SIZE(boot_ctrl_compatibles); i++) {
 		node = fdt_node_offset_by_compatible(fdt, -1, boot_ctrl_compatibles[i]);
@@ -291,7 +298,7 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 		nfb_fdt_create_binary_slot(fdt, node, "image0", "configuration", 0, 1, 0, 0x00000000, 0x08000000);
 
 		nfb_fdt_create_boot_type(fdt, node, "INTEL-AVST", 0);
-	} else if (!strcmp(name, "COMBO-GENERIC")) {
+	} else if (!strcmp(name, nfb_card_name_generic)) {
 		if (!strcmp(card_name, "IA-420F")) {
 			prop32 = cpu_to_fdt32(1);
 			fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
@@ -785,6 +792,8 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	struct nfb_device *nfb;
 	struct nfb_pci_device *pci_device = NULL;
 
+	void * nfb_dtb_inject = nfb_dtb_inject_get_pci(pci_name(pci));
+
 	if (pci_is_root_bus(pci->bus)) {
 		dev_err(&pci->dev, "attaching an nfb card to the root PCI bus is not supported\n");
 		ret = -EOPNOTSUPP;
@@ -812,7 +821,7 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 
 	/* Check presence of driver_data parameter */
 	ret = nfb_pci_read_enpoint_id(pci);
-	if ((struct nfb_pci_dev*) id->driver_data == NULL || ret > 0) {
+	if (((struct nfb_pci_dev*) id->driver_data == NULL || ret > 0) && nfb_dtb_inject == NULL) {
 		dev_info(&pci->dev, "successfully initialized only for DMA transfers\n");
 		return 0;
 	}
@@ -823,7 +832,11 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		goto err_nfb_create;
 	}
 	nfb->pci = pci;
+	nfb->pci_name = nfb_card_name_generic;
 	nfb->nfb_pci_dev = (struct nfb_pci_dev*) id->driver_data;
+	if (nfb->nfb_pci_dev)
+		nfb->pci_name = nfb->nfb_pci_dev->name;
+
 	nfb->dsn = nfb_pci_read_dsn(pci);
 
 	pci_device = nfb_pci_attach_endpoint(nfb, pci, 0);
@@ -832,8 +845,11 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		goto err_attach_device;
 	}
 
-	while ((bus = pci_find_next_bus(bus))) {
-		nfb_pci_attach_all_slaves(nfb, bus);
+	/* Do not scan more endpoints for generic cards */
+	if (strcmp(nfb->pci_name, nfb_card_name_generic)) {
+		while ((bus = pci_find_next_bus(bus))) {
+			nfb_pci_attach_all_slaves(nfb, bus);
+		}
 	}
 
 	/* Initialize interrupts */
@@ -848,8 +864,11 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		pci->irq = -1;
 	}
 
-	/* Populate device tree */
-	nfb->fdt = nfb_pci_read_fdt(pci);
+	nfb->fdt = nfb_dtb_inject;
+	if (nfb->fdt == NULL) {
+		/* Populate device tree */
+		nfb->fdt = nfb_pci_read_fdt(pci);
+	}
 	if (IS_ERR(nfb->fdt)) {
 		ret = PTR_ERR(nfb->fdt);
 		dev_err(&pci->dev, "unable to read firmware description - DTB\n");
@@ -859,6 +878,7 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		else
 			nfb->fdt = NULL;
 	}
+
 	/* Create fallback or modify existing FDT to support booting */
 	if (fallback_fdt)
 		nfb_pci_create_fallback_fdt(nfb);
@@ -961,6 +981,19 @@ int nfb_pci_init(void)
 	int ret;
 	INIT_LIST_HEAD(&global_pci_device_list);
 	ret = pci_register_driver(&nfb_driver);
+	if (ret)
+		goto err_register;
+
+	ret = nfb_dtb_inject_init(&nfb_driver);
+	if (ret)
+		goto err_inject_init;
+
+	return ret;
+
+	//nfb_dtb_inject_exit();
+err_inject_init:
+	pci_unregister_driver(&nfb_driver);
+err_register:
 	return ret;
 }
 
@@ -970,6 +1003,8 @@ int nfb_pci_init(void)
 void nfb_pci_exit(void)
 {
 	struct nfb_pci_device *pci_device, *temp;
+
+	nfb_dtb_inject_exit(&nfb_driver);
 
 	pci_unregister_driver(&nfb_driver);
 

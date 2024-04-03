@@ -39,13 +39,15 @@ INSTALL_HEADERS = nfb.h ndp.h boot.h
 DKMS_DIRNAME = $(PACKAGE_NAME)-$(PACKAGE_VERSION)
 DKMS_FILES = dkms.conf Makefile Makefile.conf
 
-.PHONY: all clean
+.PHONY: all clean softclean
 
 all:
 	$(KBUILD) modules
 
-clean:
+softclean:
 	$(KBUILD) clean
+
+clean: softclean
 	rm -f config.h
 
 .PHONY: install modules_install headers_install

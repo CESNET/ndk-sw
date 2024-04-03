@@ -113,6 +113,7 @@ struct nfb_device {
 	enum nfb_device_status status;
 
 	const struct nfb_pci_dev *nfb_pci_dev; /* Card-type specific data (driver-defined */
+	const char *pci_name;
 	struct device *dev;                    /* Linux generic 'device' (related to /sys files) */
 	rwlock_t fdt_lock;                     /* Lock for DeviceTree modification */
 	void  *fdt;                            /* DeviceTree description */
