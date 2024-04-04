@@ -1,3 +1,13 @@
+* Thu Apr 4 2024 Martin Spinler <spinler@cesnet.cz> - 6.22.0-1
+- [FEATURE] convert nfb-xvc to pure userspace with libpci
+- [FEATURE] print sum of counters in nfb-dma
+- [FEATURE] read serial number from PMCI/BMC (N6010)
+- [FEATURE] bootstrap tool for easy use of card with factory firmware (N6010)
+- [FEATURE] allow to inject DTB with nfb-boot tool
+- [FEATURE] allow to specify approximate Tx speed in ndp-generate
+- [BUGFIX] allow coexistence with newer OFS drivers
+- [BUGFIX] remove sleep while atomic in DMA Medusa driver
+
 * Mon Mar 4 2024 Martin Spinler <spinler@cesnet.cz> - 6.21.1-1
 - [FEATURE] added nfb-meter python tool
 
