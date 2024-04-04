@@ -84,13 +84,26 @@ void usage(const char *progname, int verbose)
 		printf(" example of usage: '-q rx_link,tx_octets,pma_speed'\n");
 	}
 
-	printf("-v              Increase verbosity\n");
+	printf("-v              Increase verbosity (including help)\n");
 	printf("-h              Show this text\n");
+	printf("\n");
 	printf("Examples:\n");
-	printf("%s -Pv\n"
-	       "                Print all supported PMA types/modes and features.\n", progname);
-	printf("%s -Pc \"+PMA local loopback\"\n"
-	       "                Enable local loopback on all PMAs.\n", progname);
+	printf("%s -Pv                         "   "Print all supported PCS/PMA types/modes and features\n", progname);
+	printf("%s -Pc 100GBASE-SR4            "   "Change the link type/mode\n", progname);
+	printf("%s -Pc \"+25G RS-FEC Enable\"    " "Enable the RS-FEC feature (can affect the link type/mode)\n", progname);
+	printf("%s -Pc \"+PMA local loopback\"   " "Receive exactly the same data sent by the device (for transceiver-less testing)\n", progname);
+	printf("%*s                             "  "(discards data from the link, far-end still should receive the sent data)\n", (int)strlen(progname), "");
+	printf("%s -Pc \"+PCS reverse loopback\" " "Transmit received data back to far-end (\"repeater\" functionality)\n", progname);
+	printf("%*s                             "  "(application still receives the data from the link)\n", (int)strlen(progname), "");
+	printf("%s -Pc -Reset                  "   "Unreset the PCS/PMA\n", progname);
+	if (verbose) {
+		printf("\n");
+		printf("Loopback cheatsheet:                "   "App -> Tx MAC ->  /--> Tx PCS --o-->  /--> Tx PMA --o-->  Link\n");
+		printf("(A) \"PCS reverse loopback\"          " "                  ^             |     ^             |         \n");
+		printf("(B) \"PCS local loopback\"            " "                 (A)           (B)   (C)           (D)        \n");
+		printf("(C) \"PMA remote loopback\"           " "                  |             v     |             v         \n");
+		printf("(D) \"PMA local loopback\"            " "App <- Rx MAC  <--o--- Rx PCS <-/  <--o--- Rx PMA <-/  <- Link\n");
+	}
 }
 
 int main(int argc, char *argv[])
