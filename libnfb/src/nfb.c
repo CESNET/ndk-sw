@@ -80,7 +80,7 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 
 	libnfb_ext_get_ops_t* get_ops;
 
-	if (sscanf(devname, "%u", &index) == 1) {
+	if (sscanf(devname, "%u%n", &index, &ret) >= 1 && (size_t) ret == strlen(devname)) {
 		ret = snprintf(path, PATH_LEN, "/dev/nfb%u", index);
 		if (ret >= PATH_LEN || ret < 0) {
 			errno = ENODEV;
