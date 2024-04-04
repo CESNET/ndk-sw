@@ -310,7 +310,9 @@ int main(int argc, char *argv[])
 		if (list_range_empty(&index_range) || list_range_contains(&index_range, p.index)) {
 			if (p.command == CMD_SET_REPEATER) {
 				used++;
-				nc_idcomp_repeater_set(dev, p.index, repeater_status);
+				if (nc_idcomp_repeater_set(dev, p.index, repeater_status)) {
+					errx(EXIT_FAILURE, "Can't set repeater mode. Use loopback features in PCS/PMA section");
+				}
 			} else {
 				if (p.command == CMD_PRINT_STATUS) {
 					if (used++)
@@ -363,10 +365,10 @@ int main(int argc, char *argv[])
 					used++;
 					repeater_status = nc_idcomp_repeater_get(dev, p.index);
 					switch (repeater_status) {
-					case IDCOMP_REPEATER_NORMAL: repeater_str = "Normal (transmit data from application)"; break;
-					case IDCOMP_REPEATER_REPEAT: repeater_str = "Repeat (transmit data from RXMAC)"; break;
-					case IDCOMP_REPEATER_IDLE:   repeater_str = "Idle   (transmit disabled)"; break;
-					default:                     repeater_str = "Unknown"; break;
+					case IDCOMP_REPEATER_NORMAL: repeater_str = "Normal  (transmit data from application)"; break;
+					case IDCOMP_REPEATER_REPEAT: repeater_str = "Repeat  (transmit data from RXMAC)"; break;
+					case IDCOMP_REPEATER_IDLE:   repeater_str = "Idle    (transmit disabled)"; break;
+					default:                     repeater_str = "Unknown (use the PCS/PMA features)"; break;
 					}
 					printf("Repeater status            : %s\n", repeater_str);
 				}

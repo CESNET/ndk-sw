@@ -52,7 +52,7 @@ static inline int nc_idcomp_sysmon_get_temp(struct nfb_device *dev, int32_t *val
 	return 0;
 }
 
-static inline void nc_idcomp_repeater_set(struct nfb_device *dev, unsigned index, enum nc_idcomp_repeater status)
+static inline int nc_idcomp_repeater_set(struct nfb_device *dev, unsigned index, enum nc_idcomp_repeater status)
 {
 	int node;
 	int len;
@@ -71,7 +71,7 @@ static inline void nc_idcomp_repeater_set(struct nfb_device *dev, unsigned index
 	node = fdt_node_offset_by_compatible(nfb_get_fdt(dev), -1, "netcope,idcomp");
 	comp = nfb_comp_open(dev, node);
 	if (!comp)
-		return;
+		return -ENODEV;
 	reg = nfb_comp_read32(comp, IDCOMP_REG_REPEATER);
 
 	val = status << (index * 2);
@@ -80,6 +80,7 @@ static inline void nc_idcomp_repeater_set(struct nfb_device *dev, unsigned index
 
 	nfb_comp_write32(comp, IDCOMP_REG_REPEATER, reg);
 	nfb_comp_close(comp);
+	return 0;
 }
 
 static inline enum nc_idcomp_repeater nc_idcomp_repeater_get(struct nfb_device *dev, unsigned index)
