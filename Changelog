@@ -1,3 +1,8 @@
+* Fri Apr 5 2024 Martin Spinler <spinler@cesnet.cz> - 6.22.1-1
+- [BUGFIX] enable coexistence PMCI and SDM (read temperature on N6010)
+- [BUGFIX] check whole path string in libnfb for short path feature
+- [BUGFIX] throw error in nfb-eth if the repeater can't be configured
+
 * Thu Apr 4 2024 Martin Spinler <spinler@cesnet.cz> - 6.22.0-1
 - [FEATURE] convert nfb-xvc to pure userspace with libpci
 - [FEATURE] print sum of counters in nfb-dma
