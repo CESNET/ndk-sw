@@ -537,7 +537,7 @@ static int nfb_net_transmission_on(struct net_device *netdev)
 		netq->numa = dev_to_node(channel->ring.dev);
 		#endif
 
-		netq->ndpq = queue = ndp_open_queue(ndp->nfb, channel->id.index, channel->id.type, 0);
+		netq->ndpq = queue = ndp_open_queue(ndp->nfb, channel->id.index + (count + offset) * priv->index, channel->id.type, 0);
 		if (queue == NULL) {
 			printk(KERN_ERR "%s: %s - failed to init queue %s (error: %d)\n",
 				__func__, netdev->name, dev_name(&channel->dev), ret);
