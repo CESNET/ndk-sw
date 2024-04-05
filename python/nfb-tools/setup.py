@@ -1,11 +1,23 @@
 from setuptools import setup
 
 setup(
-    packages=["nfbmeter"],
-    package_dir={'nfbmeter': 'nfbmeter'},
+    name='nfbtools',
+    packages=[
+        "nfbmeter",
+        "nfbbootstrap", "nfbbootstrap.pypcie",
+    ],
+    package_dir={
+        'nfbmeter': 'nfbmeter',
+        'nfbbootstrap': 'nfbbootstrap',
+    },
     entry_points={
         'console_scripts': [
             'nfb-meter=nfbmeter.nfbmeter:main',
+            'nfb-bootstrap = nfbbootstrap.nfb_bootstrap:main',
         ],
     },
+    install_requires=[
+        "fdt",
+        "pyyaml",
+    ]
 )
