@@ -1,6 +1,7 @@
 from setuptools import setup
 
 setup(
+    name='nfbtools',
     packages=[
         "nfbmeter",
         "nfbbootstrap", "nfbbootstrap.pypcie",

@@ -262,12 +262,8 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 
 	boot->nfb = nfb;
 #ifdef CONFIG_NFB_ENABLE_PMCI
-
 	ret = nfb_pmci_attach(boot);
-	if (ret == 0 && boot->pmci)
-		goto have_boot_controller;
 #endif
-
 	/* Cards with Intel FPGA (Stratix10, Agilex) use Secure Device Manager for QSPI Flash access and Boot */
 	boot->sdm = NULL;
 	boot->sdm_boot_en = 0;
@@ -292,7 +288,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,boot_controller");
 	// FIXME: better create some general boot controller interface
 	if (fdt_offset < 0) {
-		if (boot->sdm_boot_en == 0) {
+		if (boot->sdm_boot_en == 0 && boot->pmci == NULL) {
 			ret = -ENODEV;
 			dev_warn(&nfb->pci->dev, "nfb_boot: No boot_controller found in FDT.\n");
 			goto err_nocomp;
@@ -302,13 +298,10 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	}
 
 	boot->comp = nfb_comp_open(nfb, fdt_offset);
-	if (!boot->comp) {
+	if (!boot->comp && boot->pmci == NULL) {
 		ret = -ENODEV;
 		goto err_comp_open;
 	}
-#ifdef CONFIG_NFB_ENABLE_PMCI
-have_boot_controller:
-#endif
 
 	prop32 = fdt_getprop(nfb->fdt, fdt_offset, "num_flash", &len);
 	if (len == sizeof(*prop32))
