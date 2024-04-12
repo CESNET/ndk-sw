@@ -76,6 +76,8 @@ static void nfb_boot_reload_linkup(struct nfb_pci_device *card)
 
 static int nfb_boot_reload_rescan(struct nfb_pci_device *card)
 {
+	struct pci_dev *bus_dev;
+
 	pci_lock_rescan_remove();
 	pci_rescan_bus(card->bus->parent);
 	pci_unlock_rescan_remove();
@@ -84,7 +86,33 @@ static int nfb_boot_reload_rescan(struct nfb_pci_device *card)
 	if (card->pci == NULL) {
 		return -ENODEV;
 	}
+
+	bus_dev = card->pci->bus->self;
+
+	dev_info(&bus_dev->dev, "restoring errors on PCI bridge\n");
+	pci_write_config_word(bus_dev, PCI_COMMAND, card->bridge_command);
+	pci_write_config_word(bus_dev, bus_dev->pcie_cap + PCI_EXP_DEVCTL, card->bridge_devctl);
+
 	pci_dev_put(card->pci);
+	return 0;
+}
+
+/*
+ * nfb_pci_errors_disable - disable errors that can occur on hot reboot (firmware reload)
+ * @card: struct nfb_pci_device instance
+ */
+static int nfb_pci_errors_disable(struct nfb_pci_device *card)
+{
+	struct pci_dev *bridge = card->bus->self;
+	dev_info(&card->bus->self->dev, "disabling errors on PCI bridge\n");
+
+	/* save state of error registers */
+	pci_read_config_word(bridge, PCI_COMMAND, &card->bridge_command);
+	pci_read_config_word(bridge, bridge->pcie_cap + PCI_EXP_DEVCTL, &card->bridge_devctl);
+
+	pci_write_config_word(bridge, PCI_COMMAND, card->bridge_command & ~PCI_COMMAND_SERR);
+	pci_write_config_word(bridge, bridge->pcie_cap + PCI_EXP_DEVCTL,
+			card->bridge_devctl & ~(PCI_EXP_DEVCTL_NFERE | PCI_EXP_DEVCTL_FERE));
 	return 0;
 }
 

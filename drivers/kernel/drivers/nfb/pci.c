@@ -646,20 +646,6 @@ static void nfb_pci_tuneup(struct pci_dev *pdev)
 }
 
 /*
- * nfb_pci_errors_disable - disable errors that can occur on hot reboot (firmware reload)
- * @card: struct nfb_pci_device instance
- */
-int nfb_pci_errors_disable(struct nfb_pci_device *card)
-{
-	struct pci_dev *bridge = card->bus->self;
-	dev_info(&card->bus->self->dev, "disabling errors on PCI bridge\n");
-	pci_write_config_word(bridge, PCI_COMMAND, card->bridge_command & ~PCI_COMMAND_SERR);
-	pci_write_config_word(bridge, bridge->pcie_cap + PCI_EXP_DEVCTL,
-			card->bridge_devctl & ~(PCI_EXP_DEVCTL_NFERE | PCI_EXP_DEVCTL_FERE));
-	return 0;
-}
-
-/*
  * nfb_pci_attach_endpoint - Attach PCI device to NFB device
  * @nfb: NFB device
  * @pci: PCI device
@@ -670,7 +656,6 @@ struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct pc
 {
 	int device_found = 0;
 	struct nfb_pci_device *pci_device = NULL;
-	struct pci_dev *bus_dev = pci->bus->self;
 
 	//mutex_lock();
 	list_for_each_entry(pci_device, &global_pci_device_list, global_pci_device_list) {
@@ -693,15 +678,6 @@ struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct pc
 		pci_device->nfb = NULL;
 		strcpy(pci_device->pci_name, pci_name(pci));
 		list_add(&pci_device->global_pci_device_list, &global_pci_device_list);
-
-		/* This is a new device, save state of error registers */
-	        pci_read_config_word(bus_dev, PCI_COMMAND, &pci_device->bridge_command);
-	        pci_read_config_word(bus_dev, bus_dev->pcie_cap + PCI_EXP_DEVCTL, &pci_device->bridge_devctl);
-	} else {
-		/* This device is already in list, restore error registers */
-		dev_info(&bus_dev->dev, "restoring errors on PCI bridge\n");
-		pci_write_config_word(bus_dev, PCI_COMMAND, pci_device->bridge_command);
-		pci_write_config_word(bus_dev, bus_dev->pcie_cap + PCI_EXP_DEVCTL, pci_device->bridge_devctl);
 	}
 
 	pci_device->pci = pci;

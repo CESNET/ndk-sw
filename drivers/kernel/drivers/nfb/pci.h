@@ -75,7 +75,6 @@ struct nfb_pci_device {
 	uint16_t bridge_devctl;
 };
 
-int nfb_pci_errors_disable(struct nfb_pci_device *card);
 void nfb_pci_detach_endpoint(struct nfb_device *nfb, struct pci_dev *pci);
 struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct pci_dev *pci, int index);
 void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus);
