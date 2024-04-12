@@ -645,6 +645,21 @@ static void nfb_pci_tuneup(struct pci_dev *pdev)
 	pci_write_config_word(pdev, exp_cap + PCI_EXP_DEVCTL, devctl);
 }
 
+static int nfb_pci_is_attachable(struct nfb_device *nfb, struct pci_dev* pci)
+{
+	if (nfb == NULL || pci == NULL)
+		return 0;
+
+	/* Device is the same as main */
+	if (nfb->pci == pci)
+		return 0;
+
+	if (nfb->pci->vendor != pci->vendor)
+		return 0;
+
+	return 1;
+}
+
 /*
  * nfb_pci_attach_endpoint - Attach PCI device to NFB device
  * @nfb: NFB device
@@ -728,7 +743,8 @@ void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
 	}
 
 	list_for_each_entry(slave, &bus->devices, bus_list) {
-		if (slave->vendor != nfb->pci->vendor || slave == nfb->pci)
+		/* prevent device create for unintended devices */
+		if (!nfb_pci_is_attachable(nfb, slave))
 			continue;
 		slave_dsn = nfb_pci_read_dsn(slave);
 		if (nfb->dsn == slave_dsn) {
