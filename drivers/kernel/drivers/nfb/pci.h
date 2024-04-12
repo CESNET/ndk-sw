@@ -39,6 +39,7 @@ enum nfb_devices {
  * @idstruct_serialno_addr: Address (in the MTD) where card serial number can be found
  * @idstruct_subtype_addr: Address (in the MTD) where card type can be found
  * @card_type_id: Card type number
+ * @sub_device_id: Device ID for subsidiary device
  *
  * This structure is associated with PCI ID (through
  * &struct pci_device_id->driver_data) and embedded in &struct nfb_device to provide
@@ -53,6 +54,7 @@ struct nfb_pci_dev {
 	size_t idstruct_serialno_addr;
 	size_t idstruct_subtype_addr;
 	int card_type_id;
+	unsigned short sub_device_id;
 };
 
 struct nfb_pci_device {

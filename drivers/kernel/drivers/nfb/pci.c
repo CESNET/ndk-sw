@@ -48,13 +48,13 @@ const struct nfb_pci_dev nfb_device_infos [] = {
 	[NFB_CARD_NFB40G2]	= { "NFB-40G2",		0, 	0x00000004,	0x00000000,	0x01 },
 	[NFB_CARD_NFB40G2_SG3]	= { "NFB-40G2_SG3",	0,	0x00000004,	0x00000000,	0x03 },
 
-	[NFB_CARD_NFB100G]	= { "NFB-100G",		0,	0x00000004,	-1,		0x02 },
+	[NFB_CARD_NFB100G]	= { "NFB-100G",		0,	0x00000004,	-1,		0x02, 0xc1c0 },
 
-	[NFB_CARD_NFB100G2]	= { "NFB-100G2",	0,	0x01fc0004,	0x01fc0000,	0x00 },
-	[NFB_CARD_NFB100G2Q]	= { "NFB-100G2Q",	0,	0x01fc0004,	0x01fc0000,	0x05 },
-	[NFB_CARD_NFB100G2C]	= { "NFB-100G2C",	0,	0x01fc0004, 	0x01fc0000,	0x08 },
+	[NFB_CARD_NFB100G2]	= { "NFB-100G2",	0,	0x01fc0004,	0x01fc0000,	0x00, 0xc2c0 },
+	[NFB_CARD_NFB100G2Q]	= { "NFB-100G2Q",	0,	0x01fc0004,	0x01fc0000,	0x05, 0xc2c0 },
+	[NFB_CARD_NFB100G2C]	= { "NFB-100G2C",	0,	0x01fc0004, 	0x01fc0000,	0x08, 0xc2c0 },
 
-	[NFB_CARD_NFB200G2QL]	= { "NFB-200G2QL",	0,	0x03fc0004,	-1,		0x06 },
+	[NFB_CARD_NFB200G2QL]	= { "NFB-200G2QL",	0,	0x03fc0004,	-1,		0x06, 0xc251 },
 
 	[NFB_CARD_FB1CGG]	= { "FB1CGG",		0,	0x00000002,	0x00000001,	0x07 },
 	[NFB_CARD_FB2CGG3]	= { "FB2CGG3",		0,	0x00000002,	0x00000001,	0x09 },
@@ -62,8 +62,8 @@ const struct nfb_pci_dev nfb_device_infos [] = {
 
 	[NFB_CARD_TIVOLI]	= { "TIVOLI",	       -1,      -1,             -1,             0x0B },
 
-	[NFB_CARD_COMBO_GENERIC]= { NFB_CARD_NAME_GENERIC, -1,  -1,             -1,             0x0C },
-	[NFB_CARD_COMBO400G1]	= { "COMBO-400G1",     -1,      -1,             -1,             0x0D },
+	[NFB_CARD_COMBO_GENERIC]= { NFB_CARD_NAME_GENERIC, -1,  -1,             -1,             0x0C, /* sub_device is forbidden */ },
+	[NFB_CARD_COMBO400G1]	= { "COMBO-400G1",     -1,      -1,             -1,             0x0D, 0xc400 },
 	[NFB_CARD_AGI_FH400G]	= { "AGI-FH400G",      -1,      -1,             -1,             0x0E },
 
 	/* Last item */		  { NULL,	       -1,	-1,	 	-1,		0x00 },
@@ -657,6 +657,11 @@ static int nfb_pci_is_attachable(struct nfb_device *nfb, struct pci_dev* pci)
 	if (nfb->pci->vendor != pci->vendor)
 		return 0;
 
+	if (nfb->nfb_pci_dev == NULL ||
+			nfb->nfb_pci_dev->sub_device_id == 0 ||
+			nfb->nfb_pci_dev->sub_device_id != pci->device)
+		return 0;
+
 	return 1;
 }
 
@@ -837,11 +842,8 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		goto err_attach_device;
 	}
 
-	/* Do not scan more endpoints for generic cards */
-	if (strcmp(nfb->pci_name, nfb_card_name_generic)) {
-		while ((bus = pci_find_next_bus(bus))) {
-			nfb_pci_attach_all_slaves(nfb, bus);
-		}
+	while ((bus = pci_find_next_bus(bus))) {
+		nfb_pci_attach_all_slaves(nfb, bus);
 	}
 
 	/* Initialize interrupts */
