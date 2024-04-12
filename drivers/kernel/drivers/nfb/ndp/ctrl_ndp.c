@@ -133,12 +133,17 @@ static const struct attribute_group *ndp_ctrl_attr_tx_groups[] = {
 	NULL,
 };
 
+/// @brief Function sets `hdr` and `off` with information from `channel`. Returns header count.
+/// @param channel
+/// @param hdr buffer of headers
+/// @param off offset into the buffer
+/// @return Header count
 int ndp_ctrl_v2_get_vmaps(struct ndp_channel *channel, void **hdr, void **off)
 {
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
-	*hdr = ctrl->ts.medusa.hdr_buffer;
+	*hdr = ctrl->hdr_buffer_v;
 	*off = ctrl->off_buffer_v;
-	return ctrl->c.mhp + 1;
+	return ctrl->hdr_count;
 }
 
 static void ndp_ctrl_mps_fill_rx_descs(struct ndp_ctrl *ctrl, uint64_t count)
