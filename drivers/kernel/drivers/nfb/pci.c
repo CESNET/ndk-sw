@@ -777,20 +777,9 @@ void nfb_pci_detach_all_slaves(struct nfb_device *nfb)
 	}
 }
 
-/*
- * nfb_probe - called when kernel founds new NFB PCI device
- * @pci: PCI device
- * @id: PCI device identification structure
- */
-int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
+static int nfb_pci_probe_base(struct pci_dev *pci)
 {
-	int ret = 0;
-	struct pci_bus *bus = NULL;
-	struct nfb_device *nfb;
-	struct nfb_pci_device *pci_device = NULL;
-
-	void * nfb_dtb_inject = nfb_dtb_inject_get_pci(pci_name(pci));
-
+	int ret;
 	if (pci_is_root_bus(pci->bus)) {
 		dev_err(&pci->dev, "attaching an nfb card to the root PCI bus is not supported\n");
 		ret = -EOPNOTSUPP;
@@ -815,6 +804,34 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	pci_set_master(pci);
 
 	nfb_pci_tuneup(pci);
+	return 0;
+
+err_pci_set_consistent_dma_mask:
+err_pci_set_dma_mask:
+	pci_disable_device(pci);
+err_pci_enable_device:
+err_root_pci_bus:
+	return ret;
+}
+
+/*
+ * nfb_probe - called when kernel founds new NFB PCI device
+ * @pci: PCI device
+ * @id: PCI device identification structure
+ */
+int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
+{
+	int ret = 0;
+	struct pci_bus *bus = NULL;
+	struct nfb_device *nfb;
+	struct nfb_pci_device *pci_device = NULL;
+	void * nfb_dtb_inject;
+
+	ret = nfb_pci_probe_base(pci);
+	if (ret)
+		goto err_nfb_pci_probe_base;
+
+	nfb_dtb_inject = nfb_dtb_inject_get_pci(pci_name(pci));
 
 	/* Check presence of driver_data parameter */
 	ret = nfb_pci_read_enpoint_id(pci);
@@ -900,12 +917,7 @@ err_nfb_read_fdt:
 err_attach_device:
 	nfb_destroy(nfb);
 err_nfb_create:
-
-err_pci_set_consistent_dma_mask:
-err_pci_set_dma_mask:
-	pci_disable_device(pci);
-err_pci_enable_device:
-err_root_pci_bus:
+err_nfb_pci_probe_base:
 	return ret;
 }
 
