@@ -665,6 +665,26 @@ static int nfb_pci_is_attachable(struct nfb_device *nfb, struct pci_dev* pci)
 	return 1;
 }
 
+struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
+{
+	struct nfb_pci_device *pci_device = NULL;
+
+	pci_device = kzalloc(sizeof(*pci_device), GFP_KERNEL);
+	if (pci_device == NULL) {
+		return NULL;
+	}
+
+	INIT_LIST_HEAD(&pci_device->global_pci_device_list);
+	INIT_LIST_HEAD(&pci_device->pci_device_list);
+	INIT_LIST_HEAD(&pci_device->reload_list);
+
+	strcpy(pci_device->pci_name, pci_name(pci));
+
+	list_add(&pci_device->global_pci_device_list, &global_pci_device_list);
+
+	return pci_device;
+}
+
 /*
  * nfb_pci_attach_endpoint - Attach PCI device to NFB device
  * @nfb: NFB device
@@ -686,18 +706,10 @@ struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct pc
 	}
 
 	if (!device_found) {
-		pci_device = kmalloc(sizeof(*pci_device), GFP_KERNEL);
+		pci_device = _nfb_pci_device_create(pci);
 		if (pci_device == NULL) {
 			return NULL;
 		}
-
-		INIT_LIST_HEAD(&pci_device->global_pci_device_list);
-		INIT_LIST_HEAD(&pci_device->pci_device_list);
-		INIT_LIST_HEAD(&pci_device->reload_list);
-
-		pci_device->nfb = NULL;
-		strcpy(pci_device->pci_name, pci_name(pci));
-		list_add(&pci_device->global_pci_device_list, &global_pci_device_list);
 	}
 
 	pci_device->pci = pci;
