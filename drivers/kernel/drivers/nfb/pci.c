@@ -725,14 +725,8 @@ err_nfb_pci_device_create:
  * @index: Index of PCI device within one NFB device
  * return: struct nfb_pci_device instance pointer or NULL
  */
-struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct pci_dev *pci, int index)
+struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct nfb_pci_device *pci_device, int index)
 {
-	struct nfb_pci_device *pci_device = NULL;
-
-	pci_device = nfb_pci_device_find_or_create(pci);
-	if (pci_device == NULL)
-		return NULL;
-
 	pci_device->nfb = nfb;
 	pci_device->index = index;
 
@@ -772,6 +766,7 @@ void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
 	uint64_t slave_dsn;
 	struct pci_bus *child_bus;
 	struct pci_dev *slave;
+	struct nfb_pci_device *pci_device;
 
 	list_for_each_entry(child_bus, &bus->children, node) {
 		nfb_pci_attach_all_slaves(nfb, child_bus);
@@ -781,13 +776,17 @@ void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
 		/* prevent device create for unintended devices */
 		if (!nfb_pci_is_attachable(nfb, slave))
 			continue;
+		pci_device = nfb_pci_device_find_or_create(slave);
+		if (pci_device == NULL)
+			continue;
+
 		slave_dsn = nfb_pci_read_dsn(slave);
 		if (nfb->dsn == slave_dsn) {
 			ret = nfb_pci_read_enpoint_id(slave);
 			if (ret == -1)
 				ret = 1;
 			dev_info(&nfb->pci->dev, "Found PCI slave %d device with name %s by DSN\n", ret, pci_name(slave));
-			nfb_pci_attach_endpoint(nfb, slave, ret);
+			nfb_pci_attach_endpoint(nfb, pci_device, ret);
 		}
 	}
 }
@@ -896,11 +895,13 @@ static int nfb_pci_probe_main(struct pci_dev *pci, const struct pci_device_id *i
 
 	nfb->dsn = nfb_pci_read_dsn(pci);
 
-	pci_device = nfb_pci_attach_endpoint(nfb, pci, 0);
+	pci_device = nfb_pci_device_find_or_create(pci);
 	if (pci_device == NULL) {
 		ret = -1;
-		goto err_attach_device;
+		goto err_nfb_pci_device_find_or_create;
 	}
+
+	nfb_pci_attach_endpoint(nfb, pci_device, 0);
 
 	while ((bus = pci_find_next_bus(bus))) {
 		nfb_pci_attach_all_slaves(nfb, bus);
@@ -957,7 +958,7 @@ err_nfb_read_fdt:
 	free_irq(pci->irq, nfb);
 	pci_disable_msi(pci);
 //err_pci_enable_msi:
-err_attach_device:
+err_nfb_pci_device_find_or_create:
 	nfb_destroy(nfb);
 err_nfb_create:
 	return ret;

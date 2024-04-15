@@ -78,7 +78,7 @@ struct nfb_pci_device {
 };
 
 void nfb_pci_detach_endpoint(struct nfb_device *nfb, struct pci_dev *pci);
-struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct pci_dev *pci, int index);
+struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct nfb_pci_device *pci_device, int index);
 void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus);
 void nfb_pci_detach_all_slaves(struct nfb_device *nfb);
 
