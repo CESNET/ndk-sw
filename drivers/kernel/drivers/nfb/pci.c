@@ -690,6 +690,7 @@ struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
 	INIT_LIST_HEAD(&pci_device->global_pci_device_list);
 	INIT_LIST_HEAD(&pci_device->pci_device_list);
 	INIT_LIST_HEAD(&pci_device->reload_list);
+	mutex_init(&pci_device->attach_lock);
 
 	strcpy(pci_device->pci_name, pci_name(pci));
 
@@ -708,6 +709,8 @@ struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
 		if (pci_device == NULL)
 			goto err_nfb_pci_device_create;
 	}
+
+	mutex_lock(&pci_device->attach_lock);
 
 	pci_device->pci = pci;
 	pci_device->bus = pci->bus;
@@ -788,6 +791,7 @@ void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
 			dev_info(&nfb->pci->dev, "Found PCI slave %d device with name %s by DSN\n", ret, pci_name(slave));
 			nfb_pci_attach_endpoint(nfb, pci_device, ret);
 		}
+		mutex_unlock(&pci_device->attach_lock);
 	}
 }
 
@@ -948,6 +952,8 @@ static int nfb_pci_probe_main(struct pci_dev *pci, const struct pci_device_id *i
 		goto err_nfb_probe;
 	}
 
+	mutex_unlock(&pci_device->attach_lock);
+
 	dev_info(&pci->dev, "successfully initialized\n");
 	return 0;
 
@@ -957,6 +963,9 @@ err_nfb_probe:
 err_nfb_read_fdt:
 	free_irq(pci->irq, nfb);
 	pci_disable_msi(pci);
+
+	mutex_unlock(&pci_device->attach_lock);
+
 //err_pci_enable_msi:
 err_nfb_pci_device_find_or_create:
 	nfb_destroy(nfb);

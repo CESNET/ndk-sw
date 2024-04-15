@@ -61,6 +61,7 @@ struct nfb_pci_device {
 	struct list_head global_pci_device_list;
 	struct list_head pci_device_list;
 	struct list_head reload_list;
+	struct mutex attach_lock;
 
 	struct pci_dev *pci;
 	struct nfb_device *nfb;
