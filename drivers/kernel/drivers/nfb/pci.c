@@ -814,17 +814,16 @@ err_root_pci_bus:
 	return ret;
 }
 
+static int nfb_pci_probe_main(struct pci_dev *pci, const struct pci_device_id *id, void * nfb_dtb_inject);
+
 /*
  * nfb_probe - called when kernel founds new NFB PCI device
  * @pci: PCI device
  * @id: PCI device identification structure
  */
-int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
+static int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 {
 	int ret = 0;
-	struct pci_bus *bus = NULL;
-	struct nfb_device *nfb;
-	struct nfb_pci_device *pci_device = NULL;
 	void * nfb_dtb_inject;
 
 	ret = nfb_pci_probe_base(pci);
@@ -839,6 +838,20 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		dev_info(&pci->dev, "successfully initialized only for DMA transfers\n");
 		return 0;
 	}
+
+	ret = nfb_pci_probe_main(pci, id, nfb_dtb_inject);
+	return ret;
+
+err_nfb_pci_probe_base:
+	return ret;
+}
+
+static int nfb_pci_probe_main(struct pci_dev *pci, const struct pci_device_id *id, void * nfb_dtb_inject)
+{
+	int ret = 0;
+	struct pci_bus *bus = NULL;
+	struct nfb_pci_device *pci_device;
+	struct nfb_device *nfb;
 
 	nfb = nfb_create();
 	if (IS_ERR(nfb)) {
@@ -917,7 +930,6 @@ err_nfb_read_fdt:
 err_attach_device:
 	nfb_destroy(nfb);
 err_nfb_create:
-err_nfb_pci_probe_base:
 	return ret;
 }
 
