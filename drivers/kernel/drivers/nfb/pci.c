@@ -665,6 +665,19 @@ static int nfb_pci_is_attachable(struct nfb_device *nfb, struct pci_dev* pci)
 	return 1;
 }
 
+struct nfb_pci_device *_nfb_pci_device_find(struct pci_dev *pci)
+{
+	struct nfb_pci_device *pci_device = NULL;
+
+	list_for_each_entry(pci_device, &global_pci_device_list, global_pci_device_list) {
+		if (strcmp(pci_device->pci_name, pci_name(pci)) == 0) {
+			return pci_device;
+		}
+	}
+
+	return NULL;
+}
+
 struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
 {
 	struct nfb_pci_device *pci_device = NULL;
@@ -685,6 +698,26 @@ struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
 	return pci_device;
 }
 
+struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
+{
+	struct nfb_pci_device * pci_device;
+
+	pci_device = _nfb_pci_device_find(pci);
+	if (pci_device == NULL) {
+		pci_device = _nfb_pci_device_create(pci);
+		if (pci_device == NULL)
+			goto err_nfb_pci_device_create;
+	}
+
+	pci_device->pci = pci;
+	pci_device->bus = pci->bus;
+
+	return pci_device;
+
+err_nfb_pci_device_create:
+	return NULL;
+}
+
 /*
  * nfb_pci_attach_endpoint - Attach PCI device to NFB device
  * @nfb: NFB device
@@ -694,32 +727,17 @@ struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
  */
 struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct pci_dev *pci, int index)
 {
-	int device_found = 0;
 	struct nfb_pci_device *pci_device = NULL;
 
-	//mutex_lock();
-	list_for_each_entry(pci_device, &global_pci_device_list, global_pci_device_list) {
-		if (strcmp(pci_device->pci_name, pci_name(pci)) == 0) {
-			device_found = 1;
-			break;
-		}
-	}
+	pci_device = nfb_pci_device_find_or_create(pci);
+	if (pci_device == NULL)
+		return NULL;
 
-	if (!device_found) {
-		pci_device = _nfb_pci_device_create(pci);
-		if (pci_device == NULL) {
-			return NULL;
-		}
-	}
-
-	pci_device->pci = pci;
-	pci_device->bus = pci->bus;
 	pci_device->nfb = nfb;
 	pci_device->index = index;
 
 	list_add(&pci_device->pci_device_list, &nfb->pci_devices);
 
-	//mutex_unlock();
 	return pci_device;
 }
 
