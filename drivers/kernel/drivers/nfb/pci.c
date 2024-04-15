@@ -940,7 +940,7 @@ static int nfb_pci_probe_main(struct pci_dev *pci, const struct pci_device_id *i
 
 	nfb_fdt_fixups(nfb);
 
-	pci_set_drvdata(pci, nfb);
+	pci_set_drvdata(pci, pci_device);
 
 	/* Publish NFB object */
 	ret = nfb_probe(nfb);
@@ -970,9 +970,13 @@ err_nfb_create:
  */
 void nfb_pci_remove(struct pci_dev *pci)
 {
-	struct nfb_device *nfb = (struct nfb_device *) pci_get_drvdata(pci);
-	if (nfb == NULL)
+	struct nfb_pci_device *pci_device = (struct nfb_pci_device *) pci_get_drvdata(pci);
+	struct nfb_device *nfb;
+
+	if (pci_device == NULL)
 		goto disable_device;
+
+	nfb = pci_device->nfb;
 
 	/* At first detach all drivers */
 	nfb_remove(nfb);
@@ -991,9 +995,15 @@ disable_device:
 
 static int nfb_pci_sriov_configure(struct pci_dev *dev, int numvfs)
 {
-	struct nfb_device *nfb = (struct nfb_device *) pci_get_drvdata(dev);
+	struct nfb_pci_device *pci_device = (struct nfb_pci_device *) pci_get_drvdata(dev);
+	struct nfb_device *nfb;
 	int i;
 	int ret = 0;
+
+	if (pci_device == NULL)
+		return -ENODEV;
+
+	nfb = pci_device->nfb;
 
 	if (numvfs == 0) {
 		pci_disable_sriov(dev);
