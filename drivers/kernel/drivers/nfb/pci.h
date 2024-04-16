@@ -67,7 +67,9 @@ struct nfb_pci_device {
 	struct nfb_device *nfb;
 	struct pci_bus *bus;
 
-	int index;	/* 0: master, > 0: slaves */
+	uint64_t dsn;
+	int index;                      /* 0: main device, > 0: subsidiary devices */
+	int index_valid: 1;             /* index (and dsn) is valid: freshly readen */
 	int is_probed_as_main: 1;
 
 	int devfn;

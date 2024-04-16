@@ -666,6 +666,18 @@ static int nfb_pci_is_attachable(struct nfb_device *nfb, struct pci_dev* pci)
 	return 1;
 }
 
+static int nfb_pci_device_is_attachable(struct nfb_device *nfb, struct nfb_pci_device *sub)
+{
+	if (nfb == NULL || sub == NULL)
+		return 0;
+
+
+	if (nfb->dsn == 0 || nfb->dsn != sub->dsn)
+		return 0;
+
+	return 1;
+}
+
 struct nfb_pci_device *_nfb_pci_device_find(struct pci_dev *pci)
 {
 	struct nfb_pci_device *pci_device = NULL;
@@ -720,6 +732,12 @@ struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
 	pci_device->pci = pci;
 	pci_device->bus = pci->bus;
 
+	if (!pci_device->index_valid) {
+		pci_device->dsn = nfb_pci_read_dsn(pci);
+		pci_device->index = nfb_pci_read_enpoint_id(pci);
+		pci_device->index_valid = 1;
+	}
+
 	return pci_device;
 
 err_nfb_pci_device_create:
@@ -737,7 +755,6 @@ err_nfb_pci_device_create:
 struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct nfb_pci_device *pci_device, int index)
 {
 	pci_device->nfb = nfb;
-	pci_device->index = index;
 
 	list_add(&pci_device->pci_device_list, &nfb->pci_devices);
 
@@ -771,8 +788,6 @@ void nfb_pci_detach_endpoint(struct nfb_device *nfb, struct pci_dev *pci)
  */
 void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
 {
-	int ret;
-	uint64_t slave_dsn;
 	struct pci_bus *child_bus;
 	struct pci_dev *slave;
 	struct nfb_pci_device *pci_device;
@@ -789,13 +804,9 @@ void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
 		if (pci_device == NULL)
 			continue;
 
-		slave_dsn = nfb_pci_read_dsn(slave);
-		if (nfb->dsn == slave_dsn) {
-			ret = nfb_pci_read_enpoint_id(slave);
-			if (ret == -1)
-				ret = 1;
-			dev_info(&nfb->pci->dev, "Found PCI slave %d device with name %s by DSN\n", ret, pci_name(slave));
-			nfb_pci_attach_endpoint(nfb, pci_device, ret);
+		if (nfb_pci_device_is_attachable(nfb, pci_device)) {
+			dev_info(&nfb->pci->dev, "Found PCI sub device %d with name %s by DSN\n", pci_device->index, pci_name(slave));
+			nfb_pci_attach_endpoint(nfb, pci_device, pci_device->index);
 		}
 		mutex_unlock(&pci_device->attach_lock);
 	}
@@ -881,8 +892,7 @@ static int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	nfb_dtb_inject = nfb_dtb_inject_get_pci(pci_name(pci));
 
 	/* Check presence of driver_data parameter */
-	ret = nfb_pci_read_enpoint_id(pci);
-	if (((struct nfb_pci_dev*) id->driver_data == NULL || ret > 0) && nfb_dtb_inject == NULL) {
+	if (((struct nfb_pci_dev*) id->driver_data == NULL || pci_device->index > 0) && nfb_dtb_inject == NULL) {
 		dev_info(&pci->dev, "successfully initialized only for DMA transfers\n");
 	} else {
 		pci_device->is_probed_as_main = 1;
@@ -903,6 +913,7 @@ err_nfb_pci_probe_main:
 	goto err_nfb_pci_probe;
 
 err_nfb_pci_probe:
+	pci_device->index_valid = 0;
 	mutex_unlock(&pci_device->attach_lock);
 
 err_nfb_pci_device_find_or_create:
@@ -928,7 +939,7 @@ static int nfb_pci_probe_main(struct nfb_pci_device *pci_device, const struct pc
 	if (nfb->nfb_pci_dev)
 		nfb->pci_name = nfb->nfb_pci_dev->name;
 
-	nfb->dsn = nfb_pci_read_dsn(pci);
+	nfb->dsn = pci_device->dsn;
 
 	nfb_pci_attach_endpoint(nfb, pci_device, 0);
 
@@ -1017,6 +1028,8 @@ void nfb_pci_remove(struct pci_dev *pci)
 		pci_disable_msi(pci);
 		nfb_destroy(nfb);
 	}
+
+	pci_device->index_valid = 0;
 
 	mutex_unlock(&pci_device->attach_lock);
 
