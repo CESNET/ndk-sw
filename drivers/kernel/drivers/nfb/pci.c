@@ -35,6 +35,7 @@ static bool fallback_fdt = 1;
 static bool fallback_fdt_boot = 0;
 static bool flash_recovery_ro = 1;
 
+struct mutex global_pci_device_list_lock;
 struct list_head global_pci_device_list;
 
 extern struct nfb_driver_ops nfb_registered_drivers[NFB_DRIVERS_MAX];
@@ -703,6 +704,8 @@ struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
 {
 	struct nfb_pci_device * pci_device;
 
+	mutex_lock(&global_pci_device_list_lock);
+
 	pci_device = _nfb_pci_device_find(pci);
 	if (pci_device == NULL) {
 		pci_device = _nfb_pci_device_create(pci);
@@ -712,12 +715,15 @@ struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
 
 	mutex_lock(&pci_device->attach_lock);
 
+	mutex_unlock(&global_pci_device_list_lock);
+
 	pci_device->pci = pci;
 	pci_device->bus = pci->bus;
 
 	return pci_device;
 
 err_nfb_pci_device_create:
+	mutex_unlock(&global_pci_device_list_lock);
 	return NULL;
 }
 
@@ -1048,6 +1054,8 @@ int nfb_pci_init(void)
 {
 	int ret;
 	INIT_LIST_HEAD(&global_pci_device_list);
+	mutex_init(&global_pci_device_list_lock);
+
 	ret = pci_register_driver(&nfb_driver);
 	if (ret)
 		goto err_register;
