@@ -168,15 +168,6 @@ int nfb_mi_attach_bus(struct nfb_device *nfb, void *priv, int node_offset)
 
 	snprintf(nodename, sizeof(nodename), "PCI%d,BAR%d", pci_index, bar);
 
-#define NFB_MI_PATH_COMPATIBILITY
-#ifdef NFB_MI_PATH_COMPATIBILITY
-	if (pci_index == 0 && bar == 0) {
-		node_offset = fdt_path_offset(nfb->fdt, "/drivers/mi");
-		fdt_setprop_u64(nfb->fdt, node_offset, "mmap_base", mi_node->mmap_offset);
-		fdt_setprop_u64(nfb->fdt, node_offset, "mmap_size", mi_node->mem_len);
-	}
-#endif
-
 	node_offset = fdt_path_offset(nfb->fdt, "/drivers/mi");
 	node_offset = fdt_add_subnode(nfb->fdt, node_offset, nodename);
 	fdt_setprop_u64(nfb->fdt, node_offset, "mmap_base", mi_node->mmap_offset);
