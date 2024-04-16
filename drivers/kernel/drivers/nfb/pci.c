@@ -36,6 +36,7 @@ static bool fallback_fdt_boot = 0;
 static bool flash_recovery_ro = 1;
 
 struct mutex global_pci_device_list_lock;
+struct mutex global_try_attach_lock;
 struct list_head global_pci_device_list;
 
 extern struct nfb_driver_ops nfb_registered_drivers[NFB_DRIVERS_MAX];
@@ -671,6 +672,8 @@ static int nfb_pci_device_is_attachable(struct nfb_device *nfb, struct nfb_pci_d
 	if (nfb == NULL || sub == NULL)
 		return 0;
 
+	if (sub->nfb)
+		return 0;
 
 	if (nfb->dsn == 0 || nfb->dsn != sub->dsn)
 		return 0;
@@ -831,6 +834,45 @@ void nfb_pci_detach_endpoints(struct nfb_device *nfb, struct nfb_pci_device *sel
 	}
 }
 
+void nfb_pci_try_attach(struct nfb_pci_device *self)
+{
+	struct nfb_device * nfb;
+	struct nfb_pci_device *pci_device;
+	mutex_lock(&global_try_attach_lock);
+	mutex_lock(&global_pci_device_list_lock);
+	mutex_lock(&self->attach_lock);
+
+	if (self->is_probed_as_main) {
+		nfb = self->nfb;
+		list_for_each_entry(pci_device, &global_pci_device_list, global_pci_device_list) {
+			if (mutex_trylock(&pci_device->attach_lock)) {
+				if (pci_device->is_probed_as_sub &&
+					nfb_pci_is_attachable(nfb, pci_device->pci) &&
+						nfb_pci_device_is_attachable(nfb, pci_device)) {
+					nfb_pci_attach_endpoint(nfb, pci_device, pci_device->index);
+				}
+				mutex_unlock(&pci_device->attach_lock);
+			}
+		}
+	} else if (self->is_probed_as_sub) {
+		list_for_each_entry(pci_device, &global_pci_device_list, global_pci_device_list) {
+			if (mutex_trylock(&pci_device->attach_lock)) {
+				nfb = pci_device->nfb;
+				if (pci_device->is_probed_as_main &&
+						nfb_pci_is_attachable(nfb, self->pci) &&
+						nfb_pci_device_is_attachable(nfb, self)) {
+					nfb_pci_attach_endpoint(nfb, self, self->index);
+				}
+				mutex_unlock(&pci_device->attach_lock);
+			}
+		}
+	}
+
+	mutex_unlock(&self->attach_lock);
+	mutex_unlock(&global_pci_device_list_lock);
+	mutex_unlock(&global_try_attach_lock);
+}
+
 static int nfb_pci_probe_base(struct pci_dev *pci)
 {
 	int ret;
@@ -908,6 +950,8 @@ static int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	}
 
 	mutex_unlock(&pci_device->attach_lock);
+
+	nfb_pci_try_attach(pci_device);
 	return 0;
 
 //err_nfb_pci_probe_sub:
@@ -1096,6 +1140,7 @@ int nfb_pci_init(void)
 	int ret;
 	INIT_LIST_HEAD(&global_pci_device_list);
 	mutex_init(&global_pci_device_list_lock);
+	mutex_init(&global_try_attach_lock);
 
 	ret = pci_register_driver(&nfb_driver);
 	if (ret)
