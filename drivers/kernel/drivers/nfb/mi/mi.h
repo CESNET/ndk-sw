@@ -16,6 +16,7 @@ struct nfb_mi {
 
 struct nfb_mi_node {
 	struct list_head nfb_mi_list;
+	struct nfb_mi *mi;
 
 	resource_size_t mem_phys;
 	resource_size_t mem_len;
@@ -26,6 +27,7 @@ struct nfb_mi_node {
 
 	size_t mmap_offset;
 	struct nfb_bus bus;
+	int is_wc_mapped;
 };
 
 int nfb_mi_attach(struct nfb_device* nfb, void **priv);
