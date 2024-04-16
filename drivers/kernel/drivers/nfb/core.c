@@ -298,6 +298,8 @@ static struct nfb_driver_ops embedded_driver_ops[] = {
 	{
 		.attach = nfb_mi_attach,
 		.detach = nfb_mi_detach,
+		.probe_endpoint = nfb_mi_probe_endpoint,
+		.remove_endpoint = nfb_mi_remove_endpoint,
 	},
 	{
 		.attach = nfb_boot_attach,

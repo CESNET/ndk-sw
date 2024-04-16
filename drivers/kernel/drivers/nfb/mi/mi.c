@@ -272,6 +272,30 @@ int nfb_mi_attach_node(struct nfb_device *nfb, void *priv, int base_offset)
 	return 0;
 }
 
+void nfb_mi_probe_endpoint(void *priv, struct nfb_pci_device *pci_device)
+{
+	struct nfb_mi *nfb_mi = priv;
+	struct nfb_mi_node *mi;
+
+	list_for_each_entry(mi, &nfb_mi->node_list, nfb_mi_list) {
+		if (mi->pci_index == pci_device->index) {
+			nfb_mi_map(nfb_mi->nfb, mi, pci_device);
+		}
+	}
+}
+
+void nfb_mi_remove_endpoint(void *priv, struct nfb_pci_device *pci_device)
+{
+	struct nfb_mi *nfb_mi = priv;
+	struct nfb_mi_node *mi;
+
+	list_for_each_entry(mi, &nfb_mi->node_list, nfb_mi_list) {
+		if (mi->pci_index == pci_device->index) {
+			nfb_mi_unmap(nfb_mi->nfb, mi);
+		}
+	}
+}
+
 int nfb_mi_attach(struct nfb_device *nfb, void **priv)
 {
 	struct nfb_mi *mi;
@@ -282,6 +306,7 @@ int nfb_mi_attach(struct nfb_device *nfb, void **priv)
 		return -ENOMEM;
 
 	INIT_LIST_HEAD(&mi->node_list);
+	mi->nfb = nfb;
 
 	*priv = mi;
 
