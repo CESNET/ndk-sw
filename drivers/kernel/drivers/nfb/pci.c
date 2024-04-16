@@ -850,6 +850,7 @@ void nfb_pci_try_attach(struct nfb_pci_device *self)
 					nfb_pci_is_attachable(nfb, pci_device->pci) &&
 						nfb_pci_device_is_attachable(nfb, pci_device)) {
 					nfb_pci_attach_endpoint(nfb, pci_device, pci_device->index);
+					nfb_probe_endpoint_late(nfb, pci_device);
 				}
 				mutex_unlock(&pci_device->attach_lock);
 			}
@@ -862,6 +863,7 @@ void nfb_pci_try_attach(struct nfb_pci_device *self)
 						nfb_pci_is_attachable(nfb, self->pci) &&
 						nfb_pci_device_is_attachable(nfb, self)) {
 					nfb_pci_attach_endpoint(nfb, self, self->index);
+					nfb_probe_endpoint_late(nfb, self);
 				}
 				mutex_unlock(&pci_device->attach_lock);
 			}
@@ -1080,6 +1082,7 @@ void nfb_pci_remove(struct pci_dev *pci)
 		nfb_destroy(nfb);
 	} else if (pci_device->is_probed_as_sub) {
 		if (nfb) {
+			nfb_remove_endpoint_early(nfb, pci_device);
 			nfb_pci_detach_endpoint(nfb, pci_device->pci);
 		}
 		pci_device->is_probed_as_sub = 0;

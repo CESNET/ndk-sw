@@ -44,6 +44,10 @@ struct nfb_driver_ops {
 	void (*release)(void *priv, void *app_priv, struct file *file);
 	long (*ioctl)(void *priv, void *app_priv, struct file *file, unsigned int cmd, unsigned long arg);
 	void (*numvfs_change)(void *priv, int numvfs);
+	/* probe_endpoint is called only for subsidiary devices probed after main device probing */
+	void (*probe_endpoint)(void *priv, struct nfb_pci_device *pci_device);
+	/* remove_endpoint is called only for subsidiary devices removed before the main device removal */
+	void (*remove_endpoint)(void *priv, struct nfb_pci_device *pci_device);
 	unsigned int ioc_type;
 };
 
@@ -143,6 +147,9 @@ void *nfb_nalloc(int numa_node, size_t size);
 void nfb_nfree(int numa_node, void *ptr, size_t size);
 
 void *nfb_get_priv_for_attach_fn(struct nfb_device *nfb, nfb_driver_ops_attach_t attach);
+
+void nfb_probe_endpoint_late(struct nfb_device *nfb, struct nfb_pci_device *pci_device);
+void nfb_remove_endpoint_early(struct nfb_device *nfb, struct nfb_pci_device *pci_device);
 
 void nfb_bus_register(struct nfb_device *nfb, struct nfb_bus *bus);
 void nfb_bus_unregister(struct nfb_device *nfb, struct nfb_bus *bus);
