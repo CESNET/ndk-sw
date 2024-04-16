@@ -71,6 +71,7 @@ struct nfb_pci_device {
 	int index;                      /* 0: main device, > 0: subsidiary devices */
 	int index_valid: 1;             /* index (and dsn) is valid: freshly readen */
 	int is_probed_as_main: 1;
+	int is_probed_as_sub: 1;
 
 	int devfn;
 	int cap;

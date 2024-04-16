@@ -816,14 +816,18 @@ void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
  * nfb_pci_detach_all_slaves - Detach all slave endpoints from NFB device
  * @nfb: NFB device
  */
-void nfb_pci_detach_all_slaves(struct nfb_device *nfb)
+void nfb_pci_detach_endpoints(struct nfb_device *nfb, struct nfb_pci_device *self)
 {
 	struct nfb_pci_device *pci_device, *temp;
 
 	list_for_each_entry_safe(pci_device, temp, &nfb->pci_devices, pci_device_list) {
-		if (!pci_device->is_probed_as_main) {
-			nfb_pci_detach_endpoint(nfb, pci_device->pci);
-		}
+		if (pci_device != self)
+			mutex_lock(&pci_device->attach_lock);
+
+		nfb_pci_detach_endpoint(nfb, pci_device->pci);
+
+		if (pci_device != self)
+			mutex_unlock(&pci_device->attach_lock);
 	}
 }
 
@@ -893,6 +897,7 @@ static int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 
 	/* Check presence of driver_data parameter */
 	if (((struct nfb_pci_dev*) id->driver_data == NULL || pci_device->index > 0) && nfb_dtb_inject == NULL) {
+		pci_device->is_probed_as_sub = 1;
 		dev_info(&pci->dev, "successfully initialized only for DMA transfers\n");
 	} else {
 		pci_device->is_probed_as_main = 1;
@@ -1026,7 +1031,14 @@ void nfb_pci_remove(struct pci_dev *pci)
 		if (pci->irq != -1)
 			free_irq(pci->irq, nfb);
 		pci_disable_msi(pci);
+		nfb_pci_detach_endpoints(nfb, pci_device);
+
 		nfb_destroy(nfb);
+	} else if (pci_device->is_probed_as_sub) {
+		if (nfb) {
+			nfb_pci_detach_endpoint(nfb, pci_device->pci);
+		}
+		pci_device->is_probed_as_sub = 0;
 	}
 
 	pci_device->index_valid = 0;
