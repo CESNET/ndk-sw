@@ -136,7 +136,7 @@ int nfb_boot_reload(void *arg)
 	struct nfb_boot *boot;
 	struct nfb_device *nfb;
 	struct list_head slaves;
-	struct nfb_pci_device *master;
+	struct nfb_pci_device *master = NULL;
 	struct nfb_pci_device *slave, *temp;
 	struct device *mbus_dev;
 
@@ -153,10 +153,10 @@ int nfb_boot_reload(void *arg)
 
 	/* Remove PCIe slaves */
 	list_for_each_entry_safe(slave, temp, &nfb->pci_devices, pci_device_list) {
-		if (slave->index == 0)
+		if (slave->index == 0) {
+			master = slave;
 			continue;
-
-		nfb_pci_detach_endpoint(nfb, slave->pci);
+		}
 
 		list_add(&slave->reload_list, &slaves);
 
@@ -166,14 +166,10 @@ int nfb_boot_reload(void *arg)
 
 	}
 
-	master = list_first_entry(&nfb->pci_devices, struct nfb_pci_device, pci_device_list);
-
 	/* Prepare master PCIe for removal */
 	ret = nfb_boot_reload_prepare_remove(master);
 	if (ret)
 		goto err_reload_prepare_remove;
-
-	nfb_pci_detach_endpoint(nfb, master->pci);
 
 	/* Workaround: Close all MTDs within BootFPGA */
 	nfb_boot_mtd_destroy(boot);
