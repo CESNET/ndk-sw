@@ -153,7 +153,7 @@ int nfb_boot_reload(void *arg)
 
 	/* Remove PCIe slaves */
 	list_for_each_entry_safe(slave, temp, &nfb->pci_devices, pci_device_list) {
-		if (slave->index == 0) {
+		if (slave->is_probed_as_main) {
 			master = slave;
 			continue;
 		}

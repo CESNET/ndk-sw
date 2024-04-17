@@ -68,6 +68,7 @@ struct nfb_pci_device {
 	struct pci_bus *bus;
 
 	int index;	/* 0: master, > 0: slaves */
+	int is_probed_as_main: 1;
 
 	int devfn;
 	int cap;

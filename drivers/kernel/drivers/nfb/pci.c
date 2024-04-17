@@ -810,7 +810,7 @@ void nfb_pci_detach_all_slaves(struct nfb_device *nfb)
 	struct nfb_pci_device *pci_device, *temp;
 
 	list_for_each_entry_safe(pci_device, temp, &nfb->pci_devices, pci_device_list) {
-		if (pci_device->index > 0) {
+		if (!pci_device->is_probed_as_main) {
 			nfb_pci_detach_endpoint(nfb, pci_device->pci);
 		}
 	}
@@ -853,7 +853,7 @@ err_root_pci_bus:
 	return ret;
 }
 
-static int nfb_pci_probe_main(struct pci_dev *pci, const struct pci_device_id *id, void * nfb_dtb_inject);
+static int nfb_pci_probe_main(struct nfb_pci_device *pci_device, const struct pci_device_id *id, void * nfb_dtb_inject);
 
 /*
  * nfb_probe - called when kernel founds new NFB PCI device
@@ -864,10 +864,19 @@ static int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 {
 	int ret = 0;
 	void * nfb_dtb_inject;
+	struct nfb_pci_device *pci_device;
 
 	ret = nfb_pci_probe_base(pci);
 	if (ret)
 		goto err_nfb_pci_probe_base;
+
+	pci_device = nfb_pci_device_find_or_create(pci);
+	if (pci_device == NULL) {
+		ret = -ENOMEM;
+		goto err_nfb_pci_device_find_or_create;
+	}
+
+	pci_set_drvdata(pci, pci_device);
 
 	nfb_dtb_inject = nfb_dtb_inject_get_pci(pci_name(pci));
 
@@ -875,21 +884,37 @@ static int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	ret = nfb_pci_read_enpoint_id(pci);
 	if (((struct nfb_pci_dev*) id->driver_data == NULL || ret > 0) && nfb_dtb_inject == NULL) {
 		dev_info(&pci->dev, "successfully initialized only for DMA transfers\n");
-		return 0;
+	} else {
+		pci_device->is_probed_as_main = 1;
+
+		ret = nfb_pci_probe_main(pci_device, id, nfb_dtb_inject);
+		if (ret)
+			goto err_nfb_pci_probe_main;
 	}
 
-	ret = nfb_pci_probe_main(pci, id, nfb_dtb_inject);
-	return ret;
+	mutex_unlock(&pci_device->attach_lock);
+	return 0;
 
+//err_nfb_pci_probe_sub:
+//	goto err_nfb_pci_probe;
+
+err_nfb_pci_probe_main:
+	pci_device->is_probed_as_main = 0;
+	goto err_nfb_pci_probe;
+
+err_nfb_pci_probe:
+	mutex_unlock(&pci_device->attach_lock);
+
+err_nfb_pci_device_find_or_create:
 err_nfb_pci_probe_base:
 	return ret;
 }
 
-static int nfb_pci_probe_main(struct pci_dev *pci, const struct pci_device_id *id, void * nfb_dtb_inject)
+static int nfb_pci_probe_main(struct nfb_pci_device *pci_device, const struct pci_device_id *id, void * nfb_dtb_inject)
 {
 	int ret = 0;
+	struct pci_dev *pci = pci_device->pci;
 	struct pci_bus *bus = NULL;
-	struct nfb_pci_device *pci_device;
 	struct nfb_device *nfb;
 
 	nfb = nfb_create();
@@ -904,12 +929,6 @@ static int nfb_pci_probe_main(struct pci_dev *pci, const struct pci_device_id *i
 		nfb->pci_name = nfb->nfb_pci_dev->name;
 
 	nfb->dsn = nfb_pci_read_dsn(pci);
-
-	pci_device = nfb_pci_device_find_or_create(pci);
-	if (pci_device == NULL) {
-		ret = -1;
-		goto err_nfb_pci_device_find_or_create;
-	}
 
 	nfb_pci_attach_endpoint(nfb, pci_device, 0);
 
@@ -950,15 +969,11 @@ static int nfb_pci_probe_main(struct pci_dev *pci, const struct pci_device_id *i
 
 	nfb_fdt_fixups(nfb);
 
-	pci_set_drvdata(pci, pci_device);
-
 	/* Publish NFB object */
 	ret = nfb_probe(nfb);
 	if (ret) {
 		goto err_nfb_probe;
 	}
-
-	mutex_unlock(&pci_device->attach_lock);
 
 	dev_info(&pci->dev, "successfully initialized\n");
 	return 0;
@@ -970,10 +985,7 @@ err_nfb_read_fdt:
 	free_irq(pci->irq, nfb);
 	pci_disable_msi(pci);
 
-	mutex_unlock(&pci_device->attach_lock);
-
 //err_pci_enable_msi:
-err_nfb_pci_device_find_or_create:
 	nfb_destroy(nfb);
 err_nfb_create:
 	return ret;
@@ -988,22 +1000,26 @@ void nfb_pci_remove(struct pci_dev *pci)
 	struct nfb_pci_device *pci_device = (struct nfb_pci_device *) pci_get_drvdata(pci);
 	struct nfb_device *nfb;
 
-	if (pci_device == NULL)
-		goto disable_device;
-
 	nfb = pci_device->nfb;
 
-	/* At first detach all drivers */
-	nfb_remove(nfb);
-	kfree(nfb->fdt);
+	mutex_lock(&pci_device->attach_lock);
 
-	/* Free all mappings */
-	if (pci->irq != -1)
-		free_irq(pci->irq, nfb);
-	pci_disable_msi(pci);
-	nfb_destroy(nfb);
+	if (pci_device->is_probed_as_main) {
+		pci_device->is_probed_as_main = 0;
 
-disable_device:
+		/* At first detach all drivers */
+		nfb_remove(nfb);
+		kfree(nfb->fdt);
+
+		/* Free all mappings */
+		if (pci->irq != -1)
+			free_irq(pci->irq, nfb);
+		pci_disable_msi(pci);
+		nfb_destroy(nfb);
+	}
+
+	mutex_unlock(&pci_device->attach_lock);
+
 	pci_disable_device(pci);
 	dev_info(&pci->dev, "disabled\n");
 }
@@ -1015,7 +1031,7 @@ static int nfb_pci_sriov_configure(struct pci_dev *dev, int numvfs)
 	int i;
 	int ret = 0;
 
-	if (pci_device == NULL)
+	if (!pci_device->is_probed_as_main)
 		return -ENODEV;
 
 	nfb = pci_device->nfb;
