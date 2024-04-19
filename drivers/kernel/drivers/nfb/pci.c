@@ -155,6 +155,64 @@ static inline void n6010_binary_slot_prepare(void *fdt, int node, const char *mo
 	fdt_appendprop(fdt, subnode, "modify-mask",  mod_mask, mod_len);
 }
 
+static void nfb_pci_fdt_update_endpoints(struct nfb_device *nfb)
+{
+	int pci_index, bar;
+	int i, node, nodes, node_offset;
+	const void *prop;
+	int proplen;
+
+	char node_name[NFB_FDT_FIXUP_NODE_NAME_LEN];
+	struct nfb_pci_device *pci_device = NULL;
+	void *fdt = nfb->fdt;
+
+	enum pci_bus_speed speed;
+	enum pcie_link_width width;
+
+	/* Populate endpoint nodes for each MI bus, if they don't exists */
+	nodes = nfb_comp_count(nfb, "netcope,bus,mi");
+	for (i = nodes-1; i >= 0; i--) {
+		node_offset = nfb_comp_find(nfb, "netcope,bus,mi", i);
+
+		prop = fdt_getprop(nfb->fdt, node_offset, "resource", &proplen);
+		if (prop == NULL || proplen <= 0 || ((const char*)prop)[proplen-1] != 0)
+			continue;
+
+		proplen = sscanf(prop, "PCI%d,BAR%d", &pci_index, &bar);
+		if (proplen != 2)
+			continue;
+
+		snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "/system/device/endpoint%d", pci_index);
+		node_offset = fdt_path_offset(fdt, node_name);
+
+		if (node_offset < 0) {
+			snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "endpoint%d", pci_index);
+			node_offset = fdt_path_offset(fdt, "/system/device");
+			node = fdt_add_subnode(fdt, node_offset, node_name);
+		}
+	}
+
+	list_for_each_entry(pci_device, &nfb->pci_devices, pci_device_list) {
+		snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "/system/device/endpoint%d", pci_device->index);
+		node = fdt_path_offset(fdt, node_name);
+		if (node < 0) {
+			snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "endpoint%d", pci_device->index);
+			node = fdt_path_offset(fdt, "/system/device");
+
+			node = fdt_add_subnode(fdt, node, node_name);
+		}
+
+		if (pci_device->is_probed_as_main || pci_device->is_probed_as_sub) {
+			fdt_setprop_string(fdt, node, "pci-slot", pci_name(pci_device->pci));
+			fdt_setprop_u32(fdt, node, "numa-node", dev_to_node(&pci_device->pci->dev));
+
+			pcie_bandwidth_available(pci_device->pci, NULL, &speed, &width);
+			fdt_setprop_u32(fdt, node, "pci-speed", speed);
+			fdt_setprop_u32(fdt, node, "pcie-link-width", width);
+		}
+	}
+}
+
 /*
  * nfb_fdt_fixups - Fix the FDT: Create missing nodes and properties
  * @nfb: NFB device
@@ -164,24 +222,13 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	static const char *flag_fb_select_flash = "fb_select_flash";
 	static const char *flag_flash_set_async = "flash_set_async";
 
-	int i, nodes;
-	int ret;
+	int i;
 	int node, subnode;
-	const void *prop;
 	uint32_t prop32;
-	struct nfb_pci_device *pci_device = NULL;
-	int node_offset;
 
-	int pci_index, bar;
 	const char *name;
 	const char *card_name;
 	void *fdt = nfb->fdt;
-
-	enum pci_bus_speed speed;
-	enum pcie_link_width width;
-
-	char node_name[NFB_FDT_FIXUP_NODE_NAME_LEN];
-
 	int proplen;
 
 	static const char * boot_ctrl_compatibles[] = {
@@ -198,46 +245,6 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 	/* Add index of device in system */
 	fdt_setprop_u32(fdt, node, "card-id", nfb->minor);
-
-	list_for_each_entry(pci_device, &nfb->pci_devices, pci_device_list) {
-		snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "/system/device/endpoint%d", pci_device->index);
-		node = fdt_path_offset(fdt, node_name);
-		if (node < 0) {
-			snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "endpoint%d", pci_device->index);
-			node = fdt_path_offset(fdt, "/system/device");
-			node = fdt_add_subnode(fdt, node, node_name);
-		}
-
-		fdt_setprop_string(fdt, node, "pci-slot", pci_name(pci_device->pci));
-		fdt_setprop_u32(fdt, node, "numa-node", dev_to_node(&pci_device->pci->dev));
-
-		pcie_bandwidth_available(pci_device->pci, NULL, &speed, &width);
-		fdt_setprop_u32(fdt, node, "pci-speed", speed);
-		fdt_setprop_u32(fdt, node, "pcie-link-width", width);
-	}
-
-	/* Populate endpoint nodes for each MI bus, if they don't exists */
-	nodes = nfb_comp_count(nfb, "netcope,bus,mi");
-	for (i = 0; i < nodes; i++) {
-		node_offset = nfb_comp_find(nfb, "netcope,bus,mi", i);
-
-		prop = fdt_getprop(nfb->fdt, node_offset, "resource", &proplen);
-		if (prop == NULL || proplen <= 0 || ((const char*)prop)[proplen-1] != 0)
-			continue;
-
-		ret = sscanf(prop, "PCI%d,BAR%d", &pci_index, &bar);
-		if (ret != 2)
-			continue;
-
-		snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "/system/device/endpoint%d", pci_index);
-		node_offset = fdt_path_offset(fdt, node_name);
-
-		if (node_offset < 0) {
-			snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "endpoint%d", pci_index);
-			node_offset = fdt_path_offset(fdt, "/system/device");
-			node = fdt_add_subnode(fdt, node_offset, node_name);
-		}
-	}
 
 	node = fdt_path_offset(fdt, "/firmware");
 
@@ -887,6 +894,7 @@ void nfb_pci_try_attach(struct nfb_pci_device *self)
 				mutex_unlock(&pci_device->attach_lock);
 			}
 		}
+		nfb_pci_fdt_update_endpoints(nfb);
 	} else if (self->is_probed_as_sub) {
 		list_for_each_entry(pci_device, &global_pci_device_list, global_pci_device_list) {
 			if (mutex_trylock(&pci_device->attach_lock)) {
@@ -896,6 +904,7 @@ void nfb_pci_try_attach(struct nfb_pci_device *self)
 						nfb_pci_device_is_attachable(nfb, self)) {
 					nfb_pci_attach_endpoint(nfb, self, self->index);
 					nfb_probe_endpoint_late(nfb, self);
+					nfb_pci_fdt_update_endpoints(nfb);
 				}
 				mutex_unlock(&pci_device->attach_lock);
 			}
@@ -1024,24 +1033,6 @@ static int nfb_pci_probe_main(struct nfb_pci_device *pci_device, const struct pc
 
 	nfb->dsn = pci_device->dsn;
 
-	nfb_pci_attach_endpoint(nfb, pci_device, 0);
-
-	while ((bus = pci_find_next_bus(bus))) {
-		nfb_pci_attach_all_slaves(nfb, bus);
-	}
-
-	/* Initialize interrupts */
-	ret = pci_enable_msi(pci);
-	if (ret) {
-		dev_info(&pci->dev, "unable to enable MSI\n");
-		//goto err_pci_enable_msi;
-	} else {
-		ret = request_irq(pci->irq, nfb_interrupt, IRQF_SHARED, "nfb", nfb);
-	}
-	if (ret) {
-		pci->irq = -1;
-	}
-
 	nfb->fdt = nfb_dtb_inject;
 	if (nfb->fdt == NULL) {
 		/* Populate device tree */
@@ -1062,6 +1053,26 @@ static int nfb_pci_probe_main(struct nfb_pci_device *pci_device, const struct pc
 		nfb_pci_create_fallback_fdt(nfb);
 
 	nfb_fdt_fixups(nfb);
+
+	nfb_pci_attach_endpoint(nfb, pci_device, 0);
+
+	while ((bus = pci_find_next_bus(bus))) {
+		nfb_pci_attach_all_slaves(nfb, bus);
+	}
+
+	nfb_pci_fdt_update_endpoints(nfb);
+
+	/* Initialize interrupts */
+	ret = pci_enable_msi(pci);
+	if (ret) {
+		dev_info(&pci->dev, "unable to enable MSI\n");
+		//goto err_pci_enable_msi;
+	} else {
+		ret = request_irq(pci->irq, nfb_interrupt, IRQF_SHARED, "nfb", nfb);
+	}
+	if (ret) {
+		pci->irq = -1;
+	}
 
 	/* Publish NFB object */
 	ret = nfb_probe(nfb);
