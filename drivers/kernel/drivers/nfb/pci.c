@@ -28,7 +28,7 @@
 
 #define NFB_FDT_BURSTSIZE (16384)
 #define NFB_FDT_MAXSIZE (65536)
-#define NFB_FDT_FIXUP_NODE_NAME_LEN 16
+#define NFB_FDT_FIXUP_NODE_NAME_LEN 64
 #define NFB_CARD_NAME_GENERIC "COMBO-GENERIC"
 
 static bool fallback_fdt = 1;
@@ -164,11 +164,15 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	static const char *flag_fb_select_flash = "fb_select_flash";
 	static const char *flag_flash_set_async = "flash_set_async";
 
-	int i;
+	int i, nodes;
+	int ret;
 	int node, subnode;
+	const void *prop;
 	uint32_t prop32;
 	struct nfb_pci_device *pci_device = NULL;
+	int node_offset;
 
+	int pci_index, bar;
 	const char *name;
 	const char *card_name;
 	void *fdt = nfb->fdt;
@@ -196,9 +200,13 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	fdt_setprop_u32(fdt, node, "card-id", nfb->minor);
 
 	list_for_each_entry(pci_device, &nfb->pci_devices, pci_device_list) {
-		snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "endpoint%d", pci_device->index);
-		node = fdt_path_offset(fdt, "/system/device");
-		node = fdt_add_subnode(fdt, node, node_name);
+		snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "/system/device/endpoint%d", pci_device->index);
+		node = fdt_path_offset(fdt, node_name);
+		if (node < 0) {
+			snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "endpoint%d", pci_device->index);
+			node = fdt_path_offset(fdt, "/system/device");
+			node = fdt_add_subnode(fdt, node, node_name);
+		}
 
 		fdt_setprop_string(fdt, node, "pci-slot", pci_name(pci_device->pci));
 		fdt_setprop_u32(fdt, node, "numa-node", dev_to_node(&pci_device->pci->dev));
@@ -208,7 +216,31 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 		fdt_setprop_u32(fdt, node, "pcie-link-width", width);
 	}
 
+	/* Populate endpoint nodes for each MI bus, if they don't exists */
+	nodes = nfb_comp_count(nfb, "netcope,bus,mi");
+	for (i = 0; i < nodes; i++) {
+		node_offset = nfb_comp_find(nfb, "netcope,bus,mi", i);
+
+		prop = fdt_getprop(nfb->fdt, node_offset, "resource", &proplen);
+		if (prop == NULL || proplen <= 0 || ((const char*)prop)[proplen-1] != 0)
+			continue;
+
+		ret = sscanf(prop, "PCI%d,BAR%d", &pci_index, &bar);
+		if (ret != 2)
+			continue;
+
+		snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "/system/device/endpoint%d", pci_index);
+		node_offset = fdt_path_offset(fdt, node_name);
+
+		if (node_offset < 0) {
+			snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "endpoint%d", pci_index);
+			node_offset = fdt_path_offset(fdt, "/system/device");
+			node = fdt_add_subnode(fdt, node_offset, node_name);
+		}
+	}
+
 	node = fdt_path_offset(fdt, "/firmware");
+
 	card_name = fdt_getprop(fdt, node, "card-name", &proplen);
 	if (proplen <= 0)
 		card_name = "";
