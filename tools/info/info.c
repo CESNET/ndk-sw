@@ -192,14 +192,30 @@ const char *pci_speed_string(enum pci_bus_speed speed)
 		"Unknown speed";
 }
 
+void print_size(unsigned long size)
+{
+	static const char *units[] = {
+		"B", "KiB", "MiB", "GiB"};
+	unsigned int i = 0;
+	while (size >= 1024 && i < NC_ARRAY_SIZE(units)) {
+		size >>= 10;
+		i++;
+	}
+	printf("%lu %s", size, units[i]);
+}
+
 void print_endpoint_info(struct nfb_device *dev, int fdt_offset)
 {
 	int len;
+	int bar;
 	int dev_id = -1;
+	uint64_t bar_size;
 	const void *prop;
 	const uint32_t *prop32;
+	const uint64_t *prop64;
 	const void *fdt;
 	const char* node_name;
+	char nodename[64];
 
 	fdt = nfb_get_fdt(dev);
 
@@ -225,6 +241,21 @@ void print_endpoint_info(struct nfb_device *dev, int fdt_offset)
 	prop32 = fdt_getprop(fdt, fdt_offset, "numa-node", &len);
 	if (len == sizeof(*prop32))
 		printf(" * NUMA node               : %i\n", fdt32_to_cpu(*prop32));
+
+	for (bar = 0; bar < 6; bar++) {
+		snprintf(nodename, sizeof(nodename), "/drivers/mi/PCI%d,BAR%d", dev_id, bar);
+		fdt_offset = fdt_path_offset(fdt, nodename);
+		if (fdt_offset >= 0) {
+			prop64 = fdt_getprop(fdt, fdt_offset, "mmap_size", &len);
+			if (len != sizeof(*prop64))
+				continue;
+			bar_size = fdt64_to_cpu(*prop64);
+			printf(" * MI BAR %d size           : %s", bar, bar_size == 0 ? "unmapped!" : "");
+			if (bar_size)
+				print_size(bar_size);
+			printf("\n");
+		}
+	}
 }
 
 void print_common_info(struct nfb_device *dev, int verbose)
