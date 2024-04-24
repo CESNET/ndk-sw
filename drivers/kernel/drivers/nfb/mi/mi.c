@@ -67,7 +67,7 @@ int nfb_mi_mmap(struct vm_area_struct *vma, unsigned long offset, unsigned long 
 	//struct nfb_app *app = (struct nfb_app*) vma->vm_private_data;
 
 	list_for_each_entry(mi_node, &mi->node_list, nfb_mi_list) {
-		if (mi_node->mmap_offset >= offset && mi_node->mmap_offset + mi_node->mem_len <= offset + size) {
+		if (mi_node->mmap_offset <= offset && mi_node->mmap_offset + mi_node->mem_len >= offset + size) {
 #ifdef pgprot_noncached
 			vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 #endif
