@@ -530,15 +530,26 @@ cdef class NdpQueueRx(NdpQueue):
         self._dir = 0
         NdpQueue.__init__(self, nfb, node, index)
         self._nc_queue = libnetcope.nc_rxqueue_open(self._handle._dev, nfb._fdt_path_offset(node))
-        if self._nc_queue is NULL:
-            PyErr_SetFromErrno(OSError)
 
     def __dealloc__(self):
         if self._nc_queue is not NULL:
             libnetcope.nc_rxqueue_close(self._nc_queue)
 
+    def _check_nc_queue(self):
+        if not self.is_accessible():
+            raise Exception("nc_queue is invalid")
+
+    def is_accessible(self):
+        """ Check if the control registers are accessible """
+        return self._nc_queue is not NULL
+
+    def is_available(self):
+        """ Check if the queue can transfer data """
+        raise NotImplementedError()
+
     def stats_reset(self):
         """Reset statistic counters"""
+        self._check_nc_queue()
         libnetcope.nc_rxqueue_reset_counters(self._nc_queue)
 
     def stats_read(self) -> dict:
@@ -549,6 +560,7 @@ cdef class NdpQueueRx(NdpQueue):
         """
         cdef libnetcope.nc_rxqueue_counters counters
 
+        self._check_nc_queue()
         libnetcope.nc_rxqueue_read_counters(self._nc_queue, &counters)
 
         return {
@@ -648,15 +660,26 @@ cdef class NdpQueueTx(NdpQueue):
         self._dir = 1
         NdpQueue.__init__(self, nfb, node, index)
         self._nc_queue = libnetcope.nc_txqueue_open(self._handle._dev, nfb._fdt_path_offset(node))
-        if self._nc_queue is NULL:
-            PyErr_SetFromErrno(OSError)
 
     def __dealloc__(self):
         if self._nc_queue is not NULL:
             libnetcope.nc_txqueue_close(self._nc_queue)
 
+    def _check_nc_queue(self):
+        if self._nc_queue is NULL:
+            raise Exception("nc_queue is invalid")
+
+    def is_accessible(self):
+        """ Check if the control registers are accessible """
+        return self._nc_queue is not NULL
+
+    def is_available(self):
+        """ Check if the queue can transfer data """
+        raise NotImplementedError()
+
     def stats_reset(self):
         """Reset statistic counters"""
+        self._check_nc_queue()
         libnetcope.nc_txqueue_reset_counters(self._nc_queue)
 
     def stats_read(self):
@@ -667,6 +690,7 @@ cdef class NdpQueueTx(NdpQueue):
         """
         cdef libnetcope.nc_txqueue_counters counters
 
+        self._check_nc_queue()
         libnetcope.nc_txqueue_read_counters(self._nc_queue, &counters)
 
         return {
