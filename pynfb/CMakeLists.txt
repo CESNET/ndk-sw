@@ -27,11 +27,14 @@ add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/setup_timestamp
 	COMMAND ${Python_EXECUTABLE} ARGS ${SETUP_PY} install --root ${SETUP_OUTPUT}
 	COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/setup_timestamp
-	DEPENDS ${SETUP_DEPS})
+	DEPENDS ${SETUP_DEPS}
+)
 
-add_custom_target(target ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/setup_timestamp)
+add_custom_target(python_nfb ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/setup_timestamp)
 
 install(
 	DIRECTORY ${SETUP_OUTPUT}/
 	DESTINATION "/" # FIXME may cause issues with other cpack generators
-	COMPONENT python)
+	COMPONENT python
+	USE_SOURCE_PERMISSIONS
+)
