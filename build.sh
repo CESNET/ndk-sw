@@ -150,6 +150,7 @@ get_dependencies()
         ret="$ret libnuma-dev"
         ret="$ret libncurses-dev"
         ret="$ret libarchive-dev"
+        ret="$ret libconfig-dev"
         ret="$ret python3-dev"
         ret="$ret python3-setuptools"
         ret="$ret cython3"
