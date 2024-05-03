@@ -51,11 +51,11 @@ class MeterManager():
         self._config = config
 
         self._rxmac = [eth.rxmac for eth in self._dev.eth]
-        self._rxdma = [dma for dma in self._dev.ndp.rx]
+        self._rxdma = {i: dma for i, dma in enumerate(self._dev.ndp.rx) if dma.is_accessible()}
 
         self._bdc = {}
         self._ech = {}
-        for p in self._config['probes']:
+        for p in self._config.get('probes', []):
             cfg = SimpleNamespace(**p)
             if cfg.type == "event_counter_histogram":
                 probe = EventCounterHistogram(dev, cfg)
@@ -78,7 +78,7 @@ class MeterManager():
 
         self._items = {
             "rxmac": [f"rm{i}" for i, _ in enumerate(self._rxmac)],
-            "rxdma": [f"rd{i}" for i, _ in enumerate(self._rxdma)],
+            "rxdma": [f"rd{i}" for i in self._rxdma.keys()],
             "busdebugprobe": [
                 *[f"{bd.id}_{bd.probe_name[p]}" for i, bd in enumerate(self._bdc.values()) for p in range(bd.nr_probes)],
             ],
@@ -93,7 +93,7 @@ class MeterManager():
         for i, mac in enumerate(self._rxmac):
             data[f"rm{i}"] = mac.stats_read()
 
-        for i, dma in enumerate(self._rxdma):
+        for i, dma in self._rxdma.items():
             data[f"rd{i}"] = dma.stats_read()
 
         for i, bd in enumerate(self._bdc.values()):
