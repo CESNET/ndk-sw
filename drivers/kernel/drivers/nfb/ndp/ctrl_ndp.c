@@ -57,6 +57,9 @@ struct ndp_ctrl {
 
 	union {
 		struct {
+			void *hdr_buffer_v;
+		} common;
+		struct {
 			struct nc_ndp_hdr *hdr_buffer;
 		} medusa;
 		struct {
@@ -77,7 +80,6 @@ struct ndp_ctrl {
 	int hdr_count;
 
 	void *hdr_buffer;
-	void *hdr_buffer_v;
 
 	uint8_t hdr_buff_en_rw_map;
 	uint8_t next_sdp_age;
@@ -133,12 +135,17 @@ static const struct attribute_group *ndp_ctrl_attr_tx_groups[] = {
 	NULL,
 };
 
+/// @brief Function sets `hdr` and `off` with information from `channel`. Returns header count.
+/// @param channel
+/// @param hdr buffer of headers
+/// @param off offset into the buffer
+/// @return Header count
 int ndp_ctrl_v2_get_vmaps(struct ndp_channel *channel, void **hdr, void **off)
 {
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
-	*hdr = ctrl->ts.medusa.hdr_buffer;
+	*hdr = ctrl->ts.common.hdr_buffer_v;
 	*off = ctrl->off_buffer_v;
-	return ctrl->c.mhp + 1;
+	return ctrl->hdr_count;
 }
 
 static void ndp_ctrl_mps_fill_rx_descs(struct ndp_ctrl *ctrl, uint64_t count)
@@ -577,8 +584,6 @@ static int ndp_ctrl_medusa_start(struct ndp_channel *channel, uint64_t *hwptr)
 	sp.nb_desc = ctrl->desc_count;
 	sp.nb_hdr = ctrl->hdr_count;
 
-	ctrl->ts.medusa.hdr_buffer = ctrl->hdr_buffer_v;
-
 	ret = ndp_ctrl_start(ctrl, &sp);
 	if (ret)
 		return ret;
@@ -633,8 +638,6 @@ static int ndp_ctrl_calypte_start(struct ndp_channel *channel, uint64_t *hwptr)
 	sp.hdr_buffer = ctrl->hdr_buffer_phys;
 	sp.nb_data = ctrl->hdr_count;
 	sp.nb_hdr = ctrl->hdr_count;
-
-	ctrl->ts.calypte.hdr_buffer = ctrl->hdr_buffer_v;
 
 	for (ret = 0; ret < ctrl->hdr_count; ret++) {
 		hdr_base = ctrl->ts.calypte.hdr_buffer + ret;
@@ -835,8 +838,8 @@ static int ndp_ctrl_medusa_attach_ring(struct ndp_channel *channel)
 		goto err_alloc_hdr;
 	}
 
-	ctrl->hdr_buffer_v = ndp_ctrl_vmap_shadow(ctrl->hdr_buffer_size, ctrl->hdr_buffer);
-	if (ctrl->hdr_buffer_v == NULL) {
+	ctrl->ts.common.hdr_buffer_v = ndp_ctrl_vmap_shadow(ctrl->hdr_buffer_size, ctrl->hdr_buffer);
+	if (ctrl->ts.common.hdr_buffer_v == NULL) {
 		goto err_vmap_hdr_buffer;
 	}
 
@@ -862,7 +865,7 @@ static int ndp_ctrl_medusa_attach_ring(struct ndp_channel *channel)
 
 	//nfb_char_unregister_mmap(channel->ndp->nfb, ctrl->hdr_mmap_offset);
 err_register_mmap_hdr:
-	vunmap(ctrl->hdr_buffer_v);
+	vunmap(ctrl->ts.common.hdr_buffer_v);
 err_vmap_hdr_buffer:
 	dma_free_coherent(dev, ctrl->hdr_buffer_size,
 			ctrl->hdr_buffer, ctrl->hdr_buffer_phys);
@@ -926,8 +929,8 @@ static int ndp_ctrl_rx_calypte_attach_ring(struct ndp_channel *channel)
 		return -EINVAL;
 	}
 
-	ctrl->hdr_buffer_v = ndp_ctrl_vmap_shadow(ctrl->hdr_buffer_size, ctrl->hdr_buffer);
-	if (ctrl->hdr_buffer_v == NULL) {
+	ctrl->ts.common.hdr_buffer_v = ndp_ctrl_vmap_shadow(ctrl->hdr_buffer_size, ctrl->hdr_buffer);
+	if (ctrl->ts.common.hdr_buffer_v == NULL) {
 		goto err_vmap_hdr_buffer;
 	}
 
@@ -946,7 +949,7 @@ static int ndp_ctrl_rx_calypte_attach_ring(struct ndp_channel *channel)
 	return 0;
 
 err_register_mmap_hdr:
-	vunmap(ctrl->hdr_buffer_v);
+	vunmap(ctrl->ts.common.hdr_buffer_v);
 
 err_vmap_hdr_buffer:
 	dma_free_coherent(dev, ctrl->hdr_buffer_size,
@@ -1005,8 +1008,8 @@ static int ndp_ctrl_tx_calypte_attach_ring(struct ndp_channel *channel)
 		goto err_alloc_hdr;
 	}
 
-	ctrl->hdr_buffer_v = ndp_ctrl_vmap_shadow(ctrl->hdr_buffer_size, ctrl->hdr_buffer);
-	if (ctrl->hdr_buffer_v == NULL) {
+	ctrl->ts.common.hdr_buffer_v = ndp_ctrl_vmap_shadow(ctrl->hdr_buffer_size, ctrl->hdr_buffer);
+	if (ctrl->ts.common.hdr_buffer_v == NULL) {
 		goto err_vmap_hdr_buffer;
 	}
 
@@ -1030,7 +1033,7 @@ static int ndp_ctrl_tx_calypte_attach_ring(struct ndp_channel *channel)
 	return 0;
 
 err_register_mmap_hdr:
-	vunmap(ctrl->hdr_buffer_v);
+	vunmap(ctrl->ts.common.hdr_buffer_v);
 
 err_vmap_hdr_buffer:
 	dma_free_coherent(dev, ctrl->hdr_buffer_size,
@@ -1048,7 +1051,7 @@ static void ndp_ctrl_medusa_detach_ring(struct ndp_channel *channel)
 
 	if (ctrl->hdr_buffer) {
 		nfb_char_unregister_mmap(channel->ndp->nfb, ctrl->hdr_mmap_offset);
-		vunmap(ctrl->hdr_buffer_v);
+		vunmap(ctrl->ts.common.hdr_buffer_v);
 		dma_free_coherent(dev, ctrl->hdr_buffer_size, ctrl->hdr_buffer, ctrl->hdr_buffer_phys);
 		ctrl->hdr_buffer = NULL;
 	}
@@ -1079,7 +1082,7 @@ static void ndp_ctrl_calypte_detach_ring(struct ndp_channel *channel)
 
 	if (ctrl->hdr_buffer) {
 		nfb_char_unregister_mmap(channel->ndp->nfb, ctrl->hdr_mmap_offset);
-		vunmap(ctrl->hdr_buffer_v);
+		vunmap(ctrl->ts.common.hdr_buffer_v);
 		dma_free_coherent(dev, ctrl->hdr_buffer_size, ctrl->hdr_buffer, ctrl->hdr_buffer_phys);
 		ctrl->hdr_buffer = NULL;
 	}
