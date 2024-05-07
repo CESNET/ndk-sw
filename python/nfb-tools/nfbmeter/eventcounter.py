@@ -1,6 +1,5 @@
 import nfb
 import time
-from collections import deque
 
 
 class EventCounter(nfb.BaseComp):

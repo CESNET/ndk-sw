@@ -138,5 +138,5 @@ try:
 
     # Reset Queue statistics
     txq.stats_reset()
-except:
+except Exception:
     pass

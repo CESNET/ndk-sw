@@ -86,7 +86,7 @@ class Transceiver:
         if "QSFPP":
             prop = node_ctrl_param.get_property("i2c-addr")
             i2c_addr = prop.value if prop else 0xA0
-            self.i2c = libnetcope.I2c(nfb, ctrl, i2c_addr);
+            self.i2c = libnetcope.I2c(nfb, ctrl, i2c_addr)
 
     # FIXME: only valid for specific QSFP+
     @property

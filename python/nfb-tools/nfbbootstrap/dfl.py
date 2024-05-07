@@ -1,4 +1,3 @@
-from .pypcie.bar import Bar
 from .pypcie.device import Device
 
 
@@ -27,9 +26,6 @@ def bit(b):
 def bitmask(b):
     return (1 << b) - 1
 
-def bitmask(b):
-    return (1 << b) - 1
-
 def bit_get(val, b):
     return (val >> b) & 1
 
@@ -51,7 +47,7 @@ def feature_id(value):
 
 def parse_dfl_from(bar, offset, out_dict, verbose):
     # read BAR 0, offset 0x1004
-    while offset != None:
+    while offset is not None:
         guid = []
         cfg_qword = bar.read64(offset+0)
 
@@ -69,8 +65,8 @@ def parse_dfl_from(bar, offset, out_dict, verbose):
         if verbose:
             print(f"DFL: ITEM on offset {hex(offset)}: {dfh_type_s}, ID: {dfh_id}, version {dfh_ver}, next: {hex(dfh_next)}, eol: {eol}", "GUID:", [hex(x) for x in guid])
         if dfh_type == DFH_TYPE_FIU:
-            fme_next_afuq = bar.read64(offset + NEXT_AFU)
-            fme_next_afu = field_get(fme_next_afuq, 24, 0)
+            #fme_next_afuq = bar.read64(offset + NEXT_AFU)
+            #fme_next_afu = field_get(fme_next_afuq, 24, 0)
 
             if dfh_id == DFH_TYPE_FIU_FME:
                 fme_cfg_qword = bar.read64(offset + FME_HDR_CAP)

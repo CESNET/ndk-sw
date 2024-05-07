@@ -8,7 +8,7 @@ pages:
   stage: deploy
   script:
   - apk add -U make doxygen musl-dev py3-setuptools
-  - apk add -U gcc cmake dtc-dev numactl-dev ncurses-dev libarchive-dev libconfig libconfig-dev automake autoconf curl git cython python3-dev dtc-dev linux-headers
+  - apk add -U gcc cmake dtc-dev numactl-dev ncurses-dev libarchive-dev libconfig libconfig-dev automake autoconf curl git cython python3-dev dtc-dev linux-headers zlib-dev
   - pip install -U sphinx
   - pip install -U sphinx-rtd-theme
   - pip install -U breathe

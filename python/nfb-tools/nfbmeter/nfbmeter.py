@@ -4,18 +4,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import sys
 import logging
-import subprocess
 import time
-import os
-import csv
-import signal
 import datetime
 import argparse
 import json
-import re
-import types
 import yaml
 from types import SimpleNamespace
 
@@ -28,11 +21,10 @@ import nfb.libnfb as libnfb
 #import busdebug
 #import eventcounter
 
-import re
 import curses
 
-from .utils import *
-from .probes import *
+from .utils import nocurses_wrapper, NoCurses
+from .probes import EventCounterHistogram, BusDebugProbe
 
 
 class MeterManager():
@@ -51,11 +43,11 @@ class MeterManager():
         self._config = config
 
         self._rxmac = [eth.rxmac for eth in self._dev.eth]
-        self._rxdma = [dma for dma in self._dev.ndp.rx]
+        self._rxdma = {i: dma for i, dma in enumerate(self._dev.ndp.rx) if dma.is_accessible()}
 
         self._bdc = {}
         self._ech = {}
-        for p in self._config['probes']:
+        for p in self._config.get('probes', []):
             cfg = SimpleNamespace(**p)
             if cfg.type == "event_counter_histogram":
                 probe = EventCounterHistogram(dev, cfg)
@@ -78,7 +70,7 @@ class MeterManager():
 
         self._items = {
             "rxmac": [f"rm{i}" for i, _ in enumerate(self._rxmac)],
-            "rxdma": [f"rd{i}" for i, _ in enumerate(self._rxdma)],
+            "rxdma": [f"rd{i}" for i in self._rxdma.keys()],
             "busdebugprobe": [
                 *[f"{bd.id}_{bd.probe_name[p]}" for i, bd in enumerate(self._bdc.values()) for p in range(bd.nr_probes)],
             ],
@@ -93,7 +85,7 @@ class MeterManager():
         for i, mac in enumerate(self._rxmac):
             data[f"rm{i}"] = mac.stats_read()
 
-        for i, dma in enumerate(self._rxdma):
+        for i, dma in self._rxdma.items():
             data[f"rd{i}"] = dma.stats_read()
 
         for i, bd in enumerate(self._bdc.values()):
@@ -168,7 +160,7 @@ def get_basic_info(dev):
     for item in ["project-version", "build-revision", "card-name", "project-name", "project-variant"]:
         try:
             setattr(info, item.replace("-", "_"), dev.fdt.get_node("/firmware").get_property(item).value)
-        except:
+        except Exception:
             pass
 
     info.rxq_nr = len(dev.ndp.rx)
@@ -209,8 +201,8 @@ class MeterDisplay():
         stdscr.addstr(o, 0, f"Rx DMA | Total: {dma_total:>11} | Received: {dma_total_rcvd:>11} | Discarded: {dma_total_disc:>11}")
         for i, it in enumerate(items['rxdma']):
             item = m.data[it]
-            stdscr.addstr(o+1, 2, f"% Received")
-            stdscr.addstr(o+2, 2, f"% Discarded")
+            stdscr.addstr(o+1, 2, "% Received")
+            stdscr.addstr(o+2, 2, "% Discarded")
 
             if (i+1)*12 + 12 >= cols:
                 continue
@@ -252,7 +244,7 @@ class MeterDisplay():
             horiz = hasattr(config, 'style') and config.style == 'horizontal'
 
             #if prev_bins_names != histograms.keys():
-            if prev_bins_names == None:
+            if prev_bins_names is None:
                 prev_bins_names = histograms.keys()
                 for j, bin_name in enumerate(prev_bins_names):
                     x, y = (2, j + 1) if horiz else (j*8+14, i)
@@ -308,7 +300,7 @@ def meter_loop(stdscr, args, meter, logger, display):
     m = meter.measure()
     time.sleep(args.interval)
 
-    while args.period == None or ((t_toolstart + args.period > t_start) if args.period is not None else True) or print_once:
+    while args.period is None or ((t_toolstart + args.period > t_start) if args.period is not None else True) or print_once:
         t_start = time.time()
         m = meter.measure()
         logging.debug(meter.to_json(m))
@@ -348,11 +340,10 @@ def main():
     logging.debug(info_to_json(bi))
 
     info = SimpleNamespace()
-    t = dev.fdt.get_node("/firmware").get_property("build-time").value
     for item in ["project-version", "build-revision", "card-name", "project-name", "project-variant"]:
         try:
             setattr(info, item.replace("-", "_"), dev.fdt.get_node("/firmware").get_property(item).value)
-        except:
+        except Exception:
             pass
 
     # Load probe configuration 
@@ -362,13 +353,13 @@ def main():
     if args.config is None:
         try:
             args.config = f"{defcfg_path}{info.card_name}-{info.project_name}-{info.project_variant}-{info.project_version}-{defcfg_name}.yaml"
-        except:
+        except Exception:
             raise Exception("Can't deduce default config filename, specify config file explicitly.")
 
     try:
         with open(args.config) as stream:
             config = yaml.safe_load(stream)
-    except:
+    except Exception:
         raise Exception("Can't load configuration file.")
 
     assert config['version'] == "0.1", "Incorrect version of config file"

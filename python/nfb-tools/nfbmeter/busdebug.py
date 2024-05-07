@@ -56,7 +56,7 @@ class BusDebugCtl(nfb.BaseComp):
 
     def stats_read(self, pid):
         # TODO Check: atomic read / strobe?
-        data = self._comp.read(po(pid, self._WORD_CNT_LOW), self._NAME);
+        data = self._comp.read(po(pid, self._WORD_CNT_LOW), self._NAME)
         cntr = {}
         for i, n in enumerate(["words", "wait", "dst_hold", "src_hold", "sop_cnt", "eop_cnt"]):
             cntr[n] = int.from_bytes(data[i*8:i*8+8], byteorder='little')
