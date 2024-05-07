@@ -331,12 +331,14 @@ cdef class DmaCtrlNdp:
         self.ub_view = update_buffer_p
         ub_ptr = <uint32_t*>&self.ub_view[0]
 
+        sp.data_buffer = 0
         sp.desc_buffer = desc_buffer
         sp.hdr_buffer = hdr_buffer
         sp.update_buffer = update_buffer
         sp.update_buffer_virt = ub_ptr
         sp.nb_desc = nb_desc
         sp.nb_hdr = nb_hdr
+        sp.nb_data = 0
 
         self._ctrl.shp = 0
         self._ctrl.sdp = 0

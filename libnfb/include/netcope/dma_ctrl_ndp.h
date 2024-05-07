@@ -298,6 +298,8 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 	} else if (ctrl->type == DMA_TYPE_CALYPTE) {
 		nb_d = sp->nb_data;
 		d_buffer = sp->data_buffer;
+	} else {
+		return -ENODEV;
 	}
 
 	/* Check for valid parameters: number of descs and hdrs must be pow2() */

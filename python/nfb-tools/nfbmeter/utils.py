@@ -1,5 +1,3 @@
-import termios
-
 class NoCurses():
     def __init__(self):
         self._buffers = []
