@@ -88,6 +88,13 @@ struct nc_ndp_desc {
 			int next0 : 1;
 			unsigned type : 2;
 		} type2;
+		struct __attribute__((__packed__)) {
+			unsigned phys0 : 30;
+			int int0 : 1;
+			int int1 : 1;
+			unsigned phys1 : 30;
+			unsigned type : 2;
+		} type3;
 	} d;
 } __attribute__((__packed__));
 
@@ -155,6 +162,19 @@ static inline struct nc_ndp_desc nc_ndp_rx_desc2(uint64_t phys, uint16_t len, in
 	desc.d.type2.next0 = next;
 
 	return desc;
+}
+
+static inline struct nc_ndp_desc nc_ndp_rx_desc3(uint64_t phys0, uint64_t phys1)
+{
+        struct nc_ndp_desc desc;
+
+        desc.d.type3.type = 3;
+        desc.d.type3.phys0 = phys0;
+        desc.d.type3.phys1 = phys1;
+        desc.d.type3.int0 = 0;
+        desc.d.type3.int1 = 0;
+
+        return desc;
 }
 
 static inline struct nc_ndp_desc nc_ndp_tx_desc0(uint64_t phys)
