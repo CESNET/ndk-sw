@@ -166,9 +166,11 @@ cdef extern from "<netcope/dma_ctrl_ndp.h>":
 
     cdef struct nc_ndp_ctrl_start_params:
         dma_addr_t desc_buffer
+        dma_addr_t data_buffer;
         dma_addr_t hdr_buffer
         dma_addr_t update_buffer
         uint32_t *update_buffer_virt
+        uint32_t nb_data;
         uint32_t nb_desc
         uint32_t nb_hdr
 
