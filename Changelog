@@ -1,3 +1,8 @@
+* Fri May 10 2024 Martin Spinler <spinler@cesnet.cz> - 6.22.3-1
+- [BUGFIX] Debian packaging
+- [BUGFIX] pynfb DMA fixes
+- [BUGFIX] net driver fixes
+
 * Fri Apr 5 2024 Martin Spinler <spinler@cesnet.cz> - 6.22.1-1
 - [BUGFIX] enable coexistence PMCI and SDM (read temperature on N6010)
 - [BUGFIX] check whole path string in libnfb for short path feature
