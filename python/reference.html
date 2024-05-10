@@ -16,7 +16,7 @@
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
         <script src="../_static/documentation_options.js?v=8885e90a"></script>
-        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
         <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -96,6 +96,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#libnfb.NdpQueueRx"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.is_accessible"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.is_accessible()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.is_available"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.is_available()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.recv"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.recv()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.recvmsg"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.recvmsg()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.stats_read"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.stats_read()</span></code></a></li>
@@ -104,6 +106,8 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#libnfb.NdpQueueTx"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.flush"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.flush()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.is_accessible"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.is_accessible()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.is_available"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.is_available()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.send"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.send()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.sendmsg"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.sendmsg()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.stats_read"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.stats_read()</span></code></a></li>
@@ -461,6 +465,18 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnfb.</span></span><span class="sig-name descname"><span class="pre">NdpQueueRx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Nfb</span> <span class="pre">nfb:</span> <span class="pre">Nfb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueRx" title="Link to this definition"></a></dt>
 <dd><p>Object representing a queue for receiving data from NDP</p>
 <dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueueRx.is_accessible">
+<span class="sig-name descname"><span class="pre">is_accessible</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueRx.is_accessible" title="Link to this definition"></a></dt>
+<dd><p>Check if the control registers are accessible</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueueRx.is_available">
+<span class="sig-name descname"><span class="pre">is_available</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueRx.is_available" title="Link to this definition"></a></dt>
+<dd><p>Check if the queue can transfer data</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="libnfb.NdpQueueRx.recv">
 <span class="sig-name descname"><span class="pre">recv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cnt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#libnfb.NdpQueueRx.recv" title="Link to this definition"></a></dt>
 <dd><p>Receive packets</p>
@@ -525,6 +541,18 @@
 <dt class="sig sig-object py" id="libnfb.NdpQueueTx.flush">
 <span class="sig-name descname"><span class="pre">flush</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueTx.flush" title="Link to this definition"></a></dt>
 <dd><p>Flush the prepared packet/messages</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueueTx.is_accessible">
+<span class="sig-name descname"><span class="pre">is_accessible</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueTx.is_accessible" title="Link to this definition"></a></dt>
+<dd><p>Check if the control registers are accessible</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueueTx.is_available">
+<span class="sig-name descname"><span class="pre">is_available</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueTx.is_available" title="Link to this definition"></a></dt>
+<dd><p>Check if the queue can transfer data</p>
 </dd></dl>
 
 <dl class="py method">
