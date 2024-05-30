@@ -359,10 +359,9 @@ int nfb_pmci_attach(struct nfb_boot *boot)
 			pmci_bom_info[0] = '\n';
 			pmci_bom_info[PMCI_BOM_INFO_SIZE+1] = 0;
 			pmci->m10bmc.ops.flash_read(&pmci->m10bmc, pmci_bom_info+1, PMCI_BOM_INFO_ADDR, PMCI_BOM_INFO_SIZE);
-			while ((snc = strstr(pmci_bom_info, "\nSN,"))) {
+			if ((snc = strstr(pmci_bom_info, "\nSN,"))) {
 				if (sscanf(snc, "\nSN,%d\n", &sn) == 1) {
 					boot->nfb->serial = sn;
-					break;
 				}
 			}
 			kfree(pmci_bom_info);
