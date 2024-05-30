@@ -255,9 +255,14 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	if (len > 0)
 		printf("Board name                 : %s\n", (const char *)prop);
 
-	prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
-	if (len == sizeof(*prop32))
-		printf("Serial number              : %d\n", fdt32_to_cpu(*prop32));
+	prop = fdt_getprop(fdt, fdt_offset, "serial-number-string", &len);
+	if (len > 0) {
+		printf("Serial number              : %s\n", (const char *)prop);
+	} else {
+		prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
+		if (len == sizeof(*prop32))
+			printf("Serial number              : %d\n", fdt32_to_cpu(*prop32));
+	}
 
 	prop64 = fdt_getprop(fdt, fdt_offset, "fpga-uid", &len);
 	if (verbose > 1 && len == sizeof(*prop64))
