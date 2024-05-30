@@ -34,6 +34,9 @@ struct spinlock open_lock;
 static ssize_t nfb_char_get_serial(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct nfb_device *nfb = dev_get_drvdata(dev);
+	if (nfb->serial_str) {
+		return scnprintf(buf, PAGE_SIZE, "%s\n", nfb->serial_str);
+	}
 	return scnprintf(buf, PAGE_SIZE, "%lld\n", nfb->serial);
 }
 static ssize_t nfb_char_get_cardname(struct device *dev, struct device_attribute *attr, char *buf)

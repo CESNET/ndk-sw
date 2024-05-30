@@ -147,6 +147,8 @@ err_alloc_nfb:
  */
 void nfb_destroy(struct nfb_device *nfb)
 {
+	if (nfb->serial_str)
+		kfree(nfb->serial_str);
 	kfree(nfb);
 }
 

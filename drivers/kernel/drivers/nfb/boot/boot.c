@@ -353,7 +353,11 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 
 	fdt_offset = fdt_path_offset(nfb->fdt, "/board");
 	fdt_setprop_string(nfb->fdt, fdt_offset, "board-name", nfb->pci_name);
-	fdt_setprop_u32(nfb->fdt, fdt_offset, "serial-number", nfb->serial);
+	if (nfb->serial_str) {
+		fdt_setprop_string(nfb->fdt, fdt_offset, "serial-number-string", nfb->serial_str);
+	} else {
+		fdt_setprop_string(nfb->fdt, fdt_offset, "serial-number", nfb->serial);
+	}
 
 	dev_info(&nfb->pci->dev, "nfb_boot: Attached successfully\n");
 

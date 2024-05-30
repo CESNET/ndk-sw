@@ -298,7 +298,7 @@ static struct regmap_config m10bmc_pmci_regmap_config = {
 
 int nfb_pmci_attach(struct nfb_boot *boot)
 {
-	char * pmci_bom_info, *snc;
+	char * pmci_bom_info, *snc, *snc_end;
 
 	struct nfb_device *nfb = boot->nfb;
 	struct pmci_device *pmci;
@@ -362,6 +362,15 @@ int nfb_pmci_attach(struct nfb_boot *boot)
 			if ((snc = strstr(pmci_bom_info, "\nSN,"))) {
 				if (sscanf(snc, "\nSN,%d\n", &sn) == 1) {
 					boot->nfb->serial = sn;
+				} else {
+					snc_end = strstr(snc+1, "\n");
+					if (snc_end) {
+						snc_end[0] = 0;
+						snc += strlen("\nSN,");
+						while (isspace(snc[0]))
+							snc += 1;
+						boot->nfb->serial_str = kstrdup(snc, GFP_KERNEL);
+					}
 				}
 			}
 			kfree(pmci_bom_info);

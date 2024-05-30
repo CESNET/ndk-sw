@@ -108,6 +108,7 @@ struct nfb_lock_item {
 struct nfb_device {
 	struct pci_dev *pci;                   /* Associated PCI device (master) */
 	int minor;                             /* Minor number assigned to this device (used for X in /dev/nfbX) */
+	const char *serial_str;                /* String version of serial number. If is NULL, the 'serial' member should be used. */
 	uint64_t serial;                       /* Card serial number */
 	uint64_t dsn;                          /* FPGA chip unique identifier */
 	enum nfb_device_status status;
