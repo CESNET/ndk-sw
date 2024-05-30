@@ -7,11 +7,12 @@
 #   Martin Spinler <spinler@cesnet.cz
 #
 
-cmake_minimum_required(VERSION 3.12)
-cmake_policy(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
+cmake_policy(VERSION 3.15)
 
 project(python-nfb LANGUAGES C)
 
+set(Python_FIND_UNVERSIONED_NAMES FIRST)
 find_package(Python COMPONENTS Interpreter)
 
 set(CMAKE_USE_RELATIVE_PATHS TRUE)

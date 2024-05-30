@@ -7,8 +7,8 @@
 #   Martin Spinler <spinler@cesnet.cz
 #
 
-cmake_minimum_required(VERSION 3.12)
-cmake_policy(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
+cmake_policy(VERSION 3.15)
 project(nfb-framework LANGUAGES C)
 include(${CMAKE_CURRENT_LIST_DIR}/functions.cmake)
 

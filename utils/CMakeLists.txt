@@ -7,8 +7,8 @@
 # Author(s):
 #   Martin Spinler <spinler@cesnet.cz
 
-cmake_minimum_required(VERSION 3.12)
-cmake_policy(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
+cmake_policy(VERSION 3.15)
 include(GNUInstallDirs)
 
 set(UDEV_NAME 80-nfb.rules)
