@@ -33,9 +33,7 @@ class MeterManager():
         'rxmac': {'total': 'p', 'passed': 'r', 'passed_bytes': 'b', 'errors': 'd', 'overflowed': 'o'},
         'rxdma': {'passed': 'p', 'passed_bytes': 'b', 'dropped': 'd', 'dropped_bytes': 'db'},
         'eventcounter': {'cycles': 'c', 'events': 'e', 'wraps': 'w'},
-        'busdebugprobe': {"words": 'w', "wait": 'i', "dst_hold": 'dh', "src_hold": 'sh',
-            'sop_cnt': 'sc', 'eop_cnt': 'ec',
-        }
+        'busdebugprobe': {"words": 'w', "wait": 'i', "dst_hold": 'dh', "src_hold": 'sh', 'sop_cnt': 'sc', 'eop_cnt': 'ec'}
     }
 
     def __init__(self, dev, config):
@@ -49,12 +47,14 @@ class MeterManager():
         self._ech = {}
         for p in self._config.get('probes', []):
             cfg = SimpleNamespace(**p)
-            if cfg.type == "event_counter_histogram":
-                probe = EventCounterHistogram(dev, cfg)
-                self._ech.update({cfg.id: probe})
-            if cfg.type == "busdebug":
-                probe = BusDebugProbe(dev, cfg)
-                self._bdc.update({cfg.id: probe})
+            types = {
+                "event_counter_histogram": (EventCounterHistogram, self._ech),
+                "busdebug": (BusDebugProbe, self._bdc),
+            }
+            if cfg.type in types:
+                cls, dic = types[cfg.type]
+                probe = cls(dev, cfg)
+                dic.update({cfg.id: probe})
 
     def init(self):
         for probe in self._ech.values():
@@ -132,11 +132,11 @@ class MeterManager():
 
         if False and "remap":
             ret['data'].update({
-                **{unit_name: {
+                **{
+                    unit_name: {
                         nk: m.data[unit_name][ok] for ok, nk in remap.items()
-    #                        if unit[ok] != 0    # Compress even more and do not include items with zero value
                     } for unit_type, remap in self.remaps.items()
-                        for unit_name in self._items[unit_type]
+                    for unit_name in self._items[unit_type]
                 }
             })
 
@@ -168,12 +168,14 @@ def get_basic_info(dev):
     #info.dts = dev.fdt.to_dts(tabsize=0)
     return info
 
+
 def info_to_json(info):
     ret = vars(info)
     ret['tp'] = "info" # type of the record
     ret['ver'] = "0.1.0"
     ret['build_time'] = str(ret['build_time'])
     return json.dumps(vars(info))
+
 
 class MeterDisplay():
     def __init__(self, meter, config):
@@ -183,40 +185,42 @@ class MeterDisplay():
         if not self._config.get("display"):
             self._config["display"] = []
 
-    def _display_rxmac(self, o, m, stdscr, items):
-        stdscr.addstr(o, 0, "RxMAC stats")
+    def addstr(self, y, x, text):
+        try:
+            self._s.addstr(y, x,  text)
+        except Exception:
+            pass
+
+    def _display_rxmac(self, o, m, items):
+        self.addstr(o, 0, "RxMAC stats")
         for i, it in enumerate(items['rxmac']):
             item = m.data[it]
             values = {s.title(): item[s] for s in ['total', 'passed', 'errors', 'overflowed']}
             for w, (text, val) in enumerate(values.items()):
-                stdscr.addstr(o+w+1, 2, text)
-                stdscr.addstr(o+w+1, i*12+12, f"{val:>10}")
+                self.addstr(o+w+1, 2, text)
+                self.addstr(o+w+1, i*12+12, f"{val:>10}")
         return 6
 
-    def _display_rxdma(self, o, m, stdscr, items):
-        rows, cols = stdscr.getmaxyx()
+    def _display_rxdma(self, o, m, items):
         dma_total_rcvd = sum(map(lambda x: m.data[x]['passed'], items['rxdma']))
         dma_total_disc = sum(map(lambda x: m.data[x]['dropped'], items['rxdma']))
         dma_total = dma_total_rcvd + dma_total_disc
-        stdscr.addstr(o, 0, f"Rx DMA | Total: {dma_total:>11} | Passed: {dma_total_rcvd:>11} | Dropped: {dma_total_disc:>11}")
+        self.addstr(o+1, 0, f"Rx DMA | Total: {dma_total:>11} | Passed: {dma_total_rcvd:>11} | Dropped: {dma_total_disc:>11}")
+        self.addstr(o+1, 2, "% Passed")
+        self.addstr(o+2, 2, "% Dropped")
 
         for i, it in enumerate(items['rxdma']):
             item = m.data[it]
-            stdscr.addstr(o+1, 2, "% Passed")
-            stdscr.addstr(o+2, 2, "% Dropped")
-
-            if (i+1)*12 + 12 >= cols:
-                continue
 
             pct_rcvd = int(item['passed']*1000 / dma_total)/10 if dma_total != 0 else '-'
             pct_disc = int(item['dropped']*1000 / dma_total)/10 if dma_total != 0 else '-'
 
-            stdscr.addstr(o+1, i*6+14, f"{pct_rcvd:>6}")
-            stdscr.addstr(o+2, i*6+14, f"{pct_disc:>6}")
+            self.addstr(o+1, i*6+14, f"{pct_rcvd:>6}")
+            self.addstr(o+2, i*6+14, f"{pct_disc:>6}")
 
         return 4
 
-    def _display_busdebug(self, o, m, stdscr, config):
+    def _display_busdebug(self, o, m, config):
         for i, it in enumerate(config.probes):
             include = config.include if hasattr(config, "include") else self._meter._bdc[it].probe_name
             for j, pname in enumerate(include):
@@ -226,15 +230,15 @@ class MeterDisplay():
                 words, wait, dst_hold, src_hold = \
                     (int(x * 1000 / cycles) / 10 for x in [words, wait, dst_hold, src_hold])
 
-                stdscr.addstr(o+2+j, 0 , pname)
-                stdscr.addstr(o+1, 0, "%")
+                self.addstr(o+2+j, 0, pname)
+                self.addstr(o+1, 0, "%")
                 values = {"Words": words, "Idle": wait, "DST H": dst_hold, "SRC H": src_hold}
                 for w, (text, value) in enumerate(values.items()):
-                    stdscr.addstr(o+1, 5+w*6 + i*30, text)
-                    stdscr.addstr(o+2+j, 5+w*6 + i*30, f"{value:>5}")
+                    self.addstr(o+1, 5+w*6 + i*30, text)
+                    self.addstr(o+2+j, 5+w*6 + i*30, f"{value:>5}")
         return j + 4
 
-    def _display_histogram(self, o, m, stdscr, config):
+    def _display_histogram(self, o, m, config):
         prev_bins_names = None
         probes = config.probes
 
@@ -249,17 +253,17 @@ class MeterDisplay():
                 prev_bins_names = histograms.keys()
                 for j, bin_name in enumerate(prev_bins_names):
                     x, y = (2, j + 1) if horiz else (j*8+14, i)
-                    stdscr.addstr(o+y, x, f"{bin_name:>8}")
+                    self.addstr(o+y, x, f"{bin_name:>8}")
 
             x, y = (i*8+12, o) if horiz else (2, o+i+1)
-            stdscr.addstr(y, x, ech.name)
+            self.addstr(y, x, ech.name)
 
             vals = histograms.values()
             total = sum(vals)
             for j, bin_value in enumerate(vals):
                 pct = int(bin_value*1000 / total) / 10 if total != 0 else '-'
                 x, y = (i*8+12, j + 1) if horiz else (j*8+14, i + 1)
-                stdscr.addstr(o+y, x, f"{pct:>8}")
+                self.addstr(o+y, x, f"{pct:>8}")
 
         return 2 + len(prev_bins_names) if horiz else 1 + len(probes)
 
@@ -267,30 +271,31 @@ class MeterDisplay():
         self._o = 0
         self._s = stdscr
 
-        rows, cols = stdscr.getmaxyx()
         items = self._meter._items
         o = 0
-        stdscr.addstr(o, 0, f"Time diff: {m.interval}")
+        self.addstr(o, 0, f"Time diff: {m.interval}")
         o += 1
 
         for config in self._config["display"]:
             config = SimpleNamespace(**config)
             if hasattr(config, "name"):
-                stdscr.addstr(o, 0, config.name)
+                self.addstr(o, 0, config.name)
 
             if config.type == "histogram":
-                o += self._display_histogram(o, m, stdscr, config)
+                o += self._display_histogram(o, m, config)
 
             if config.type == "busdebug":
-                o += self._display_busdebug(o, m, stdscr, config)
+                o += self._display_busdebug(o, m, config)
 
             if config.type == "rxdma":
-                o += self._display_rxdma(o, m, stdscr, items)
+                o += self._display_rxdma(o, m, items)
 
             if config.type == "rxmac":
-                o += self._display_rxmac(o, m, stdscr, items)
+                o += self._display_rxmac(o, m, items)
 
         stdscr.refresh()
+        if isinstance(stdscr, NoCurses):
+            print("-" * 60)
 
 
 def meter_loop(stdscr, args, meter, logger, display):
@@ -314,8 +319,32 @@ def meter_loop(stdscr, args, meter, logger, display):
         time.sleep(args.interval)
 
         display.display(stdscr, m)
-        if isinstance(stdscr, NoCurses):
-            print("-" * 60)
+
+
+def get_wrapper(args):
+    return curses.wrapper if args.display else nocurses_wrapper
+
+
+def get_config(args, **kwargs):
+    defcfg_path = "/usr/share/ndk-fw/"
+    defcfg_name = "nfb-meter-cfg"
+    info = SimpleNamespace(**kwargs)
+
+    if args.config is None:
+        try:
+            args.config = f"{defcfg_path}{info.card_name}-{info.project_name}-{info.project_variant}-{info.project_version}-{defcfg_name}.yaml"
+        except Exception:
+            raise Exception("Can't deduce default config filename, specify config file explicitly.")
+
+    try:
+        with open(args.config) as stream:
+            config = yaml.safe_load(stream)
+    except Exception:
+        raise Exception("Can't load configuration file.")
+
+    assert config['version'] == "0.1", "Incorrect version of config file"
+
+    return config
 
 
 def main():
@@ -337,7 +366,7 @@ def main():
     print(f"Logging to {fn}")
 
     bi = get_basic_info(dev)
-    logging.basicConfig(format='%(message)s', filename=fn, level=logging.DEBUG)#, encoding='utf-8')
+    logging.basicConfig(format='%(message)s', filename=fn, level=logging.DEBUG)  # encoding='utf-8')
     logging.debug(info_to_json(bi))
 
     info = SimpleNamespace()
@@ -347,23 +376,8 @@ def main():
         except Exception:
             pass
 
-    # Load probe configuration 
-    defcfg_path = "/usr/share/ndk-fw/"
-    defcfg_name = "nfb-meter-cfg"
-
-    if args.config is None:
-        try:
-            args.config = f"{defcfg_path}{info.card_name}-{info.project_name}-{info.project_variant}-{info.project_version}-{defcfg_name}.yaml"
-        except Exception:
-            raise Exception("Can't deduce default config filename, specify config file explicitly.")
-
-    try:
-        with open(args.config) as stream:
-            config = yaml.safe_load(stream)
-    except Exception:
-        raise Exception("Can't load configuration file.")
-
-    assert config['version'] == "0.1", "Incorrect version of config file"
+    # Load probe configuration
+    config = get_config(args, **vars(info))
 
     # Init MeterManager and MeterDisplay
     meter = MeterManager(dev, config)
@@ -372,9 +386,9 @@ def main():
     display = MeterDisplay(meter, config)
 
     # Log base informations
-    logging.debug(json.dumps({'tp':'units', **meter._items}))
+    logging.debug(json.dumps({'tp': 'units', **meter._items}))
     if args.verbose:
-        print("Units:\n" + json.dumps({'tp':'units', **meter._items}))
+        print("Units:\n" + json.dumps({'tp': 'units', **meter._items}))
         print()
 
     # Run measurement loop
@@ -382,8 +396,8 @@ def main():
         logger.write(info_to_json(get_basic_info(dev)) + linesep)
         meter.unlock()
 
-        wrapper = curses.wrapper if args.display else nocurses_wrapper
-        wrapper(meter_loop, args, meter, logger, display)
+        get_wrapper(args)(meter_loop, args, meter, logger, display)
+
 
 if __name__ == '__main__':
     main()

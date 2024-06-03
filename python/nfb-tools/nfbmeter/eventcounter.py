@@ -23,7 +23,7 @@ class EventCounter(nfb.BaseComp):
 
         self._cycles = None
 
-    def calibrate(self, reference: "EventCounter"=None):
+    def calibrate(self, reference: "EventCounter" = None):
         if isinstance(reference, EventCounter):
             self.__interval_max = reference.__interval_max
             self.__freq = reference.__freq
@@ -95,7 +95,7 @@ class EventCounter(nfb.BaseComp):
 
     def stats_flush_captured(self):
         valid = self._REG_CAPTURE_FIFO_VLD_MASK
-        cnt = 0 
+        cnt = 0
         while valid:
             valid = valid & self._comp.read32(self._REG_CAPTURE_FIFO)
             if valid:
@@ -109,7 +109,7 @@ class EventCounter(nfb.BaseComp):
         ret = {"cycles": 0, "events": 0, "wraps": 0} # What's better to return?
         valid = True
         while valid:
-            reg = self._comp.read32(self._REG_CAPTURE_FIFO) 
+            reg = self._comp.read32(self._REG_CAPTURE_FIFO)
             self._comp.write32(self._REG_CAPTURE_FIFO, 0)
             valid = reg & self._REG_CAPTURE_FIFO_VLD_MASK
             value = reg & self._REG_CAPTURE_FIFO_DATA_MASK

@@ -4,6 +4,7 @@ import nfb
 def po(probe_id, reg):
     return probe_id << 6 | reg
 
+
 class BusDebugCtl(nfb.BaseComp):
     DT_COMPATIBLE       = "netcope,streaming_debug_master"
 
@@ -34,7 +35,7 @@ class BusDebugCtl(nfb.BaseComp):
         self.probe_name = []
         for i in range(self._nr_probes):
             self.probe_name.append(self._comp.read(po(i, self._NAME), 4).decode())
-       
+
     @property
     def nr_probes(self):
         return self._nr_probes
@@ -67,4 +68,3 @@ class BusDebugCtl(nfb.BaseComp):
         #cntr['valid'] = cntr['cycles'] - cntr['src_hold']
         #cntr['transfer'] = cntr['cycles'] - cntr['src_hold']
         return cntr
-

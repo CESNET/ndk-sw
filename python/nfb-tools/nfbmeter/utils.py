@@ -18,5 +18,6 @@ class NoCurses():
         orig = self._buffers[row]
         self._buffers[row] = orig[:col] + text + orig[col+len(text):]
 
+
 def nocurses_wrapper(fn, *args, **kwargs):
     fn(NoCurses(), *args, **kwargs)

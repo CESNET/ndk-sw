@@ -3,6 +3,7 @@ from .busdebug import BusDebugCtl
 
 from types import SimpleNamespace
 
+
 class Probe:
     def __init__(self, dev, cfg):
         self._dev = dev
@@ -36,7 +37,7 @@ class EventCounterHistogram(Probe):
             if data.calibration_group not in cg:
                 cg.update({data.calibration_group: []})
             cg[data.calibration_group].append(ec)
-            
+
             self._ec.append(ec)
             self._names.append(bin.name)
 
@@ -54,4 +55,3 @@ class EventCounterHistogram(Probe):
         for ec in self._ec:
             s.append(ec.read_stats_captured())
         return {self._names[i]: s[i]['events'] for i, ec in enumerate(self._ec)}
-
