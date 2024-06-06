@@ -23,6 +23,8 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 
+#include <linux/ctype.h>
+
 #include "boot.h"
 #include "../nfb.h"
 #include "../pci.h"
