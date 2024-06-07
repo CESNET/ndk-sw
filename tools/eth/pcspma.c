@@ -126,7 +126,7 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 	uint32_t reg;
 	uint32_t reg2;
 
-	int lines;
+	int lines, fec_lines = 0;
 	uint32_t low_bits;
 	int i, j;
 
@@ -166,8 +166,8 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 		}
 
 		/* RS-FEC registers */
-		lines = ieee802_3_get_fec_lines(active);
-		if ((lines > 0) && (pma_speed < 200000)) { /* RS-FEC Clause 91, 108 or 134 - RSFEC reg located in 1.200 - 1.300 */
+		fec_lines = ieee802_3_get_fec_lines(active);
+		if ((fec_lines > 0) && (pma_speed < 200000)) { /* RS-FEC Clause 91, 108 or 134 - RSFEC reg located in 1.200 - 1.300 */
 			reg = nc_mdio_read_dword(mdio, portaddr, 1, 201);
 			printf("RS-FEC status              : %s%s%s\n",
 //					reg & (1 <<  0) ? "FEC bypass corection ability | " : "",
@@ -179,19 +179,19 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 			printf("RS-FEC uncorrected cws     : %u\n", nc_mdio_read_dword(mdio, portaddr, 1, 204));
 
 			printf("RS-FEC symbol errors ->\n");
-			for (i = 0; i < lines; i++) {
+			for (i = 0; i < fec_lines; i++) {
 				printf(" * Lane %d                  : %u\n", i, nc_mdio_read_dword(mdio, portaddr, 1, 210 + i * 2));
 			}
 			printf("RS-FEC lane mapping        :");
 			reg = nc_mdio_read(mdio, portaddr, 1, 206);
-			for (i = 0; i < lines; i++) {
+			for (i = 0; i < fec_lines; i++) {
 				printf(" %d", ((reg >> (i*2)) & 0x3));
 			}
 			printf("\n");
 
 			reg = nc_mdio_read(mdio, portaddr, 1, 201);
 			printf("RS-FEC AM lock             :");
-			for (i = 0; i < lines; i++) {
+			for (i = 0; i < fec_lines; i++) {
 				printf((reg & (1 << (i + 8))) ? " L" : " X");
 			}
 			printf("\n");
@@ -208,7 +208,7 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 			printf("RS-FEC uncorrected cws     : %u\n", nc_mdio_read_dword(mdio, portaddr, 3, 804));
 
 			printf("RS-FEC symbol errors ->\n");
-			for (i = 0; i < lines; i++) {
+			for (i = 0; i < fec_lines; i++) {
 				printf(" * Lane %d                  : %u\n", i, nc_mdio_read_dword(mdio, portaddr, 3, 600 + i * 2));
 			}
 		}
@@ -287,9 +287,16 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 			}
 
 			printf("\nLane mapping                \n");
-			// Lane mapping register for each line starting from -> 400 to 420
-			for (i = 0; i < lines; i++) {
-				printf(" %2d", nc_mdio_read(mdio, portaddr, 3, 400 + i) & 0x3F);
+			if (((fec_lines > 0) && ((mdio -> pcspma_is_e_tile) || (mdio -> pcspma_is_f_tile)))) {
+				// Intel PCS/PMAs are not reporting PCS lane mapping when the RS-FEC is active
+				for (i = 0; i < lines; i++) {
+					printf("  U");
+				}
+			} else {
+				// Lane mapping register for each line starting from -> 400 to 420
+				for (i = 0; i < lines; i++) {
+					printf(" %2d", nc_mdio_read(mdio, portaddr, 3, 400 + i) & 0x3F);
+				}
 			}
 
 			// BIP counters not defined for speeds above 100
