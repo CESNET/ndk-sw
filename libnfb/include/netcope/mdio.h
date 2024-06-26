@@ -45,6 +45,14 @@ enum mdio_pma_enc {
 	MDIO_PMA_ENC_PAM4 = 1,
 };
 
+enum mdio_fec_mode {
+	MDIO_FEC_NONE     = 0, // No FEC
+	MDIO_FEC_FIRECODE = 1, // Firecode (CL 74)
+	MDIO_FEC_CL91     = 2, // RS(528,514) (Clause 91)
+	MDIO_FEC_CL134    = 3, // RS(544,514) (Clause 134)
+	MDIO_FEC_ETC      = 4  // Ethernet Technology Consortium RS(272,258)
+};
+
 struct nc_mdio {
 	int (*mdio_read)(struct nfb_comp *dev, int prtad, int devad, uint16_t addr);
 	int (*mdio_write)(struct nfb_comp *dev, int prtad, int devad, uint16_t addr, uint16_t val);
@@ -52,6 +60,7 @@ struct nc_mdio {
 	int pcspma_is_f_tile;
 	int pma_lanes;                   /* Number of PMA lanes */
 	enum mdio_pma_enc link_encoding; /* Line modulation */
+	enum mdio_fec_mode fec_mode;     /* Firecode/Clause91/Clause134/ETC */
 	int speed;                       /* Speed in Gbps */
 };
 
@@ -230,8 +239,21 @@ static inline struct nc_mdio *nc_mdio_open (const struct nfb_device *dev, int fd
 static inline void         nc_mdio_close(struct nc_mdio *mdio);
 static inline int          nc_mdio_read (struct nc_mdio *mdio, int prtad, int devad, uint16_t addr);
 static inline int          nc_mdio_write(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr, uint16_t val);
+static inline int          nc_pcs_lane_map_valid(struct nc_mdio *mdio);
+static inline uint32_t     nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr);
 
 /* ~~~~[ IMPLEMENTATION ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+/* Get PCS lane map validity */
+static inline int nc_pcs_lane_map_valid(struct nc_mdio *mdio)
+{
+	/* The PCS lane map is not valid on Intel E-Tile and F-Tile when the FEC is active */
+	if (mdio->pcspma_is_e_tile || mdio->pcspma_is_f_tile) {
+		return (mdio->fec_mode == MDIO_FEC_NONE);
+	} else {
+		return 1;
+	}
+}
 
 /* Get F-tile EHIP configuration and fill corresponding fields in the nc_mdio structure */
 static inline void nc_mdio_ftile_config(struct nc_mdio *mdio)
@@ -243,6 +265,7 @@ static inline void nc_mdio_ftile_config(struct nc_mdio *mdio)
 	reg = nc_mdio_dmap_drp_read(comp, 0, 0, EHIP_CFG_REG);
 	mdio->pma_lanes = ((reg >> 21) & 0xf);
 	mdio->link_encoding = ((reg >> 9) & 0x1) ? MDIO_PMA_ENC_PAM4 : MDIO_PMA_ENC_NRZ;
+	mdio->fec_mode = ((reg >> 10) & 0x7);
 	switch ((reg >> 5) & 0x7)
 	{
 		case 0: mdio->speed = 10; break;
@@ -282,6 +305,12 @@ static inline void nc_mdio_etile_config(struct nc_mdio *mdio)
 		mdio->pma_lanes = 0;
 		mdio->speed = 0;
 	}
+	/* Get FEC mode */
+	/* The E-Tile supports RS-FEC according clause 91 only. The FEC is active */
+	/* when bit 0 of the rsfec_top_rx_cfg register (0x14) is set */
+	val = nc_mdio_etile_rsfec_read(comp, 0, 0x14);
+	mdio->fec_mode = ((val & 0x1) ? MDIO_FEC_CL91 : MDIO_FEC_NONE);
+
 }
 
 static inline struct nc_mdio *nc_mdio_open(const struct nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam)
@@ -1056,9 +1085,11 @@ static inline void nc_mdio_fixup_etile_set_mode(struct nc_mdio *mdio, int prtad,
 	if ((val == 0x2a) || (val == 0x2b)) {
 		/* 100GBASE-LR4/ER4 - turn the FEC off */
 		nc_mdio_etile_rsfec_off(comp, prtad, 4);
+		mdio->fec_mode = MDIO_FEC_NONE;
 	} else if ((val == 0x2f) || (val == 0x2e)) {
 		/* 100GBASE-SR4/CR4 - turn the FEC on */
 		nc_mdio_etile_rsfec_on(comp, prtad, 4);
+		mdio->fec_mode = MDIO_FEC_CL91;
 	}
 	/* Update the mode in HW Eth mgmt too */
 	mdio->mdio_write(comp, prtad, 1, 7, val);
