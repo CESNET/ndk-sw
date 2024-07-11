@@ -19,6 +19,43 @@ The prebuilt RPM packages can be obtained via [Copr](https://copr.fedorainfraclo
 
 `sudo dnf install nfb-framework`
 
+## Install guide
+
+We recommend using the Oracle Linux 8/9 operating system with Red Hat compatible kernel (RHCK), which we use for internal development.
+Here is a [link to instructions on how to switch the default UEK kernel to the RHCK kernel on Oracle Linux](https://blogs.oracle.com/linux/post/changing-the-default-kernel-in-oracle-linux-its-as-simple-as-1-2-3).
+For other operating systems, the installation procedure may be slightly different.
+
+1. First, you must enable the EPEL repositories that contain the required dependencies (libfdt-devel, etc.).
+
+    Instructions for Oracle Linux 8:
+
+    `sudo dnf config-manager -y --set-enabled ol8_codeready_builder`
+
+    `sudo dnf install -y oracle-epel-release-el8`
+
+    Instructions for Oracle Linux 9:
+
+    `sudo dnf config-manager -y --set-enabled ol9_codeready_builder`
+
+    `sudo dnf install -y oracle-epel-release-el9`
+
+2. Install the linux-headers package for your kernel.
+
+    `sudo dnf install -y kernel-headers-$(uname -r)`
+
+3. Enable our COPR repository containing the necessary packages.
+
+    `sudo dnf copr enable -y @CESNET/nfb-framework`
+
+4. Install the nfb-framework package, which contains NFB driver and SW tools.
+
+    `sudo dnf install nfb-framework`
+
+5. Optionally, you can install a package containing the NFB Python API.
+
+    `sudo dnf install python3-nfb`
+
+
 ## Build instructions
 
 1. Clone the repository from GitHub.
