@@ -239,13 +239,13 @@ static inline struct nc_mdio *nc_mdio_open (const struct nfb_device *dev, int fd
 static inline void         nc_mdio_close(struct nc_mdio *mdio);
 static inline int          nc_mdio_read (struct nc_mdio *mdio, int prtad, int devad, uint16_t addr);
 static inline int          nc_mdio_write(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr, uint16_t val);
-static inline int          nc_pcs_lane_map_valid(struct nc_mdio *mdio);
+static inline int          nc_mdio_pcs_lane_map_valid(struct nc_mdio *mdio);
 static inline uint32_t     nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr);
 
 /* ~~~~[ IMPLEMENTATION ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 /* Get PCS lane map validity */
-static inline int nc_pcs_lane_map_valid(struct nc_mdio *mdio)
+static inline int nc_mdio_pcs_lane_map_valid(struct nc_mdio *mdio)
 {
 	/* The PCS lane map is not valid on Intel E-Tile and F-Tile when the FEC is active */
 	if (mdio->pcspma_is_e_tile || mdio->pcspma_is_f_tile) {

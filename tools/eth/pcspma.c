@@ -287,7 +287,7 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 			}
 
 			printf("\nLane mapping                \n");
-			if (!nc_pcs_lane_map_valid(mdio)) {
+			if (!nc_mdio_pcs_lane_map_valid(mdio)) {
 				// Intel PCS/PMAs are not reporting PCS lane mapping when the RS-FEC is active
 				for (i = 0; i < lines; i++) {
 					printf("  U");
