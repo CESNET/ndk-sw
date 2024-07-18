@@ -240,7 +240,6 @@ static inline void         nc_mdio_close(struct nc_mdio *mdio);
 static inline int          nc_mdio_read (struct nc_mdio *mdio, int prtad, int devad, uint16_t addr);
 static inline int          nc_mdio_write(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr, uint16_t val);
 static inline int          nc_mdio_pcs_lane_map_valid(struct nc_mdio *mdio);
-static inline uint32_t     nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr);
 
 /* ~~~~[ IMPLEMENTATION ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
@@ -278,6 +277,8 @@ static inline void nc_mdio_ftile_config(struct nc_mdio *mdio)
 		default: mdio->speed = 0; break;
 	}
 }
+
+static inline uint32_t nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr);
 
 /* Get E-tile Ethernet configuration and fill corresponding fields in the nc_mdio structure */
 static inline void nc_mdio_etile_config(struct nc_mdio *mdio)
