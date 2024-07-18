@@ -45,7 +45,8 @@ cdef void nfb_ext_python_close(void *priv):
     _wrap = <PyObject*> priv
     wrap = <object> _wrap
 
-    free(wrap.fdt)
+    # The libnfb is responsible for freeing fdt
+    #free(wrap.fdt)
     Py_DECREF(wrap)
 
 cdef ssize_t nfb_pynfb_bus_read(void *p, void *buf, size_t nbyte, off_t offset):
