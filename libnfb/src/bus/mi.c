@@ -214,11 +214,24 @@ static inline ssize_t nfb_bus_mi_memcopy_avx2_sse2(void *dst, const void *src, s
 		return ret;
 
 	return ret;
+}
 
+static inline ssize_t nfb_bus_mi_memcopy_noopt(void *dst, const void *src, size_t nbyte, size_t offset, bool *wc_used)
+{
+	ssize_t ret = nbyte;
+	if (nfb_bus_mi_memcopy_simple(dst, src, nbyte, offset, wc_used))
+		return ret;
 
+	if (nfb_bus_mi_memcopy_prelude(&dst, &src, &nbyte, &offset, wc_used))
+		return ret;
+	if (nfb_bus_mi_memcopy_postlude(&dst, &src, &nbyte, &offset, wc_used))
+		return ret;
+
+	return ret;
 }
 
 __NFB_BUS_MI_MEMCOPY_TEMPLATE(avx2_sse2)
+__NFB_BUS_MI_MEMCOPY_TEMPLATE(noopt)
 
 ssize_t nfb_bus_mi_read(void *bus_priv, void *buf, size_t nbyte, off_t offset)
 {
@@ -295,8 +308,18 @@ int nfb_bus_open_mi(void *dev_priv, int bus_node, int comp_node, void **bus_priv
 	}
 
 	*bus_priv = bus;
-	ops->read = nfb_bus_mi_read;
-	ops->write = nfb_bus_mi_write;
+
+	ops->read = _nfb_bus_mi_memcopy_rd_noopt;
+	ops->write = _nfb_bus_mi_memcopy_wr_noopt;
+
+	if (
+			__builtin_cpu_supports("avx") &&
+			__builtin_cpu_supports("avx2") &&
+			__builtin_cpu_supports("sse2") &&
+			1 ) {
+		ops->read = nfb_bus_mi_read;
+		ops->write = nfb_bus_mi_write;
+	}
 
 	return 0;
 
