@@ -78,6 +78,29 @@ do {							\
 } while (0)
 
 
+#define __NFB_BUS_MI_MEMCOPY_TEMPLATE(impl) \
+static inline ssize_t _nfb_bus_mi_memcopy_rd_##impl(void *bus_priv, void *buf, size_t nbyte, off_t offset) \
+{ \
+	ssize_t ret; \
+	bool wc_used = false; \
+	struct nfb_bus_mi_priv *bus = bus_priv; \
+	ret = nfb_bus_mi_memcopy_##impl(buf, (uint8_t*) bus->space + offset, nbyte, offset, &wc_used); \
+	return ret; \
+} \
+\
+static inline ssize_t _nfb_bus_mi_memcopy_wr_##impl(void *bus_priv, const void *buf, size_t nbyte, off_t offset) \
+{ \
+	ssize_t ret; \
+	bool wc_used = false; \
+	struct nfb_bus_mi_priv *bus = bus_priv; \
+	ret = nfb_bus_mi_memcopy_##impl((uint8_t*) bus->space + offset, buf, nbyte, offset, &wc_used); \
+\
+	if (bus->is_wc_mapped || wc_used) \
+		_mm_mfence(); \
+	return ret; \
+}
+
+
 static inline bool nfb_bus_mi_memcopy_simple(void *dst, const void *src, size_t nbyte, size_t offset, bool *wc_used)
 {
 	(void) offset;
@@ -177,7 +200,7 @@ static inline bool nfb_bus_mi_memcopy_postlude(void **dst, const void **src, siz
 	return false;
 }
 
-static inline ssize_t nfb_bus_mi_memcopy(void *dst, const void *src, size_t nbyte, size_t offset, bool *wc_used)
+static inline ssize_t nfb_bus_mi_memcopy_avx2_sse2(void *dst, const void *src, size_t nbyte, size_t offset, bool *wc_used)
 {
 	ssize_t ret = nbyte;
 	if (nfb_bus_mi_memcopy_simple(dst, src, nbyte, offset, wc_used))
@@ -195,25 +218,16 @@ static inline ssize_t nfb_bus_mi_memcopy(void *dst, const void *src, size_t nbyt
 
 }
 
+__NFB_BUS_MI_MEMCOPY_TEMPLATE(avx2_sse2)
+
 ssize_t nfb_bus_mi_read(void *bus_priv, void *buf, size_t nbyte, off_t offset)
 {
-	ssize_t ret;
-	bool wc_used = false;
-	struct nfb_bus_mi_priv *bus = bus_priv;
-	ret = nfb_bus_mi_memcopy(buf, (uint8_t*) bus->space + offset, nbyte, offset, &wc_used);
-	return ret;
+	return _nfb_bus_mi_memcopy_rd_avx2_sse2(bus_priv, buf, nbyte, offset);
 }
 
 ssize_t nfb_bus_mi_write(void *bus_priv, const void *buf, size_t nbyte, off_t offset)
 {
-	ssize_t ret;
-	bool wc_used = false;
-	struct nfb_bus_mi_priv *bus = bus_priv;
-	ret = nfb_bus_mi_memcopy((uint8_t*) bus->space + offset, buf, nbyte, offset, &wc_used);
-
-	if (bus->is_wc_mapped || wc_used)
-		_mm_mfence();
-	return ret;
+	return _nfb_bus_mi_memcopy_wr_avx2_sse2(bus_priv, buf, nbyte, offset);
 }
 
 #define DRIVER_MI_PATH "/drivers/mi/"
