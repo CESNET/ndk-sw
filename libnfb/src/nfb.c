@@ -370,9 +370,13 @@ int nfb_bus_open(struct nfb_comp *comp, int fdt_offset, int comp_offset)
 	comp->bus.type = 0;
 
 	ret = comp->dev->ops.bus_open_mi(comp->dev->priv, fdt_offset, comp_offset, &comp->bus.priv, &comp->bus.ops);
+
+	if (getenv("LIBNFB_BUS_DEBUG"))
+		comp->bus_debug = 1;
+
 	/* INFO: Shortcut only for direct access MI bus (into PCI BAR): speed optimization
 	 * uses direct call to nfb_bus_mi_read/write in nfb_comp_read/write */
-	if (comp->bus.ops.read == nfb_bus_mi_read)
+	if (comp->bus.ops.read == nfb_bus_mi_read && comp->bus_debug == 0)
 		comp->bus.type = NFB_BUS_TYPE_MI;
 
 	return ret;
@@ -419,6 +423,7 @@ struct nfb_comp *nfb_comp_open_ext(const struct nfb_device *dev, int fdt_offset,
 	comp->dev = dev;
 	comp->base = fdt32_to_cpu(prop[0]);
 	comp->size = fdt32_to_cpu(prop[1]);
+	comp->bus_debug = 0;
 
 	comp->path = user_size + (char*)(comp + 1);
 	strcpy(comp->path, path);
@@ -516,9 +521,6 @@ const struct nfb_device *nfb_comp_get_device(struct nfb_comp *comp)
 	return comp->dev;
 }
 
-//#define NFB_DEBUG_MI
-
-#ifdef NFB_DEBUG_MI
 static void nfb_bus_mi_dump(const char *type, const void *buf, size_t nbyte, off_t offset)
 {
 	size_t i;
@@ -537,7 +539,6 @@ static void nfb_bus_mi_dump(const char *type, const void *buf, size_t nbyte, off
 	}
 
 }
-#endif
 
 ssize_t nfb_comp_read(const struct nfb_comp *comp, void *buf, size_t nbyte, off_t offset)
 {
@@ -549,27 +550,27 @@ ssize_t nfb_comp_read(const struct nfb_comp *comp, void *buf, size_t nbyte, off_
 		ret = nfb_bus_mi_read(comp->bus.priv, buf, nbyte, offset + comp->base);
 	} else {
 		ret = comp->bus.ops.read(comp->bus.priv, buf, nbyte, offset + comp->base);
-	}
 
-#ifdef NFB_DEBUG_MI
-	nfb_bus_mi_dump("Read ", buf, nbyte, offset);
-#endif
+		if (comp->bus_debug)
+			nfb_bus_mi_dump("Read ", buf, nbyte, offset + comp->base);
+	}
 
 	return ret;
 }
 
 ssize_t nfb_comp_write(const struct nfb_comp *comp, const void *buf, size_t nbyte, off_t offset)
 {
+	ssize_t ret;
 	if (offset + nbyte > comp->size)
 		return -1;
 
-#ifdef NFB_DEBUG_MI
-	nfb_bus_mi_dump("Write", buf, nbyte, offset);
-#endif
-
 	if (comp->bus.type == NFB_BUS_TYPE_MI) {
-		return nfb_bus_mi_write(comp->bus.priv, buf, nbyte, offset + comp->base);
+		ret = nfb_bus_mi_write(comp->bus.priv, buf, nbyte, offset + comp->base);
 	} else {
-		return comp->bus.ops.write(comp->bus.priv, buf, nbyte, offset + comp->base);
+		ret = comp->bus.ops.write(comp->bus.priv, buf, nbyte, offset + comp->base);
+		if (comp->bus_debug)
+			nfb_bus_mi_dump("Write", buf, nbyte, offset + comp->base);
 	}
+
+	return ret;
 }
