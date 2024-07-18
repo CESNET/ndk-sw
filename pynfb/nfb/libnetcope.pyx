@@ -166,11 +166,13 @@ cdef class TxMac:
 cdef class Mdio:
     cdef NfbDeviceHandle _handle
     cdef nc_mdio *_mdio
+    cdef bool _inited
 
     def __init__(self, libnfb.Nfb nfb, node, param_node = None):
         self._handle = nfb._handle
         self._mdio = NULL
-        self._mdio = nc_mdio_open(self._handle._dev, nfb._fdt_path_offset(node), nfb._fdt_path_offset(param_node) if param_node else -1)
+        self._mdio = nc_mdio_open_no_init(self._handle._dev, nfb._fdt_path_offset(node), nfb._fdt_path_offset(param_node) if param_node else -1)
+        self._inited = False
         if self._mdio is NULL:
             PyErr_SetFromErrno(OSError)
 
@@ -178,10 +180,17 @@ cdef class Mdio:
         if self._mdio is not NULL:
             nc_mdio_close(self._mdio)
 
+    def _init(self):
+        if not self._inited:
+            self._inited = True
+            nc_mdio_init(self._mdio)
+
     def read(self, devad: int, reg: int, prtad: int=0):
+        self._init()
         return nc_mdio_read(self._mdio, prtad, devad, reg)
 
     def write(self, devad: int, reg: int, val: int, prtad: int=0):
+        self._init()
         nc_mdio_write(self._mdio, prtad, devad, reg, val)
 
 cdef class I2c:

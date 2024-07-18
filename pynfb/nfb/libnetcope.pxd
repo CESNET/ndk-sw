@@ -105,7 +105,9 @@ cdef extern from "<netcope/mdio.h>":
     cdef struct nc_mdio:
         pass
 
-    nc_mdio     *nc_mdio_open (const nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam);
+    nc_mdio     *nc_mdio_open(const nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam);
+    nc_mdio     *nc_mdio_open_no_init(const nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam);
+    void         nc_mdio_init(nc_mdio *mdio);
     void         nc_mdio_close(nc_mdio *mdio);
     int          nc_mdio_read (nc_mdio *mdio, int prtad, int devad, uint16_t addr);
     int          nc_mdio_write(nc_mdio *mdio, int prtad, int devad, uint16_t addr, uint16_t val);
