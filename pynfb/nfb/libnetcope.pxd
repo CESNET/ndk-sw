@@ -72,6 +72,7 @@ cdef extern from "<netcope/rxmac.h>":
     void             nc_rxmac_close(nc_rxmac *mac);
     void             nc_rxmac_enable(nc_rxmac *mac);
     void             nc_rxmac_disable(nc_rxmac *mac);
+    int              nc_rxmac_get_link(nc_rxmac *mac);
     int              nc_rxmac_read_status(nc_rxmac *mac, nc_rxmac_status *status);
     int              nc_rxmac_read_counters(nc_rxmac *mac, nc_rxmac_counters *counters, nc_rxmac_etherstats *stats);
     int              nc_rxmac_reset_counters(nc_rxmac *mac);

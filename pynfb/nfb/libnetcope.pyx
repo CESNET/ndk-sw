@@ -31,9 +31,7 @@ cdef class RxMac:
 
     @property
     def link(self):
-        cdef nc_rxmac_status status
-        assert nc_rxmac_read_status(self._mac, &status) == 0
-        return True if status.link_up else False
+        return False if nc_rxmac_get_link(self._mac) == 0 else True
 
     @property
     def enabled(self):
