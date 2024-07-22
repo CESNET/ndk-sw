@@ -23,8 +23,13 @@ add_executable(nfb-busdebugctl busdebugctl/busdebugctl.c)
 add_executable(nfb-busdump busdump/busdump.c)
 add_executable(nfb-busreplay busreplay/busreplay.c)
 add_executable(nfb-xvc nfb-xvc/xvc_pcie.c nfb-xvc/xvcserver.c)
+add_executable(nfb-mi-test nfb-mi-test/nfb-mi-test.c)
 
-set (PIE_TARGETS nfb-busdebugctl nfb-busdump nfb-busreplay nfb-xvc)
+set_source_files_properties(nfb-mi-test/nfb-mi-test.c PROPERTIES COMPILE_FLAGS -mavx2)
+
+
+
+set (PIE_TARGETS nfb-busdebugctl nfb-busdump nfb-busreplay nfb-xvc nfb-mi-test)
 
 if (${LIBPCI_FOUND})
 	target_compile_definitions(nfb-xvc PUBLIC USE_LIBPCI)
