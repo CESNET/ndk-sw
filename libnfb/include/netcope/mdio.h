@@ -236,16 +236,17 @@ static inline uint32_t _ftile_pcs_base(int speed)
 
 /* ~~~~[ PROTOTYPES ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 static inline struct nc_mdio *nc_mdio_open (const struct nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam);
+static inline struct nc_mdio *nc_mdio_open_no_init(const struct nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam);
+static inline void         nc_mdio_init(struct nc_mdio *mdio);
 static inline void         nc_mdio_close(struct nc_mdio *mdio);
 static inline int          nc_mdio_read (struct nc_mdio *mdio, int prtad, int devad, uint16_t addr);
 static inline int          nc_mdio_write(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr, uint16_t val);
-static inline int          nc_pcs_lane_map_valid(struct nc_mdio *mdio);
-static inline uint32_t     nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr);
+static inline int          nc_mdio_pcs_lane_map_valid(struct nc_mdio *mdio);
 
 /* ~~~~[ IMPLEMENTATION ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 /* Get PCS lane map validity */
-static inline int nc_pcs_lane_map_valid(struct nc_mdio *mdio)
+static inline int nc_mdio_pcs_lane_map_valid(struct nc_mdio *mdio)
 {
 	/* The PCS lane map is not valid on Intel E-Tile and F-Tile when the FEC is active */
 	if (mdio->pcspma_is_e_tile || mdio->pcspma_is_f_tile) {
@@ -278,6 +279,8 @@ static inline void nc_mdio_ftile_config(struct nc_mdio *mdio)
 		default: mdio->speed = 0; break;
 	}
 }
+
+static inline uint32_t nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr);
 
 /* Get E-tile Ethernet configuration and fill corresponding fields in the nc_mdio structure */
 static inline void nc_mdio_etile_config(struct nc_mdio *mdio)
@@ -313,53 +316,57 @@ static inline void nc_mdio_etile_config(struct nc_mdio *mdio)
 
 }
 
-static inline struct nc_mdio *nc_mdio_open(const struct nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam)
+static inline struct nc_mdio *nc_mdio_open_no_init(const struct nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam)
 {
+	struct nc_mdio mdio_tmp;
 	struct nc_mdio *mdio;
 	struct nfb_comp *comp;
 	const char *prop;
 	int proplen = 0;
-	int e_tile = 0;
-	int f_tile = 0;
+
+	if (0) {
+	} else if ((comp = nc_mdio_ctrl_open_ext(dev, fdt_offset, sizeof(struct nc_mdio)))) {
+		mdio_tmp.mdio_read = nc_mdio_ctrl_read;
+		mdio_tmp.mdio_write = nc_mdio_ctrl_write;
+	} else if ((comp = nc_mdio_dmap_open_ext(dev, fdt_offset, sizeof(struct nc_mdio)))) {
+		mdio_tmp.mdio_read = nc_mdio_dmap_read;
+		mdio_tmp.mdio_write = nc_mdio_dmap_write;
+	} else {
+		return NULL;
+	}
+
+	mdio = (struct nc_mdio *) nfb_comp_to_user(comp);
+	*mdio = mdio_tmp;
 
 	prop = (const char*) fdt_getprop(nfb_get_fdt(dev), fdt_offset_ctrlparam, "ip-name", &proplen);
 	if (proplen > 0) {
 		if (strcmp(prop, "E_TILE") == 0) {
-			e_tile = 1;
+			mdio->pcspma_is_e_tile = 1;
 		} else if (strcmp(prop, "F_TILE") == 0) {
-			f_tile = 1;
+			mdio->pcspma_is_f_tile = 1;
 		}
 	}
 
-	comp = nc_mdio_ctrl_open_ext(dev, fdt_offset, sizeof(struct nc_mdio));
-	if (comp) {
-		mdio = (struct nc_mdio *) nfb_comp_to_user(comp);
-		mdio->mdio_read = nc_mdio_ctrl_read;
-		mdio->mdio_write = nc_mdio_ctrl_write;
-		mdio->pcspma_is_e_tile = e_tile;
-		mdio->pcspma_is_f_tile = f_tile;
-		if (f_tile)
-			nc_mdio_ftile_config(mdio);
-		if (e_tile)
-			nc_mdio_etile_config(mdio);
-		return mdio;
-	}
+	return mdio;
+}
 
-	comp = nc_mdio_dmap_open_ext(dev, fdt_offset, sizeof(struct nc_mdio));
-	if (comp) {
-		mdio = (struct nc_mdio *) nfb_comp_to_user(comp);
-		mdio->mdio_read = nc_mdio_dmap_read;
-		mdio->mdio_write = nc_mdio_dmap_write;
-		mdio->pcspma_is_e_tile = e_tile;
-		mdio->pcspma_is_f_tile = f_tile;
-		if (f_tile)
-			nc_mdio_ftile_config(mdio);
-		if (e_tile)
-			nc_mdio_etile_config(mdio);
-		return mdio;
-	}
+static inline void nc_mdio_init(struct nc_mdio *mdio)
+{
+	if (mdio->pcspma_is_f_tile)
+		nc_mdio_ftile_config(mdio);
+	if (mdio->pcspma_is_e_tile)
+		nc_mdio_etile_config(mdio);
+}
 
-	return NULL;
+static inline struct nc_mdio *nc_mdio_open(const struct nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam)
+{
+	struct nc_mdio *mdio;
+	mdio = nc_mdio_open_no_init(dev, fdt_offset, fdt_offset_ctrlparam);
+	if (mdio == NULL)
+		return NULL;
+
+	nc_mdio_init(mdio);
+	return mdio;
 }
 
 static inline void nc_mdio_ftile_reset(struct nc_mdio *mdio, int prtad, int rx, int enable)

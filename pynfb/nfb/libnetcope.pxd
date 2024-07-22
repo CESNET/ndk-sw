@@ -72,6 +72,7 @@ cdef extern from "<netcope/rxmac.h>":
     void             nc_rxmac_close(nc_rxmac *mac);
     void             nc_rxmac_enable(nc_rxmac *mac);
     void             nc_rxmac_disable(nc_rxmac *mac);
+    int              nc_rxmac_get_link(nc_rxmac *mac);
     int              nc_rxmac_read_status(nc_rxmac *mac, nc_rxmac_status *status);
     int              nc_rxmac_read_counters(nc_rxmac *mac, nc_rxmac_counters *counters, nc_rxmac_etherstats *stats);
     int              nc_rxmac_reset_counters(nc_rxmac *mac);
@@ -105,7 +106,9 @@ cdef extern from "<netcope/mdio.h>":
     cdef struct nc_mdio:
         pass
 
-    nc_mdio     *nc_mdio_open (const nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam);
+    nc_mdio     *nc_mdio_open(const nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam);
+    nc_mdio     *nc_mdio_open_no_init(const nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam);
+    void         nc_mdio_init(nc_mdio *mdio);
     void         nc_mdio_close(nc_mdio *mdio);
     int          nc_mdio_read (nc_mdio *mdio, int prtad, int devad, uint16_t addr);
     int          nc_mdio_write(nc_mdio *mdio, int prtad, int devad, uint16_t addr, uint16_t val);

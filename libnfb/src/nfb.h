@@ -52,6 +52,7 @@ struct nfb_comp {
 	char *path;                     /*!< Component's path in the Device Tree */
 	off_t base;                     /*!< Component's offset in the bus address space */
 	size_t size;                    /*!< Component's size in the bus address space */
+	int bus_debug;
 };
 
 
