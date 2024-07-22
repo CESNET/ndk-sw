@@ -86,7 +86,7 @@ enum commands {
 void usage(const char *progname)
 {
 	printf("Usage: %s [-hv] [-d path]\n", progname);
-	printf("-d path         Path to device [default: %s]\n", NFB_PATH_DEV(0));
+	printf("-d path         Path to device [default: %s]\n", NFB_DEFAULT_DEV_PATH);
 	printf("-c compatible   Compatible string of component to use in test\n");
 	printf("-t test         Select test: random, linear, performance [default: random]\n");
 	printf("-r              Use only reads\n");
@@ -118,7 +118,7 @@ void print_transaction(int type, unsigned off_mi, unsigned off_ram, unsigned siz
 	printf("\n");
 }
 
-void print_stats(double time, uint64_t count, uint64_t bytes)
+void print_stats(double time, long long unsigned count, long long unsigned bytes)
 {
 	printf("Total time: %f s, transactions: %llu, bytes: %llu, average speed: %.3lf MBps\n",
 			time / 1000000, count, bytes, ((double)bytes)/time);
@@ -412,7 +412,7 @@ int main(int argc, char *argv[])
 	int c;
 	int ret = EXIT_SUCCESS;
 
-	char *path = NFB_PATH_DEV(0);
+	char *path = NFB_DEFAULT_DEV_PATH;
 
 	const char *compatible = "cesnet,ofm,mi_test_space";
 
