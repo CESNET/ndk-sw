@@ -228,6 +228,7 @@ static inline int list_range_empty(struct list_range *lr)
 static inline int nc_query_parse(const char *query, const char* const* choices,
 	int size, char **index)
 {
+	int i;
 	int len;
 	char hit;
 	char *query_act, *query_orig;
@@ -243,7 +244,7 @@ static inline int nc_query_parse(const char *query, const char* const* choices,
 		len = strchr(query_act,',') ? (strchr(query_act,',') - query_act) : 0;
 		if (len)
 			query_act[len] = '\0';
-		for (int i=0; i<size; ++i) {
+		for (i = 0; i < size; ++i) {
 			if (!strcmp(query_act, *(choices+i))) {
 				idx_size++;
 				idx = (char *) realloc(idx, idx_size*sizeof(char));
@@ -254,7 +255,7 @@ static inline int nc_query_parse(const char *query, const char* const* choices,
 		}
 		if (hit) {
 			fprintf(stderr, "invalid query argument - '");
-			int i = 0;
+			i = 0;
 			while (*(query_act+i) != '\0') {
 				fprintf(stderr, "%c", *(query_act+i));
 				++i;
@@ -288,10 +289,11 @@ static inline size_t str_expand_format(char *dst, size_t n, const char *src, con
 	size_t posArgsLen = strlen(posArgs);
 	const char *srcI = src;
 	char *dstI = dst;
+	size_t i;
 	while(*srcI != '\0' && (size_t)(dstI - dst) < n-1) {
 		if(*srcI == '%') {
 				size_t posArgIndex = 0;
-				for(size_t i = 0; i < posArgsLen; i++) {
+				for(i = 0; i < posArgsLen; i++) {
 					if(posArgs[i] == *(srcI+1)) {
 						posArgIndex = i;
 						break;
