@@ -1,6 +1,6 @@
 def projectpath = "ndk/swbase"
 def osreleasevers = [
-		["centos", "centos7", "7.9.2009", "rpm"],
+//		["centos", "centos7", "7.9.2009", "rpm"],
 		["oraclelinux", "oraclelinux8", "8", "rpm"],
 		["ubuntu", "ubuntu", "focal", "deb"]
 	]
