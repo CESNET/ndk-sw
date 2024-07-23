@@ -246,7 +246,11 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	const void *prop;
 	const uint32_t *prop32;
 	struct nfb_boot *boot;
+#ifdef CONFIG_HAVE_SPI_CONTROLLER
+	struct spi_controller *spi_master;
+#else
 	struct spi_master *spi_master;
+#endif
 
 	fdt_offset = fdt_path_offset(nfb->fdt, "/");
 	fdt_offset = fdt_add_subnode(nfb->fdt, fdt_offset, "board");
@@ -376,12 +380,16 @@ err_kmalloc:
 void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 {
 	struct nfb_boot *boot = priv;
+#ifdef CONFIG_HAVE_SPI_CONTROLLER
+	struct spi_controller *master;
+#else
 	struct spi_master *master;
+#endif
 
 	nfb_boot_mtd_destroy(boot);
 
 	if (boot->spi) {
-		master = boot->spi->master;
+		master = boot->spi->controller;
 		spi_dev_put(boot->spi);
 		nfb_xilinx_spi_remove(master);
 	}

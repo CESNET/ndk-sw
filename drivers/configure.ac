@@ -127,6 +127,13 @@ KERNEL_TRY_COMPILE([[
 int trd(off_t a) {return 0;} void test(void) {int ret; read_poll_timeout_atomic(trd, ret, (!ret), 1, 2, false, 0);}
 ]],[AC_DEFINE([CONFIG_HAVE_READ_POLL_TIMEOUT_ATOMIC], [1], [Define if kernel has read_poll_timeout_atomic]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
+AC_MSG_CHECKING([whether kernel has struct spi_controller])
+KERNEL_TRY_COMPILE([[
+#include <linux/spi/spi.h>
+struct spi_controller *sc;
+void test(void);
+void test(void) {spi_get_chipselect(NULL, 0);}]],[AC_DEFINE([CONFIG_HAVE_SPI_CONTROLLER], [1], [Define if kernel has struct spi_controller]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
 AC_SUBST(KDIR)
 AC_SUBST(KSRC)
 
