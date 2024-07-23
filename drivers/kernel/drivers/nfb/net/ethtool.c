@@ -105,11 +105,11 @@ static void nfb_net_get_drvinfo(struct net_device *netdev, struct ethtool_drvinf
 	proj_str = fdt_getprop(nfbdev->fdt, fdt_offset, "project-name", &proj_len);
 	rev_str = fdt_getprop(nfbdev->fdt, fdt_offset, "build-revision", &rev_len);
 
-	strlcpy(drvinfo->driver, KBUILD_MODNAME, sizeof(drvinfo->driver));
-	strlcpy(drvinfo->version, PACKAGE_VERSION, sizeof(drvinfo->version));
+	strscpy(drvinfo->driver, KBUILD_MODNAME, sizeof(drvinfo->driver));
+	strscpy(drvinfo->version, PACKAGE_VERSION, sizeof(drvinfo->version));
 
 	if (proj_len > 0) {
-		strlcpy(drvinfo->fw_version, proj_str, sizeof(drvinfo->fw_version));
+		strscpy(drvinfo->fw_version, proj_str, sizeof(drvinfo->fw_version));
 		strlcat(drvinfo->fw_version, " ", sizeof(drvinfo->fw_version));
 	}
 
@@ -117,7 +117,7 @@ static void nfb_net_get_drvinfo(struct net_device *netdev, struct ethtool_drvinf
 		strlcat(drvinfo->fw_version, rev_str, sizeof(drvinfo->fw_version));
 	}
 
-	strlcpy(drvinfo->bus_info, pci_name(nfbdev->pci), sizeof(drvinfo->bus_info));
+	strscpy(drvinfo->bus_info, pci_name(nfbdev->pci), sizeof(drvinfo->bus_info));
 
 	drvinfo->n_stats = NFB_NET_STATS_LEN;
 }
