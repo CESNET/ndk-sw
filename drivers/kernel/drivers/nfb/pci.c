@@ -28,13 +28,15 @@
 
 #define NFB_FDT_BURSTSIZE (16384)
 #define NFB_FDT_MAXSIZE (65536)
-#define NFB_FDT_FIXUP_NODE_NAME_LEN 16
+#define NFB_FDT_FIXUP_NODE_NAME_LEN 64
 #define NFB_CARD_NAME_GENERIC "COMBO-GENERIC"
 
 static bool fallback_fdt = 1;
 static bool fallback_fdt_boot = 0;
 static bool flash_recovery_ro = 1;
 
+struct mutex global_pci_device_list_lock;
+struct mutex global_try_attach_lock;
 struct list_head global_pci_device_list;
 
 extern struct nfb_driver_ops nfb_registered_drivers[NFB_DRIVERS_MAX];
@@ -48,13 +50,13 @@ const struct nfb_pci_dev nfb_device_infos [] = {
 	[NFB_CARD_NFB40G2]	= { "NFB-40G2",		0, 	0x00000004,	0x00000000,	0x01 },
 	[NFB_CARD_NFB40G2_SG3]	= { "NFB-40G2_SG3",	0,	0x00000004,	0x00000000,	0x03 },
 
-	[NFB_CARD_NFB100G]	= { "NFB-100G",		0,	0x00000004,	-1,		0x02 },
+	[NFB_CARD_NFB100G]	= { "NFB-100G",		0,	0x00000004,	-1,		0x02, 0xc1c0 },
 
-	[NFB_CARD_NFB100G2]	= { "NFB-100G2",	0,	0x01fc0004,	0x01fc0000,	0x00 },
-	[NFB_CARD_NFB100G2Q]	= { "NFB-100G2Q",	0,	0x01fc0004,	0x01fc0000,	0x05 },
-	[NFB_CARD_NFB100G2C]	= { "NFB-100G2C",	0,	0x01fc0004, 	0x01fc0000,	0x08 },
+	[NFB_CARD_NFB100G2]	= { "NFB-100G2",	0,	0x01fc0004,	0x01fc0000,	0x00, 0xc2c0 },
+	[NFB_CARD_NFB100G2Q]	= { "NFB-100G2Q",	0,	0x01fc0004,	0x01fc0000,	0x05, 0xc2c0 },
+	[NFB_CARD_NFB100G2C]	= { "NFB-100G2C",	0,	0x01fc0004, 	0x01fc0000,	0x08, 0xc2c0 },
 
-	[NFB_CARD_NFB200G2QL]	= { "NFB-200G2QL",	0,	0x03fc0004,	-1,		0x06 },
+	[NFB_CARD_NFB200G2QL]	= { "NFB-200G2QL",	0,	0x03fc0004,	-1,		0x06, 0xc251 },
 
 	[NFB_CARD_FB1CGG]	= { "FB1CGG",		0,	0x00000002,	0x00000001,	0x07 },
 	[NFB_CARD_FB2CGG3]	= { "FB2CGG3",		0,	0x00000002,	0x00000001,	0x09 },
@@ -62,8 +64,8 @@ const struct nfb_pci_dev nfb_device_infos [] = {
 
 	[NFB_CARD_TIVOLI]	= { "TIVOLI",	       -1,      -1,             -1,             0x0B },
 
-	[NFB_CARD_COMBO_GENERIC]= { NFB_CARD_NAME_GENERIC, -1,  -1,             -1,             0x0C },
-	[NFB_CARD_COMBO400G1]	= { "COMBO-400G1",     -1,      -1,             -1,             0x0D },
+	[NFB_CARD_COMBO_GENERIC]= { NFB_CARD_NAME_GENERIC, -1,  -1,             -1,             0x0C, /* sub_device is forbidden */ },
+	[NFB_CARD_COMBO400G1]	= { "COMBO-400G1",     -1,      -1,             -1,             0x0D, 0xc400 },
 	[NFB_CARD_AGI_FH400G]	= { "AGI-FH400G",      -1,      -1,             -1,             0x0E },
 
 	/* Last item */		  { NULL,	       -1,	-1,	 	-1,		0x00 },
@@ -153,6 +155,64 @@ static inline void n6010_binary_slot_prepare(void *fdt, int node, const char *mo
 	fdt_appendprop(fdt, subnode, "modify-mask",  mod_mask, mod_len);
 }
 
+static void nfb_pci_fdt_update_endpoints(struct nfb_device *nfb)
+{
+	int pci_index, bar;
+	int i, node, nodes, node_offset;
+	const void *prop;
+	int proplen;
+
+	char node_name[NFB_FDT_FIXUP_NODE_NAME_LEN];
+	struct nfb_pci_device *pci_device = NULL;
+	void *fdt = nfb->fdt;
+
+	enum pci_bus_speed speed;
+	enum pcie_link_width width;
+
+	/* Populate endpoint nodes for each MI bus, if they don't exists */
+	nodes = nfb_comp_count(nfb, "netcope,bus,mi");
+	for (i = nodes-1; i >= 0; i--) {
+		node_offset = nfb_comp_find(nfb, "netcope,bus,mi", i);
+
+		prop = fdt_getprop(nfb->fdt, node_offset, "resource", &proplen);
+		if (prop == NULL || proplen <= 0 || ((const char*)prop)[proplen-1] != 0)
+			continue;
+
+		proplen = sscanf(prop, "PCI%d,BAR%d", &pci_index, &bar);
+		if (proplen != 2)
+			continue;
+
+		snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "/system/device/endpoint%d", pci_index);
+		node_offset = fdt_path_offset(fdt, node_name);
+
+		if (node_offset < 0) {
+			snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "endpoint%d", pci_index);
+			node_offset = fdt_path_offset(fdt, "/system/device");
+			node = fdt_add_subnode(fdt, node_offset, node_name);
+		}
+	}
+
+	list_for_each_entry(pci_device, &nfb->pci_devices, pci_device_list) {
+		snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "/system/device/endpoint%d", pci_device->index);
+		node = fdt_path_offset(fdt, node_name);
+		if (node < 0) {
+			snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "endpoint%d", pci_device->index);
+			node = fdt_path_offset(fdt, "/system/device");
+
+			node = fdt_add_subnode(fdt, node, node_name);
+		}
+
+		if (pci_device->is_probed_as_main || pci_device->is_probed_as_sub) {
+			fdt_setprop_string(fdt, node, "pci-slot", pci_name(pci_device->pci));
+			fdt_setprop_u32(fdt, node, "numa-node", dev_to_node(&pci_device->pci->dev));
+
+			pcie_bandwidth_available(pci_device->pci, NULL, &speed, &width);
+			fdt_setprop_u32(fdt, node, "pci-speed", speed);
+			fdt_setprop_u32(fdt, node, "pcie-link-width", width);
+		}
+	}
+}
+
 /*
  * nfb_fdt_fixups - Fix the FDT: Create missing nodes and properties
  * @nfb: NFB device
@@ -165,17 +225,10 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	int i;
 	int node, subnode;
 	uint32_t prop32;
-	struct nfb_pci_device *pci_device = NULL;
 
 	const char *name;
 	const char *card_name;
 	void *fdt = nfb->fdt;
-
-	enum pci_bus_speed speed;
-	enum pcie_link_width width;
-
-	char node_name[NFB_FDT_FIXUP_NODE_NAME_LEN];
-
 	int proplen;
 
 	static const char * boot_ctrl_compatibles[] = {
@@ -193,20 +246,8 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	/* Add index of device in system */
 	fdt_setprop_u32(fdt, node, "card-id", nfb->minor);
 
-	list_for_each_entry(pci_device, &nfb->pci_devices, pci_device_list) {
-		snprintf(node_name, NFB_FDT_FIXUP_NODE_NAME_LEN, "endpoint%d", pci_device->index);
-		node = fdt_path_offset(fdt, "/system/device");
-		node = fdt_add_subnode(fdt, node, node_name);
-
-		fdt_setprop_string(fdt, node, "pci-slot", pci_name(pci_device->pci));
-		fdt_setprop_u32(fdt, node, "numa-node", dev_to_node(&pci_device->pci->dev));
-
-		pcie_bandwidth_available(pci_device->pci, NULL, &speed, &width);
-		fdt_setprop_u32(fdt, node, "pci-speed", speed);
-		fdt_setprop_u32(fdt, node, "pcie-link-width", width);
-	}
-
 	node = fdt_path_offset(fdt, "/firmware");
+
 	card_name = fdt_getprop(fdt, node, "card-name", &proplen);
 	if (proplen <= 0)
 		card_name = "";
@@ -645,18 +686,105 @@ static void nfb_pci_tuneup(struct pci_dev *pdev)
 	pci_write_config_word(pdev, exp_cap + PCI_EXP_DEVCTL, devctl);
 }
 
-/*
- * nfb_pci_errors_disable - disable errors that can occur on hot reboot (firmware reload)
- * @card: struct nfb_pci_device instance
- */
-int nfb_pci_errors_disable(struct nfb_pci_device *card)
+static int nfb_pci_is_attachable(struct nfb_device *nfb, struct pci_dev* pci)
 {
-	struct pci_dev *bridge = card->bus->self;
-	dev_info(&card->bus->self->dev, "disabling errors on PCI bridge\n");
-	pci_write_config_word(bridge, PCI_COMMAND, card->bridge_command & ~PCI_COMMAND_SERR);
-	pci_write_config_word(bridge, bridge->pcie_cap + PCI_EXP_DEVCTL,
-			card->bridge_devctl & ~(PCI_EXP_DEVCTL_NFERE | PCI_EXP_DEVCTL_FERE));
-	return 0;
+	if (nfb == NULL || pci == NULL)
+		return 0;
+
+	/* Device is the same as main */
+	if (nfb->pci == pci)
+		return 0;
+
+	if (nfb->pci->vendor != pci->vendor)
+		return 0;
+
+	if (nfb->nfb_pci_dev == NULL ||
+			nfb->nfb_pci_dev->sub_device_id == 0 ||
+			nfb->nfb_pci_dev->sub_device_id != pci->device)
+		return 0;
+
+	return 1;
+}
+
+static int nfb_pci_device_is_attachable(struct nfb_device *nfb, struct nfb_pci_device *sub)
+{
+	if (nfb == NULL || sub == NULL)
+		return 0;
+
+	if (sub->nfb)
+		return 0;
+
+	if (nfb->dsn == 0 || nfb->dsn != sub->dsn)
+		return 0;
+
+	return 1;
+}
+
+struct nfb_pci_device *_nfb_pci_device_find(struct pci_dev *pci)
+{
+	struct nfb_pci_device *pci_device = NULL;
+
+	list_for_each_entry(pci_device, &global_pci_device_list, global_pci_device_list) {
+		if (strcmp(pci_device->pci_name, pci_name(pci)) == 0) {
+			return pci_device;
+		}
+	}
+
+	return NULL;
+}
+
+struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
+{
+	struct nfb_pci_device *pci_device = NULL;
+
+	pci_device = kzalloc(sizeof(*pci_device), GFP_KERNEL);
+	if (pci_device == NULL) {
+		return NULL;
+	}
+
+	INIT_LIST_HEAD(&pci_device->global_pci_device_list);
+	INIT_LIST_HEAD(&pci_device->pci_device_list);
+	INIT_LIST_HEAD(&pci_device->reload_list);
+	mutex_init(&pci_device->attach_lock);
+
+	strcpy(pci_device->pci_name, pci_name(pci));
+
+	list_add(&pci_device->global_pci_device_list, &global_pci_device_list);
+
+	return pci_device;
+}
+
+struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
+{
+	struct nfb_pci_device * pci_device;
+
+	mutex_lock(&global_pci_device_list_lock);
+
+	pci_device = _nfb_pci_device_find(pci);
+	if (pci_device == NULL) {
+		pci_device = _nfb_pci_device_create(pci);
+		if (pci_device == NULL)
+			goto err_nfb_pci_device_create;
+	}
+
+	mutex_lock(&pci_device->attach_lock);
+
+	mutex_unlock(&global_pci_device_list_lock);
+
+	pci_device->pci = pci;
+	pci_device->bus = pci->bus;
+
+	if (!pci_device->index_valid) {
+		pci_device->dsn = nfb_pci_read_dsn(pci);
+		pci_device->index = nfb_pci_read_enpoint_id(pci);
+		pci_device->index_valid = 1;
+	}
+
+	return pci_device;
+
+err_nfb_pci_device_create:
+	mutex_unlock(&global_pci_device_list_lock);
+	return NULL;
 }
 
 /*
@@ -666,52 +794,12 @@ int nfb_pci_errors_disable(struct nfb_pci_device *card)
  * @index: Index of PCI device within one NFB device
  * return: struct nfb_pci_device instance pointer or NULL
  */
-struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct pci_dev *pci, int index)
+struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct nfb_pci_device *pci_device, int index)
 {
-	int device_found = 0;
-	struct nfb_pci_device *pci_device = NULL;
-	struct pci_dev *bus_dev = pci->bus->self;
-
-	//mutex_lock();
-	list_for_each_entry(pci_device, &global_pci_device_list, global_pci_device_list) {
-		if (strcmp(pci_device->pci_name, pci_name(pci)) == 0) {
-			device_found = 1;
-			break;
-		}
-	}
-
-	if (!device_found) {
-		pci_device = kmalloc(sizeof(*pci_device), GFP_KERNEL);
-		if (pci_device == NULL) {
-			return NULL;
-		}
-
-		INIT_LIST_HEAD(&pci_device->global_pci_device_list);
-		INIT_LIST_HEAD(&pci_device->pci_device_list);
-		INIT_LIST_HEAD(&pci_device->reload_list);
-
-		pci_device->nfb = NULL;
-		strcpy(pci_device->pci_name, pci_name(pci));
-		list_add(&pci_device->global_pci_device_list, &global_pci_device_list);
-
-		/* This is a new device, save state of error registers */
-	        pci_read_config_word(bus_dev, PCI_COMMAND, &pci_device->bridge_command);
-	        pci_read_config_word(bus_dev, bus_dev->pcie_cap + PCI_EXP_DEVCTL, &pci_device->bridge_devctl);
-	} else {
-		/* This device is already in list, restore error registers */
-		dev_info(&bus_dev->dev, "restoring errors on PCI bridge\n");
-		pci_write_config_word(bus_dev, PCI_COMMAND, pci_device->bridge_command);
-		pci_write_config_word(bus_dev, bus_dev->pcie_cap + PCI_EXP_DEVCTL, pci_device->bridge_devctl);
-	}
-
-	pci_device->pci = pci;
-	pci_device->bus = pci->bus;
 	pci_device->nfb = nfb;
-	pci_device->index = index;
 
 	list_add(&pci_device->pci_device_list, &nfb->pci_devices);
 
-	//mutex_unlock();
 	return pci_device;
 }
 
@@ -742,26 +830,27 @@ void nfb_pci_detach_endpoint(struct nfb_device *nfb, struct pci_dev *pci)
  */
 void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
 {
-	int ret;
-	uint64_t slave_dsn;
 	struct pci_bus *child_bus;
 	struct pci_dev *slave;
+	struct nfb_pci_device *pci_device;
 
 	list_for_each_entry(child_bus, &bus->children, node) {
 		nfb_pci_attach_all_slaves(nfb, child_bus);
 	}
 
 	list_for_each_entry(slave, &bus->devices, bus_list) {
-		if (slave->vendor != nfb->pci->vendor || slave == nfb->pci)
+		/* prevent device create for unintended devices */
+		if (!nfb_pci_is_attachable(nfb, slave))
 			continue;
-		slave_dsn = nfb_pci_read_dsn(slave);
-		if (nfb->dsn == slave_dsn) {
-			ret = nfb_pci_read_enpoint_id(slave);
-			if (ret == -1)
-				ret = 1;
-			dev_info(&nfb->pci->dev, "Found PCI slave %d device with name %s by DSN\n", ret, pci_name(slave));
-			nfb_pci_attach_endpoint(nfb, slave, ret);
+		pci_device = nfb_pci_device_find_or_create(slave);
+		if (pci_device == NULL)
+			continue;
+
+		if (nfb_pci_device_is_attachable(nfb, pci_device)) {
+			dev_info(&nfb->pci->dev, "Found PCI sub device %d with name %s by DSN\n", pci_device->index, pci_name(slave));
+			nfb_pci_attach_endpoint(nfb, pci_device, pci_device->index);
 		}
+		mutex_unlock(&pci_device->attach_lock);
 	}
 }
 
@@ -769,31 +858,67 @@ void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
  * nfb_pci_detach_all_slaves - Detach all slave endpoints from NFB device
  * @nfb: NFB device
  */
-void nfb_pci_detach_all_slaves(struct nfb_device *nfb)
+void nfb_pci_detach_endpoints(struct nfb_device *nfb, struct nfb_pci_device *self)
 {
 	struct nfb_pci_device *pci_device, *temp;
 
 	list_for_each_entry_safe(pci_device, temp, &nfb->pci_devices, pci_device_list) {
-		if (pci_device->index > 0) {
-			nfb_pci_detach_endpoint(nfb, pci_device->pci);
-		}
+		if (pci_device != self)
+			mutex_lock(&pci_device->attach_lock);
+
+		nfb_pci_detach_endpoint(nfb, pci_device->pci);
+
+		if (pci_device != self)
+			mutex_unlock(&pci_device->attach_lock);
 	}
 }
 
-/*
- * nfb_probe - called when kernel founds new NFB PCI device
- * @pci: PCI device
- * @id: PCI device identification structure
- */
-int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
+void nfb_pci_try_attach(struct nfb_pci_device *self)
 {
-	int ret = 0;
-	struct pci_bus *bus = NULL;
-	struct nfb_device *nfb;
-	struct nfb_pci_device *pci_device = NULL;
+	struct nfb_device * nfb;
+	struct nfb_pci_device *pci_device;
+	mutex_lock(&global_try_attach_lock);
+	mutex_lock(&global_pci_device_list_lock);
+	mutex_lock(&self->attach_lock);
 
-	void * nfb_dtb_inject = nfb_dtb_inject_get_pci(pci_name(pci));
+	if (self->is_probed_as_main) {
+		nfb = self->nfb;
+		list_for_each_entry(pci_device, &global_pci_device_list, global_pci_device_list) {
+			if (mutex_trylock(&pci_device->attach_lock)) {
+				if (pci_device->is_probed_as_sub &&
+					nfb_pci_is_attachable(nfb, pci_device->pci) &&
+						nfb_pci_device_is_attachable(nfb, pci_device)) {
+					nfb_pci_attach_endpoint(nfb, pci_device, pci_device->index);
+					nfb_probe_endpoint_late(nfb, pci_device);
+				}
+				mutex_unlock(&pci_device->attach_lock);
+			}
+		}
+		nfb_pci_fdt_update_endpoints(nfb);
+	} else if (self->is_probed_as_sub) {
+		list_for_each_entry(pci_device, &global_pci_device_list, global_pci_device_list) {
+			if (mutex_trylock(&pci_device->attach_lock)) {
+				nfb = pci_device->nfb;
+				if (pci_device->is_probed_as_main &&
+						nfb_pci_is_attachable(nfb, self->pci) &&
+						nfb_pci_device_is_attachable(nfb, self)) {
+					nfb_pci_attach_endpoint(nfb, self, self->index);
+					nfb_probe_endpoint_late(nfb, self);
+					nfb_pci_fdt_update_endpoints(nfb);
+				}
+				mutex_unlock(&pci_device->attach_lock);
+			}
+		}
+	}
 
+	mutex_unlock(&self->attach_lock);
+	mutex_unlock(&global_pci_device_list_lock);
+	mutex_unlock(&global_try_attach_lock);
+}
+
+static int nfb_pci_probe_base(struct pci_dev *pci)
+{
+	int ret;
 	if (pci_is_root_bus(pci->bus)) {
 		dev_err(&pci->dev, "attaching an nfb card to the root PCI bus is not supported\n");
 		ret = -EOPNOTSUPP;
@@ -818,13 +943,82 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	pci_set_master(pci);
 
 	nfb_pci_tuneup(pci);
+	return 0;
+
+err_pci_set_consistent_dma_mask:
+err_pci_set_dma_mask:
+	pci_disable_device(pci);
+err_pci_enable_device:
+err_root_pci_bus:
+	return ret;
+}
+
+static int nfb_pci_probe_main(struct nfb_pci_device *pci_device, const struct pci_device_id *id, void * nfb_dtb_inject);
+
+/*
+ * nfb_probe - called when kernel founds new NFB PCI device
+ * @pci: PCI device
+ * @id: PCI device identification structure
+ */
+static int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
+{
+	int ret = 0;
+	void * nfb_dtb_inject;
+	struct nfb_pci_device *pci_device;
+
+	ret = nfb_pci_probe_base(pci);
+	if (ret)
+		goto err_nfb_pci_probe_base;
+
+	pci_device = nfb_pci_device_find_or_create(pci);
+	if (pci_device == NULL) {
+		ret = -ENOMEM;
+		goto err_nfb_pci_device_find_or_create;
+	}
+
+	pci_set_drvdata(pci, pci_device);
+
+	nfb_dtb_inject = nfb_dtb_inject_get_pci(pci_name(pci));
 
 	/* Check presence of driver_data parameter */
-	ret = nfb_pci_read_enpoint_id(pci);
-	if (((struct nfb_pci_dev*) id->driver_data == NULL || ret > 0) && nfb_dtb_inject == NULL) {
+	if (((struct nfb_pci_dev*) id->driver_data == NULL || pci_device->index > 0) && nfb_dtb_inject == NULL) {
+		pci_device->is_probed_as_sub = 1;
 		dev_info(&pci->dev, "successfully initialized only for DMA transfers\n");
-		return 0;
+	} else {
+		pci_device->is_probed_as_main = 1;
+
+		ret = nfb_pci_probe_main(pci_device, id, nfb_dtb_inject);
+		if (ret)
+			goto err_nfb_pci_probe_main;
 	}
+
+	mutex_unlock(&pci_device->attach_lock);
+
+	nfb_pci_try_attach(pci_device);
+	return 0;
+
+//err_nfb_pci_probe_sub:
+//	goto err_nfb_pci_probe;
+
+err_nfb_pci_probe_main:
+	pci_device->is_probed_as_main = 0;
+	goto err_nfb_pci_probe;
+
+err_nfb_pci_probe:
+	pci_device->index_valid = 0;
+	mutex_unlock(&pci_device->attach_lock);
+
+err_nfb_pci_device_find_or_create:
+err_nfb_pci_probe_base:
+	return ret;
+}
+
+static int nfb_pci_probe_main(struct nfb_pci_device *pci_device, const struct pci_device_id *id, void * nfb_dtb_inject)
+{
+	int ret = 0;
+	struct pci_dev *pci = pci_device->pci;
+	struct pci_bus *bus = NULL;
+	struct nfb_device *nfb;
 
 	nfb = nfb_create();
 	if (IS_ERR(nfb)) {
@@ -837,32 +1031,7 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	if (nfb->nfb_pci_dev)
 		nfb->pci_name = nfb->nfb_pci_dev->name;
 
-	nfb->dsn = nfb_pci_read_dsn(pci);
-
-	pci_device = nfb_pci_attach_endpoint(nfb, pci, 0);
-	if (pci_device == NULL) {
-		ret = -1;
-		goto err_attach_device;
-	}
-
-	/* Do not scan more endpoints for generic cards */
-	if (strcmp(nfb->pci_name, nfb_card_name_generic)) {
-		while ((bus = pci_find_next_bus(bus))) {
-			nfb_pci_attach_all_slaves(nfb, bus);
-		}
-	}
-
-	/* Initialize interrupts */
-	ret = pci_enable_msi(pci);
-	if (ret) {
-		dev_info(&pci->dev, "unable to enable MSI\n");
-		//goto err_pci_enable_msi;
-	} else {
-		ret = request_irq(pci->irq, nfb_interrupt, IRQF_SHARED, "nfb", nfb);
-	}
-	if (ret) {
-		pci->irq = -1;
-	}
+	nfb->dsn = pci_device->dsn;
 
 	nfb->fdt = nfb_dtb_inject;
 	if (nfb->fdt == NULL) {
@@ -885,7 +1054,25 @@ int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 
 	nfb_fdt_fixups(nfb);
 
-	pci_set_drvdata(pci, nfb);
+	nfb_pci_attach_endpoint(nfb, pci_device, 0);
+
+	while ((bus = pci_find_next_bus(bus))) {
+		nfb_pci_attach_all_slaves(nfb, bus);
+	}
+
+	nfb_pci_fdt_update_endpoints(nfb);
+
+	/* Initialize interrupts */
+	ret = pci_enable_msi(pci);
+	if (ret) {
+		dev_info(&pci->dev, "unable to enable MSI\n");
+		//goto err_pci_enable_msi;
+	} else {
+		ret = request_irq(pci->irq, nfb_interrupt, IRQF_SHARED, "nfb", nfb);
+	}
+	if (ret) {
+		pci->irq = -1;
+	}
 
 	/* Publish NFB object */
 	ret = nfb_probe(nfb);
@@ -902,16 +1089,10 @@ err_nfb_probe:
 err_nfb_read_fdt:
 	free_irq(pci->irq, nfb);
 	pci_disable_msi(pci);
+
 //err_pci_enable_msi:
-err_attach_device:
 	nfb_destroy(nfb);
 err_nfb_create:
-
-err_pci_set_consistent_dma_mask:
-err_pci_set_dma_mask:
-	pci_disable_device(pci);
-err_pci_enable_device:
-err_root_pci_bus:
 	return ret;
 }
 
@@ -921,30 +1102,54 @@ err_root_pci_bus:
  */
 void nfb_pci_remove(struct pci_dev *pci)
 {
-	struct nfb_device *nfb = (struct nfb_device *) pci_get_drvdata(pci);
-	if (nfb == NULL)
-		goto disable_device;
+	struct nfb_pci_device *pci_device = (struct nfb_pci_device *) pci_get_drvdata(pci);
+	struct nfb_device *nfb;
 
-	/* At first detach all drivers */
-	nfb_remove(nfb);
-	kfree(nfb->fdt);
+	nfb = pci_device->nfb;
 
-	/* Free all mappings */
-	if (pci->irq != -1)
-		free_irq(pci->irq, nfb);
-	pci_disable_msi(pci);
-	nfb_destroy(nfb);
+	mutex_lock(&pci_device->attach_lock);
 
-disable_device:
+	if (pci_device->is_probed_as_main) {
+		pci_device->is_probed_as_main = 0;
+
+		/* At first detach all drivers */
+		nfb_remove(nfb);
+		kfree(nfb->fdt);
+
+		/* Free all mappings */
+		if (pci->irq != -1)
+			free_irq(pci->irq, nfb);
+		pci_disable_msi(pci);
+		nfb_pci_detach_endpoints(nfb, pci_device);
+
+		nfb_destroy(nfb);
+	} else if (pci_device->is_probed_as_sub) {
+		if (nfb) {
+			nfb_remove_endpoint_early(nfb, pci_device);
+			nfb_pci_detach_endpoint(nfb, pci_device->pci);
+		}
+		pci_device->is_probed_as_sub = 0;
+	}
+
+	pci_device->index_valid = 0;
+
+	mutex_unlock(&pci_device->attach_lock);
+
 	pci_disable_device(pci);
 	dev_info(&pci->dev, "disabled\n");
 }
 
 static int nfb_pci_sriov_configure(struct pci_dev *dev, int numvfs)
 {
-	struct nfb_device *nfb = (struct nfb_device *) pci_get_drvdata(dev);
+	struct nfb_pci_device *pci_device = (struct nfb_pci_device *) pci_get_drvdata(dev);
+	struct nfb_device *nfb;
 	int i;
 	int ret = 0;
+
+	if (!pci_device->is_probed_as_main)
+		return -ENODEV;
+
+	nfb = pci_device->nfb;
 
 	if (numvfs == 0) {
 		pci_disable_sriov(dev);
@@ -980,6 +1185,9 @@ int nfb_pci_init(void)
 {
 	int ret;
 	INIT_LIST_HEAD(&global_pci_device_list);
+	mutex_init(&global_pci_device_list_lock);
+	mutex_init(&global_try_attach_lock);
+
 	ret = pci_register_driver(&nfb_driver);
 	if (ret)
 		goto err_register;

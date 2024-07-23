@@ -104,6 +104,32 @@ void nfb_detach_drivers(struct nfb_device* nfb)
 	mutex_unlock(&nfb_driver_register_mutex);
 }
 
+void nfb_probe_endpoint_late(struct nfb_device *nfb, struct nfb_pci_device *pci_device)
+{
+	int i;
+	mutex_lock(&nfb_driver_register_mutex);
+
+	for (i = 0; i < NFB_DRIVERS_MAX; i++) {
+		if (nfb->list_drivers[i].status == NFB_DRIVER_STATUS_OK && nfb_registered_drivers[i].remove_endpoint) {
+			nfb_registered_drivers[i].probe_endpoint(nfb->list_drivers[i].priv, pci_device);
+		}
+	}
+
+	mutex_unlock(&nfb_driver_register_mutex);
+}
+
+void nfb_remove_endpoint_early(struct nfb_device *nfb, struct nfb_pci_device *pci_device)
+{
+	int i;
+	mutex_lock(&nfb_driver_register_mutex);
+	for (i = NFB_DRIVERS_MAX - 1; i >= 0; i--) {
+		if (nfb->list_drivers[i].status == NFB_DRIVER_STATUS_OK && nfb_registered_drivers[i].remove_endpoint) {
+			nfb_registered_drivers[i].remove_endpoint(nfb->list_drivers[i].priv, pci_device);
+		}
+	}
+	mutex_unlock(&nfb_driver_register_mutex);
+}
+
 /*
  * nfb_create - alloc and init NFB structure
  * return: NFB device structure
@@ -274,6 +300,8 @@ static struct nfb_driver_ops embedded_driver_ops[] = {
 	{
 		.attach = nfb_mi_attach,
 		.detach = nfb_mi_detach,
+		.probe_endpoint = nfb_mi_probe_endpoint,
+		.remove_endpoint = nfb_mi_remove_endpoint,
 	},
 	{
 		.attach = nfb_boot_attach,

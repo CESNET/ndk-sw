@@ -1107,7 +1107,7 @@ static struct ndp_channel *ndp_ctrl_create(struct ndp *ndp, struct ndp_channel_i
 	struct ndp_ctrl *ctrl;
 	struct nfb_pci_device *pci_device;
 
-	struct device *dev = &ndp->nfb->pci->dev;
+	struct device *dev = NULL;
 
 	prop = fdt_getprop(ndp->nfb->fdt, node_offset, "pcie", &proplen);
 	if (proplen >= sizeof(*prop)) {
@@ -1118,6 +1118,14 @@ static struct ndp_channel *ndp_ctrl_create(struct ndp *ndp, struct ndp_channel_i
 				dev = &pci_device->pci->dev;
 				break;
 			}
+		}
+	}
+
+	if (dev == NULL) {
+		dev = &ndp->nfb->pci->dev;
+		if (!ndp->dev_node_warn) {
+			dev_warn(ndp->nfb->dev, "can't find exact pci_device for NDP queue, this can affect performance on NUMA systems\n");
+			ndp->dev_node_warn = 1;
 		}
 	}
 

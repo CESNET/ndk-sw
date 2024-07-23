@@ -76,6 +76,8 @@ static void nfb_boot_reload_linkup(struct nfb_pci_device *card)
 
 static int nfb_boot_reload_rescan(struct nfb_pci_device *card)
 {
+	struct pci_dev *bus_dev;
+
 	pci_lock_rescan_remove();
 	pci_rescan_bus(card->bus->parent);
 	pci_unlock_rescan_remove();
@@ -84,7 +86,33 @@ static int nfb_boot_reload_rescan(struct nfb_pci_device *card)
 	if (card->pci == NULL) {
 		return -ENODEV;
 	}
+
+	bus_dev = card->pci->bus->self;
+
+	dev_info(&bus_dev->dev, "restoring errors on PCI bridge\n");
+	pci_write_config_word(bus_dev, PCI_COMMAND, card->bridge_command);
+	pci_write_config_word(bus_dev, bus_dev->pcie_cap + PCI_EXP_DEVCTL, card->bridge_devctl);
+
 	pci_dev_put(card->pci);
+	return 0;
+}
+
+/*
+ * nfb_pci_errors_disable - disable errors that can occur on hot reboot (firmware reload)
+ * @card: struct nfb_pci_device instance
+ */
+static int nfb_pci_errors_disable(struct nfb_pci_device *card)
+{
+	struct pci_dev *bridge = card->bus->self;
+	dev_info(&card->bus->self->dev, "disabling errors on PCI bridge\n");
+
+	/* save state of error registers */
+	pci_read_config_word(bridge, PCI_COMMAND, &card->bridge_command);
+	pci_read_config_word(bridge, bridge->pcie_cap + PCI_EXP_DEVCTL, &card->bridge_devctl);
+
+	pci_write_config_word(bridge, PCI_COMMAND, card->bridge_command & ~PCI_COMMAND_SERR);
+	pci_write_config_word(bridge, bridge->pcie_cap + PCI_EXP_DEVCTL,
+			card->bridge_devctl & ~(PCI_EXP_DEVCTL_NFERE | PCI_EXP_DEVCTL_FERE));
 	return 0;
 }
 
@@ -108,7 +136,7 @@ int nfb_boot_reload(void *arg)
 	struct nfb_boot *boot;
 	struct nfb_device *nfb;
 	struct list_head slaves;
-	struct nfb_pci_device *master;
+	struct nfb_pci_device *master = NULL;
 	struct nfb_pci_device *slave, *temp;
 	struct device *mbus_dev;
 
@@ -125,10 +153,10 @@ int nfb_boot_reload(void *arg)
 
 	/* Remove PCIe slaves */
 	list_for_each_entry_safe(slave, temp, &nfb->pci_devices, pci_device_list) {
-		if (slave->index == 0)
+		if (slave->is_probed_as_main) {
+			master = slave;
 			continue;
-
-		nfb_pci_detach_endpoint(nfb, slave->pci);
+		}
 
 		list_add(&slave->reload_list, &slaves);
 
@@ -138,14 +166,10 @@ int nfb_boot_reload(void *arg)
 
 	}
 
-	master = list_first_entry(&nfb->pci_devices, struct nfb_pci_device, pci_device_list);
-
 	/* Prepare master PCIe for removal */
 	ret = nfb_boot_reload_prepare_remove(master);
 	if (ret)
 		goto err_reload_prepare_remove;
-
-	nfb_pci_detach_endpoint(nfb, master->pci);
 
 	/* Workaround: Close all MTDs within BootFPGA */
 	nfb_boot_mtd_destroy(boot);

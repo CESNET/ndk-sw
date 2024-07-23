@@ -12,10 +12,12 @@
 
 struct nfb_mi {
 	struct list_head node_list;
+	struct nfb_device *nfb;
 };
 
 struct nfb_mi_node {
 	struct list_head nfb_mi_list;
+	struct nfb_mi *mi;
 
 	resource_size_t mem_phys;
 	resource_size_t mem_len;
@@ -26,12 +28,13 @@ struct nfb_mi_node {
 
 	size_t mmap_offset;
 	struct nfb_bus bus;
+	int is_wc_mapped;
 };
 
 int nfb_mi_attach(struct nfb_device* nfb, void **priv);
 void nfb_mi_detach(struct nfb_device* nfb, void *priv);
 
-int nfb_mi_attach_node(struct nfb_device* nfb, void *priv, int node_offset);
-void nfb_mi_detach_node(struct nfb_device* nfb, void *priv, int node_offset);
+void nfb_mi_probe_endpoint(void *priv, struct nfb_pci_device *pci_device);
+void nfb_mi_remove_endpoint(void *priv, struct nfb_pci_device *pci_device);
 
 #endif //NFB_MI_H

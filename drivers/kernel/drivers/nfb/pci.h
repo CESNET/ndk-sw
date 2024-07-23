@@ -39,6 +39,7 @@ enum nfb_devices {
  * @idstruct_serialno_addr: Address (in the MTD) where card serial number can be found
  * @idstruct_subtype_addr: Address (in the MTD) where card type can be found
  * @card_type_id: Card type number
+ * @sub_device_id: Device ID for subsidiary device
  *
  * This structure is associated with PCI ID (through
  * &struct pci_device_id->driver_data) and embedded in &struct nfb_device to provide
@@ -53,18 +54,24 @@ struct nfb_pci_dev {
 	size_t idstruct_serialno_addr;
 	size_t idstruct_subtype_addr;
 	int card_type_id;
+	unsigned short sub_device_id;
 };
 
 struct nfb_pci_device {
 	struct list_head global_pci_device_list;
 	struct list_head pci_device_list;
 	struct list_head reload_list;
+	struct mutex attach_lock;
 
 	struct pci_dev *pci;
 	struct nfb_device *nfb;
 	struct pci_bus *bus;
 
-	int index;	/* 0: master, > 0: slaves */
+	uint64_t dsn;
+	int index;                      /* 0: main device, > 0: subsidiary devices */
+	int index_valid: 1;             /* index (and dsn) is valid: freshly readen */
+	int is_probed_as_main: 1;
+	int is_probed_as_sub: 1;
 
 	int devfn;
 	int cap;
@@ -75,9 +82,8 @@ struct nfb_pci_device {
 	uint16_t bridge_devctl;
 };
 
-int nfb_pci_errors_disable(struct nfb_pci_device *card);
 void nfb_pci_detach_endpoint(struct nfb_device *nfb, struct pci_dev *pci);
-struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct pci_dev *pci, int index);
+struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct nfb_pci_device *pci_device, int index);
 void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus);
 void nfb_pci_detach_all_slaves(struct nfb_device *nfb);
 

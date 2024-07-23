@@ -177,6 +177,8 @@ struct ndp {
 	struct mutex lock;
 
 	struct device dev;
+
+	int dev_node_warn : 1;
 };
 
 /* driver.c */

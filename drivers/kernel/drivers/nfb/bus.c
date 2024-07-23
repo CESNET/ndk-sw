@@ -15,6 +15,44 @@
 
 struct nfb_bus *nfb_bus_match(const struct nfb_device *nfb, int nodeoffset);
 
+int nfb_comp_count(const struct nfb_device *dev, const char *compatible)
+{
+	const void *fdt;
+	int node_offset;
+	unsigned count = 0;
+
+	if (!dev || !compatible)
+		return -1;
+
+	fdt = nfb_get_fdt(dev);
+
+	fdt_for_each_compatible_node(fdt, node_offset, compatible) {
+		count++;
+	}
+
+	return count;
+}
+
+int nfb_comp_find(const struct nfb_device *dev, const char *compatible, unsigned index)
+{
+	const void *fdt;
+	int node_offset;
+	unsigned count = 0;
+
+	if (!dev || !compatible)
+		return -1;
+
+	fdt = nfb_get_fdt(dev);
+
+	fdt_for_each_compatible_node(fdt, node_offset, compatible) {
+		if (count == index)
+			return node_offset;
+		count++;
+	}
+
+	return node_offset;
+}
+
 struct nfb_comp *nfb_comp_open_ext(const struct nfb_device *nfb, int nodeoffset, size_t user_size)
 {
 	int ret;
