@@ -1,4 +1,4 @@
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t
 from libcpp cimport bool
 
 from posix.types cimport off_t
@@ -125,6 +125,16 @@ cdef extern from "<netcope/i2c_ctrl.h>":
     int nc_i2c_read_reg(nc_i2c_ctrl *ctrl, uint8_t reg, uint8_t *data, unsigned size);
     int nc_i2c_write_reg(nc_i2c_ctrl *ctrl, uint8_t reg, const uint8_t *data, unsigned size);
     void nc_i2c_close(nc_i2c_ctrl *ctrl);
+
+cdef extern from "<linux/nfb/boot.h>":
+    cdef struct nfb_boot_ioc_sensor:
+        pass
+
+cdef extern from "<nfb/boot.h>":
+    int nfb_sensor_get(nfb_device *dev, nfb_boot_ioc_sensor *s)
+
+cdef extern from "<netcope/adc_sensors.h>":
+    int nc_adc_sensors_get_temp(const nfb_device *dev, int32_t *val)
 
 cdef extern from "<netcope/rxqueue.h>":
     cdef struct nc_rxqueue:

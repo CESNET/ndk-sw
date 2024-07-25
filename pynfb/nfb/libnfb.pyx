@@ -6,7 +6,7 @@ from itertools import islice
 from typing import Union, Optional, List, Tuple
 
 from libc.stdlib cimport malloc
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t
 from libcpp cimport bool
 
 from cpython.ref cimport PyObject
@@ -136,6 +136,15 @@ cdef class Nfb:
                 if prop.name == 'phandle' and prop.value == phandle:
                     return self.fdt.get_node(path)
         return None
+
+    def get_temperature(self, units="celsius"):
+        cdef int32_t int32 = 0
+        assert units == "celsius"
+
+        ret = libnetcope.nc_adc_sensors_get_temp(self._handle._dev, &int32)
+        if ret < 0:
+            raise IOError
+        return int(int32) / 1000
 
 
 cdef class Comp:

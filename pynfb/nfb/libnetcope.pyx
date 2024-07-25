@@ -3,7 +3,7 @@ import time
 import cython
 
 from libc.stdlib cimport malloc
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t
 from libcpp cimport bool
 
 from cpython.exc cimport PyErr_SetFromErrno
