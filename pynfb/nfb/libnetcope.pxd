@@ -116,6 +116,9 @@ cdef extern from "<netcope/mdio.h>":
 cdef extern from "<netcope/eth.h>":
     int nc_eth_get_pcspma_control_node(const void *fdt, int nodeoffset, int *node_control_param)
 
+cdef extern from "<netcope/transceiver.h>":
+    int nc_transceiver_statusreg_is_present(const nfb_comp * comp)
+
 cdef extern from "<netcope/i2c_ctrl.h>":
     cdef struct nc_i2c_ctrl:
         pass

@@ -11,7 +11,7 @@ from cpython.exc cimport PyErr_SetFromErrno
 import libnfb
 cimport libnfb
 
-from libnfb cimport NfbDeviceHandle
+from libnfb cimport NfbDeviceHandle, nfb_comp_open, nfb_comp_close
 
 
 cdef class RxMac:
@@ -393,3 +393,57 @@ cdef class DmaCtrlNdp:
             if txc.have_bytes:
                 ret['sent_bytes'] = txc.sent
         return ret
+
+
+cdef class Transceiver:
+    cdef NfbDeviceHandle _handle
+    cdef nfb_comp *_comp_status
+    cdef dict __dict__
+
+    """
+    Object representing a transceiver interface
+
+    :ivar I2c i2c: I2c bus handle (only with QSFP+ modules)
+    """
+    def __init__(self, libnfb.Nfb nfb, node):
+        self._comp_status = NULL
+
+        self._nfb = nfb
+        self._handle = nfb._handle
+        status = nfb.fdt_get_phandle(node.get_property('status-reg').value)
+        fdt_offset = self._nfb._fdt_path_offset(status)
+        self._comp_status = nfb_comp_open(self._handle._dev, fdt_offset)
+        if self._comp_status is NULL:
+            PyErr_SetFromErrno(OSError)
+
+        ctrl = nfb.fdt_get_phandle(node.get_property('control').value)
+        node_ctrl_param = node.get_subnode('control-param')
+
+        # FIXME
+        if "QSFPP":
+            prop = node_ctrl_param.get_property("i2c-addr")
+            i2c_addr = prop.value if prop else 0xA0
+            self.i2c = I2c(nfb, ctrl, i2c_addr)
+
+    def __dealloc__(self):
+        if self._comp_status is not NULL:
+            nfb_comp_close(self._comp_status)
+
+
+    def is_present(self) -> bool:
+        return nc_transceiver_statusreg_is_present(self._comp_status) != 0
+
+
+    # FIXME: only valid for specific QSFP+
+    @property
+    def vendor_name(self) -> str:
+        "vendor of the transceiver"
+        return self.i2c.read_reg(148, 16).decode()
+    @property
+    def vendor_pn(self) -> str:
+        "product number of the transceiver"
+        return self.i2c.read_reg(168, 16).decode()
+    @property
+    def vendor_sn(self) -> str:
+        "serial number of the transceiver"
+        return self.i2c.read_reg(196, 16).decode()

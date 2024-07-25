@@ -42,7 +42,7 @@ class Eth:
         self.rxmac = libnetcope.RxMac(nfb, nfb.fdt_get_phandle(node.get_property('rxmac').value))
         self.txmac = libnetcope.TxMac(nfb, nfb.fdt_get_phandle(node.get_property('txmac').value))
         self.pcspma = PcsPma(nfb, nfb.fdt_get_phandle(node.get_property('pcspma').value))
-        self.pmd = Transceiver(nfb, nfb.fdt_get_phandle(node.get_property('pmd').value))
+        self.pmd = libnetcope.Transceiver(nfb, nfb.fdt_get_phandle(node.get_property('pmd').value))
 
     def _common_action(self, action, *args, **kwargs):
         return [
@@ -69,38 +69,7 @@ class Eth:
             object.__setattr__(self, name, value)
 
 
-class Transceiver:
-    """
-    Object representing a transciever interface
 
-    :ivar I2c i2c: I2c bus handle (only with QSFP+ modules)
-    """
-    def __init__(self, nfb, node):
-        status = nfb.fdt_get_phandle(node.get_property('status-reg').value)
-        self.comp_status = nfb.comp_open(status)
-
-        ctrl = nfb.fdt_get_phandle(node.get_property('control').value)
-        node_ctrl_param = node.get_subnode('control-param')
-
-        # FIXME
-        if "QSFPP":
-            prop = node_ctrl_param.get_property("i2c-addr")
-            i2c_addr = prop.value if prop else 0xA0
-            self.i2c = libnetcope.I2c(nfb, ctrl, i2c_addr)
-
-    # FIXME: only valid for specific QSFP+
-    @property
-    def vendor_name(self) -> str:
-        "vendor of the transceiver"
-        return self.i2c.read_reg(148, 16).decode()
-    @property
-    def vendor_pn(self) -> str:
-        "product number of the transceiver"
-        return self.i2c.read_reg(168, 16).decode()
-    @property
-    def vendor_sn(self) -> str:
-        "serial number of the transceiver"
-        return self.i2c.read_reg(196, 16).decode()
 
 
 class PcsPma:
