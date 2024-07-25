@@ -438,12 +438,12 @@ cdef class Transceiver:
     @property
     def vendor_name(self) -> str:
         "vendor of the transceiver"
-        return self.i2c.read_reg(148, 16).decode()
+        return self.i2c.read_reg(148, 16).decode().strip()
     @property
     def vendor_pn(self) -> str:
         "product number of the transceiver"
-        return self.i2c.read_reg(168, 16).decode()
+        return self.i2c.read_reg(168, 16).decode().strip()
     @property
     def vendor_sn(self) -> str:
         "serial number of the transceiver"
-        return self.i2c.read_reg(196, 16).decode()
+        return self.i2c.read_reg(196, 16).decode().strip()
