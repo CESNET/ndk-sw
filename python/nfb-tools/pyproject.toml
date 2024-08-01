@@ -1,5 +1,5 @@
 [project]
-name = "nfb-tools"
+name = "nfbtools"
 version = "0.2.0"
 dependencies = ["pyyaml"]
 
@@ -8,4 +8,7 @@ nfb-meter = "nfbmeter.nfbmeter:main"
 nfb-bootstrap = "nfbbootstrap.nfb_bootstrap:main"
 
 [tool.setuptools]
-packages = ["nfbmeter"]
+packages = [
+	"nfbmeter",
+	"nfbbootstrap",
+]

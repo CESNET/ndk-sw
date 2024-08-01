@@ -5,7 +5,8 @@ setup(
     version = "0.2.0",
     packages=[
         "nfbmeter",
-        "nfbbootstrap", "nfbbootstrap.pypcie",
+        "nfbbootstrap",
+        "nfbbootstrap.pypcie",
     ],
     package_dir={
         'nfbmeter': 'nfbmeter',
