@@ -4,7 +4,7 @@ from Cython.Build import cythonize
 
 setup(
     name = "nfb",
-    version='${PACKAGE_VERSION}',
+    version = "0.1.0",
     author = "Martin Spinler",
     author_email = "spinler@cesnet.cz",
     ext_package = "nfb",
