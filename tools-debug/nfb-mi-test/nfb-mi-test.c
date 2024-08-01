@@ -302,7 +302,7 @@ void do_test_performance(struct mi_test_params *p)
 				transactions += ptransactions;
 				time += ptime;
 				if (p->verbose > 2)
-					printf("Iterations: % 10d, time: %10.0f us | Probing iterations: % 08d Probing time %10.0f us\n", it, ptime, PI, otime);
+					printf("Iterations: % 10ld, time: %10.0f us | Probing iterations: % 08d Probing time %10.0f us\n", it, ptime, PI, otime);
 			}
 		}
 	}
