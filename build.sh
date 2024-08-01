@@ -223,7 +223,14 @@ get_dpdk_dependencies()
 get_3rdparty_code()
 {
     curl -L $URL_3RDPARTY --output $FILENAME_3RDPARTY
-    tar -xf $FILENAME_3RDPARTY
+    tar -xf $FILENAME_3RDPARTY -C $SCRIPT_PATH/
+}
+
+try_get_3rdparty_code()
+{
+    if [ ! -e $SCRIPT_PATH/drivers/kernel/drivers/fdt/fdt.h ]; then
+        get_3rdparty_code
+    fi
 }
 
 install_dependencies()
@@ -238,6 +245,7 @@ install_dependencies()
 
 Build()
 {
+    try_get_3rdparty_code
     mkdir -p "$SCRIPT_PATH/$BUILDDIR"
     cd "$SCRIPT_PATH/$BUILDDIR"
     $cmake -DCMAKE_BUILD_TYPE=$RELTYPE ..
@@ -246,6 +254,7 @@ Build()
 
 Build_dpdk()
 {
+    try_get_3rdparty_code
     mkdir -p "$SCRIPT_PATH/$BUILDDIR"
     cd "$SCRIPT_PATH/$BUILDDIR"
     $cmake -DCMAKE_BUILD_TYPE=$RELTYPE -DUSE_DPDK=true ..
