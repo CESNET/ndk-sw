@@ -24,7 +24,7 @@ else:
     time_ns = time.time_ns
 
 
-def __batched(iterable, n):
+def _batched(iterable, n):
     it = iter(iterable)
     batch = tuple(islice(it, n))
     while batch:
@@ -705,7 +705,7 @@ cdef class NdpQueueTx(NdpQueue):
         cdef const char* c_pkt
         cdef const char* c_hdr
 
-        for burst in __batched(pkts, 64):
+        for burst in _batched(pkts, 64):
             in_cnt = len(burst)
             for i in range(in_cnt):
                 pkt, hdr, flags = burst[i]
