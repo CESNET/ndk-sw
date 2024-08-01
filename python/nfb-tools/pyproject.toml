@@ -1,7 +1,10 @@
 [project]
 name = "nfbtools"
 version = "0.2.0"
-dependencies = ["pyyaml"]
+dependencies = [
+	"nfb",
+	"pyyaml",
+]
 
 [project.scripts]
 nfb-meter = "nfbmeter.nfbmeter:main"

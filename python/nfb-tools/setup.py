@@ -19,7 +19,7 @@ setup(
         ],
     },
     install_requires=[
-        "fdt",
+        "nfb",
         "pyyaml",
     ]
 )
