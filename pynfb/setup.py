@@ -31,4 +31,5 @@ setup(
     package_data = {
         'nfb': ['*.pxd'],
     },
+    install_requires=['fdt'],
 )
