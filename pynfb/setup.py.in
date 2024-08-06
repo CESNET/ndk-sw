@@ -2,6 +2,19 @@ from setuptools import Extension, setup
 from Cython.Build import cythonize
 
 
+ext_extra_args = dict(
+    include_dirs=[
+        '${CMAKE_CURRENT_SOURCE_DIR}/../libnfb/include',
+        '${CMAKE_CURRENT_SOURCE_DIR}/../drivers/kernel/include',
+    ],
+    library_dirs=[
+        '${CMAKE_BINARY_DIR}/libnfb'
+    ],
+)
+
+libnfb_ext_extra_args = libnetcope_ext_extra_args = ext_extra_args
+
+
 setup(
     name = "nfb",
     version = "0.1.0",
@@ -10,8 +23,8 @@ setup(
     ext_package = "nfb",
     ext_modules = cythonize(
         [
-            Extension("libnfb",     ["${CMAKE_CURRENT_SOURCE_DIR}/nfb/libnfb.pyx"],     libraries=["nfb", "fdt"], include_dirs=['${CMAKE_CURRENT_SOURCE_DIR}/../libnfb/include'], library_dirs=['${CMAKE_BINARY_DIR}/libnfb']),
-            Extension("libnetcope", ["${CMAKE_CURRENT_SOURCE_DIR}/nfb/libnetcope.pyx"], libraries=["nfb", "fdt"], include_dirs=['${CMAKE_CURRENT_SOURCE_DIR}/../libnfb/include'], library_dirs=['${CMAKE_BINARY_DIR}/libnfb']),
+            Extension("libnfb",     ["${CMAKE_CURRENT_SOURCE_DIR}/nfb/libnfb.pyx"],     libraries=["nfb", "fdt"], **libnfb_ext_extra_args),
+            Extension("libnetcope", ["${CMAKE_CURRENT_SOURCE_DIR}/nfb/libnetcope.pyx"], libraries=["nfb", "fdt"], **libnetcope_ext_extra_args),
         ],
         include_path=['${CMAKE_CURRENT_SOURCE_DIR}/nfb'],
         compiler_directives={'embedsignature': True, 'binding': False},
@@ -22,4 +35,5 @@ setup(
     package_data = {
         'nfb': ['*.pxd'],
     },
+    install_requires=['fdt'],
 )

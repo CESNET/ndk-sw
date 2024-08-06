@@ -15,7 +15,7 @@ pages:
   - pip install -U fdt cython
   - sh build.sh --prepare
   - sh build.sh --make
-  - "(cd pynfb; python3 setup.py build_ext --inplace -I ../libnfb/include -L ../cmake-build/libnfb)"
+  - "(cd pynfb; python3 setup.py build_ext --inplace -I ../libnfb/include:../drivers/kernel/include -L ../cmake-build/libnfb)"
   - LD_LIBRARY_PATH=$(pwd)/cmake-build/libnfb/ sphinx-build -b html doc/ public
   artifacts:
     paths:
