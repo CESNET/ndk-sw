@@ -20,7 +20,7 @@ setup(
             ),
         ],
         include_path=["libnfb_ext_python"],
-        compiler_directives={"embedsignature": True, "binding": False, **({} if Cython.__version__ <= '0.29' else {"legacy_implicit_noexcept": True})},
+        compiler_directives={"embedsignature": True, "binding": False},
     ),
     py_modules=["libnfb_ext_python"],
     packages=find_namespace_packages(include=["nfb.*"]),

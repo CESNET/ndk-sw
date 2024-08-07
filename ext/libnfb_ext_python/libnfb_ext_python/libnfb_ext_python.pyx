@@ -5,7 +5,7 @@ cdef class __NfbWrapper:
     cdef object nfb
     cdef list bus
 
-cdef int nfb_ext_python_open(const char *devname, int oflag, void **priv, void **fdt):
+cdef int nfb_ext_python_open(const char *devname, int oflag, void **priv, void **fdt) noexcept:
     cdef int ret
     cdef uint64_t addr
     cdef object nfb
@@ -36,7 +36,7 @@ cdef int nfb_ext_python_open(const char *devname, int oflag, void **priv, void *
 
     return 0
 
-cdef void nfb_ext_python_close(void *priv):
+cdef void nfb_ext_python_close(void *priv) noexcept:
     cdef PyObject* _wrap
     cdef __NfbWrapper wrap
     cdef object nfb
@@ -49,7 +49,7 @@ cdef void nfb_ext_python_close(void *priv):
     #free(wrap.fdt)
     Py_DECREF(wrap)
 
-cdef ssize_t nfb_pynfb_bus_read(void *p, void *buf, size_t nbyte, off_t offset):
+cdef ssize_t nfb_pynfb_bus_read(void *p, void *buf, size_t nbyte, off_t offset) noexcept:
     cdef PyObject* _bus = <PyObject *> p
     cdef object bus = <object> _bus
     cdef bytes data
@@ -61,7 +61,7 @@ cdef ssize_t nfb_pynfb_bus_read(void *p, void *buf, size_t nbyte, off_t offset):
 
     return nbyte
 
-cdef ssize_t nfb_pynfb_bus_write(void *p, const void *buf, size_t nbyte, off_t offset):
+cdef ssize_t nfb_pynfb_bus_write(void *p, const void *buf, size_t nbyte, off_t offset) noexcept:
     cdef PyObject* _bus = <PyObject *> p
     cdef object bus = <object> _bus
     cdef const char* c_data = <const char*> buf
@@ -72,7 +72,7 @@ cdef ssize_t nfb_pynfb_bus_write(void *p, const void *buf, size_t nbyte, off_t o
 
     return nbyte
 
-cdef int nfb_pynfb_bus_open(void *dev_priv, int bus_offset, int comp_offset, void ** bus_priv, libnfb_bus_ext_ops* ops):
+cdef int nfb_pynfb_bus_open(void *dev_priv, int bus_offset, int comp_offset, void ** bus_priv, libnfb_bus_ext_ops* ops) noexcept:
     cdef PyObject* _wrap = <PyObject*> dev_priv
     cdef __NfbWrapper wrap = <object> _wrap
 
@@ -104,7 +104,7 @@ cdef int nfb_pynfb_bus_open(void *dev_priv, int bus_offset, int comp_offset, voi
 
     return 0
 
-cdef void nfb_pynfb_bus_close(void *priv):
+cdef void nfb_pynfb_bus_close(void *priv) noexcept:
     cdef PyObject* _bus = <PyObject *> priv
     cdef object bus = <object> _bus
 
@@ -112,7 +112,7 @@ cdef void nfb_pynfb_bus_close(void *priv):
 
 # NDP functions
 
-cdef int pyndp_start(void *priv):
+cdef int pyndp_start(void *priv) noexcept:
     cdef object t = <object>priv
 
     queue, temp = t
@@ -120,7 +120,7 @@ cdef int pyndp_start(void *priv):
 
     return 0
 
-cdef int pyndp_stop(void *priv):
+cdef int pyndp_stop(void *priv) noexcept:
     cdef object t = <object>priv
 
     queue, temp = t
@@ -128,7 +128,7 @@ cdef int pyndp_stop(void *priv):
 
     return 0
 
-cdef unsigned pyndp_rx_burst_get(void *priv, ndp_packet *packets, unsigned count):
+cdef unsigned pyndp_rx_burst_get(void *priv, ndp_packet *packets, unsigned count) noexcept:
     cdef object t = <object>priv
 
     cdef uint8_t* c_data
@@ -151,7 +151,7 @@ cdef unsigned pyndp_rx_burst_get(void *priv, ndp_packet *packets, unsigned count
 
     return cnt
 
-cdef int pyndp_rx_burst_put(void *priv):
+cdef int pyndp_rx_burst_put(void *priv) noexcept:
     cdef object t = <object>priv
 
     queue, temp = t
@@ -159,7 +159,7 @@ cdef int pyndp_rx_burst_put(void *priv):
 
     return 0
 
-cdef unsigned pyndp_tx_burst_get(void *priv, ndp_packet *packets, unsigned count):
+cdef unsigned pyndp_tx_burst_get(void *priv, ndp_packet *packets, unsigned count) noexcept:
     cdef object t = <object>priv
     queue, temp = t
 
@@ -178,7 +178,7 @@ cdef unsigned pyndp_tx_burst_get(void *priv, ndp_packet *packets, unsigned count
 
     return len(prep)
 
-cdef int pyndp_tx_burst_put(void *priv):
+cdef int pyndp_tx_burst_put(void *priv) noexcept:
     cdef object t = <object>priv
 
     queue, temp = t
@@ -186,7 +186,7 @@ cdef int pyndp_tx_burst_put(void *priv):
 
     return 0
 
-cdef int pyndp_tx_burst_flush(void *priv):
+cdef int pyndp_tx_burst_flush(void *priv) noexcept:
     cdef object t = <object>priv
 
     queue, temp = t
@@ -194,7 +194,7 @@ cdef int pyndp_tx_burst_flush(void *priv):
     return 0
 
 
-cdef int nfb_pyndp_queue_open(nfb_device *dev, void *dev_priv, unsigned index, int dir, int flags, ndp_queue ** pq):
+cdef int nfb_pyndp_queue_open(nfb_device *dev, void *dev_priv, unsigned index, int dir, int flags, ndp_queue ** pq) noexcept:
     cdef PyObject* _wrap = <PyObject*> dev_priv
     cdef __NfbWrapper wrap = <object> _wrap
 
@@ -234,20 +234,21 @@ cdef int nfb_pyndp_queue_open(nfb_device *dev, void *dev_priv, unsigned index, i
 
     return 0
 
-cdef int nfb_pyndp_queue_close(ndp_queue *q):
+cdef int nfb_pyndp_queue_close(ndp_queue *q) noexcept:
     cdef object t = <object>ndp_queue_get_priv(q)
 
     queue, temp = t
     Py_DECREF(t)
+    return 0
 
-cdef int nfb_pynfb_comp_lock(const nfb_comp *comp, uint32_t features):
+cdef int nfb_pynfb_comp_lock(const nfb_comp *comp, uint32_t features) noexcept:
     # TODO
     return 1;
 
-cdef void nfb_pynfb_comp_unlock(const nfb_comp *comp, uint32_t features):
+cdef void nfb_pynfb_comp_unlock(const nfb_comp *comp, uint32_t features) noexcept:
     pass
 
-cdef int pynfb_ext_get_ops(const char *devname, libnfb_ext_ops* ops):
+cdef int pynfb_ext_get_ops(const char *devname, libnfb_ext_ops* ops) noexcept:
     if strncmp(devname, nfb_pynfb_prefix, strlen(nfb_pynfb_prefix)) != 0:
         return 0
 
