@@ -1,6 +1,6 @@
 "Software for control of the CESNET NDK based FPGA acceleration cards"
 
-__all__ = ["open", "eth", "BaseComp"]
+__all__ = ["open", "eth", "BaseComp", "default_dev_path"]
 
 from . import libnfb
 from . import eth
@@ -9,6 +9,8 @@ from .libnfb import open
 
 import fdt
 from typing import Optional
+
+default_dev_path = libnfb.Nfb.default_dev_path
 
 
 class BaseComp(libnfb.AbstractBaseComp):
@@ -21,6 +23,6 @@ class BaseComp(libnfb.AbstractBaseComp):
     :ivar libnfb.Comp _comp: Component object
     """
 
-    def __init__(self, dev=libnfb.Nfb.default_device, node: Optional[fdt.Node]=None, index: int=0):
+    def __init__(self, dev=default_dev_path, node: Optional[fdt.Node]=None, index: int=0):
         super().__init__(dev, node, index)
         self._comp = self._dev.comp_open(self._node)

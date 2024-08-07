@@ -56,11 +56,20 @@ cdef class RxMac:
     def is_enabled(self):
         return self.enabled
 
+    def is_link(self):
+        return self.link
+
     def stats_reset(self):
+        self.reset_stats()
+
+    def reset_stats(self):
         """Reset statistic counters"""
         nc_rxmac_reset_counters(self._mac)
 
     def stats_read(self, etherstats: bool = False):
+        return self.read_stats(etherstats)
+
+    def read_stats(self, etherstats: bool = False):
         """
         Read statistic counters
 
@@ -92,12 +101,18 @@ cdef class RxMac:
             'pkts512to1023Octets': es.pkts512to1023Octets,
             'pkts1024to1518Octets': es.pkts1024to1518Octets,
         } if etherstats else {
-            'packets': counters.cnt_total,
-            'received': counters.cnt_received,
-            'octets': counters.cnt_octets,
-            'discarded': counters.cnt_erroneous,
-            'overflowed': counters.cnt_overflowed,
+            'total': counters.cnt_total,
+            #'total_bytes': counters.cnt_total_octets,
+            'passed': counters.cnt_received,
+            'passed_bytes': counters.cnt_octets,
+            'dropped': (counters.cnt_erroneous + counters.cnt_overflowed),
+                'overflowed': counters.cnt_overflowed,
+                'errors': counters.cnt_erroneous,
+                # 'crc_errors': counters.cnt_crc_errors,
+                # 'length_errors': counters.cnt_len_errors,
+                # 'filtered': counters.cnt_filtered,
         }
+
 
 cdef class TxMac:
     cdef NfbDeviceHandle _handle
@@ -138,10 +153,16 @@ cdef class TxMac:
         return self.enabled
 
     def stats_reset(self):
+        self.reset_stats()
+
+    def reset_stats(self):
         """Reset statistic counters"""
         nc_txmac_reset_counters(self._mac)
 
     def stats_read(self):
+        return self.read_stats()
+
+    def read_stats(self):
         """
         Read statistic counters
 
@@ -155,11 +176,13 @@ cdef class TxMac:
         if ret: return {}
 
         return {
-            'packets': counters.cnt_total,
-            'octets': counters.cnt_octets,
-            'discarded': counters.cnt_erroneous,
-            'sent': counters.cnt_sent,
+            'total': counters.cnt_total,
+            'total_bytes': counters.cnt_octets,
+            'passed': counters.cnt_sent,
+            'dropped': counters.cnt_erroneous,
+                'errors': counters.cnt_erroneous,
         }
+
 
 cdef class Mdio:
     cdef NfbDeviceHandle _handle
@@ -190,6 +213,7 @@ cdef class Mdio:
     def write(self, devad: int, reg: int, val: int, prtad: int=0):
         self._init()
         nc_mdio_write(self._mdio, prtad, devad, reg, val)
+
 
 cdef class I2c:
     cdef NfbDeviceHandle _handle
@@ -222,6 +246,7 @@ cdef class I2c:
 
         c_data8 = data
         ret = nc_i2c_write_reg(self._ctrl, reg, c_data8, len(data))
+
 
 cdef class DmaCtrlNdp:
     cdef NfbDeviceHandle _handle
@@ -382,16 +407,16 @@ cdef class DmaCtrlNdp:
         ret = {}
         if self._ctrl.dir == 0:
             nc_rxqueue_read_counters(<nc_rxqueue*> self._ctrl_queue, &rxc)
-            ret['received'] = rxc.received
-            ret['discarded'] = rxc.discarded
+            ret['passed'] = rxc.received
+            ret['dropped'] = rxc.discarded
             if rxc.have_bytes:
-                ret['received_bytes'] = txc.received_bytes
-                ret['discarded_bytes'] = txc.discarded_bytes
+                ret['passed_bytes'] = txc.received_bytes
+                ret['dropped_bytes'] = txc.discarded_bytes
         else:
             nc_txqueue_read_counters(<nc_txqueue*> self._ctrl_queue, &txc)
-            ret['sent'] = txc.sent
+            ret['passed'] = txc.sent
             if txc.have_bytes:
-                ret['sent_bytes'] = txc.sent
+                ret['passed_bytes'] = txc.sent
         return ret
 
 
@@ -447,3 +472,15 @@ cdef class Transceiver:
     def vendor_sn(self) -> str:
         "serial number of the transceiver"
         return self.i2c.read_reg(196, 16).decode().strip()
+
+    def read_vendor_name(self) -> str:
+        "vendor of the transceiver"
+        return self.vendor_name
+
+    def read_vendor_pn(self) -> str:
+        "product number of the transceiver"
+        return self.vendor_pn
+
+    def read_vendor_sn(self) -> str:
+        "serial number of the transceiver"
+        return self.vendor_sn

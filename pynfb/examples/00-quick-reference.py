@@ -53,8 +53,8 @@ pkts_q = ndp.recv(cnt=1, i=0, timeout=0.5)
 msgs_q = ndp.recvmsg(cnt=1, i=0, timeout=1)
 
 # 2.C NDP queues statistics
-txq.stats_reset()
-assert txq.stats_read()["sent"] == 0
+txq.reset_stats()
+assert txq.read_stats()["passed"] == 0
 
 # 3.A Single Ethernet port manipulation
 eth = dev.eth[0]
@@ -63,8 +63,8 @@ link_ready = eth.rxmac.link
 for mac in [eth.rxmac, eth.txmac]:
     mac.enable(enable=True)
     mac.disable()
-    mac.stats_reset()
-    assert mac.stats_read()["packets"] == 0
+    mac.reset_stats()
+    assert mac.read_stats()["total"] == 0
 
 # 3.B PCS/PMA management and Transceiver manipulation
 eth.pcspma.pma_local_loopback = True
@@ -75,7 +75,7 @@ if hasattr(eth.pmd, 'i2c'):
     val = eth.pmd.i2c.read_reg(1, 0)
 
 # 3.C Aggregated Ethernet ports manipulation
-assert eth.link == eth.rxmac.link
+assert eth.is_link() == eth.rxmac.is_link()
 
 dev.eth.enable(enable=False, i=1)
 dev.eth.disable(i=[0, 1])

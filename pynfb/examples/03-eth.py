@@ -28,18 +28,18 @@ for mac in [eth.rxmac, eth.txmac]:
     mac.disable()
 
 # check for link status
-link_ready = eth.rxmac.link
+link_ready = eth.rxmac.is_link()
 
 # read RxMAC / TxMAC statistic counters
-# rx_stats == {'packets': 0, 'received': 0, 'discarded': 0, 'overflowed': 0, 'octets': 0}
-rx_stats = eth.rxmac.stats_read()
+# rx_stats == {'total': 0, 'passed': 0, 'passed_bytes': 0, 'dropped': 0, 'overflowed': 0, 'errors': 0}
+rx_stats = eth.rxmac.read_stats()
 
-# tx_stats == {'packets': 0, 'octets': 0, 'discarded': 0, 'sent': 0}
-tx_stats = eth.txmac.stats_read()
+# tx_stats == {'total': 0, 'total_bytes': 0, 'passed': 0, 'dropped': 0, 'errors': 0}
+tx_stats = eth.txmac.read_stats()
 
 # reset RxMAC / TxMAC statistic counters
 for mac in [eth.rxmac, eth.txmac]:
-    mac.stats_reset()
+    mac.reset_stats()
 
 
 # 3.B PCS/PMA management and Transceiver manipulation
@@ -53,12 +53,13 @@ eth.pcspma.mdio.write(1, 7, 0)
 # read 16b value from register 1.7: val = 0
 val = eth.pcspma.mdio.read(1, 7)
 
-# None if transceiver isn't present, else an object
 pmd = eth.pmd
-# getters, e.g: val = "FINISAIR CORP."
-val = pmd.vendor_name
-val = pmd.vendor_pn
-val = pmd.vendor_sn
+pmd.is_present() in [True, False]
+
+# val = "FINISAIR CORP."
+val = pmd.read_vendor_name()
+val = pmd.read_vendor_pn()
+val = pmd.read_vendor_sn()
 if hasattr(pmd, "mdio"):
     val = pmd.mdio.read(3, 0)
 elif hasattr(pmd, "i2c"):
@@ -70,10 +71,10 @@ elif hasattr(pmd, "i2c"):
 
 # shortcuts to both RxMAC + TxMAC functions
 eth.enable(False)
-eth.stats_reset()
+eth.reset_stats()
 
 # rxmac link status shortcut
-assert eth.link == eth.rxmac.link
+assert eth.is_link() == eth.rxmac.is_link()
 
 
 # all Ethernet ports
@@ -81,4 +82,4 @@ dev.eth.enable()
 # selected Ethernet ports
 dev.eth.enable(i=[0, 1])
 dev.eth.enable(False, i=0)
-dev.eth.stats_reset()
+dev.eth.reset_stats()
