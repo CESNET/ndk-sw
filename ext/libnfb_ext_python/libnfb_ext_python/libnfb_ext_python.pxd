@@ -18,19 +18,19 @@ cdef extern from "<libfdt.h>":
 cdef api const char *nfb_pynfb_prefix
 
 cdef public api:
-    int pynfb_ext_get_ops(const char *devname, libnfb_ext_ops* ops)
+    int pynfb_ext_get_ops(const char *devname, libnfb_ext_ops* ops) noexcept
 
-    int nfb_ext_python_open(const char *devname, int oflag, void **priv, void **fdt)
-    void nfb_ext_python_close(void *priv)
+    int nfb_ext_python_open(const char *devname, int oflag, void **priv, void **fdt) noexcept
+    void nfb_ext_python_close(void *priv) noexcept
 
-    int nfb_pynfb_bus_open(void *dev_priv, int bus_node, int comp_node, void ** bus_priv, libnfb_bus_ext_ops* ops)
-    void nfb_pynfb_bus_close(void *bus_priv)
+    int nfb_pynfb_bus_open(void *dev_priv, int bus_node, int comp_node, void ** bus_priv, libnfb_bus_ext_ops* ops) noexcept
+    void nfb_pynfb_bus_close(void *bus_priv) noexcept
 
-    ssize_t nfb_pynfb_bus_read(void *bus_priv, void *buf, size_t nbyte, off_t offset)
-    ssize_t nfb_pynfb_bus_write(void *bus_priv, const void *buf, size_t nbyte, off_t offset)
+    ssize_t nfb_pynfb_bus_read(void *bus_priv, void *buf, size_t nbyte, off_t offset) noexcept
+    ssize_t nfb_pynfb_bus_write(void *bus_priv, const void *buf, size_t nbyte, off_t offset) noexcept
 
-    cdef int nfb_pyndp_queue_open(nfb_device *dev, void *dev_priv, unsigned index, int dir, int flags, ndp_queue ** pq)
-    cdef int nfb_pyndp_queue_close(ndp_queue *q)
+    cdef int nfb_pyndp_queue_open(nfb_device *dev, void *dev_priv, unsigned index, int dir, int flags, ndp_queue ** pq) noexcept
+    cdef int nfb_pyndp_queue_close(ndp_queue *q) noexcept
 
     cdef int pyndp_start(void *priv)
     cdef int pyndp_stop(void *priv)
