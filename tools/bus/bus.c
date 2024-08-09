@@ -32,7 +32,7 @@ enum command_t {CMD_NONE, CMD_PRINT_COMPONENTS} command;
 void usage(const char *me)
 {
 	printf("Usage: %s [-alh] [-d device] [-p path] [-c compatible] [-i index] [-n count] addr [val]\n", me);
-	printf("-d device       Path to device [default: %s]\n", NFB_DEFAULT_DEV_PATH);
+	printf("-d device       Path to device [default: %s]\n", nfb_default_dev_path());
 	printf("-p path         Use component with specified path in Device Tree \n");
 	printf("-c compatible   Set compatible string to use [default: \"netcope,bus,mi\"]\n");
 	printf("-i index        Set index of component specified with compatible [default: 0]\n");
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 {
 	int c;
 	int node;
-	char *path = NFB_DEFAULT_DEV_PATH;
+	const char *path = nfb_default_dev_path();
 	struct nfb_device *dev;
 	struct nfb_comp *comp;
 

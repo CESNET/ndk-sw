@@ -65,6 +65,15 @@ void *nfb_comp_to_user(struct nfb_comp *ptr)
 	return (void *)(ptr + 1);
 }
 
+const char * nfb_default_dev_path()
+{
+	const char *devname = getenv("LIBNFB_DEFAULT_DEV");
+	if (devname == NULL) {
+		devname = "/dev/nfb0";
+	}
+	return devname;
+}
+
 struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 {
 	int ret;
@@ -79,6 +88,9 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 	struct libnfb_ext_abi_version current_abi_version = libnfb_ext_abi_version_current;
 
 	libnfb_ext_get_ops_t* get_ops;
+
+	if (devname == NULL)
+		devname = nfb_default_dev_path();
 
 	if (sscanf(devname, "%u%n", &index, &ret) >= 1 && (size_t) ret == strlen(devname)) {
 		ret = snprintf(path, PATH_LEN, "/dev/nfb%u", index);

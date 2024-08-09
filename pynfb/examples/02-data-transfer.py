@@ -134,9 +134,9 @@ assert len(msgs) == 0 or (
 
 try:
     # stats == {'sent': 4, 'sent_bytes': 276}
-    stats = txq.stats_read()
+    stats = txq.read_stats()
 
     # Reset Queue statistics
-    txq.stats_reset()
+    txq.reset_stats()
 except Exception:
     pass

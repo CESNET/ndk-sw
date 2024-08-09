@@ -72,7 +72,7 @@ static const char * const queries[] = {
 void usage(const char *progname, int verbose)
 {
 	printf("Usage: %s [-hv] [-d path]\n", progname);
-	printf("-d path         Path to device [default: %s]\n", NFB_DEFAULT_DEV_PATH);
+	printf("-d path         Path to device [default: %s]\n", nfb_default_dev_path());
 	printf("-q query        Get specific informations%s\n", verbose ? "" : " (-v for more info)");
 	if (verbose) {
 		printf(" * project          Project name\n");
@@ -475,7 +475,7 @@ int main(int argc, char *argv[])
 	int c;
 	int ret = EXIT_SUCCESS;
 
-	char *path = NFB_DEFAULT_DEV_PATH;
+	const char *path = nfb_default_dev_path();
 	struct nfb_device *dev;
 	const char *query = NULL;
 	char *index;

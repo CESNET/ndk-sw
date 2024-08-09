@@ -86,7 +86,7 @@ enum commands {
 void usage(const char *progname)
 {
 	printf("Usage: %s [-hv] [-d path]\n", progname);
-	printf("-d path         Path to device [default: %s]\n", NFB_DEFAULT_DEV_PATH);
+	printf("-d path         Path to device [default: %s]\n", nfb_default_dev_path());
 	printf("-c compatible   Compatible string of component to use in test\n");
 	printf("-t test         Select test: random, linear, performance [default: random]\n");
 	printf("-r              Use only reads\n");
@@ -412,7 +412,7 @@ int main(int argc, char *argv[])
 	int c;
 	int ret = EXIT_SUCCESS;
 
-	char *path = NFB_DEFAULT_DEV_PATH;
+	const char *path = nfb_default_dev_path();
 
 	const char *compatible = "cesnet,ofm,mi_test_space";
 

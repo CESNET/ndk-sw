@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
     bool    ifc_name = false;   /* interface identificator is name (true) or ID (false) */
     bool    name_found = false;
     bool    all = false;        /* indicates to affect all interfaces */
-    char    *file = NFB_DEFAULT_DEV_PATH;    /* default NFB device */
+    const char    *file = nfb_default_dev_path();    /* default NFB device */
     int     c;            /* temp variable for getopt */
     long    tmp;        /* temp variable */
     int     probes;

@@ -66,7 +66,7 @@ cdef class Nfb:
     :ivar EthManager eth: Ethernet manager object. Exist only when using :func:`nfb.open`
     """
 
-    default_device = '/dev/nfb0'
+    default_dev_path = nfb_default_dev_path().decode()
 
     def __init__(self, path: str):
         cdef const char* _fdtc
@@ -81,6 +81,8 @@ cdef class Nfb:
         self.fdt = fdt.parse_dtb(dtb)
 
         self.ndp = QueueManager(self)
+        # TODO: use Nfb.dma only for statistic, not for transfers
+        self.dma = self.ndp
 
     def __dealloc__(self):
         pass
@@ -137,7 +139,7 @@ cdef class Nfb:
                     return self.fdt.get_node(path)
         return None
 
-    def get_temperature(self, units="celsius"):
+    def read_temperature(self, units="celsius"):
         cdef int32_t int32 = 0
         assert units == "celsius"
 
@@ -314,7 +316,7 @@ cdef class AbstractBaseComp:
 
     DT_COMPATIBLE = None
 
-    def __init__(self, dev=Nfb.default_device, node: Optional[fdt.Node]=None, index: int=0):
+    def __init__(self, dev=Nfb.default_dev_path, node: Optional[fdt.Node]=None, index: int=0):
         assert self.DT_COMPATIBLE is not None, "DT_COMPATIBLE must be set in derived class"
 
         self._dev = dev if isinstance(dev, Nfb) else open(dev)
@@ -522,9 +524,15 @@ cdef class NdpQueue:
             self._running = False
 
     def stats_read(self):
-        raise NotImplementedError()
+        return self.read_stats()
 
     def stats_reset(self):
+        self.reset_stats()
+
+    def read_stats(self):
+        raise NotImplementedError()
+
+    def reset_stats(self):
         raise NotImplementedError()
 
 
@@ -556,16 +564,16 @@ cdef class NdpQueueRx(NdpQueue):
         """ Check if the queue can transfer data """
         raise NotImplementedError()
 
-    def stats_reset(self):
+    def reset_stats(self):
         """Reset statistic counters"""
         self._check_nc_queue()
         libnetcope.nc_rxqueue_reset_counters(self._nc_queue)
 
-    def stats_read(self) -> dict:
+    def read_stats(self) -> dict:
         """
         Read statistic counters
 
-        :return: Dictionary with counters values: 'received', 'received_bytes', 'discarded', 'discarded_bytes'.
+        :return: Dictionary with counters values: 'passed', 'passed_bytes', 'dropped', 'dropped_bytes'.
         """
         cdef libnetcope.nc_rxqueue_counters counters
 
@@ -573,10 +581,10 @@ cdef class NdpQueueRx(NdpQueue):
         libnetcope.nc_rxqueue_read_counters(self._nc_queue, &counters)
 
         return {
-                'received': counters.received,
-                'received_bytes': counters.received_bytes,
-                'discarded': counters.discarded,
-                'discarded_bytes': counters.discarded_bytes,
+                'passed': counters.received,
+                'passed_bytes': counters.received_bytes,
+                'dropped': counters.discarded,
+                'dropped_bytes': counters.discarded_bytes,
         }
 
     cdef _recvmsg(self, cnt: int = -1, timeout: int = 0):
@@ -686,16 +694,16 @@ cdef class NdpQueueTx(NdpQueue):
         """ Check if the queue can transfer data """
         raise NotImplementedError()
 
-    def stats_reset(self):
+    def reset_stats(self):
         """Reset statistic counters"""
         self._check_nc_queue()
         libnetcope.nc_txqueue_reset_counters(self._nc_queue)
 
-    def stats_read(self):
+    def read_stats(self):
         """
         Read statistic counters
 
-        :return: Dictionary with counters values: 'sent', 'sent_bytes'.
+        :return: Dictionary with counters values: 'passed', 'passed_bytes'.
         """
         cdef libnetcope.nc_txqueue_counters counters
 
@@ -703,8 +711,8 @@ cdef class NdpQueueTx(NdpQueue):
         libnetcope.nc_txqueue_read_counters(self._nc_queue, &counters)
 
         return {
-                'sent': counters.sent,
-                'sent_bytes': counters.sent_bytes,
+                'passed': counters.sent,
+                'passed_bytes': counters.sent_bytes,
         }
 
     cdef _sendmsg(self, pkts: List[Tuple[bytes, bytes, int]]): # -> None:

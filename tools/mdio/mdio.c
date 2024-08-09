@@ -25,7 +25,7 @@ enum command_t {CMD_NONE, CMD_PRINT_COMPONENTS} command;
 void usage(char *tool)
 {
 	printf("Usage: %s [-h] [-d device] [-l] [-i mdio_index] [-p port_addr] reg [value]\n", tool);
-	printf("-d device       Path to device [default: %s]\n", NFB_DEFAULT_DEV_PATH);
+	printf("-d device       Path to device [default: %s]\n", nfb_default_dev_path());
 	printf("-i index        Set index of MDIO component [default: 0]\n");
 	printf("-p port_addr    Access to specific port on MDIO controller [default: 0]\n");
 	printf("reg             Device and register address in format D.R\n");
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	int index = 0;
 	int do_write = 0;
 	int port_addr = 0, dev_addr, reg_addr;
-	char *path = NFB_DEFAULT_DEV_PATH;
+	const char *path = nfb_default_dev_path();
 	uint16_t val = 0;
 
 	int node;

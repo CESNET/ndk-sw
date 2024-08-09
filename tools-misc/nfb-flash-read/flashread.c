@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	int index = 0;
 	size_t bs;
 	size_t size = 0, address = 0;
-	char *path = NFB_DEFAULT_DEV_PATH;
+	const char *path = nfb_default_dev_path();
 	char *buffer;
 
 	struct nfb_device *dev;

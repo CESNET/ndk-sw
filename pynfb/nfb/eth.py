@@ -1,5 +1,6 @@
 from . import libnetcope
 
+
 class EthManager:
     """Object which encapsulates all Ethernet interfaces into nfb"""
 
@@ -23,7 +24,7 @@ class EthManager:
         return [getattr(eth, action)(*args, **kwargs) for eth in eths]
 
     def __getattr__(self, name):
-        if name in ["enable", "disable", "stats_reset"]:
+        if name in ["enable", "disable", "stats_reset", "reset_stats", "is_link"]:
             return lambda *args, **kwargs: self._common_action(name, *args, **kwargs)
         else:
             raise AttributeError
@@ -51,9 +52,9 @@ class Eth:
         ]
 
     def __getattr__(self, name):
-        if name in ["link"]:
+        if name in ["link", "is_link"]:
             return self.rxmac.__getattribute__(name)
-        elif name in ["enable", "disable", "stats_reset"]:
+        elif name in ["enable", "disable", "stats_reset", "reset_stats"]:
             return lambda *args, **kwargs: self._common_action(name, *args, **kwargs)
         elif name in ["pma_local_loopback"]:
             return getattr(self.pcspma, name)

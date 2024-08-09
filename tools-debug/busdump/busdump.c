@@ -60,7 +60,7 @@ void usage() {
 
 int main(int argc, char *argv[]) {
     uint32_t tmp;
-    char *dev_file = NFB_DEFAULT_DEV_PATH, *out_file = NULL;
+    const char *dev_file = nfb_default_dev_path(), *out_file = NULL;
     struct nfb_device *dev = NULL;
     int enable = 0, disable = 0, comp_id = 0;
     struct nfb_comp *comp = NULL;

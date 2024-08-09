@@ -21,6 +21,7 @@ cdef extern from "<nfb/nfb.h>":
     cdef struct nfb_comp:
         pass
 
+    const char* nfb_default_dev_path()
     nfb_device* nfb_open(const char* path)
     void nfb_close(nfb_device* dev)
 

@@ -34,7 +34,7 @@ void usage(const char *progname, int verbose)
 		   "                [-M mac_cmd] [opt_param]\n", progname);
 
 	printf("Only one command may be used at a time.\n");
-	printf("-d path         Path to device [default: %s]\n", NFB_DEFAULT_DEV_PATH);
+	printf("-d path         Path to device [default: %s]\n", nfb_default_dev_path());
 	printf("-i indexes      Interfaces numbers to use - list or range, e.g. \"0-5,7\" [default: all]\n");
 	printf("-r              Use RXMAC [default]\n");
 	printf("-t              Use TXMAC [default]\n");
@@ -108,7 +108,7 @@ void usage(const char *progname, int verbose)
 
 int main(int argc, char *argv[])
 {
-	char *file = NFB_DEFAULT_DEV_PATH;
+	const char *file = nfb_default_dev_path();
 	struct nfb_device *dev;
 	const char *query = NULL;
 	char *queries_index = NULL;

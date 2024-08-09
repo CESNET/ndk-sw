@@ -121,7 +121,7 @@ void RunServer(const std::string& path, const std::string& addr)
 
 int main(int argc, char** argv)
 {
-	const char * path = NFB_DEFAULT_DEV_PATH;
+	const char * path = nfb_default_dev_path();
 	const char * addr = "127.0.0.1:50051";
 
 	int opt;
