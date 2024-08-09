@@ -12,13 +12,13 @@ int main(int argc, char *argv[])
     int node;
 
     /* This is the path to device node, you can use
-       - #define macro:   NFB_DEFAULT_DEV_PATH
+       - NULL or default: nfb_default_dev_path()
        - full path:       "/dev/nfb0"
          or its shortcut: "0"
        - persistent path: "/dev/nfb/by-pci-slot/0000:03:00.0"
                           "/dev/nfb/by-serial-no/COMBO-400G1/15432"
     */
-    const char *path = NFB_DEFAULT_DEV_PATH;
+    const char *path = nfb_default_dev_path();
 
     struct nfb_device *dev;
     struct nfb_comp *comp;

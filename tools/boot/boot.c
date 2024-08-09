@@ -59,7 +59,7 @@ enum commands {
 void usage(const char *me)
 {
 	printf("Usage: %s [-d device] [-b id file] [-f id file] [-F id] [-w id file] [-i file] [-hlqv]\n", me);
-	printf("-d device       Path to device [default: %s]\n", NFB_DEFAULT_DEV_PATH);
+	printf("-d device       Path to device [default: %s]\n", nfb_default_dev_path());
 	printf("-F slot         Boot device from selected slot\n");
 	printf("-w slot file    Write configuration from file to device slot\n");
 	printf("-f slot file    Write configuration from file to device slot and boot device\n");
@@ -633,7 +633,7 @@ int main(int argc, char *argv[])
 	int c;
 	long slot = -1;
 	char *slot_arg = NULL;
-	char *path = NFB_DEFAULT_DEV_PATH;
+	const char *path = nfb_default_dev_path();
 	char path_by_pci[PATH_MAX];
 	char *filename = NULL;
 	int ret = 0;

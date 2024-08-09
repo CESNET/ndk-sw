@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 	int 			do_write_ff;
 	int 			c, verbose;
 	uint32_t		spi_base;
-	char 			*file;
+	const char		*file;
 	char 			*cmdstr;
 	int 			cmd, i;
 
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 	count 		= 1;
 	do_write_ff 	= 0;
 	verbose		= 0;
-	file 		= NFB_DEFAULT_DEV_PATH;
+	file 		= nfb_default_dev_path();
 	spi_base 	= CTRL_BASE;
 
 	cmd = CMD_FLASH_RD;

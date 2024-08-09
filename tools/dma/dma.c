@@ -86,7 +86,7 @@ static const char * const queries[] = {
 void usage(const char *me, int verbose)
 {
 	printf("Usage: %s [-rtRvh] [-i index] [-d path]\n", me);
-	printf("-d path         Path to device [default: %s]\n", NFB_DEFAULT_DEV_PATH);
+	printf("-d path         Path to device [default: %s]\n", nfb_default_dev_path());
 	printf("-i indexes      Controllers numbers to use - list or range, e.g. \"0-5,7\" [default: all]\n");
 	printf("-r              Use RX DMA queues\n");
 	printf("-t              Use TX DMA queues\n");
@@ -464,7 +464,7 @@ int main(int argc, char *argv[])
 	int size;
 
 	char c;
-	char *file = NFB_DEFAULT_DEV_PATH;
+	const char *file = nfb_default_dev_path();
 
 	struct nfb_device *dev;
 	struct nc_rxqueue *rxq;
