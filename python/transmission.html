@@ -234,10 +234,10 @@
 
 <span class="k">try</span><span class="p">:</span>
     <span class="c1"># stats == {&#39;sent&#39;: 4, &#39;sent_bytes&#39;: 276}</span>
-    <span class="n">stats</span> <span class="o">=</span> <span class="n">txq</span><span class="o">.</span><span class="n">stats_read</span><span class="p">()</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="n">txq</span><span class="o">.</span><span class="n">read_stats</span><span class="p">()</span>
 
     <span class="c1"># Reset Queue statistics</span>
-    <span class="n">txq</span><span class="o">.</span><span class="n">stats_reset</span><span class="p">()</span>
+    <span class="n">txq</span><span class="o">.</span><span class="n">reset_stats</span><span class="p">()</span>
 <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
     <span class="k">pass</span>
 </pre></div>

@@ -284,20 +284,24 @@
         <li><a href="python/reference.html#libnfb.NdpQueueTx.is_accessible">(libnfb.NdpQueueTx method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/reference.html#libnfb.NdpQueueRx.is_available">is_available() (libnfb.NdpQueueRx method)</a>
 
       <ul>
         <li><a href="python/reference.html#libnfb.NdpQueueTx.is_available">(libnfb.NdpQueueTx method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="python/reference.html#libnetcope.RxMac.is_enabled">is_enabled() (libnetcope.RxMac method)</a>
 
       <ul>
         <li><a href="python/reference.html#libnetcope.TxMac.is_enabled">(libnetcope.TxMac method)</a>
 </li>
       </ul></li>
+      <li><a href="python/reference.html#libnetcope.RxMac.is_link">is_link() (libnetcope.RxMac method)</a>
+</li>
+      <li><a href="python/reference.html#libnetcope.Transceiver.is_present">is_present() (libnetcope.Transceiver method)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -526,9 +530,29 @@
       <li><a href="python/reference.html#libnetcope.I2c.read_reg">read_reg() (libnetcope.I2c method)</a>
 </li>
       <li><a href="python/reference.html#libnetcope.DmaCtrlNdp.read_stats">read_stats() (libnetcope.DmaCtrlNdp method)</a>
+
+      <ul>
+        <li><a href="python/reference.html#libnetcope.RxMac.read_stats">(libnetcope.RxMac method)</a>
+</li>
+        <li><a href="python/reference.html#libnetcope.TxMac.read_stats">(libnetcope.TxMac method)</a>
+</li>
+        <li><a href="python/reference.html#libnfb.NdpQueue.read_stats">(libnfb.NdpQueue method)</a>
+</li>
+        <li><a href="python/reference.html#libnfb.NdpQueueRx.read_stats">(libnfb.NdpQueueRx method)</a>
+</li>
+        <li><a href="python/reference.html#libnfb.NdpQueueTx.read_stats">(libnfb.NdpQueueTx method)</a>
+</li>
+      </ul></li>
+      <li><a href="python/reference.html#libnfb.Nfb.read_temperature">read_temperature() (libnfb.Nfb method)</a>
+</li>
+      <li><a href="python/reference.html#libnetcope.Transceiver.read_vendor_name">read_vendor_name() (libnetcope.Transceiver method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/reference.html#libnetcope.Transceiver.read_vendor_pn">read_vendor_pn() (libnetcope.Transceiver method)</a>
+</li>
+      <li><a href="python/reference.html#libnetcope.Transceiver.read_vendor_sn">read_vendor_sn() (libnetcope.Transceiver method)</a>
+</li>
       <li><a href="python/reference.html#libnfb.NdpQueueRx.recv">recv() (libnfb.NdpQueueRx method)</a>
 
       <ul>
@@ -551,6 +575,18 @@
       </ul></li>
       <li><a href="python/fdt.html#fdt.Node.remove_subnode">remove_subnode() (fdt.Node method)</a>
 </li>
+      <li><a href="python/reference.html#libnetcope.RxMac.reset_stats">reset_stats() (libnetcope.RxMac method)</a>
+
+      <ul>
+        <li><a href="python/reference.html#libnetcope.TxMac.reset_stats">(libnetcope.TxMac method)</a>
+</li>
+        <li><a href="python/reference.html#libnfb.NdpQueue.reset_stats">(libnfb.NdpQueue method)</a>
+</li>
+        <li><a href="python/reference.html#libnfb.NdpQueueRx.reset_stats">(libnfb.NdpQueueRx method)</a>
+</li>
+        <li><a href="python/reference.html#libnfb.NdpQueueTx.reset_stats">(libnfb.NdpQueueTx method)</a>
+</li>
+      </ul></li>
       <li><a href="python/reference.html#libnetcope.RxMac">RxMac (class in libnetcope)</a>
 </li>
   </ul></td>
@@ -634,10 +670,6 @@
 </li>
         <li><a href="python/reference.html#libnfb.NdpQueue.stats_read">(libnfb.NdpQueue method)</a>
 </li>
-        <li><a href="python/reference.html#libnfb.NdpQueueRx.stats_read">(libnfb.NdpQueueRx method)</a>
-</li>
-        <li><a href="python/reference.html#libnfb.NdpQueueTx.stats_read">(libnfb.NdpQueueTx method)</a>
-</li>
       </ul></li>
       <li><a href="python/reference.html#libnetcope.RxMac.stats_reset">stats_reset() (libnetcope.RxMac method)</a>
 
@@ -645,10 +677,6 @@
         <li><a href="python/reference.html#libnetcope.TxMac.stats_reset">(libnetcope.TxMac method)</a>
 </li>
         <li><a href="python/reference.html#libnfb.NdpQueue.stats_reset">(libnfb.NdpQueue method)</a>
-</li>
-        <li><a href="python/reference.html#libnfb.NdpQueueRx.stats_reset">(libnfb.NdpQueueRx method)</a>
-</li>
-        <li><a href="python/reference.html#libnfb.NdpQueueTx.stats_reset">(libnfb.NdpQueueTx method)</a>
 </li>
       </ul></li>
       <li><a href="python/reference.html#libnetcope.DmaCtrlNdp.stop">stop() (libnetcope.DmaCtrlNdp method)</a>
@@ -695,7 +723,7 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/reference.html#nfb.eth.Transceiver">Transceiver (class in nfb.eth)</a>
+      <li><a href="python/reference.html#libnetcope.Transceiver">Transceiver (class in libnetcope)</a>
 </li>
       <li><a href="python/reference.html#libnetcope.TxMac">TxMac (class in libnetcope)</a>
 </li>
@@ -719,13 +747,13 @@
 <h2 id="V">V</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/reference.html#nfb.eth.Transceiver.vendor_name">vendor_name (nfb.eth.Transceiver property)</a>
+      <li><a href="python/reference.html#libnetcope.Transceiver.vendor_name">vendor_name (libnetcope.Transceiver attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/reference.html#nfb.eth.Transceiver.vendor_pn">vendor_pn (nfb.eth.Transceiver property)</a>
+      <li><a href="python/reference.html#libnetcope.Transceiver.vendor_pn">vendor_pn (libnetcope.Transceiver attribute)</a>
 </li>
-      <li><a href="python/reference.html#nfb.eth.Transceiver.vendor_sn">vendor_sn (nfb.eth.Transceiver property)</a>
+      <li><a href="python/reference.html#libnetcope.Transceiver.vendor_sn">vendor_sn (libnetcope.Transceiver attribute)</a>
 </li>
   </ul></td>
 </tr></table>

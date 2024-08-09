@@ -99,6 +99,7 @@
   <h1>Source code for nfb.eth</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">libnetcope</span>
 
+
 <div class="viewcode-block" id="EthManager">
 <a class="viewcode-back" href="../../python/reference.html#nfb.eth.EthManager">[docs]</a>
 <span class="k">class</span> <span class="nc">EthManager</span><span class="p">:</span>
@@ -124,7 +125,7 @@
         <span class="k">return</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">eth</span><span class="p">,</span> <span class="n">action</span><span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">eth</span> <span class="ow">in</span> <span class="n">eths</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;enable&quot;</span><span class="p">,</span> <span class="s2">&quot;disable&quot;</span><span class="p">,</span> <span class="s2">&quot;stats_reset&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;enable&quot;</span><span class="p">,</span> <span class="s2">&quot;disable&quot;</span><span class="p">,</span> <span class="s2">&quot;stats_reset&quot;</span><span class="p">,</span> <span class="s2">&quot;reset_stats&quot;</span><span class="p">,</span> <span class="s2">&quot;is_link&quot;</span><span class="p">]:</span>
             <span class="k">return</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_common_action</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">AttributeError</span></div>
@@ -146,7 +147,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">rxmac</span> <span class="o">=</span> <span class="n">libnetcope</span><span class="o">.</span><span class="n">RxMac</span><span class="p">(</span><span class="n">nfb</span><span class="p">,</span> <span class="n">nfb</span><span class="o">.</span><span class="n">fdt_get_phandle</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s1">&#39;rxmac&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">txmac</span> <span class="o">=</span> <span class="n">libnetcope</span><span class="o">.</span><span class="n">TxMac</span><span class="p">(</span><span class="n">nfb</span><span class="p">,</span> <span class="n">nfb</span><span class="o">.</span><span class="n">fdt_get_phandle</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s1">&#39;txmac&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pcspma</span> <span class="o">=</span> <span class="n">PcsPma</span><span class="p">(</span><span class="n">nfb</span><span class="p">,</span> <span class="n">nfb</span><span class="o">.</span><span class="n">fdt_get_phandle</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s1">&#39;pcspma&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pmd</span> <span class="o">=</span> <span class="n">Transceiver</span><span class="p">(</span><span class="n">nfb</span><span class="p">,</span> <span class="n">nfb</span><span class="o">.</span><span class="n">fdt_get_phandle</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s1">&#39;pmd&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pmd</span> <span class="o">=</span> <span class="n">libnetcope</span><span class="o">.</span><span class="n">Transceiver</span><span class="p">(</span><span class="n">nfb</span><span class="p">,</span> <span class="n">nfb</span><span class="o">.</span><span class="n">fdt_get_phandle</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s1">&#39;pmd&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">_common_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">[</span>
@@ -155,9 +156,9 @@
         <span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;link&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;link&quot;</span><span class="p">,</span> <span class="s2">&quot;is_link&quot;</span><span class="p">]:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rxmac</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;enable&quot;</span><span class="p">,</span> <span class="s2">&quot;disable&quot;</span><span class="p">,</span> <span class="s2">&quot;stats_reset&quot;</span><span class="p">]:</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;enable&quot;</span><span class="p">,</span> <span class="s2">&quot;disable&quot;</span><span class="p">,</span> <span class="s2">&quot;stats_reset&quot;</span><span class="p">,</span> <span class="s2">&quot;reset_stats&quot;</span><span class="p">]:</span>
             <span class="k">return</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_common_action</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;pma_local_loopback&quot;</span><span class="p">]:</span>
             <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pcspma</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
@@ -174,40 +175,6 @@
 
 
 
-<div class="viewcode-block" id="Transceiver">
-<a class="viewcode-back" href="../../python/reference.html#nfb.eth.Transceiver">[docs]</a>
-<span class="k">class</span> <span class="nc">Transceiver</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Object representing a transciever interface</span>
-
-<span class="sd">    :ivar I2c i2c: I2c bus handle (only with QSFP+ modules)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nfb</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
-        <span class="n">status</span> <span class="o">=</span> <span class="n">nfb</span><span class="o">.</span><span class="n">fdt_get_phandle</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s1">&#39;status-reg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">comp_status</span> <span class="o">=</span> <span class="n">nfb</span><span class="o">.</span><span class="n">comp_open</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
-
-        <span class="n">ctrl</span> <span class="o">=</span> <span class="n">nfb</span><span class="o">.</span><span class="n">fdt_get_phandle</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s1">&#39;control&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-        <span class="n">node_ctrl_param</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get_subnode</span><span class="p">(</span><span class="s1">&#39;control-param&#39;</span><span class="p">)</span>
-
-        <span class="c1"># FIXME</span>
-        <span class="k">if</span> <span class="s2">&quot;QSFPP&quot;</span><span class="p">:</span>
-            <span class="n">prop</span> <span class="o">=</span> <span class="n">node_ctrl_param</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="s2">&quot;i2c-addr&quot;</span><span class="p">)</span>
-            <span class="n">i2c_addr</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="n">prop</span> <span class="k">else</span> <span class="mh">0xA0</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">i2c</span> <span class="o">=</span> <span class="n">libnetcope</span><span class="o">.</span><span class="n">I2c</span><span class="p">(</span><span class="n">nfb</span><span class="p">,</span> <span class="n">ctrl</span><span class="p">,</span> <span class="n">i2c_addr</span><span class="p">)</span>
-
-    <span class="c1"># FIXME: only valid for specific QSFP+</span>
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">vendor_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="s2">&quot;vendor of the transceiver&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">i2c</span><span class="o">.</span><span class="n">read_reg</span><span class="p">(</span><span class="mi">148</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">vendor_pn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="s2">&quot;product number of the transceiver&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">i2c</span><span class="o">.</span><span class="n">read_reg</span><span class="p">(</span><span class="mi">168</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">vendor_sn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="s2">&quot;serial number of the transceiver&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">i2c</span><span class="o">.</span><span class="n">read_reg</span><span class="p">(</span><span class="mi">196</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span></div>
 
 
 

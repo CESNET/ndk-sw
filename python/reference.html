@@ -89,6 +89,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#libnfb.NdpQueue"><code class="docutils literal notranslate"><span class="pre">NdpQueue</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueue.read_stats"><code class="docutils literal notranslate"><span class="pre">NdpQueue.read_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueue.reset_stats"><code class="docutils literal notranslate"><span class="pre">NdpQueue.reset_stats()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueue.start"><code class="docutils literal notranslate"><span class="pre">NdpQueue.start()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueue.stats_read"><code class="docutils literal notranslate"><span class="pre">NdpQueue.stats_read()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueue.stats_reset"><code class="docutils literal notranslate"><span class="pre">NdpQueue.stats_reset()</span></code></a></li>
@@ -98,26 +100,27 @@
 <li class="toctree-l3"><a class="reference internal" href="#libnfb.NdpQueueRx"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.is_accessible"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.is_accessible()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.is_available"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.is_available()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.read_stats"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.read_stats()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.recv"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.recv()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.recvmsg"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.recvmsg()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.stats_read"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.stats_read()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.stats_reset"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.stats_reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueRx.reset_stats"><code class="docutils literal notranslate"><span class="pre">NdpQueueRx.reset_stats()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#libnfb.NdpQueueTx"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.flush"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.flush()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.is_accessible"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.is_accessible()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.is_available"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.is_available()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.read_stats"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.read_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.reset_stats"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.reset_stats()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.send"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.send()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.sendmsg"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.sendmsg()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.stats_read"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.stats_read()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#libnfb.NdpQueueTx.stats_reset"><code class="docutils literal notranslate"><span class="pre">NdpQueueTx.stats_reset()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#libnfb.Nfb"><code class="docutils literal notranslate"><span class="pre">Nfb</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Nfb.comp_open"><code class="docutils literal notranslate"><span class="pre">Nfb.comp_open()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Nfb.fdt_get_compatible"><code class="docutils literal notranslate"><span class="pre">Nfb.fdt_get_compatible()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Nfb.fdt_get_phandle"><code class="docutils literal notranslate"><span class="pre">Nfb.fdt_get_phandle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.Nfb.read_temperature"><code class="docutils literal notranslate"><span class="pre">Nfb.read_temperature()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#libnfb.QueueManager"><code class="docutils literal notranslate"><span class="pre">QueueManager</span></code></a><ul>
@@ -160,14 +163,29 @@
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.RxMac.disable"><code class="docutils literal notranslate"><span class="pre">RxMac.disable()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.RxMac.enable"><code class="docutils literal notranslate"><span class="pre">RxMac.enable()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.RxMac.is_enabled"><code class="docutils literal notranslate"><span class="pre">RxMac.is_enabled()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.RxMac.is_link"><code class="docutils literal notranslate"><span class="pre">RxMac.is_link()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.RxMac.read_stats"><code class="docutils literal notranslate"><span class="pre">RxMac.read_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.RxMac.reset_stats"><code class="docutils literal notranslate"><span class="pre">RxMac.reset_stats()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.RxMac.stats_read"><code class="docutils literal notranslate"><span class="pre">RxMac.stats_read()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.RxMac.stats_reset"><code class="docutils literal notranslate"><span class="pre">RxMac.stats_reset()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#libnetcope.Transceiver"><code class="docutils literal notranslate"><span class="pre">Transceiver</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.Transceiver.is_present"><code class="docutils literal notranslate"><span class="pre">Transceiver.is_present()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.Transceiver.read_vendor_name"><code class="docutils literal notranslate"><span class="pre">Transceiver.read_vendor_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.Transceiver.read_vendor_pn"><code class="docutils literal notranslate"><span class="pre">Transceiver.read_vendor_pn()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.Transceiver.read_vendor_sn"><code class="docutils literal notranslate"><span class="pre">Transceiver.read_vendor_sn()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.Transceiver.vendor_name"><code class="docutils literal notranslate"><span class="pre">Transceiver.vendor_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.Transceiver.vendor_pn"><code class="docutils literal notranslate"><span class="pre">Transceiver.vendor_pn</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.Transceiver.vendor_sn"><code class="docutils literal notranslate"><span class="pre">Transceiver.vendor_sn</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#libnetcope.TxMac"><code class="docutils literal notranslate"><span class="pre">TxMac</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.TxMac.disable"><code class="docutils literal notranslate"><span class="pre">TxMac.disable()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.TxMac.enable"><code class="docutils literal notranslate"><span class="pre">TxMac.enable()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.TxMac.is_enabled"><code class="docutils literal notranslate"><span class="pre">TxMac.is_enabled()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.TxMac.read_stats"><code class="docutils literal notranslate"><span class="pre">TxMac.read_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnetcope.TxMac.reset_stats"><code class="docutils literal notranslate"><span class="pre">TxMac.reset_stats()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.TxMac.stats_read"><code class="docutils literal notranslate"><span class="pre">TxMac.stats_read()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnetcope.TxMac.stats_reset"><code class="docutils literal notranslate"><span class="pre">TxMac.stats_reset()</span></code></a></li>
 </ul>
@@ -179,12 +197,6 @@
 <li class="toctree-l3"><a class="reference internal" href="#nfb.eth.EthManager"><code class="docutils literal notranslate"><span class="pre">EthManager</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nfb.eth.PcsPma"><code class="docutils literal notranslate"><span class="pre">PcsPma</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#nfb.eth.PcsPma.pma_local_loopback"><code class="docutils literal notranslate"><span class="pre">PcsPma.pma_local_loopback</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#nfb.eth.Transceiver"><code class="docutils literal notranslate"><span class="pre">Transceiver</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#nfb.eth.Transceiver.vendor_name"><code class="docutils literal notranslate"><span class="pre">Transceiver.vendor_name</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#nfb.eth.Transceiver.vendor_pn"><code class="docutils literal notranslate"><span class="pre">Transceiver.vendor_pn</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#nfb.eth.Transceiver.vendor_sn"><code class="docutils literal notranslate"><span class="pre">Transceiver.vendor_sn</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -258,7 +270,7 @@
 <span id="nfb-libnfb"></span><h2>nfb.libnfb<a class="headerlink" href="#module-libnfb" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="libnfb.AbstractBaseComp">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnfb.</span></span><span class="sig-name descname"><span class="pre">AbstractBaseComp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Nfb.default_device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fdt.html#fdt.Node" title="fdt.Node"><span class="pre">fdt.Node</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.AbstractBaseComp" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnfb.</span></span><span class="sig-name descname"><span class="pre">AbstractBaseComp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Nfb.default_dev_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fdt.html#fdt.Node" title="fdt.Node"><span class="pre">fdt.Node</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.AbstractBaseComp" title="Link to this definition"></a></dt>
 <dd><p>AbstractBaseComp represents common parent for all classes that manages HW components</p>
 <p>Derived class should set it’s own <cite>DT_COMPATIBLE</cite>!</p>
 <dl class="field-list simple">
@@ -437,6 +449,16 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnfb.</span></span><span class="sig-name descname"><span class="pre">NdpQueue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Nfb</span> <span class="pre">nfb:</span> <span class="pre">Nfb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index:</span> <span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueue" title="Link to this definition"></a></dt>
 <dd><p>Object representing a NDP queue</p>
 <dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueue.read_stats">
+<span class="sig-name descname"><span class="pre">read_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueue.read_stats" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueue.reset_stats">
+<span class="sig-name descname"><span class="pre">reset_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueue.reset_stats" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="libnfb.NdpQueue.start">
 <span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueue.start" title="Link to this definition"></a></dt>
 <dd><p>Start the queue and prepare for transceiving</p>
@@ -474,6 +496,17 @@
 <dt class="sig sig-object py" id="libnfb.NdpQueueRx.is_available">
 <span class="sig-name descname"><span class="pre">is_available</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueRx.is_available" title="Link to this definition"></a></dt>
 <dd><p>Check if the queue can transfer data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueueRx.read_stats">
+<span class="sig-name descname"><span class="pre">read_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#libnfb.NdpQueueRx.read_stats" title="Link to this definition"></a></dt>
+<dd><p>Read statistic counters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with counters values: ‘passed’, ‘passed_bytes’, ‘dropped’, ‘dropped_bytes’.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -515,19 +548,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="libnfb.NdpQueueRx.stats_read">
-<span class="sig-name descname"><span class="pre">stats_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#libnfb.NdpQueueRx.stats_read" title="Link to this definition"></a></dt>
-<dd><p>Read statistic counters</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dictionary with counters values: ‘received’, ‘received_bytes’, ‘discarded’, ‘discarded_bytes’.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="libnfb.NdpQueueRx.stats_reset">
-<span class="sig-name descname"><span class="pre">stats_reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueRx.stats_reset" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="libnfb.NdpQueueRx.reset_stats">
+<span class="sig-name descname"><span class="pre">reset_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueRx.reset_stats" title="Link to this definition"></a></dt>
 <dd><p>Reset statistic counters</p>
 </dd></dl>
 
@@ -553,6 +575,23 @@
 <dt class="sig sig-object py" id="libnfb.NdpQueueTx.is_available">
 <span class="sig-name descname"><span class="pre">is_available</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueTx.is_available" title="Link to this definition"></a></dt>
 <dd><p>Check if the queue can transfer data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueueTx.read_stats">
+<span class="sig-name descname"><span class="pre">read_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueTx.read_stats" title="Link to this definition"></a></dt>
+<dd><p>Read statistic counters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with counters values: ‘passed’, ‘passed_bytes’.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.NdpQueueTx.reset_stats">
+<span class="sig-name descname"><span class="pre">reset_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueTx.reset_stats" title="Link to this definition"></a></dt>
+<dd><p>Reset statistic counters</p>
 </dd></dl>
 
 <dl class="py method">
@@ -583,23 +622,6 @@
 </ul>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="libnfb.NdpQueueTx.stats_read">
-<span class="sig-name descname"><span class="pre">stats_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueTx.stats_read" title="Link to this definition"></a></dt>
-<dd><p>Read statistic counters</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dictionary with counters values: ‘sent’, ‘sent_bytes’.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="libnfb.NdpQueueTx.stats_reset">
-<span class="sig-name descname"><span class="pre">stats_reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.NdpQueueTx.stats_reset" title="Link to this definition"></a></dt>
-<dd><p>Reset statistic counters</p>
 </dd></dl>
 
 </dd></dl>
@@ -663,6 +685,11 @@ It also allows to access to the object representation of the Flattened Device Tr
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.Nfb.read_temperature">
+<span class="sig-name descname"><span class="pre">read_temperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'celsius'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.Nfb.read_temperature" title="Link to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -879,8 +906,13 @@ It also allows to access to the object representation of the Flattened Device Tr
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="libnetcope.RxMac.stats_read">
-<span class="sig-name descname"><span class="pre">stats_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">etherstats:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.RxMac.stats_read" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="libnetcope.RxMac.is_link">
+<span class="sig-name descname"><span class="pre">is_link</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.RxMac.is_link" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.RxMac.read_stats">
+<span class="sig-name descname"><span class="pre">read_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">etherstats:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.RxMac.read_stats" title="Link to this definition"></a></dt>
 <dd><p>Read statistic counters</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -893,9 +925,65 @@ It also allows to access to the object representation of the Flattened Device Tr
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.RxMac.reset_stats">
+<span class="sig-name descname"><span class="pre">reset_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.RxMac.reset_stats" title="Link to this definition"></a></dt>
+<dd><p>Reset statistic counters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.RxMac.stats_read">
+<span class="sig-name descname"><span class="pre">stats_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">etherstats:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.RxMac.stats_read" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="libnetcope.RxMac.stats_reset">
 <span class="sig-name descname"><span class="pre">stats_reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.RxMac.stats_reset" title="Link to this definition"></a></dt>
-<dd><p>Reset statistic counters</p>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="libnetcope.Transceiver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">libnetcope.</span></span><span class="sig-name descname"><span class="pre">Transceiver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Nfb</span> <span class="pre">nfb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.Transceiver" title="Link to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.Transceiver.is_present">
+<span class="sig-name descname"><span class="pre">is_present</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#libnetcope.Transceiver.is_present" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.Transceiver.read_vendor_name">
+<span class="sig-name descname"><span class="pre">read_vendor_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#libnetcope.Transceiver.read_vendor_name" title="Link to this definition"></a></dt>
+<dd><p>vendor of the transceiver</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.Transceiver.read_vendor_pn">
+<span class="sig-name descname"><span class="pre">read_vendor_pn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#libnetcope.Transceiver.read_vendor_pn" title="Link to this definition"></a></dt>
+<dd><p>product number of the transceiver</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.Transceiver.read_vendor_sn">
+<span class="sig-name descname"><span class="pre">read_vendor_sn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#libnetcope.Transceiver.read_vendor_sn" title="Link to this definition"></a></dt>
+<dd><p>serial number of the transceiver</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="libnetcope.Transceiver.vendor_name">
+<span class="sig-name descname"><span class="pre">vendor_name</span></span><a class="headerlink" href="#libnetcope.Transceiver.vendor_name" title="Link to this definition"></a></dt>
+<dd><p>vendor of the transceiver</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="libnetcope.Transceiver.vendor_pn">
+<span class="sig-name descname"><span class="pre">vendor_pn</span></span><a class="headerlink" href="#libnetcope.Transceiver.vendor_pn" title="Link to this definition"></a></dt>
+<dd><p>product number of the transceiver</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="libnetcope.Transceiver.vendor_sn">
+<span class="sig-name descname"><span class="pre">vendor_sn</span></span><a class="headerlink" href="#libnetcope.Transceiver.vendor_sn" title="Link to this definition"></a></dt>
+<dd><p>serial number of the transceiver</p>
 </dd></dl>
 
 </dd></dl>
@@ -919,8 +1007,8 @@ It also allows to access to the object representation of the Flattened Device Tr
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="libnetcope.TxMac.stats_read">
-<span class="sig-name descname"><span class="pre">stats_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.TxMac.stats_read" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="libnetcope.TxMac.read_stats">
+<span class="sig-name descname"><span class="pre">read_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.TxMac.read_stats" title="Link to this definition"></a></dt>
 <dd><p>Read statistic counters</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -930,10 +1018,20 @@ It also allows to access to the object representation of the Flattened Device Tr
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="libnetcope.TxMac.stats_reset">
-<span class="sig-name descname"><span class="pre">stats_reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.TxMac.stats_reset" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="libnetcope.TxMac.reset_stats">
+<span class="sig-name descname"><span class="pre">reset_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.TxMac.reset_stats" title="Link to this definition"></a></dt>
 <dd><p>Reset statistic counters</p>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.TxMac.stats_read">
+<span class="sig-name descname"><span class="pre">stats_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.TxMac.stats_read" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnetcope.TxMac.stats_reset">
+<span class="sig-name descname"><span class="pre">stats_reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnetcope.TxMac.stats_reset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -950,7 +1048,7 @@ It also allows to access to the object representation of the Flattened Device Tr
 <li><p><strong>rxmac</strong> (<a class="reference internal" href="#libnetcope.RxMac" title="libnetcope.RxMac"><em>libnetcope.RxMac</em></a>) – Input MAC object</p></li>
 <li><p><strong>txmac</strong> (<a class="reference internal" href="#libnetcope.TxMac" title="libnetcope.TxMac"><em>libnetcope.TxMac</em></a>) – Ouput MAC object</p></li>
 <li><p><strong>pcspma</strong> (<a class="reference internal" href="#nfb.eth.PcsPma" title="nfb.eth.PcsPma"><em>PcsPma</em></a>) – PCS/PMA object</p></li>
-<li><p><strong>pmd</strong> (<a class="reference internal" href="#nfb.eth.Transceiver" title="nfb.eth.Transceiver"><em>Transceiver</em></a>) – Transceiver object</p></li>
+<li><p><strong>pmd</strong> (<a class="reference internal" href="#libnetcope.Transceiver" title="libnetcope.Transceiver"><em>Transceiver</em></a>) – Transceiver object</p></li>
 </ul>
 </dd>
 </dl>
@@ -978,35 +1076,6 @@ It also allows to access to the object representation of the Flattened Device Tr
 <dt class="sig sig-object py" id="nfb.eth.PcsPma.pma_local_loopback">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pma_local_loopback</span></span><a class="headerlink" href="#nfb.eth.PcsPma.pma_local_loopback" title="Link to this definition"></a></dt>
 <dd><p>Get or set loopback on local side of PMA module</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="nfb.eth.Transceiver">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nfb.eth.</span></span><span class="sig-name descname"><span class="pre">Transceiver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/nfb/eth.html#Transceiver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nfb.eth.Transceiver" title="Link to this definition"></a></dt>
-<dd><p>Object representing a transciever interface</p>
-<dl class="field-list simple">
-<dt class="field-odd">Variables<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>i2c</strong> (<a class="reference internal" href="#libnetcope.I2c" title="libnetcope.I2c"><em>I2c</em></a>) – I2c bus handle (only with QSFP+ modules)</p>
-</dd>
-</dl>
-<dl class="py property">
-<dt class="sig sig-object py" id="nfb.eth.Transceiver.vendor_name">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">vendor_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#nfb.eth.Transceiver.vendor_name" title="Link to this definition"></a></dt>
-<dd><p>vendor of the transceiver</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="nfb.eth.Transceiver.vendor_pn">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">vendor_pn</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#nfb.eth.Transceiver.vendor_pn" title="Link to this definition"></a></dt>
-<dd><p>product number of the transceiver</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="nfb.eth.Transceiver.vendor_sn">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">vendor_sn</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#nfb.eth.Transceiver.vendor_sn" title="Link to this definition"></a></dt>
-<dd><p>serial number of the transceiver</p>
 </dd></dl>
 
 </dd></dl>

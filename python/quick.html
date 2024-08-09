@@ -162,8 +162,8 @@
 <span class="n">msgs_q</span> <span class="o">=</span> <span class="n">ndp</span><span class="o">.</span><span class="n">recvmsg</span><span class="p">(</span><span class="n">cnt</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
 <span class="c1"># 2.C NDP queues statistics</span>
-<span class="n">txq</span><span class="o">.</span><span class="n">stats_reset</span><span class="p">()</span>
-<span class="k">assert</span> <span class="n">txq</span><span class="o">.</span><span class="n">stats_read</span><span class="p">()[</span><span class="s2">&quot;sent&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
+<span class="n">txq</span><span class="o">.</span><span class="n">reset_stats</span><span class="p">()</span>
+<span class="k">assert</span> <span class="n">txq</span><span class="o">.</span><span class="n">read_stats</span><span class="p">()[</span><span class="s2">&quot;passed&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
 
 </pre></div>
 </div>
@@ -177,8 +177,8 @@
 <span class="k">for</span> <span class="n">mac</span> <span class="ow">in</span> <span class="p">[</span><span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="p">,</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="p">]:</span>
     <span class="n">mac</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="n">enable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">mac</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
-    <span class="n">mac</span><span class="o">.</span><span class="n">stats_reset</span><span class="p">()</span>
-    <span class="k">assert</span> <span class="n">mac</span><span class="o">.</span><span class="n">stats_read</span><span class="p">()[</span><span class="s2">&quot;packets&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="n">mac</span><span class="o">.</span><span class="n">reset_stats</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">mac</span><span class="o">.</span><span class="n">read_stats</span><span class="p">()[</span><span class="s2">&quot;total&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
 
 <span class="c1"># 3.B PCS/PMA management and Transceiver manipulation</span>
 <span class="n">eth</span><span class="o">.</span><span class="n">pcspma</span><span class="o">.</span><span class="n">pma_local_loopback</span> <span class="o">=</span> <span class="kc">True</span>
@@ -189,7 +189,7 @@
     <span class="n">val</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">pmd</span><span class="o">.</span><span class="n">i2c</span><span class="o">.</span><span class="n">read_reg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
 <span class="c1"># 3.C Aggregated Ethernet ports manipulation</span>
-<span class="k">assert</span> <span class="n">eth</span><span class="o">.</span><span class="n">link</span> <span class="o">==</span> <span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="o">.</span><span class="n">link</span>
+<span class="k">assert</span> <span class="n">eth</span><span class="o">.</span><span class="n">is_link</span><span class="p">()</span> <span class="o">==</span> <span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="o">.</span><span class="n">is_link</span><span class="p">()</span>
 
 <span class="n">dev</span><span class="o">.</span><span class="n">eth</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="n">enable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">dev</span><span class="o">.</span><span class="n">eth</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
