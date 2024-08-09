@@ -1,3 +1,12 @@
+* Fri Aug 9 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.0-1
+- [FEATURE] drivers: allow early removal and late attach of PCI endpoint
+- [FEATURE] libnfb: use LIBNFB_BUS_DEBUG env. variable for MI read/write logging
+- [FEATURE] libnfb: use LIBNFB_DEFAULT_DEV env. variable for specifying default device
+- [FEATURE] nfb-info: print BAR size, print list of all available devices
+- [FEATURE] nfb-mi-test: tool for testing and benchmarking MI accesses
+- [FEATURE] pynfb: lot of sanitized names, improvements, fixes and optimalizations
+- [BUGFIX] libnfb: fallback mi_memcpy variant for processors without AVX2
+
 * Thu Jun 27 2024 Martin Spinler <spinler@cesnet.cz> - 6.22.6-1
 - [BUGFIX] fix driver bug with include file
 
