@@ -44,6 +44,15 @@ struct nfb_comp;
 /* ~~~~[ PROTOTYPES ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 /* ~~~~[ DEVICE ] ~~~~ */
+
+/*!
+ * \brief   Get default device path, when user doesn't specify one.
+ * \return
+ *     - path
+ *
+  */
+const char * nfb_default_dev_path(void);
+
 /*!
  * \brief   Open the NFB device
  * \param[in]   path  Path to the NFB device file

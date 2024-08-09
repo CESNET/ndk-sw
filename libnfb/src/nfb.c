@@ -65,6 +65,15 @@ void *nfb_comp_to_user(struct nfb_comp *ptr)
 	return (void *)(ptr + 1);
 }
 
+const char * nfb_default_dev_path()
+{
+	const char *devname = getenv("LIBNFB_DEFAULT_DEV");
+	if (devname == NULL) {
+		devname = "/dev/nfb0";
+	}
+	return devname;
+}
+
 struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 {
 	int ret;
