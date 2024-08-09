@@ -66,7 +66,7 @@ cdef class Nfb:
     :ivar EthManager eth: Ethernet manager object. Exist only when using :func:`nfb.open`
     """
 
-    default_device = '/dev/nfb0'
+    default_device = nfb_default_dev_path().decode()
 
     def __init__(self, path: str):
         cdef const char* _fdtc
