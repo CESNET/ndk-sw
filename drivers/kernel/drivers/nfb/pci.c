@@ -986,6 +986,10 @@ static int nfb_pci_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		dev_info(&pci->dev, "successfully initialized only for DMA transfers\n");
 	} else {
 		pci_device->is_probed_as_main = 1;
+		/* backward compatibility: some firmware doesn't have correct index,
+		   this is needed for MI and DMA endpoint pairing */
+		if (pci_device->index < 0)
+			pci_device->index = 0;
 
 		ret = nfb_pci_probe_main(pci_device, id, nfb_dtb_inject);
 		if (ret)
