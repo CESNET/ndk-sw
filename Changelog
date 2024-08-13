@@ -1,3 +1,6 @@
+* Tue Aug 13 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.1-1
+- [BUGFIX] drivers: backward compatibility for firmware without valid endpoint index
+
 * Fri Aug 9 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.0-1
 - [FEATURE] drivers: allow early removal and late attach of PCI endpoint
 - [FEATURE] libnfb: use LIBNFB_BUS_DEBUG env. variable for MI read/write logging
