@@ -318,7 +318,7 @@ static inline void nc_mdio_etile_config(struct nc_mdio *mdio)
 
 static inline struct nc_mdio *nc_mdio_open_no_init(const struct nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam)
 {
-	struct nc_mdio mdio_tmp;
+	struct nc_mdio mdio_tmp = {0};
 	struct nc_mdio *mdio;
 	struct nfb_comp *comp;
 	const char *prop;
