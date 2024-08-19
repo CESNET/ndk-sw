@@ -1,3 +1,6 @@
+* Mon Aug 19 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.2-1
+- [BUGFIX] mdio (PCS/PMA): initialize struct nc_mdio with zeros
+
 * Tue Aug 13 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.1-1
 - [BUGFIX] drivers: backward compatibility for firmware without valid endpoint index
 
