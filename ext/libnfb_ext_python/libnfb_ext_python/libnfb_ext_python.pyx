@@ -53,13 +53,18 @@ cdef ssize_t nfb_pynfb_bus_read(void *p, void *buf, size_t nbyte, off_t offset) 
     cdef PyObject* _bus = <PyObject *> p
     cdef object bus = <object> _bus
     cdef bytes data
+    cdef ssize_t ret
 
     nfb, comp_node, bus_node = bus
     data = nfb.read(bus_node, comp_node, offset, nbyte)
-    assert len(data) == int(nbyte)
-    memcpy(buf, <const char*>data, nbyte)
+    ret = len(data)
+    if ret > int(nbyte):
+        ret = -1
 
-    return nbyte
+    if ret > 0:
+        memcpy(buf, <const char*>data, ret)
+
+    return ret
 
 cdef ssize_t nfb_pynfb_bus_write(void *p, const void *buf, size_t nbyte, off_t offset) noexcept:
     cdef PyObject* _bus = <PyObject *> p
