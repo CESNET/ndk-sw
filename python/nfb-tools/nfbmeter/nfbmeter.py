@@ -24,6 +24,7 @@ import nfb.libnfb as libnfb
 import curses
 
 from . import version
+from .migrations import migrate_lines
 from .utils import nocurses_wrapper, NoCurses
 from .probes import EventCounterHistogram, BusDebugProbe
 
@@ -182,8 +183,8 @@ def info_to_json(info):
 
 
 class MeterDisplay():
-    def __init__(self, meter, config):
-        self._meter = meter
+    def __init__(self, items, config):
+        self._items = items
         self._config = config
 
         if not self._config.get("display"):
@@ -279,7 +280,7 @@ class MeterDisplay():
         self._o = 0
         self._s = stdscr
 
-        items = self._meter._items
+        items = self._items
         o = 0
         self.addstr(o, 0, f"Time diff: {m.interval}")
         o += 1
@@ -304,6 +305,38 @@ class MeterDisplay():
         stdscr.refresh()
         if isinstance(stdscr, NoCurses):
             print("-" * 60)
+
+
+def display_loop(stdscr, args):
+    fixups = None
+    config = None
+    items = None
+    display = None
+
+    lines = open(args.load_logfile).readlines()
+
+    for ln in lines:
+        try:
+            m = json.loads(ln)
+        except Exception:
+            continue
+        m, fixups = migrate_lines(m, fixups)
+
+        if m['tp'] == 'info':
+            config = get_config(args, **m)
+
+        if m['tp'] == 'units':
+            items = m.copy()
+
+        if display is None and items is not None and config is not None:
+            display = MeterDisplay(items, config)
+
+        if m['tp'] == 'm':
+            if display is None:
+                continue
+
+            time.sleep(1)
+            display.display(stdscr, SimpleNamespace(**m))
 
 
 def meter_loop(stdscr, args, meter, logger, display):
@@ -360,12 +393,17 @@ def main():
     arguments = argparse.ArgumentParser(description='NFB universal measurement tool')
     arguments.add_argument("-d", "--device", action="store", default=libnfb.Nfb.default_dev_path)
     arguments.add_argument("-l", "--logfile", action="store", default="/tmp/nfb-meter-stats_{pcislot}.txt")
+    arguments.add_argument("-L", "--load_logfile", action="store")
     arguments.add_argument("-v", "--verbose", action="store_true")
     arguments.add_argument("-I", "--interval", action="store", default=1, type=float)
     arguments.add_argument("-D", "--display", action="store", default=None, help='display mode')
     arguments.add_argument("-P", "--period", action="store", default=None, type=float)
     arguments.add_argument("-c", "--config", action="store", default=None)
     args = arguments.parse_args()
+
+    if args.load_logfile:
+        get_wrapper(args)(display_loop, args)
+        exit(0)
 
     dev = nfb.open(args.device)
     pcislot = dev.fdt.get_node("/system/device/endpoint0").get_property("pci-slot").value
@@ -391,7 +429,7 @@ def main():
     meter = MeterManager(dev, config)
     meter.init()
 
-    display = MeterDisplay(meter, config)
+    display = MeterDisplay(meter._items, config)
 
     # Log base informations
     logging.debug(json.dumps({'tp': 'units', **meter._items}))
