@@ -103,8 +103,8 @@ class EventCounter(nfb.BaseComp):
                 self._comp.write32(self._REG_CAPTURE_FIFO, 0)
         #print(f"FIFO size: {cnt}")
 
-    #def stats_read_captured(self, count: int = 0, wait: bool = False):
-    def stats_read_captured(self):
+    #def read_stats_captured(self, count: int = 0, wait: bool = False):
+    def read_stats_captured(self):
         ret = None
         ret = {"cycles": 0, "events": 0, "wraps": 0} # What's better to return?
         valid = True

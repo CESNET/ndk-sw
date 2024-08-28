@@ -54,7 +54,7 @@ class BusDebugCtl(nfb.BaseComp):
     def bus_enable(self, pid):
         self._comp.write32(po(pid, self._BUS_CTRLREG), 0)
 
-    def stats_read(self, pid):
+    def read_stats(self, pid):
         # TODO Check: atomic read / strobe?
         data = self._comp.read(po(pid, self._WORD_CNT_LOW), self._NAME)
         cntr = {}

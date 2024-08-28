@@ -49,9 +49,9 @@ class EventCounterHistogram(Probe):
         for ec in self._ec:
             ec.start(capture)
 
-    def stats_read_captured(self):
+    def read_stats_captured(self):
         s = []
         for ec in self._ec:
-            s.append(ec.stats_read_captured())
+            s.append(ec.read_stats_captured())
         return {self._names[i]: s[i]['events'] for i, ec in enumerate(self._ec)}
 

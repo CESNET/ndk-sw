@@ -30,8 +30,8 @@ from .probes import EventCounterHistogram, BusDebugProbe
 class MeterManager():
     # Rename dict keys with this map> new_key: orig_key (nk: ok)
     remaps = {
-        'rxmac': {'packets': 'p', 'received': 'r', 'octets': 'b', 'discarded': 'd', 'overflowed': 'o'},
-        'rxdma': {'received': 'p', 'received_bytes': 'b', 'discarded': 'dp', 'discarded_bytes': 'db'},
+        'rxmac': {'total': 'p', 'passed': 'r', 'passed_bytes': 'b', 'errors': 'd', 'overflowed': 'o'},
+        'rxdma': {'passed': 'p', 'passed_bytes': 'b', 'dropped': 'd', 'dropped_bytes': 'db'},
         'eventcounter': {'cycles': 'c', 'events': 'e', 'wraps': 'w'},
         'busdebugprobe': {"words": 'w', "wait": 'i', "dst_hold": 'dh', "src_hold": 'sh',
             'sop_cnt': 'sc', 'eop_cnt': 'ec',
@@ -83,17 +83,17 @@ class MeterManager():
         data = sample.data = {}
 
         for i, mac in enumerate(self._rxmac):
-            data[f"rm{i}"] = mac.stats_read()
+            data[f"rm{i}"] = mac.read_stats()
 
         for i, dma in self._rxdma.items():
-            data[f"rd{i}"] = dma.stats_read()
+            data[f"rd{i}"] = dma.read_stats()
 
         for i, bd in enumerate(self._bdc.values()):
             for p in range(bd.nr_probes):
-                data[f"{bd.id}_{bd.probe_name[p]}"] = bd.stats_read(p)
+                data[f"{bd.id}_{bd.probe_name[p]}"] = bd.read_stats(p)
 
         for i, (id, ech) in enumerate(self._ech.items()):
-            data[id] = ech.stats_read_captured()
+            data[id] = ech.read_stats_captured()
 
         return sample
 
@@ -187,7 +187,7 @@ class MeterDisplay():
         stdscr.addstr(o, 0, "RxMAC stats")
         for i, it in enumerate(items['rxmac']):
             item = m.data[it]
-            values = {s.title(): item[s] for s in ['packets', 'received', 'discarded', 'overflowed']}
+            values = {s.title(): item[s] for s in ['total', 'passed', 'errors', 'overflowed']}
             for w, (text, val) in enumerate(values.items()):
                 stdscr.addstr(o+w+1, 2, text)
                 stdscr.addstr(o+w+1, i*12+12, f"{val:>10}")
@@ -195,20 +195,21 @@ class MeterDisplay():
 
     def _display_rxdma(self, o, m, stdscr, items):
         rows, cols = stdscr.getmaxyx()
-        dma_total_rcvd = sum(map(lambda x: m.data[x]['received'], items['rxdma']))
-        dma_total_disc = sum(map(lambda x: m.data[x]['discarded'], items['rxdma']))
+        dma_total_rcvd = sum(map(lambda x: m.data[x]['passed'], items['rxdma']))
+        dma_total_disc = sum(map(lambda x: m.data[x]['dropped'], items['rxdma']))
         dma_total = dma_total_rcvd + dma_total_disc
-        stdscr.addstr(o, 0, f"Rx DMA | Total: {dma_total:>11} | Received: {dma_total_rcvd:>11} | Discarded: {dma_total_disc:>11}")
+        stdscr.addstr(o, 0, f"Rx DMA | Total: {dma_total:>11} | Passed: {dma_total_rcvd:>11} | Dropped: {dma_total_disc:>11}")
+
         for i, it in enumerate(items['rxdma']):
             item = m.data[it]
-            stdscr.addstr(o+1, 2, "% Received")
-            stdscr.addstr(o+2, 2, "% Discarded")
+            stdscr.addstr(o+1, 2, "% Passed")
+            stdscr.addstr(o+2, 2, "% Dropped")
 
             if (i+1)*12 + 12 >= cols:
                 continue
 
-            pct_rcvd = int(item['received']*1000 / dma_total)/10 if dma_total != 0 else '-'
-            pct_disc = int(item['discarded']*1000 / dma_total)/10 if dma_total != 0 else '-'
+            pct_rcvd = int(item['passed']*1000 / dma_total)/10 if dma_total != 0 else '-'
+            pct_disc = int(item['dropped']*1000 / dma_total)/10 if dma_total != 0 else '-'
 
             stdscr.addstr(o+1, i*6+14, f"{pct_rcvd:>6}")
             stdscr.addstr(o+2, i*6+14, f"{pct_disc:>6}")
@@ -320,7 +321,7 @@ def meter_loop(stdscr, args, meter, logger, display):
 def main():
     # Argument parsing
     arguments = argparse.ArgumentParser(description='NFB universal measurement tool')
-    arguments.add_argument("-d", "--device", action="store", default=libnfb.Nfb.default_device)
+    arguments.add_argument("-d", "--device", action="store", default=libnfb.Nfb.default_dev_path)
     arguments.add_argument("-l", "--logfile", action="store", default="/tmp/nfb-meter-stats_{pcislot}.txt")
     arguments.add_argument("-v", "--verbose", action="store_true")
     arguments.add_argument("-I", "--interval", action="store", default=1, type=float)
