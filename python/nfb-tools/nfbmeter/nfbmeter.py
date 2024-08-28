@@ -23,6 +23,7 @@ import nfb.libnfb as libnfb
 
 import curses
 
+from . import version
 from .utils import nocurses_wrapper, NoCurses
 from .probes import EventCounterHistogram, BusDebugProbe
 
@@ -71,9 +72,11 @@ class MeterManager():
         self._items = {
             "rxmac": [f"rm{i}" for i, _ in enumerate(self._rxmac)],
             "rxdma": [f"rd{i}" for i in self._rxdma.keys()],
-            "busdebugprobe": [
-                *[f"{bd.id}_{bd.probe_name[p]}" for i, bd in enumerate(self._bdc.values()) for p in range(bd.nr_probes)],
-            ],
+            "busdebugprobe": {
+                f"{bd.id}": {
+                    bd.probe_name[p]: f"{bd.id}_{bd.probe_name[p]}" for p in range(bd.nr_probes)
+                } for bd in self._bdc.values()
+            },
             "eventcounter_histogram": list(self._ech.keys()),
         }
 
@@ -110,7 +113,8 @@ class MeterManager():
         rel.data = {}
 
         # Compute difference of particular keys of all items with absolute value (no counter reset between two measurements)
-        diffable_items = self._items['rxmac'] + self._items['rxdma'] + self._items['busdebugprobe']
+        diffable_bdb = [name for bdp in self._items['busdebugprobe'].values() for name in bdp.values()]
+        diffable_items = self._items['rxmac'] + self._items['rxdma'] + diffable_bdb
         for ic, ip, ik in [(sc.data[item], sp.data[item], item) for item in diffable_items]:
             rel.data[ik] = {key: (ic[key] - ip[key]) for key in ic.keys()}
 
@@ -172,7 +176,7 @@ def get_basic_info(dev):
 def info_to_json(info):
     ret = vars(info)
     ret['tp'] = "info" # type of the record
-    ret['ver'] = "0.1.0"
+    ret['ver'] = version.version
     ret['build_time'] = str(ret['build_time'])
     return json.dumps(vars(info))
 
@@ -222,15 +226,19 @@ class MeterDisplay():
 
     def _display_busdebug(self, o, m, config):
         for i, it in enumerate(config.probes):
-            include = config.include if hasattr(config, "include") else self._meter._bdc[it].probe_name
-            for j, pname in enumerate(include):
-                item = m.data[f"{it}_{pname}"]
+            if hasattr(config, "include"):
+                include = {name: f"{it}_{name}" for name in config.include}
+            else:
+                include = self._items['busdebugprobe'][it]
+
+            for j, (desc, pname) in enumerate(include.items()):
+                item = m.data[pname]
                 cycles, words, wait, dst_hold, src_hold = (item[x] for x in ['cycles', 'words', 'wait', 'dst_hold', 'src_hold'])
 
                 words, wait, dst_hold, src_hold = \
                     (int(x * 1000 / cycles) / 10 for x in [words, wait, dst_hold, src_hold])
 
-                self.addstr(o+2+j, 0, pname)
+                self.addstr(o+2+j, 0, desc)
                 self.addstr(o+1, 0, "%")
                 values = {"Words": words, "Idle": wait, "DST H": dst_hold, "SRC H": src_hold}
                 for w, (text, value) in enumerate(values.items()):
@@ -244,7 +252,6 @@ class MeterDisplay():
 
         for i, it in enumerate(probes):
             histograms = m.data[it]
-            ech = self._meter._ech[it]
 
             horiz = hasattr(config, 'style') and config.style == 'horizontal'
 
@@ -256,7 +263,8 @@ class MeterDisplay():
                     self.addstr(o+y, x, f"{bin_name:>8}")
 
             x, y = (i*8+12, o) if horiz else (2, o+i+1)
-            self.addstr(y, x, ech.name)
+            pb = [p for p in self._config['probes'] if p['id'] == it][0]
+            self.addstr(y, x, pb['name'])
 
             vals = histograms.values()
             total = sum(vals)
