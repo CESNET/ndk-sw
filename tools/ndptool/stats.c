@@ -245,15 +245,17 @@ void update_stats_thread(struct ndp_packet *packets, int count, struct stats_inf
 {
 	update_print_progress(packets, count, si);
 
-	if (si->packet_cnt > 100000 || count == 0) {
+	si->last_update += count;
+	if (si->last_update > 100000 || count == 0) {
 		/* Update global stats */
 		pthread_spin_lock(&((struct thread_data *)si->priv)->lock);
-		si->thread_packet_cnt += si->packet_cnt;
-		si->thread_bytes_cnt += si->bytes_cnt;
+		si->thread_packet_cnt += (si->packet_cnt - si->last_packet_cnt);
+		si->thread_bytes_cnt += (si->bytes_cnt - si->last_bytes_cnt);
 		pthread_spin_unlock(&((struct thread_data *)si->priv)->lock);
 
-		si->packet_cnt = 0;
-		si->bytes_cnt = 0;
+		si->last_packet_cnt = si->packet_cnt;
+		si->last_bytes_cnt = si->bytes_cnt;
+		si->last_update = 0;
 	}
 }
 

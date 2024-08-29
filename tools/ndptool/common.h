@@ -48,16 +48,18 @@ typedef enum fastwrite_mode {
 struct stats_info {
 	unsigned long long packet_cnt;
 	unsigned long long bytes_cnt;
-
+	unsigned long long last_packet_cnt;
+	unsigned long long last_bytes_cnt;
+	unsigned long long last_update;
 	unsigned long long progress_counter;
 	unsigned long long sampling;
-	char progress_letter;
-	enum progress_type progress_type;
-
 	unsigned long long thread_packet_cnt;
 	unsigned long long thread_bytes_cnt;
 	unsigned long long thread_total_bytes_cnt;
 	void *priv;
+
+	char progress_letter;
+	enum progress_type progress_type;
 	bool incremental;
 
 	struct timeval startTime;
