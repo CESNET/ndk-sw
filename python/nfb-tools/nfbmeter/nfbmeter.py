@@ -210,7 +210,7 @@ class MeterDisplay():
         dma_total_rcvd = sum(map(lambda x: m.data[x]['passed'], items['rxdma']))
         dma_total_disc = sum(map(lambda x: m.data[x]['dropped'], items['rxdma']))
         dma_total = dma_total_rcvd + dma_total_disc
-        self.addstr(o+1, 0, f"Rx DMA | Total: {dma_total:>11} | Passed: {dma_total_rcvd:>11} | Dropped: {dma_total_disc:>11}")
+        self.addstr(o+0, 0, f"Rx DMA | Total: {dma_total:>11} | Passed: {dma_total_rcvd:>11} | Dropped: {dma_total_disc:>11}")
         self.addstr(o+1, 2, "% Passed")
         self.addstr(o+2, 2, "% Dropped")
 
