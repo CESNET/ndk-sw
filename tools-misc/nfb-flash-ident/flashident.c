@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 	int fdt_offset;
 	const char *card_name;
 	char *file = NULL;
-	char *path = NFB_DEFAULT_DEV_PATH;
+	const char *path = nfb_default_dev_path();
 
 	void *buffer;
 	void *fip;

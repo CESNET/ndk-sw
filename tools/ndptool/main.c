@@ -65,7 +65,7 @@ static void usage(char *me, int mode_preset)
 	}
 
 	printf("Common parameters:\n");
-	printf("  -d path       Path to device [default: %s]\n", NFB_DEFAULT_DEV_PATH);
+	printf("  -d path       Path to device [default: %s]\n", nfb_default_dev_path());
 	printf("  -i indexes    Queues numbers to use - list or range, e.g. \"0-5,7\" [default: all]\n");
 	printf("  -h            Show this text\n");
 	printf("  -p packets    Stop receiving or transmitting after <packets> packets\n");
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 
 	memset(&params, 0, sizeof(params));
 
-	params.nfb_path = NFB_DEFAULT_DEV_PATH;
+	params.nfb_path = nfb_default_dev_path();
 	params.queue_index = -1;
 	params.si.progress_type = PT_NONE;
 	params.si.sampling = 1;
