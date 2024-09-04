@@ -48,10 +48,25 @@ cdef class NfbDeviceHandle:
         self._dev = nfb_open(path.encode())
         if self._dev is NULL:
             PyErr_SetFromErrno(OSError)
+        self._close_cbs = []
 
     def __dealloc__(self):
+        self.close_handle()
+
+    def close_handle(self):
         if self._dev is not NULL:
+            for cb in reversed(self._close_cbs):
+                cb()
+            self._close_cbs.clear()
             nfb_close(self._dev)
+            self._dev = NULL
+
+    def check_handle(self):
+        if self._dev is NULL:
+            raise ReferenceError
+
+    def add_close_cb(self, cb):
+        self._close_cbs.append(cb)
 
 
 cdef class Nfb:

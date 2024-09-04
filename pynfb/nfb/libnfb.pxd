@@ -131,6 +131,8 @@ cdef extern from "<nfb/ext.h>":
 cdef class NfbDeviceHandle:
     #cdef object __weakref__
     cdef nfb_device* _dev
+    cdef list _close_cbs
+
 
 cdef class Nfb:
     cdef NfbDeviceHandle _handle
