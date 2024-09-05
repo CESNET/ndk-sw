@@ -102,6 +102,16 @@ cdef class Nfb:
     def __dealloc__(self):
         pass
 
+    def __enter__(self):
+        self._handle.check_handle()
+        return self
+
+    def __exit__(self, *exc):
+        self._close_handle()
+
+    def _close_handle(self):
+        self._handle.close_handle()
+
     def comp_open(self, comp: Union[str, fdt.items.Node], index: cython.int = 0) -> Comp:
         """
         Create component handle from a component instance inside the NFB
