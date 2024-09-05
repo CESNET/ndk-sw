@@ -20,28 +20,42 @@ cdef class RxMac:
 
     def __init__(self, libnfb.Nfb nfb, node):
         self._handle = nfb._handle
+        self._handle.check_handle()
         self._mac = NULL
         self._mac = nc_rxmac_open(self._handle._dev, nfb._fdt_path_offset(node))
         if self._mac is NULL:
             PyErr_SetFromErrno(OSError)
 
+        self._handle.add_close_cb(self._close_handle)
+
     def __dealloc__(self):
+        self._close_handle()
+
+    def _close_handle(self):
         if self._mac is not NULL:
             nc_rxmac_close(self._mac)
+            self._mac = NULL
+
+    def _check_handle(self):
+        if self._mac is NULL:
+            raise ReferenceError
 
     @property
     def link(self):
+        self._check_handle()
         return False if nc_rxmac_get_link(self._mac) == 0 else True
 
     @property
     def enabled(self):
         cdef nc_rxmac_status status
+        self._check_handle()
         assert nc_rxmac_read_status(self._mac, &status) == 0
         return True if status.enabled else False
 
     @enabled.setter
     def enabled(self, enable):
         enabled = self.enabled
+        self._check_handle()
         if not enabled and enable:
             nc_rxmac_enable(self._mac)
         elif enabled and not enable:
@@ -64,6 +78,7 @@ cdef class RxMac:
 
     def reset_stats(self):
         """Reset statistic counters"""
+        self._check_handle()
         nc_rxmac_reset_counters(self._mac)
 
     def stats_read(self, etherstats: bool = False):
@@ -80,6 +95,7 @@ cdef class RxMac:
 
         cdef nc_rxmac_counters counters
         cdef nc_rxmac_etherstats es
+        self._check_handle()
         nc_rxmac_counters_initialize(&counters, &es)
         cdef int ret = nc_rxmac_read_counters(self._mac, &counters, &es)
         assert ret == 0
@@ -120,24 +136,37 @@ cdef class TxMac:
 
     def __init__(self, libnfb.Nfb nfb, node):
         self._handle = nfb._handle
+        self._handle.check_handle()
         self._mac = NULL
         self._mac = nc_txmac_open(self._handle._dev, nfb._fdt_path_offset(node))
         if self._mac is NULL:
             PyErr_SetFromErrno(OSError)
 
+        self._handle.add_close_cb(self._close_handle)
+
     def __dealloc__(self):
+        self._close_handle()
+
+    def _close_handle(self):
         if self._mac is not NULL:
             nc_txmac_close(self._mac)
+            self._mac = NULL
+
+    def _check_handle(self):
+        if self._mac is NULL:
+            raise ReferenceError
 
     @property
     def enabled(self):
         cdef nc_txmac_status status
+        self._check_handle()
         assert nc_txmac_read_status(self._mac, &status) == 0
         return True if status.enabled else False
 
     @enabled.setter
     def enabled(self, enable):
         enabled = self.enabled
+        self._check_handle()
         if not enabled and enable:
             nc_txmac_enable(self._mac)
         elif enabled and not enable:
@@ -157,6 +186,7 @@ cdef class TxMac:
 
     def reset_stats(self):
         """Reset statistic counters"""
+        self._check_handle()
         nc_txmac_reset_counters(self._mac)
 
     def stats_read(self):
@@ -170,6 +200,7 @@ cdef class TxMac:
         """
 
         cdef nc_txmac_counters counters
+        self._check_handle()
         ret = nc_txmac_read_counters(self._mac, &counters)
         assert ret == 0
         # INFO: this hides uninialized variables warning
@@ -191,17 +222,29 @@ cdef class Mdio:
 
     def __init__(self, libnfb.Nfb nfb, node, param_node = None):
         self._handle = nfb._handle
+        self._handle.check_handle()
         self._mdio = NULL
         self._mdio = nc_mdio_open_no_init(self._handle._dev, nfb._fdt_path_offset(node), nfb._fdt_path_offset(param_node) if param_node else -1)
         self._inited = False
         if self._mdio is NULL:
             PyErr_SetFromErrno(OSError)
 
+        self._handle.add_close_cb(self._close_handle)
+
     def __dealloc__(self):
+        self._close_handle()
+
+    def _close_handle(self):
         if self._mdio is not NULL:
             nc_mdio_close(self._mdio)
+            self._mdio = NULL
+
+    def _check_handle(self):
+        if self._mdio is NULL:
+            raise ReferenceError
 
     def _init(self):
+        self._check_handle()
         if not self._inited:
             self._inited = True
             nc_mdio_init(self._mdio)
@@ -221,17 +264,30 @@ cdef class I2c:
 
     def __init__(self, libnfb.Nfb nfb, node, addr = 0xA0):
         self._handle = nfb._handle
+        self._handle.check_handle()
         self._ctrl = NULL
         self._ctrl = nc_i2c_open(self._handle._dev, nfb._fdt_path_offset(node))
         nc_i2c_set_addr(self._ctrl, addr)
 
+        self._handle.add_close_cb(self._close_handle)
+
     def __dealloc__(self):
+        self._close_handle()
+
+    def _close_handle(self):
         if self._ctrl is not NULL:
             nc_i2c_close(self._ctrl)
+            self._ctrl = NULL
+
+    def _check_handle(self):
+        if self._ctrl is NULL:
+            raise ReferenceError
 
     def read_reg(self, reg, size):
         cdef int cnt
         cdef unsigned char* c_data
+
+        self._check_handle()
 
         cnt = size
         c_data = <unsigned char *> malloc(cnt)
@@ -243,6 +299,8 @@ cdef class I2c:
 
     def write_reg(self, reg: int, data: bytes):
         cdef const uint8_t* c_data8
+
+        self._check_handle()
 
         c_data8 = data
         ret = nc_i2c_write_reg(self._ctrl, reg, c_data8, len(data))
@@ -264,6 +322,7 @@ cdef class DmaCtrlNdp:
         self._ctrl_queue = NULL
 
         self._handle = nfb._handle
+        self._handle.check_handle()
         dev = self._handle._dev
         ret = nc_ndp_ctrl_open(dev, nfb._fdt_path_offset(node), &self._ctrl)
         if ret != 0:
@@ -274,12 +333,17 @@ cdef class DmaCtrlNdp:
         else: #if self._ctrl.dir == 1:
             self._ctrl_queue = nc_txqueue_open(dev, nfb._fdt_path_offset(node))
 
-        if self._ctrl_queue == NULL != 0:
+        if self._ctrl_queue == NULL:
             nc_ndp_ctrl_close(&self._ctrl)
             self._ctrl.comp = NULL
             PyErr_SetFromErrno(OSError)
 
+        self._handle.add_close_cb(self._close_handle)
+
     def __dealloc__(self):
+        self._close_handle()
+
+    def _close_handle(self):
         if self._ctrl.comp is not NULL:
             if self._ctrl_queue:
                 if self._ctrl.dir == 0:
@@ -288,6 +352,11 @@ cdef class DmaCtrlNdp:
                     nc_txqueue_close(<nc_txqueue*> self._ctrl_queue)
                 self._ctrl_queue = NULL
             nc_ndp_ctrl_close(&self._ctrl)
+            #self._ctrl.comp = NULL  # already done by nc_ndp_ctrl_close
+
+    def _check_handle(self):
+        if self._ctrl.comp is NULL:
+            raise ReferenceError
 
     @property
     def mdp(self):
@@ -334,6 +403,7 @@ cdef class DmaCtrlNdp:
         cdef uint32_t imin
         cdef uint32_t imax
 
+        self._check_handle()
         ret = nc_ndp_ctrl_get_mtu(&self._ctrl, &imin, &imax)
         if ret:
             raise ValueError()
@@ -375,27 +445,33 @@ cdef class DmaCtrlNdp:
         self._ctrl.shp = 0
         self._ctrl.sdp = 0
 
+        self._check_handle()
         ret = nc_ndp_ctrl_start(&self._ctrl, &sp)
         if ret:
             PyErr_SetFromErrno(OSError)
 
     def flush_sp(self):
+        self._check_handle()
         nc_ndp_ctrl_sp_flush(&self._ctrl)
 
     def flush_sdp(self):
+        self._check_handle()
         nc_ndp_ctrl_sdp_flush(&self._ctrl)
 
     def stop(self, force = False):
+        self._check_handle()
         if force:
             nc_ndp_ctrl_stop_force(&self._ctrl)
         else:
             nc_ndp_ctrl_stop(&self._ctrl)
 
     def update_hdp(self):
+        self._check_handle()
         nc_ndp_ctrl_hdp_update(&self._ctrl)
         return self._ctrl.hdp
 
     def update_hhp(self):
+        self._check_handle()
         if self._ctrl.dir != 0:
             raise NotImplementedError()
         nc_ndp_ctrl_hhp_update(&self._ctrl)
@@ -404,6 +480,7 @@ cdef class DmaCtrlNdp:
     def read_stats(self):
         cdef nc_rxqueue_counters rxc
         cdef nc_txqueue_counters txc
+        self._check_handle()
         ret = {}
         if self._ctrl.dir == 0:
             nc_rxqueue_read_counters(<nc_rxqueue*> self._ctrl_queue, &rxc)
@@ -435,11 +512,14 @@ cdef class Transceiver:
 
         self._nfb = nfb
         self._handle = nfb._handle
+        self._handle.check_handle()
         status = nfb.fdt_get_phandle(node.get_property('status-reg').value)
         fdt_offset = self._nfb._fdt_path_offset(status)
         self._comp_status = nfb_comp_open(self._handle._dev, fdt_offset)
         if self._comp_status is NULL:
             PyErr_SetFromErrno(OSError)
+
+        self._handle.add_close_cb(self._close_handle)
 
         ctrl = nfb.fdt_get_phandle(node.get_property('control').value)
         node_ctrl_param = node.get_subnode('control-param')
@@ -451,13 +531,20 @@ cdef class Transceiver:
             self.i2c = I2c(nfb, ctrl, i2c_addr)
 
     def __dealloc__(self):
+        self._close_handle()
+
+    def _close_handle(self):
         if self._comp_status is not NULL:
             nfb_comp_close(self._comp_status)
+            self._comp_status = NULL
 
+    def _check_handle(self):
+        if self._comp_status is NULL:
+            raise ReferenceError
 
     def is_present(self) -> bool:
+        self._check_handle()
         return nc_transceiver_statusreg_is_present(self._comp_status) != 0
-
 
     # FIXME: only valid for specific QSFP+
     @property
