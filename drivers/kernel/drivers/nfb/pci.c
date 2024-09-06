@@ -202,7 +202,9 @@ static void nfb_pci_fdt_update_endpoints(struct nfb_device *nfb)
 			node = fdt_add_subnode(fdt, node, node_name);
 		}
 
-		if (pci_device->is_probed_as_main || pci_device->is_probed_as_sub) {
+		/* In this moment, the device is prepared to provide all info,
+		   even the attached but not yet probed subdevice. */
+		if (pci_device->is_probed_as_main || (pci_device->is_probed_as_sub | 1)) {
 			fdt_setprop_string(fdt, node, "pci-slot", pci_name(pci_device->pci));
 			fdt_setprop_u32(fdt, node, "numa-node", dev_to_node(&pci_device->pci->dev));
 
