@@ -28,6 +28,8 @@ extern "C" {
 #define FTILE_PCS_BASE_200G	0x4000
 #define FTILE_PCS_BASE_400G	0x5000
 
+#define ETILE_RSFEC_PAGE 9
+
 /* MDIO component lock features */
 #define DRP_IFC  (1 << 0)
 #define ATTR_IFC (1 << 2)
@@ -58,6 +60,7 @@ struct nc_mdio {
 	int (*mdio_write)(struct nfb_comp *dev, int prtad, int devad, uint16_t addr, uint16_t val);
 	int pcspma_is_e_tile;
 	int pcspma_is_f_tile;
+	int rsfec_supported;
 	int pma_lanes;                   /* Number of PMA lanes */
 	enum mdio_pma_enc link_encoding; /* Line modulation */
 	enum mdio_fec_mode fec_mode;     /* Firecode/Clause91/Clause134/ETC */
@@ -278,13 +281,16 @@ static inline void nc_mdio_ftile_config(struct nc_mdio *mdio)
 		case 6: mdio->speed = 400; break;
 		default: mdio->speed = 0; break;
 	}
+	mdio->rsfec_supported = (((mdio->speed == 10) || (mdio->speed == 40)) ?  0 : 1);
 }
-
-static inline uint32_t nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr);
 
 /* Get E-tile Ethernet configuration and fill corresponding fields in the nc_mdio structure */
 static inline void nc_mdio_etile_config(struct nc_mdio *mdio)
 {
+	/* Get FEC mode: The E-Tile supports RS-FEC according clause 91 only. The FEC is active */
+	/* when bit 0 of the rsfec_top_rx_cfg register (0x14) is set */
+	#define get_fec_mode	((nc_mdio_dmap_drp_read(comp, 0, ETILE_RSFEC_PAGE, 0x14) & 0x1) ? MDIO_FEC_CL91 : MDIO_FEC_NONE)
+
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
 	uint32_t val;
 
@@ -295,25 +301,29 @@ static inline void nc_mdio_etile_config(struct nc_mdio *mdio)
 	if (val <= 0x1f) { /* 10GBASE */
 		mdio->pma_lanes = 1;
 		mdio->speed = 10;
+		mdio->rsfec_supported = 0;
+		mdio->fec_mode = MDIO_FEC_NONE;
 	} else if (val <= 0x26) { /* 40GBASE */
 		mdio->pma_lanes = 4;
 		mdio->speed = 40;
+		mdio->rsfec_supported = 0;
+		mdio->fec_mode = MDIO_FEC_NONE;
 	} else if (val <= 0x2f) { /* 100GBASE */
 		mdio->pma_lanes = 4;
 		mdio->speed = 100;
+		mdio->rsfec_supported = 1;
+		mdio->fec_mode = get_fec_mode;
 	} else if (val <= 0x3a) { /* 25GBASE */
 		mdio->pma_lanes = 1;
 		mdio->speed = 25;
+		mdio->rsfec_supported = 1;
+		mdio->fec_mode = get_fec_mode;
 	} else { /* other modes are not supported on E-Tile now */
 		mdio->pma_lanes = 0;
 		mdio->speed = 0;
+		mdio->rsfec_supported = 0;
+		mdio->fec_mode = MDIO_FEC_NONE;
 	}
-	/* Get FEC mode */
-	/* The E-Tile supports RS-FEC according clause 91 only. The FEC is active */
-	/* when bit 0 of the rsfec_top_rx_cfg register (0x14) is set */
-	val = nc_mdio_etile_rsfec_read(comp, 0, 0x14);
-	mdio->fec_mode = ((val & 0x1) ? MDIO_FEC_CL91 : MDIO_FEC_NONE);
-
 }
 
 static inline struct nc_mdio *nc_mdio_open_no_init(const struct nfb_device *dev, int fdt_offset, int fdt_offset_ctrlparam)
@@ -719,7 +729,6 @@ static inline void nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int pr
 
 /* ~~~~[ Intel E-Tile  ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#define ETILE_RSFEC_PAGE 9
 /* Adaptation modes */
 #define ETILE_ADAPT_MODE_INITIAL	0x1
 #define ETILE_ADAPT_MODE_ONESHOT	0x2
@@ -901,7 +910,7 @@ static inline uint16_t nc_mdio_fixup_etile_pcs_read(struct nc_mdio *mdio, int pr
 		return nc_mdio_dmap_drp_read(comp, prtad, 0, etile_reg);
 	}
 	/* Register not found in tables */
-	if (devad == 1) { /* PMA & RSFEC registers */
+	if ((devad == 1) && (mdio->rsfec_supported)) { /* PMA & RSFEC registers */
 		switch (addr) {
 		case 200: return _get_etile_r1200(comp, prtad);
 		case 201: return _get_etile_r1201(comp, prtad);
