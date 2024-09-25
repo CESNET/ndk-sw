@@ -3,7 +3,7 @@ ARG OSNAME=centos
 FROM $OSNAME:$OSRELEASEVER as default
 
 RUN /usr/sbin/groupadd -f -g 991 jenkins
-RUN /usr/sbin/useradd jenkins -u 1000 -g 991
+RUN /usr/sbin/useradd jenkins -u 1001 -g 991
 RUN echo "jenkins ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
 
 RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
