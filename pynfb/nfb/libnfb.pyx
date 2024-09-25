@@ -50,7 +50,7 @@ cdef class NfbDeviceHandle:
             PyErr_SetFromErrno(OSError)
         self._close_cbs = []
 
-    def __dealloc__(self):
+    def __del__(self):
         self.close_handle()
 
     def close_handle(self):

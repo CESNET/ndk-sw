@@ -28,7 +28,7 @@ cdef class RxMac:
 
         self._handle.add_close_cb(self._close_handle)
 
-    def __dealloc__(self):
+    def __del__(self):
         self._close_handle()
 
     def _close_handle(self):
@@ -144,7 +144,7 @@ cdef class TxMac:
 
         self._handle.add_close_cb(self._close_handle)
 
-    def __dealloc__(self):
+    def __del__(self):
         self._close_handle()
 
     def _close_handle(self):
@@ -231,7 +231,7 @@ cdef class Mdio:
 
         self._handle.add_close_cb(self._close_handle)
 
-    def __dealloc__(self):
+    def __del__(self):
         self._close_handle()
 
     def _close_handle(self):
@@ -271,7 +271,7 @@ cdef class I2c:
 
         self._handle.add_close_cb(self._close_handle)
 
-    def __dealloc__(self):
+    def __del__(self):
         self._close_handle()
 
     def _close_handle(self):
@@ -340,7 +340,7 @@ cdef class DmaCtrlNdp:
 
         self._handle.add_close_cb(self._close_handle)
 
-    def __dealloc__(self):
+    def __del__(self):
         self._close_handle()
 
     def _close_handle(self):
@@ -530,7 +530,7 @@ cdef class Transceiver:
             i2c_addr = prop.value if prop else 0xA0
             self.i2c = I2c(nfb, ctrl, i2c_addr)
 
-    def __dealloc__(self):
+    def __del__(self):
         self._close_handle()
 
     def _close_handle(self):
