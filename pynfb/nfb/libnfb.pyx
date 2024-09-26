@@ -48,10 +48,25 @@ cdef class NfbDeviceHandle:
         self._dev = nfb_open(path.encode())
         if self._dev is NULL:
             PyErr_SetFromErrno(OSError)
+        self._close_cbs = []
 
-    def __dealloc__(self):
+    def __del__(self):
+        self.close_handle()
+
+    def close_handle(self):
         if self._dev is not NULL:
+            for cb in reversed(self._close_cbs):
+                cb()
+            self._close_cbs.clear()
             nfb_close(self._dev)
+            self._dev = NULL
+
+    def check_handle(self):
+        if self._dev is NULL:
+            raise ReferenceError
+
+    def add_close_cb(self, cb):
+        self._close_cbs.append(cb)
 
 
 cdef class Nfb:
@@ -87,6 +102,16 @@ cdef class Nfb:
     def __dealloc__(self):
         pass
 
+    def __enter__(self):
+        self._handle.check_handle()
+        return self
+
+    def __exit__(self, *exc):
+        self._close_handle()
+
+    def _close_handle(self):
+        self._handle.close_handle()
+
     def comp_open(self, comp: Union[str, fdt.items.Node], index: cython.int = 0) -> Comp:
         """
         Create component handle from a component instance inside the NFB
@@ -97,6 +122,8 @@ cdef class Nfb:
         """
 
         cdef int fdt_offset
+
+        self._handle.check_handle()
         if isinstance(comp, str):
             fdt_offset = nfb_comp_find(self._handle._dev, comp.encode(), index)
         elif isinstance(comp, fdt.items.Node):
@@ -143,6 +170,7 @@ cdef class Nfb:
         cdef int32_t int32 = 0
         assert units == "celsius"
 
+        self._handle.check_handle()
         ret = libnetcope.nc_adc_sensors_get_temp(self._handle._dev, &int32)
         if ret < 0:
             raise IOError
@@ -159,13 +187,23 @@ cdef class Comp:
 
     def __cinit__(self, Nfb nfb_dev, int fdt_offset):
         self._nfb_dev = nfb_dev._handle
+        self._nfb_dev.check_handle()
         self._comp = nfb_comp_open(self._nfb_dev._dev, fdt_offset)
         if self._comp is NULL:
             PyErr_SetFromErrno(OSError)
+        self._nfb_dev.add_close_cb(self._close_handle)
 
     def __dealloc__(self):
+        self._close_handle()
+
+    def _close_handle(self):
         if self._comp is not NULL:
             nfb_comp_close(self._comp)
+            self._comp = NULL
+
+    def _check_handle(self):
+        if self._comp is NULL:
+            raise ReferenceError
 
     def read(self, addr: int, count: int):
         """
@@ -176,7 +214,10 @@ cdef class Comp:
         """
 
         cdef unsigned char *b = <unsigned char *> malloc(count)
-        cdef ret = nfb_comp_read(self._comp, b, count, addr)
+        cdef ssize_t ret
+        self._check_handle()
+
+        ret = nfb_comp_read(self._comp, b, count, addr)
         assert ret == count
         return <bytes>b[:count]
 
@@ -188,7 +229,10 @@ cdef class Comp:
         :param data: Data bytes to be written
         """
         cdef const char* b = data
-        cdef ret = nfb_comp_write(self._comp, b, len(data), addr)
+        cdef ssize_t ret
+        self._check_handle()
+
+        ret = nfb_comp_write(self._comp, b, len(data), addr)
         assert ret == len(data)
         return None
 
@@ -496,20 +540,31 @@ cdef class NdpQueue:
         self._node = node
 
     def __dealloc__(self):
+        self._close_handle()
+
+    def _close_handle(self):
         if self._q is not NULL:
             if self._dir:
                 ndp_close_tx_queue(self._q)
             else:
                 ndp_close_rx_queue(self._q)
+            self._q = NULL
+
+    def _check_handle(self):
+        if self._q is NULL:
+            raise ReferenceError
 
     cdef _check_running(self):
-        if not self._running:
+        if self._q is NULL:
+            self._handle.check_handle()
+            p1, p2 = self._handle._dev, self._index
+            self._q = ndp_open_tx_queue(p1, p2) if self._dir else ndp_open_rx_queue(p1, p2)
             if self._q is NULL:
-                p1, p2 = self._handle._dev, self._index
-                self._q = ndp_open_tx_queue(p1, p2) if self._dir else ndp_open_rx_queue(p1, p2)
-                if self._q is NULL:
-                    PyErr_SetFromErrno(OSError)
+                PyErr_SetFromErrno(OSError)
 
+            self._handle.add_close_cb(self._close_handle)
+
+        if not self._running:
             assert ndp_queue_start(self._q) == 0
             self._running = True
 
@@ -520,6 +575,7 @@ cdef class NdpQueue:
     def stop(self):
         """ Stop the queue"""
         if self._running:
+            self._check_handle()
             assert ndp_queue_stop(self._q) == 0
             self._running = False
 
@@ -547,10 +603,21 @@ cdef class NdpQueueRx(NdpQueue):
         self._dir = 0
         NdpQueue.__init__(self, nfb, node, index)
         self._nc_queue = libnetcope.nc_rxqueue_open(self._handle._dev, nfb._fdt_path_offset(node))
+        self._handle.add_close_cb(self._close_handle)
 
     def __dealloc__(self):
+        self._close_handle()
+
+    def _close_handle(self):
         if self._nc_queue is not NULL:
             libnetcope.nc_rxqueue_close(self._nc_queue)
+            self._nc_queue = NULL
+        super()._close_handle()
+
+    def _check_handle(self):
+        super()._check_handle()
+        if self._nc_queue is NULL:
+            raise ReferenceError
 
     def _check_nc_queue(self):
         if not self.is_accessible():
@@ -677,10 +744,21 @@ cdef class NdpQueueTx(NdpQueue):
         self._dir = 1
         NdpQueue.__init__(self, nfb, node, index)
         self._nc_queue = libnetcope.nc_txqueue_open(self._handle._dev, nfb._fdt_path_offset(node))
+        self._handle.add_close_cb(self._close_handle)
 
     def __dealloc__(self):
+        self._close_handle()
+
+    def _close_handle(self):
         if self._nc_queue is not NULL:
             libnetcope.nc_txqueue_close(self._nc_queue)
+            self._nc_queue = NULL
+        super()._close_handle()
+
+    def _check_handle(self):
+        super()._check_handle()
+        if self._nc_queue is NULL:
+            raise ReferenceError
 
     def _check_nc_queue(self):
         if self._nc_queue is NULL:
@@ -785,4 +863,5 @@ cdef class NdpQueueTx(NdpQueue):
 
     def flush(self):
         """Flush the prepared packet/messages"""
+        self._check_running()
         ndp_tx_burst_flush(self._q)
