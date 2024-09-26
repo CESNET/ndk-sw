@@ -1,3 +1,10 @@
+* Thu Sep 26 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.4-1
+- [FEATURE] pynfb: introduce context manager for device, which ensures closing
+- [BUGFIX] ndp-tool: correctly check limits in multithread mode
+- [BUGFIX] tools: use LIBNFB_DEFAULT_DEV in all tools
+- [BUGFIX] drivers: fill info for all endpoints, including not attached
+- [BUGFIX] libnetcope: disable RSFEC accesses on PMA without RSFEC support
+
 * Thu Aug 29 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.3-1
 - [FEATURE] nfb-meter: add offline mode
 - [BUGFIX] nfb-meter: update to new pynfb names
