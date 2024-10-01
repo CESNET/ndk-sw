@@ -228,6 +228,17 @@ const struct nfb_device *nfb_comp_get_device(struct nfb_comp *component);
 int nfb_comp_lock(const struct nfb_comp *component, uint32_t features);
 
 /*!
+ * \brief Try to lock a component feature, return at the latest after defined time value
+ * \param[in] component  Component handle
+ * \param[in] features   Bitmask of user-defined features to lock
+ * \param[in] timeout    Maximum time to wait in milliseconds, -1 for eternity
+ * \return
+ *   - 0 on successful lock (!)
+ *   - Negative error code otherwise
+ */
+int nfb_comp_trylock(const struct nfb_comp *component, uint32_t features, int timeout);
+
+/*!
  * \brief Unlock a component feature
  * \param[in] component  Component handle
  * \param[in] features   Bitmask of user-defined features to unlock
