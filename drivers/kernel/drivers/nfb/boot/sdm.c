@@ -299,7 +299,7 @@ static int sdm_send_header(struct sdm *sdm, const uint32_t cmd_code, const uint3
  */
 static int sdm_try_lock(struct nfb_comp *comp)
 {
-	if (!nfb_comp_lock(comp, SDM_COMP_LOCK)) {
+	if (nfb_comp_trylock(comp, SDM_COMP_LOCK, 100)) {
 		return -EAGAIN;
 	}
 	return 0;
