@@ -108,7 +108,10 @@ static inline struct nfb_comp *nc_mdio_ctrl_open_ext(const struct nfb_device *de
 static inline int nc_mdio_ctrl_read(struct nfb_comp *comp, int prtad, int devad, uint16_t addr)
 {
 	int data;
-	nfb_comp_lock(comp, MDIO_COMP_LOCK);
+
+	if (!nfb_comp_lock(comp, MDIO_COMP_LOCK))
+		return -EAGAIN;
+
 	_mdio_ctrl_send(comp, MDIO_CTRL_EDF, MDIO_CTRL_OP_ADDR, prtad, devad, addr);
 	_mdio_ctrl_wait(comp);
 	_mdio_ctrl_send(comp, MDIO_CTRL_EDF, MDIO_CTRL_OP_EDF_READ, prtad, devad, 0);
@@ -121,7 +124,9 @@ static inline int nc_mdio_ctrl_read(struct nfb_comp *comp, int prtad, int devad,
 
 static inline int nc_mdio_ctrl_write(struct nfb_comp *comp, int prtad, int devad, uint16_t addr, uint16_t data)
 {
-	nfb_comp_lock(comp, MDIO_COMP_LOCK);
+	if (!nfb_comp_lock(comp, MDIO_COMP_LOCK))
+		return -EAGAIN;
+
 	_mdio_ctrl_send(comp, MDIO_CTRL_EDF, MDIO_CTRL_OP_ADDR, prtad, devad, addr);
 	_mdio_ctrl_wait(comp);
 	_mdio_ctrl_send(comp, MDIO_CTRL_EDF, MDIO_CTRL_OP_WRITE, prtad, devad, data);
