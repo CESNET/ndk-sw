@@ -130,24 +130,42 @@ struct nfb_device *nfb_comp_get_device(struct nfb_comp *comp)
 	return comp->nfb;
 }
 
-int nfb_comp_lock(struct nfb_comp *comp, uint32_t features)
+int nfb_comp_trylock(struct nfb_comp *comp, uint32_t features, int timeout)
 {
+	int ret;
 	int cnt = 0;
 	struct nfb_lock lock;
 
 	lock.path = comp->path;
 	lock.features = features;
 
-	while (nfb_lock_try_lock(comp->nfb, &comp->nfb->kernel_app, lock) != 0) {
-		msleep(1);
-		cnt++;
-		if (cnt > 100) {
-			dev_warn(comp->nfb->dev, "Can't lock comp %s within 100 ms\n", comp->path);
-			return 0;
+	do {
+		ret = nfb_lock_try_lock(comp->nfb, &comp->nfb->kernel_app, lock);
+		if (ret == 0) {
+			return ret;
+		} else if (ret != -EBUSY) {
+			return ret;
+		} else if (timeout == 0) {
+			return -EBUSY;
+		} else {
+			udelay(50);
 		}
-	}
+	} while (timeout * 20 > cnt++);
 
-	return 1;
+	dev_warn(comp->nfb->dev, "Can't lock comp %s within %d ms\n", comp->path, timeout);
+
+	return -ETIMEDOUT;
+}
+
+int nfb_comp_lock(struct nfb_comp *comp, uint32_t features)
+{
+	int ret;
+
+	ret = nfb_comp_trylock(comp, features, 100);
+	if (ret == 0)
+		return 1;
+
+	return 0;
 }
 
 void nfb_comp_unlock(struct nfb_comp *comp, uint32_t features)
