@@ -479,7 +479,7 @@ int nfb_base_comp_lock(const struct nfb_comp *comp, uint32_t features)
 	lock.features = features;
 
 	while ((ret = ioctl(comp->dev->fd, NFB_LOCK_IOC_TRY_LOCK, &lock)) != 0) {
-		if (ret != EBUSY)
+		if (ret == -1 && errno != EBUSY)
 			break;
 
 		usleep(50);
