@@ -1,3 +1,8 @@
+* Thu Oct 3 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.5-1
+- [FEATURE] pynfb: add lock/unlock methods to Comp
+- [FEATURE] libnfb: add nfb_comp_trylock
+- [FIX] libnfb: loop in nfb_comp_lock while lock is busy
+
 * Thu Sep 26 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.4-1
 - [FEATURE] pynfb: introduce context manager for device, which ensures closing
 - [BUGFIX] ndp-tool: correctly check limits in multithread mode
