@@ -74,12 +74,14 @@
 <li class="toctree-l3"><a class="reference internal" href="#libnfb.Comp"><code class="docutils literal notranslate"><span class="pre">Comp</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.clr_bit"><code class="docutils literal notranslate"><span class="pre">Comp.clr_bit()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.get_bit"><code class="docutils literal notranslate"><span class="pre">Comp.get_bit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.lock"><code class="docutils literal notranslate"><span class="pre">Comp.lock()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.read"><code class="docutils literal notranslate"><span class="pre">Comp.read()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.read16"><code class="docutils literal notranslate"><span class="pre">Comp.read16()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.read32"><code class="docutils literal notranslate"><span class="pre">Comp.read32()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.read64"><code class="docutils literal notranslate"><span class="pre">Comp.read64()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.read8"><code class="docutils literal notranslate"><span class="pre">Comp.read8()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.set_bit"><code class="docutils literal notranslate"><span class="pre">Comp.set_bit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.unlock"><code class="docutils literal notranslate"><span class="pre">Comp.unlock()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.wait_for_bit"><code class="docutils literal notranslate"><span class="pre">Comp.wait_for_bit()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.write"><code class="docutils literal notranslate"><span class="pre">Comp.write()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#libnfb.Comp.write16"><code class="docutils literal notranslate"><span class="pre">Comp.write16()</span></code></a></li>
@@ -319,6 +321,11 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="libnfb.Comp.lock">
+<span class="sig-name descname"><span class="pre">lock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.Comp.lock" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="libnfb.Comp.read">
 <span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.Comp.read" title="Link to this definition"></a></dt>
 <dd><p>Read data from component register</p>
@@ -377,6 +384,11 @@
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="libnfb.Comp.unlock">
+<span class="sig-name descname"><span class="pre">unlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#libnfb.Comp.unlock" title="Link to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="libnfb.Comp.wait_for_bit">
