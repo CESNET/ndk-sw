@@ -8,7 +8,7 @@ from typing import Union, Optional, List, Tuple
 from libc.stdlib cimport malloc
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t
 from libcpp cimport bool
-cimport libc.errno
+from libc.errno cimport EBUSY, ETIMEDOUT, EAGAIN
 
 from cpython.ref cimport PyObject
 from cpython.exc cimport PyErr_SetFromErrno
@@ -172,9 +172,13 @@ cdef class Nfb:
         assert units == "celsius"
 
         self._handle.check_handle()
-        ret = libnetcope.nc_adc_sensors_get_temp(self._handle._dev, &int32)
+
+        ret = -EAGAIN
+        while ret == -EAGAIN:
+            ret = libnetcope.nc_adc_sensors_get_temp(self._handle._dev, &int32)
         if ret < 0:
             raise IOError
+
         return int(int32) / 1000
 
 
@@ -352,9 +356,9 @@ cdef class Comp:
         if timeout is None:
             timeout = -1
         ret = nfb_comp_trylock(self._comp, features, timeout)
-        if ret == -libc.errno.ETIMEDOUT:
+        if ret == -ETIMEDOUT:
             raise TimeoutError()
-        elif ret == -libc.errno.EBUSY:
+        elif ret == -EBUSY:
             raise BlockingIOError()
         elif ret != 0:
             raise OSError()

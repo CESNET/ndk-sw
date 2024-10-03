@@ -15,5 +15,11 @@
 
 int nfb_sensor_get(struct nfb_device *dev, struct nfb_boot_ioc_sensor *s)
 {
-	return ioctl(dev->fd, NFB_BOOT_IOC_SENSOR_READ, s);
+	int ret;
+
+	ret = ioctl(dev->fd, NFB_BOOT_IOC_SENSOR_READ, s);
+	if (ret == -1)
+		return -errno;
+
+	return ret;
 }
