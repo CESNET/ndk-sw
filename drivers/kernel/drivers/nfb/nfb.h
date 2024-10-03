@@ -169,6 +169,7 @@ struct nfb_device *nfb_comp_get_device(struct nfb_comp *comp);
 #define nfb_user_to_comp(ptr) (((struct nfb_comp *) ptr) - 1)
 #define nfb_comp_to_user(ptr) (((struct nfb_comp *) ptr) + 1)
 
+int nfb_comp_trylock(struct nfb_comp *comp, uint32_t features, int timeout);
 int nfb_comp_lock(struct nfb_comp *comp, uint32_t features);
 void nfb_comp_unlock(struct nfb_comp *comp, uint32_t features);
 

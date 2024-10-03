@@ -118,7 +118,7 @@ static inline int nc_txmac_read_status(struct nc_txmac *mac, struct nc_txmac_sta
 	uint32_t reg;
 
 	if (!nfb_comp_lock(comp, TXMAC_COMP_LOCK))
-		return -1;
+		return -EAGAIN;
 
 	nfb_comp_write32(comp, TXMAC_REG_CONTROL, TXMAC_CMD_STROBE);
 
@@ -145,7 +145,7 @@ static inline int nc_txmac_read_counters(struct nc_txmac *mac, struct nc_txmac_c
 	struct nfb_comp *comp = nfb_user_to_comp(mac);
 
 	if (!nfb_comp_lock(comp, TXMAC_COMP_LOCK))
-		return -1;
+		return -EAGAIN;
 
 	nfb_comp_write32(comp, TXMAC_REG_CONTROL, TXMAC_CMD_STROBE);
 

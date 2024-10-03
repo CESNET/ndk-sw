@@ -34,6 +34,11 @@ cdef extern from "<nfb/nfb.h>":
     ssize_t nfb_comp_write(const nfb_comp *comp, const void *buf, size_t nbyte, off_t offset)
     ssize_t nfb_comp_read(const nfb_comp *comp, void *buf, size_t nbyte, off_t offset)
 
+    int nfb_comp_trylock(const nfb_comp *comp, uint32_t features, int timeout)
+    int nfb_comp_lock(const nfb_comp *comp, uint32_t features)
+    void nfb_comp_unlock(const nfb_comp *comp, uint32_t features)
+
+
 cdef extern from "<nfb/ndp.h>":
     cdef struct nfb_device:
         pass

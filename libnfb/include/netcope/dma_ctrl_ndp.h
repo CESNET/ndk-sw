@@ -20,6 +20,8 @@
 #define DMA_TYPE_MEDUSA  2
 #define DMA_TYPE_CALYPTE 3
 
+#define COMP_NC_DMA_CTRL_LOCK 1
+
 // ---------------- NDP/Calypte common registers -------
 #define NDP_CTRL_REG_CONTROL            0x00
         #define NDP_CTRL_REG_CONTROL_STOP       0x0
@@ -328,8 +330,11 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 	if (ctrl->dir == 0 && (sp->nb_hdr & (sp->nb_hdr - 1)) != 0)
 		return -EINVAL;
 
-	if (!nfb_comp_lock(ctrl->comp, 1)) {
-		ret = -EEXIST;
+
+	ret = nfb_comp_trylock(ctrl->comp, COMP_NC_DMA_CTRL_LOCK, 0);
+	if (ret != 0) {
+		if (ret == -EBUSY)
+			ret = -EEXIST;
 		goto err_comp_lock;
 	}
 
@@ -397,7 +402,7 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 	return 0;
 
 err_comp_running:
-	nfb_comp_unlock(ctrl->comp, 1);
+	nfb_comp_unlock(ctrl->comp, COMP_NC_DMA_CTRL_LOCK);
 err_comp_lock:
 	return ret;
 }
@@ -448,7 +453,7 @@ static inline int _nc_ndp_ctrl_stop(struct nc_ndp_ctrl *ctrl, int force)
 
 	/* TODO: read hdp/hhp from register and wait for same value in update buffer */
 
-	nfb_comp_unlock(ctrl->comp, 1);
+	nfb_comp_unlock(ctrl->comp, COMP_NC_DMA_CTRL_LOCK);
 	return ret;
 
 err_busy:

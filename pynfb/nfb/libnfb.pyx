@@ -8,6 +8,7 @@ from typing import Union, Optional, List, Tuple
 from libc.stdlib cimport malloc
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t
 from libcpp cimport bool
+cimport libc.errno
 
 from cpython.ref cimport PyObject
 from cpython.exc cimport PyErr_SetFromErrno
@@ -346,6 +347,20 @@ cdef class Comp:
             else:
                 time.sleep(delay)
         return True
+
+    def lock(self, features:int, timeout: Optional[int]=None):
+        if timeout is None:
+            timeout = -1
+        ret = nfb_comp_trylock(self._comp, features, timeout)
+        if ret == -libc.errno.ETIMEDOUT:
+            raise TimeoutError()
+        elif ret == -libc.errno.EBUSY:
+            raise BlockingIOError()
+        elif ret != 0:
+            raise OSError()
+
+    def unlock(self, features: int):
+        nfb_comp_unlock(self._comp, features)
 
 
 cdef class AbstractBaseComp:

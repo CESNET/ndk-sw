@@ -714,7 +714,7 @@ static inline uint16_t nc_mdio_fixup_ftile_pcs_read(struct nc_mdio *mdio, int pr
 	return mdio->mdio_read(comp, prtad, devad, addr); /* Unknown address: try to read the MGMT */
 }
 
-static inline void nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
+static inline int nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
 {
 	int i;
 	uint16_t data = enable ? 0x6 : 0x0; // enable or disable loopback?
@@ -725,6 +725,7 @@ static inline void nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int pr
 		nc_mdio_ftile_fgt_attribute_write(mdio, prtad, data, i, 0x40);
 	}
 	nc_mdio_ftile_reset(mdio, prtad, 1, 0); // deassert RX reset
+	return 0;
 }
 
 /* ~~~~[ Intel E-Tile  ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -945,7 +946,7 @@ static inline uint16_t nc_mdio_fixup_etile_pcs_read(struct nc_mdio *mdio, int pr
 	return mdio->mdio_read(comp, prtad, devad, addr); /* Unknown address: try to read the MGMT */
 }
 
-static inline void nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int prtad, uint16_t lane, uint16_t code_addr, uint16_t code_val)
+static inline int nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int prtad, uint16_t lane, uint16_t code_addr, uint16_t code_val)
 {
 	uint32_t page = lane + 1; // page number corresponds to lane number + 1
 
@@ -970,12 +971,12 @@ static inline void nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int p
 
 	uint32_t ret;
 	int retries = 0;
-	int locked = 0;
 	int sent = 0;
+
 	/* Lock the attribute access interface */
-	while (!locked) {
-		locked = nfb_comp_lock(comp, ATTR_IFC);
-	}
+	if (!nfb_comp_lock(comp, ATTR_IFC))
+		return -EAGAIN;
+
 	/* Clear PMA attribute code request sent flag */
 	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
 	while (!sent) {
@@ -998,6 +999,7 @@ static inline void nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int p
 	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
 
 	nfb_comp_unlock(comp, ATTR_IFC);
+	return 0;
 }
 
 
@@ -1158,18 +1160,18 @@ static inline void nc_mdio_etile_areset(struct nfb_comp *comp, int prtad, int la
 	} while (((ret & 0x01) != 0x0) && (++retries < 100000));
 }
 
-static inline void nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
+static inline int nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
 {
 	/* See https://www.intel.com/content/www/us/en/docs/programmable/683468/23-2/ethernet-adaptation-flow-with-non-external.html */
 	int i;
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
-	int locked = 0;
 	int retries = 0;
 	uint32_t ret;
 
-	while (!locked) {
-		locked = nfb_comp_lock(comp, PCS_IFC); /* Lock access to PCS registers (reset active) */
-	}
+	/* Lock access to PCS registers (reset active) */
+	if (!nfb_comp_lock(comp, ATTR_IFC))
+		return -EAGAIN;
+
 	/* 1. Assert RX/TX reset ports of the EHIP */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); // soft rx rst + soft tx rst
 	/* 2 + 3. Trigger PMA analog reset and reload PMA settings */
@@ -1216,6 +1218,7 @@ static inline void nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int pr
 	/* Apply the mode (turn the RS-FEC on or off) */
 	nc_mdio_fixup_etile_set_mode(mdio, prtad, ret);
 	nfb_comp_unlock(comp, PCS_IFC);
+	return 0;
 }
 
 static inline void nc_mdio_close(struct nc_mdio *m)
@@ -1228,7 +1231,6 @@ static inline int nc_mdio_read(struct nc_mdio *mdio, int prtad, int devad, uint1
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
 	uint16_t (*nc_mdio_fixup_rsfec_read)(struct nc_mdio *mdio, int devad, int prtad, uint16_t reg) = NULL;
 	uint16_t val;
-	int locked = 0;
 
 	/* Select correct set of FIXUP functions */
 	if (mdio->pcspma_is_e_tile) {
@@ -1255,10 +1257,10 @@ static inline int nc_mdio_read(struct nc_mdio *mdio, int prtad, int devad, uint1
 				(addr == 33)  ||
 				(addr == 44)  ||
 				(addr == 45)) {
-			while (!locked) {
-				locked = nfb_comp_lock(comp, (PCS_IFC | ATTR_IFC) ); /* Lock access to PCS regs */
-			}
-			val = nc_mdio_fixup_rsfec_read(mdio, prtad,  devad, addr);
+			/* Lock access to PCS regs */
+			if (!nfb_comp_lock(comp, PCS_IFC | ATTR_IFC))
+				return -EAGAIN;
+			val = nc_mdio_fixup_rsfec_read(mdio, prtad, devad, addr);
 			nfb_comp_unlock(comp, (PCS_IFC | ATTR_IFC)); /* Unlock access to PCS regs */
 			return val;
 		}
@@ -1271,7 +1273,7 @@ static inline int nc_mdio_write(struct nc_mdio *mdio, int prtad, int devad, uint
 {
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
 	void (*nc_mdio_fixup_set_mode)(struct nc_mdio *mdio, int prtad, uint16_t val) = NULL;
-	void (*nc_mdio_fixup_set_loopback)(struct nc_mdio *mdio, int prtad, int enable) = NULL;
+	int (*nc_mdio_fixup_set_loopback)(struct nc_mdio *mdio, int prtad, int enable) = NULL;
 
 	/* Select correct set of FIXUP functions */
 	if (mdio->pcspma_is_e_tile) {

@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 #include <dlfcn.h>
 
@@ -462,12 +463,50 @@ void nfb_comp_close(struct nfb_comp *comp)
 	free(comp);
 }
 
+int nfb_comp_trylock(const struct nfb_comp *comp, uint32_t features, int timeout)
+{
+	struct timespec start, end;
+	int64_t diff;
+	int ret = 0;
+
+	if (!comp)
+		return -EINVAL;
+
+	if (timeout > 0)
+		clock_gettime(CLOCK_MONOTONIC, &start);
+
+	do {
+		ret = comp->dev->ops.comp_lock(comp, features);
+		if (ret == 1) {
+			/* Successful lock: return OK */
+			return 0;
+		} else if (ret != 0 && ret != -EBUSY) {
+			/* Unsuccessful lock with specific error value: terminate function with error code */
+			return ret;
+		} else if (timeout == 0) {
+			/* No timeout: return immediately with BUSY error value */
+			return -EBUSY;
+		} else {
+			/* Generic unsuccessful lock: try lock again until timeout */
+			usleep(50);
+			if (timeout > 0) {
+				clock_gettime(CLOCK_MONOTONIC, &end);
+				diff = 1000000000L * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+			}
+		}
+	} while (timeout == -1 || (timeout > 0 && diff < timeout * 1000000L));
+
+	return -ETIMEDOUT;
+}
+
 int nfb_comp_lock(const struct nfb_comp *comp, uint32_t features)
 {
-	if (!comp)
-		return -1;
+	int ret;
 
-	return comp->dev->ops.comp_lock(comp, features);
+	ret = nfb_comp_trylock(comp, features, -1);
+	if (ret == 0)
+		return 1;
+	return 0;
 }
 
 int nfb_base_comp_lock(const struct nfb_comp *comp, uint32_t features)
@@ -479,13 +518,16 @@ int nfb_base_comp_lock(const struct nfb_comp *comp, uint32_t features)
 	lock.features = features;
 
 	while ((ret = ioctl(comp->dev->fd, NFB_LOCK_IOC_TRY_LOCK, &lock)) != 0) {
-		if (ret != EBUSY)
-			break;
-
-		usleep(50);
+		if (ret == -1) {
+			if (errno == EINTR) {
+				continue;
+			} else {
+				return -errno;
+			}
+		}
 	}
 
-	return (ret == 0);
+	return 1;
 }
 
 void nfb_comp_unlock(const struct nfb_comp *comp, uint32_t features)

@@ -278,7 +278,7 @@ static inline int nc_rxmac_read_status(struct nc_rxmac *mac, struct nc_rxmac_sta
 	uint32_t reg;
 
 	if (!nfb_comp_lock(comp, RXMAC_COMP_LOCK))
-		return -1;
+		return -EAGAIN;
 
 	s->enabled          = nfb_comp_read32(comp, RXMAC_REG_ENABLE);
 	s->error_mask       = nfb_comp_read32(comp, RXMAC_REG_ERROR_MASK);
@@ -314,7 +314,7 @@ static inline int nc_rxmac_read_counters(struct nc_rxmac *mac, struct nc_rxmac_c
 	struct nfb_comp *comp = nfb_user_to_comp(mac);
 
 	if (!nfb_comp_lock(comp, RXMAC_COMP_LOCK))
-		return -1;
+		return -EAGAIN;
 
 	nfb_comp_write32(comp, RXMAC_REG_CONTROL, RXMAC_CMD_STROBE);
 
