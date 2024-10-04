@@ -946,6 +946,7 @@ static inline uint16_t nc_mdio_fixup_etile_pcs_read(struct nc_mdio *mdio, int pr
 	return mdio->mdio_read(comp, prtad, devad, addr); /* Unknown address: try to read the MGMT */
 }
 
+/* Beware, this is internal function and must be accessed with ATTR_IFC feature already locked! */
 static inline int nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int prtad, uint16_t lane, uint16_t code_addr, uint16_t code_val)
 {
 	uint32_t page = lane + 1; // page number corresponds to lane number + 1
@@ -973,10 +974,6 @@ static inline int nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int pr
 	int retries = 0;
 	int sent = 0;
 
-	/* Lock the attribute access interface */
-	if (!nfb_comp_lock(comp, ATTR_IFC))
-		return -EAGAIN;
-
 	/* Clear PMA attribute code request sent flag */
 	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
 	while (!sent) {
@@ -997,8 +994,6 @@ static inline int nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int pr
 	} while (((ret & 0x01) != 0) && (++retries < 10000));
 	/* Clear PMA attribute code request sent flag */
 	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
-
-	nfb_comp_unlock(comp, ATTR_IFC);
 	return 0;
 }
 
@@ -1115,6 +1110,7 @@ static inline void nc_mdio_fixup_etile_set_mode(struct nc_mdio *mdio, int prtad,
 
 /* Starts PMA adaptation on a lane. */
 /* Adaptation mode: 0x1 - initial; 0x2 = One shot; 0x6 = continuous (mission) */
+/* Beware, this is internal function and must be accessed with ATTR_IFC feature already locked! */
 static inline void nc_mdio_etile_adapt_start(struct nc_mdio *mdio, int prtad, int lane, uint16_t mode)
 {
 	/* Set Adaptation Effort Level to full effort */
@@ -1123,6 +1119,7 @@ static inline void nc_mdio_etile_adapt_start(struct nc_mdio *mdio, int prtad, in
 	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x000a, mode); /* Run the adaptation */
 }
 
+/* Beware, this is internal function and must be accessed with ATTR_IFC feature already locked! */
 static inline void nc_mdio_etile_adapt_wait(struct nc_mdio *mdio, int prtad, int lane, uint8_t result)
 {
 	uint16_t ret;
@@ -1266,7 +1263,6 @@ static inline int nc_mdio_read(struct nc_mdio *mdio, int prtad, int devad, uint1
 		}
 	}
 	return mdio->mdio_read(comp, prtad, devad, addr);
-
 }
 
 static inline int nc_mdio_write(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr, uint16_t val)
