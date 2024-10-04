@@ -1,3 +1,6 @@
+* Fri Oct 4 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.6-1
+- [BUGFIX] libnfb - MDIO: fix deadlock due to recursive lock
+
 * Thu Oct 3 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.5-1
 - [FEATURE] pynfb: add lock/unlock methods to Comp
 - [FEATURE] libnfb: add nfb_comp_trylock
