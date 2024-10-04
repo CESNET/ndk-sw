@@ -81,7 +81,7 @@ void usage(const char *me)
 int inject_fdt(const char *device, const char *dtb_filename, int flags)
 {
 	size_t ret;
-	char buf[512];
+	char buf[512] = {0};
 
 	FILE *f;
 	void *dtb;
@@ -141,7 +141,7 @@ int inject_fdt(const char *device, const char *dtb_filename, int flags)
 		nfb_close(dev);
 
 		/* Open the device in exclusive mode: ensure no other userspace tool is running */
-		dev = nfb_open_ext(device, O_APPEND);
+		dev = nfb_open_ext(strlen(buf) == 0 ? device : buf, O_APPEND);
 		if (!dev) {
 			warnx("Can't open the NFB device in exclusive mode!");
 			ret = errno;
