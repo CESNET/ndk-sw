@@ -56,7 +56,7 @@ struct ndp_channel_request {
  */
 struct ndp_subscription_sync {
 	void *id;
-	__u32 flags;	// timeout, interrupts?
+	__u32 flags;	// timeout, interrupts? FIXME: unaligned
 	__u64 size;
 	__u64 hwptr;
 	__u64 swptr;

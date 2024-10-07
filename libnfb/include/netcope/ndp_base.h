@@ -112,6 +112,7 @@ int ndp_base_queue_open(struct nfb_device *dev, void *dev_priv, unsigned index, 
 		ret = -ENOMEM;
 		goto err_nc_ndp_queue_alloc;
 	}
+	memset(q_nc, 0, sizeof(struct nc_ndp_queue));
 
 	q_nc->q = q;
 	q_nc->dev = dev;
