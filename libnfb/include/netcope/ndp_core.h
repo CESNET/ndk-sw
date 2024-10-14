@@ -9,6 +9,8 @@
 
 #include <netcope/ndp_core_queue.h>
 #include <netcope/ndp.h>
+#include <netcope/rxqueue.h>
+#include <netcope/txqueue.h>
 
 void *nfb_nalloc(int numa_node, size_t size)
 {
@@ -244,12 +246,24 @@ static inline int fdt_get_subnode_count(const void *fdt, const char *path)
 #ifndef __KERNEL__
 int ndp_get_rx_queue_count(const struct nfb_device *dev)
 {
-	return fdt_get_subnode_count(dev->fdt, "/drivers/ndp/rx_queues");
+	if (fdt_path_offset(dev->fdt, "/driver/ndp/") >= 0) {
+		return fdt_get_subnode_count(dev->fdt, "/drivers/ndp/rx_queues");
+	} else {
+		return
+				nfb_comp_count(dev, COMP_NETCOPE_RXQUEUE_NDP) +
+				nfb_comp_count(dev, COMP_NETCOPE_RXQUEUE_CALYPTE);
+	}
 }
 
 int ndp_get_tx_queue_count(const struct nfb_device *dev)
 {
-	return fdt_get_subnode_count(dev->fdt, "/drivers/ndp/tx_queues");
+	if (fdt_path_offset(dev->fdt, "/driver/ndp/") >= 0) {
+		return fdt_get_subnode_count(dev->fdt, "/drivers/ndp/tx_queues");
+	} else {
+		return
+				nfb_comp_count(dev, COMP_NETCOPE_TXQUEUE_NDP) +
+				nfb_comp_count(dev, COMP_NETCOPE_TXQUEUE_CALYPTE);
+	}
 }
 
 int ndp_queue_is_available(const struct nfb_device *dev, unsigned index, int dir)
