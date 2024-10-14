@@ -11,6 +11,7 @@
 #define LIBNFB_H
 
 #include <stdint.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <unistd.h>
 #include <errno.h>
@@ -273,16 +274,28 @@ ssize_t nfb_comp_read(const struct nfb_comp *comp, void *buf, size_t nbyte, off_
  */
 ssize_t nfb_comp_write(const struct nfb_comp *comp, const void *buf, size_t nbyte, off_t offset);
 
+static inline void nfb_comp_access_error(struct nfb_comp *comp, int write, size_t nbyte, off_t offset)
+{
+	fprintf(stderr, "libnfb: nfb_comp_%s%zu error accessing %s at offset: %04jx\n",
+			write ? "write" : "read", nbyte * 8, nfb_comp_path(comp), offset);
+}
+
 #define __nfb_comp_write(bits) \
 static inline void nfb_comp_write##bits(struct nfb_comp *comp, off_t offset, uint##bits##_t val) \
 { \
-	nfb_comp_write(comp, &val, sizeof(val), offset); \
+	int ret = nfb_comp_write(comp, &val, sizeof(val), offset); \
+	if (ret != sizeof(val)) { \
+		nfb_comp_access_error(comp, 1, sizeof(val), offset); \
+	} \
 }
 #define __nfb_comp_read(bits) \
 static inline uint##bits##_t nfb_comp_read##bits(struct nfb_comp *comp, off_t offset) \
 { \
 	uint##bits##_t val = 0; \
-	nfb_comp_read(comp, &val, sizeof(val), offset); \
+	int ret = nfb_comp_read(comp, &val, sizeof(val), offset); \
+	if (ret != sizeof(val)) { \
+		nfb_comp_access_error(comp, 0, sizeof(val), offset); \
+	} \
 	return val; \
 }
 
