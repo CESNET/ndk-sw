@@ -186,16 +186,28 @@ static inline ssize_t nfb_comp_write(struct nfb_comp *comp, const void *buf, siz
 	return comp->bus->write(comp->bus, buf, nbyte, comp->offset + offset);
 }
 
+static inline void nfb_comp_access_error(struct nfb_comp *comp, int write, size_t nbyte, off_t offset)
+{
+	dev_warn(comp->nfb->dev, "nfb_comp_%s%zu error accessing %s at offset: %04llx\n",
+			write ? "write" : "read", nbyte * 8, comp->path, (unsigned long long) offset);
+}
+
 #define __nfb_comp_write(bits) \
 static inline void nfb_comp_write##bits(struct nfb_comp *comp, off_t offset, uint##bits##_t val) \
 { \
-	nfb_comp_write(comp, &val, sizeof(val), offset); \
+	int ret = nfb_comp_write(comp, &val, sizeof(val), offset); \
+	if (ret != sizeof(val)) { \
+		nfb_comp_access_error(comp, 1, sizeof(val), offset); \
+	} \
 }
 #define __nfb_comp_read(bits) \
 static inline uint##bits##_t nfb_comp_read##bits(struct nfb_comp *comp, off_t offset) \
 { \
 	uint##bits##_t val = 0; \
-	nfb_comp_read(comp, &val, sizeof(val), offset); \
+	int ret = nfb_comp_read(comp, &val, sizeof(val), offset); \
+	if (ret != sizeof(val)) { \
+		nfb_comp_access_error(comp, 1, sizeof(val), offset); \
+	} \
 	return val; \
 }
 
