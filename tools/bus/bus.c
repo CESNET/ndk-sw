@@ -253,6 +253,11 @@ int main(int argc, char *argv[])
 			errx(1, "Can't open component, check for valid FDT");
 	}
 
+	/* Check boundaries with zero-sized write. */
+	if (nfb_comp_write(comp, NULL, 0, offset + count) != 0) {
+		errx(1, "Required address space is outside the component range");
+	}
+
 	if (wdata) {
 		ret = nfb_comp_write(comp, data, count, offset);
 		if (ret != count)
