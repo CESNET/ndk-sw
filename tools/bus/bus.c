@@ -22,12 +22,32 @@
 #include <nfb/nfb.h>
 #include <nfb/ndp.h>
 
-#define ARGUMENTS "d:p:c:i:n:w:alh"
+#define ARGUMENTS "d:p:c:i:n:w:ablh"
 
 #define BUFFER_SIZE 256
 
 int verbose = 0;
 enum command_t {CMD_NONE, CMD_PRINT_COMPONENTS} command;
+
+int xdigittoint(const char c)
+{
+	if (c > 'f')
+		return -1;
+	if (c >= 'a')
+		return c - 'a' + 10;
+
+	if (c > 'F')
+		return -1;
+	if (c >= 'A')
+		return c - 'A' + 10;
+
+	if (c > '9')
+		return -1;
+	if (c >= '0')
+		return c - '0';
+
+	return -1;
+}
 
 void usage(const char *me)
 {
@@ -36,12 +56,20 @@ void usage(const char *me)
 	printf("-p path         Use component with specified path in Device Tree \n");
 	printf("-c compatible   Set compatible string to use [default: \"netcope,bus,mi\"]\n");
 	printf("-i index        Set index of component specified with compatible [default: 0]\n");
-	printf("-n count        Read 'count' (dec) 32bit values [default: 1]\n");
+	printf("-n count        Read 'count' (dec) of N-byte values [default: 1]\n");
 	printf("-a              Print address\n");
+	printf("-b              Switch from dword mode (N=4) to byte mode (N=1)\n");
 	printf("-l              List of available components\n");
 	printf("-h              Show this text\n");
 	printf("addr            Hexadecimal offset in selected component\n");
 	printf("val             Write value 'val' (hex), same as -w val\n");
+	printf("\n");
+	printf("The input and output format differ depending on the selected mode:\n");
+	printf(" - dword mode (default): hexadecimal number(s); LSB corresponds to the lower adress\n");
+	printf(" - byte mode (with -b): hexadecimal char stream; leftmost byte corresponds to the lowest address\n");
+	printf("\n");
+	printf("Examples:\n");
+	printf("%s -b 2 010203  Write 3 bytes to address 2\n", me);
 }
 
 void print_component_list(const void *fdt, int node_offset)
@@ -70,6 +98,7 @@ void print_component_list(const void *fdt, int node_offset)
 
 int main(int argc, char *argv[])
 {
+	int ret;
 	int c;
 	int node;
 	const char *path = nfb_default_dev_path();
@@ -80,10 +109,17 @@ int main(int argc, char *argv[])
 	long param;
 	unsigned offset;
 	int show_address = 0;
-	int do_write = 0;
+	int use_32b = 1;
 	int index = 0;
-	int count = 1;
-	unsigned data;
+	long count = 1;
+	char xc1, xc2;
+	/* print newline each N bytes in read dword mode */
+	unsigned newline_span = 32;
+	char spacer;
+
+	const char *wdata = NULL;
+	uint8_t *data;
+	uint32_t data32;
 
 	const char *compatible_mi = "netcope,bus,mi";
 	const char *compatible = compatible_mi;
@@ -91,6 +127,9 @@ int main(int argc, char *argv[])
 
 	while ((c = getopt(argc, argv, ARGUMENTS)) != -1) {
 		switch (c) {
+		case 'b':
+			use_32b = 0;
+			break;
 		case 'd':
 			path = optarg;
 			break;
@@ -101,12 +140,12 @@ int main(int argc, char *argv[])
 			dtpath = optarg;
 			break;
 		case 'n':
-			count = strtoul(optarg, NULL, 10);
-			if (count < 0)
+			if (nc_strtol(optarg, &count))
 				errx(1, "invalid count");
 			break;
 		case 'a':
 			show_address = 1;
+			newline_span = 16;
 			break;
 		case 'i':
 			if (nc_strtol(optarg, &param) || param < 0)  {
@@ -121,8 +160,7 @@ int main(int argc, char *argv[])
 			usage(argv[0]);
 			return 0;
 		case 'w':
-			data = strtoul(optarg, NULL, 16);
-			do_write = 1;
+			wdata = optarg;
 			break;
 		default:
 			errx(1, "unknown argument -%c", optopt);
@@ -151,11 +189,51 @@ int main(int argc, char *argv[])
 	offset = strtoul(argv[0], NULL, 16);
 
 	if (argc == 2) {
-		if (do_write)
+		if (wdata)
 			errx(1, "inconsistent usage");
 
-		data = strtoul(argv[1], NULL, 16);
-		do_write = 1;
+		wdata = argv[1];
+	}
+
+	/* dword mode supports only one write */
+	if (use_32b && wdata)
+		count = 1;
+
+	if (use_32b) {
+		count *= 4;
+	} else if (wdata) {
+		count = strlen(wdata);
+		if (count & 1)
+			errx(1, "Incomplete input data (1 hex byte = 2 characters)");
+
+		/* Skip optional leading 0x */
+		if (count >= 2 && (strncmp(wdata, "0x", 2) == 0 || strncmp(wdata, "0X", 2) == 0)) {
+			wdata += 2;
+			count -= 2;
+		}
+
+		count /= 2;
+	}
+
+	data = malloc(count);
+	if (data == NULL)
+		errx(1, "Memory allocation error");
+
+	if (wdata) {
+		/* Parse input string and fill to the data buffer */
+		if (use_32b) {
+			data32 = strtoul(wdata, NULL, 16);
+			memcpy(data, &data32, count);
+		} else {
+			for (i = 0; i < count; i++) {
+				xc1 = xdigittoint(wdata[i * 2 + 0]);
+				xc2 = xdigittoint(wdata[i * 2 + 1]);
+				if (xc1 < 0 || xc2 < 0)
+					errx(1, "Non hexadecimal value at input");
+
+				data[i] = (xc1 << 4) | (xc2 << 0);
+			}
+		}
 	}
 
 	dev = nfb_open(path);
@@ -175,20 +253,40 @@ int main(int argc, char *argv[])
 			errx(1, "Can't open component, check for valid FDT");
 	}
 
-	if (do_write) {
-		nfb_comp_write32(comp, offset, data);
-	} else {
-		for (i = 0; i < count; i++) {
-			data = nfb_comp_read32(comp, offset + i * 4);
-
-			if (show_address && (i % 4) == 0)
-				printf("%08x: ", offset + i * 4);
-			/*else if (index && (i % 8) == 0)
-				printf("%02x: ", i);*/
-			printf("%08x%c", data,
-					(((i + 1) % (show_address ? 4 : 8)) == 0 || i == (count - 1) ? '\n' : ' '));
-		}
+	/* Check boundaries with zero-sized write. */
+	if (nfb_comp_write(comp, NULL, 0, offset + count) != 0) {
+		errx(1, "Required address space is outside the component range");
 	}
+
+	if (wdata) {
+		ret = nfb_comp_write(comp, data, count, offset);
+		if (ret != count)
+			errx(1, "An error while write");
+	} else {
+		ret = nfb_comp_read(comp, data, count, offset);
+		if (ret != count)
+			errx(1, "An error while read");
+
+		if (use_32b) {
+			for (i = 0; i < count; i += 4) {
+				spacer = (i % newline_span) ? ' ' : '\n';
+				if (i)
+					printf("%c", spacer);
+
+				if (show_address && spacer == '\n')
+					printf("%08x: ", offset + i * 4);
+
+				memcpy(&data32, data + i, 4);
+				printf("%08x", data32);
+			}
+		} else {
+			for (i = 0; i < count; i++) {
+				printf("%02x", data[i]);
+			}
+		}
+		printf("\n");
+	}
+	free(data);
 
 	nfb_comp_close(comp);
 	nfb_close(dev);
