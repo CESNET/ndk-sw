@@ -24,5 +24,5 @@ setup(
     ),
     py_modules=["libnfb_ext_python"],
     packages=find_namespace_packages(include=["nfb.*"]),
-    install_requires=['nfb'],
+    install_requires=['fdt'],
 )
