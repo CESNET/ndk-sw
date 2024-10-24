@@ -81,6 +81,7 @@ struct nfb_pci_device {
 	uint16_t bridge_command;
 	uint16_t bridge_devctl;
 	void * fdt;
+	const char * card_name;
 };
 
 void nfb_pci_detach_endpoint(struct nfb_device *nfb, struct pci_dev *pci);

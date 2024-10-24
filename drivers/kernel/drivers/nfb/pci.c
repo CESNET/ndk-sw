@@ -715,6 +715,8 @@ static void nfb_pci_tuneup(struct pci_dev *pdev)
 
 static int nfb_pci_is_attachable(struct nfb_device *nfb, struct pci_dev* pci)
 {
+	struct nfb_pci_device *pci_device, *main_pci_device;
+
 	if (nfb == NULL || pci == NULL)
 		return 0;
 
@@ -725,10 +727,18 @@ static int nfb_pci_is_attachable(struct nfb_device *nfb, struct pci_dev* pci)
 	if (nfb->pci->vendor != pci->vendor)
 		return 0;
 
-	if (nfb->nfb_pci_dev == NULL ||
-			nfb->nfb_pci_dev->sub_device_id == 0 ||
-			nfb->nfb_pci_dev->sub_device_id != pci->device)
-		return 0;
+	if (nfb->nfb_pci_dev != NULL && nfb->nfb_pci_dev->sub_device_id != 0) {
+		if (nfb->nfb_pci_dev->sub_device_id != pci->device)
+			return 0;
+	} else {
+		pci_device = (struct nfb_pci_device *) pci_get_drvdata(pci);
+		main_pci_device = (struct nfb_pci_device *) pci_get_drvdata(nfb->pci);
+
+		if (!main_pci_device || !main_pci_device->card_name || !pci_device || !pci_device->card_name ||
+				strcmp(main_pci_device->card_name, pci_device->card_name)) {
+			return 0;
+		}
+	}
 
 	return 1;
 }
@@ -783,6 +793,9 @@ struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
 
 struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
 {
+	int proplen;
+	int node;
+	const char *card_name;
 	void *fdt;
 	struct nfb_pci_device * pci_device;
 
@@ -811,9 +824,20 @@ struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
 			kfree(pci_device->fdt);
 			pci_device->fdt = NULL;
 		}
+
+		if (pci_device->card_name) {
+			kfree(pci_device->card_name);
+			pci_device->card_name = NULL;
+		}
+
 		fdt = nfb_pci_read_fdt(pci);
-		if (!IS_ERR(fdt))
+		if (!IS_ERR(fdt)) {
 			pci_device->fdt = fdt;
+			node = fdt_path_offset(fdt, "/firmware");
+			card_name = fdt_getprop(fdt, node, "card-name", &proplen);
+			if (proplen > 0)
+				pci_device->card_name = kstrdup(card_name, GFP_KERNEL);
+		}
 	}
 
 	return pci_device;
@@ -1260,6 +1284,10 @@ void nfb_pci_exit(void)
 		list_del(&pci_device->global_pci_device_list);
 		if (pci_device->fdt)
 			kfree(pci_device->fdt);
+
+		if (pci_device->card_name)
+			kfree(pci_device->card_name);
+
 		kfree(pci_device);
 	}
 }
