@@ -1,12 +1,10 @@
+# SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
 #
 # NFB framework configure script
 #
 # Copyright (C) 2018 CESNET
 # Author(s):
 #     Martin Spinler <spinler@cesnet.cz>
-#
-# SPDX-License-Identifier: GPL-2.0
-#
 
 # ----[ SECTION: Autoconf setup ]---- #
 AC_PREREQ([2.63])

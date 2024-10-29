@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+/* SPDX-License-Identifier: BSD-3-Clause */
 /*!
  * \file busreplay.c
  * \brief Tool to write dumped Frame Link Unaligned data into firmware

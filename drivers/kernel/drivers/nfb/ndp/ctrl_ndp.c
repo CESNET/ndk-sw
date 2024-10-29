@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+/* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0 */
 /*
  * NDP driver of the NFB platform - DMA controller - Medusa/v2 type, Calypte/v3 type
  *

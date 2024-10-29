@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+/* SPDX-License-Identifier: BSD-3-Clause */
 /*
  * TSU time synchronisation tool
  *

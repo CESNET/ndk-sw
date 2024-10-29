@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+/* SPDX-License-Identifier: BSD-3-Clause */
 /*
  * Ethernet interface configuration tool - IEEE 802.3 registers header file
  *

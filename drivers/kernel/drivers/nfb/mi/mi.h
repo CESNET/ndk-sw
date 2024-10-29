@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+/* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0 */
 /*
  * MI driver header of the NFB platform
  *

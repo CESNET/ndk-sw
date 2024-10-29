@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+/* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0 */
 /*
  * Network component library - DMA controller - NDP/v2 type, CALYPTE/v3 type
  *

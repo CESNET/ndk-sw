@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: BSD-3-Clause */
 /*
  *  MI test tool
  *
  *  Copyright (C) CESNET, 2024
  *  Author(s):
  *    Martin Spinler <spinler@cesnet.cz>
- *
- *  SPDX-License-Identifier: GPL-2.0
  */
 
 #include <sys/types.h>

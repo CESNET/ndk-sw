@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+/* SPDX-License-Identifier: BSD-3-Clause */
 /*!
  * \file busdebugctl.c
  * \brief Tool for controlling the data streaming bus debuging master and connected probes. (STREAMING_DEBUG)
