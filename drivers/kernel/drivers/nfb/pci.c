@@ -500,7 +500,6 @@ static int nfb_pci_read_enpoint_id(struct pci_dev *pci)
  */
 static void *nfb_pci_read_fdt(struct pci_dev *pci)
 {
-	void * fdt;
 	int i;
 	int ret;
 	int cap_dtb;
@@ -594,24 +593,13 @@ static void *nfb_pci_read_fdt(struct pci_dev *pci)
 		goto err_fdt_check_header;
 	}
 
-	/* Increase size for driver usage */
-	buffer.out_size *= 4;
-	buffer.out = krealloc(buffer.out, buffer.out_size, GFP_KERNEL);
-	if (buffer.out == NULL) {
-		ret = -ENOMEM;
-		goto err_fdt_final_realloc;
-	}
-
 	xz_dec_end(decoder);
 	kfree(buffer.in);
 
-	fdt = buffer.out;
-	dev_info(&pci->dev, "FDT loaded, size: %u, allocated buffer size: %zu\n", fdt_totalsize(fdt), buffer.out_size);
-	fdt_set_totalsize(fdt, buffer.out_size);
+	fdt_set_totalsize(buffer.out, buffer.out_size);
 
-	return fdt;
+	return buffer.out;
 
-err_fdt_final_realloc:
 err_fdt_check_header:
 err_dec_run:
 	xz_dec_end(decoder);
@@ -624,6 +612,43 @@ err_alloc_out_buffer:
 err_alloc_in_buffer:
 err_vsec_malformed:
 err_vsec_not_found:
+	return ERR_PTR(ret);
+}
+
+static void *nfb_pci_copy_fdt(struct nfb_pci_device *pci_device)
+{
+	const int FDT_SIZE_MULTIPLIER = 4;
+
+	int ret;
+	size_t len_orig, len;
+	void * fdt;
+
+	if (pci_device->fdt == NULL) {
+		ret = -EINVAL;
+		goto err_no_fdt;
+	}
+	len_orig = fdt_totalsize(pci_device->fdt);
+	if (len_orig == 0) {
+		ret = -EINVAL;
+		goto err_no_fdtlen;
+	}
+
+	len = len_orig * FDT_SIZE_MULTIPLIER;
+
+	fdt = kzalloc(len, GFP_KERNEL);
+	if (fdt == NULL) {
+		ret = -ENOMEM;
+		goto err_fdt_malloc;
+	}
+	memcpy(fdt, pci_device->fdt, len_orig);
+
+	dev_info(&pci_device->pci->dev, "FDT loaded, size: %u, allocated buffer size: %zu\n", fdt_totalsize(fdt), len);
+	fdt_set_totalsize(fdt, len);
+	return fdt;
+
+err_fdt_malloc:
+err_no_fdtlen:
+err_no_fdt:
 	return ERR_PTR(ret);
 }
 
@@ -690,6 +715,8 @@ static void nfb_pci_tuneup(struct pci_dev *pdev)
 
 static int nfb_pci_is_attachable(struct nfb_device *nfb, struct pci_dev* pci)
 {
+	struct nfb_pci_device *pci_device, *main_pci_device;
+
 	if (nfb == NULL || pci == NULL)
 		return 0;
 
@@ -700,10 +727,18 @@ static int nfb_pci_is_attachable(struct nfb_device *nfb, struct pci_dev* pci)
 	if (nfb->pci->vendor != pci->vendor)
 		return 0;
 
-	if (nfb->nfb_pci_dev == NULL ||
-			nfb->nfb_pci_dev->sub_device_id == 0 ||
-			nfb->nfb_pci_dev->sub_device_id != pci->device)
-		return 0;
+	if (nfb->nfb_pci_dev != NULL && nfb->nfb_pci_dev->sub_device_id != 0) {
+		if (nfb->nfb_pci_dev->sub_device_id != pci->device)
+			return 0;
+	} else {
+		pci_device = (struct nfb_pci_device *) pci_get_drvdata(pci);
+		main_pci_device = (struct nfb_pci_device *) pci_get_drvdata(nfb->pci);
+
+		if (!main_pci_device || !main_pci_device->card_name || !pci_device || !pci_device->card_name ||
+				strcmp(main_pci_device->card_name, pci_device->card_name)) {
+			return 0;
+		}
+	}
 
 	return 1;
 }
@@ -758,6 +793,10 @@ struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
 
 struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
 {
+	int proplen;
+	int node;
+	const char *card_name;
+	void *fdt;
 	struct nfb_pci_device * pci_device;
 
 	mutex_lock(&global_pci_device_list_lock);
@@ -780,6 +819,25 @@ struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
 		pci_device->dsn = nfb_pci_read_dsn(pci);
 		pci_device->index = nfb_pci_read_enpoint_id(pci);
 		pci_device->index_valid = 1;
+
+		if (pci_device->fdt) {
+			kfree(pci_device->fdt);
+			pci_device->fdt = NULL;
+		}
+
+		if (pci_device->card_name) {
+			kfree(pci_device->card_name);
+			pci_device->card_name = NULL;
+		}
+
+		fdt = nfb_pci_read_fdt(pci);
+		if (!IS_ERR(fdt)) {
+			pci_device->fdt = fdt;
+			node = fdt_path_offset(fdt, "/firmware");
+			card_name = fdt_getprop(fdt, node, "card-name", &proplen);
+			if (proplen > 0)
+				pci_device->card_name = kstrdup(card_name, GFP_KERNEL);
+		}
 	}
 
 	return pci_device;
@@ -1042,7 +1100,7 @@ static int nfb_pci_probe_main(struct nfb_pci_device *pci_device, const struct pc
 	nfb->fdt = nfb_dtb_inject;
 	if (nfb->fdt == NULL) {
 		/* Populate device tree */
-		nfb->fdt = nfb_pci_read_fdt(pci);
+		nfb->fdt = nfb_pci_copy_fdt(pci_device);
 	}
 	if (IS_ERR(nfb->fdt)) {
 		ret = PTR_ERR(nfb->fdt);
@@ -1224,6 +1282,12 @@ void nfb_pci_exit(void)
 
 	list_for_each_entry_safe(pci_device, temp, &global_pci_device_list, global_pci_device_list) {
 		list_del(&pci_device->global_pci_device_list);
+		if (pci_device->fdt)
+			kfree(pci_device->fdt);
+
+		if (pci_device->card_name)
+			kfree(pci_device->card_name);
+
 		kfree(pci_device);
 	}
 }
