@@ -22,9 +22,11 @@
 #include <netcope/eth.h>
 #include <netcope/nccommon.h>
 
+#ifdef CONFIG_HAVE_MAVX2
 #include <smmintrin.h>
 #include <emmintrin.h>
 #include <immintrin.h>
+#endif
 
 #define DATA_SIZE 8192
 //#define DATA_SIZE 128
@@ -32,7 +34,11 @@
 char data1[DATA_SIZE];
 char data2[DATA_SIZE];
 char datar[DATA_SIZE];
-__m256i datam[DATA_SIZE/32];
+#ifdef CONFIG_HAVE_MAVX2
+__m256i datam[DATA_SIZE / 32];
+#else
+uint64_t datam[DATA_SIZE / sizeof(uint64_t)];
+#endif
 
 struct timespec start, stop;
 

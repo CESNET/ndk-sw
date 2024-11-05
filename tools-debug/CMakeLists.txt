@@ -10,12 +10,18 @@
 cmake_minimum_required(VERSION 3.15)
 cmake_policy(VERSION 3.15)
 include(GNUInstallDirs)
+include(CheckCCompilerFlag)
 
 find_package(PkgConfig)
 
 ndk_check_build_dependency(FDT_LIBRARIES fdt FDT_INCLUDE_DIRS libfdt.h libfdt)
 
 pkg_check_modules(LIBPCI libpci>=3.6.3)
+
+check_c_compiler_flag("-mavx2" CONFIG_HAVE_MAVX2)
+if (${CONFIG_HAVE_MAVX2})
+	add_compile_definitions(CONFIG_HAVE_MAVX2)
+endif()
 
 link_libraries(nfb ${FDT_LIBRARIES})
 
@@ -25,8 +31,10 @@ add_executable(nfb-busreplay busreplay/busreplay.c)
 add_executable(nfb-xvc nfb-xvc/xvc_pcie.c nfb-xvc/xvcserver.c)
 add_executable(nfb-mi-test nfb-mi-test/nfb-mi-test.c)
 
-set_source_files_properties(nfb-mi-test/nfb-mi-test.c PROPERTIES COMPILE_FLAGS -mavx2)
 
+if (${CONFIG_HAVE_MAVX2})
+	set_source_files_properties(nfb-mi-test/nfb-mi-test.c PROPERTIES COMPILE_FLAGS -mavx2)
+endif()
 
 
 set (PIE_TARGETS nfb-busdebugctl nfb-busdump nfb-busreplay nfb-xvc nfb-mi-test)

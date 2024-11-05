@@ -20,10 +20,18 @@
 
 #include <libfdt.h>
 
+#ifdef CONFIG_HAVE_MAVX2
 #include <emmintrin.h>
 #include <immintrin.h>
+#endif
 
 #include "../nfb.h"
+
+
+#ifndef CONFIG_HAVE_MAVX2
+#define _mm_mfence() do {} while(0)
+#endif
+
 
 struct nfb_bus_mi_priv
 {
@@ -141,6 +149,7 @@ static inline bool nfb_bus_mi_memcopy_prelude(void **dst, const void **src, size
 	return false;
 }
 
+#ifdef CONFIG_HAVE_MAVX2
 static inline bool nfb_bus_mi_memcopy_interlude_avx_sse2(void **dst, const void **src, size_t *nbyte, size_t *offset, bool *wc_used)
 {
 	(void) offset;
@@ -176,6 +185,7 @@ static inline bool nfb_bus_mi_memcopy_interlude_avx_sse2(void **dst, const void 
 
 	return false;
 }
+#endif
 
 static inline bool nfb_bus_mi_memcopy_postlude(void **dst, const void **src, size_t *nbyte, size_t *offset, bool *wc_used)
 {
@@ -208,8 +218,10 @@ static inline ssize_t nfb_bus_mi_memcopy_avx2_sse2(void *dst, const void *src, s
 
 	if (nfb_bus_mi_memcopy_prelude(&dst, &src, &nbyte, &offset, wc_used))
 		return ret;
+#ifdef CONFIG_HAVE_MAVX2
 	if (nfb_bus_mi_memcopy_interlude_avx_sse2(&dst, &src, &nbyte, &offset, wc_used))
 		return ret;
+#endif
 	if (nfb_bus_mi_memcopy_postlude(&dst, &src, &nbyte, &offset, wc_used))
 		return ret;
 
@@ -313,9 +325,11 @@ int nfb_bus_open_mi(void *dev_priv, int bus_node, int comp_node, void **bus_priv
 	ops->write = _nfb_bus_mi_memcopy_wr_noopt;
 
 	if (
+#ifdef CONFIG_HAVE_MAVX2
 			__builtin_cpu_supports("avx") &&
 			__builtin_cpu_supports("avx2") &&
 			__builtin_cpu_supports("sse2") &&
+#endif
 			1 ) {
 		ops->read = nfb_bus_mi_read;
 		ops->write = nfb_bus_mi_write;
