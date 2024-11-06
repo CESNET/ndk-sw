@@ -100,9 +100,6 @@ cdef class Nfb:
         # TODO: use Nfb.dma only for statistic, not for transfers
         self.dma = self.ndp
 
-    def __dealloc__(self):
-        pass
-
     def __enter__(self):
         self._handle.check_handle()
         return self
