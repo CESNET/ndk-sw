@@ -95,8 +95,6 @@ cdef extern from "<nfb/ext.h>":
     cdef ndp_queue_ops* ndp_queue_get_ops(ndp_queue *q)
 
 
-cdef api const char *nfb_pynfb_prefix
-
 cdef public api:
     int pynfb_ext_get_ops(const char *devname, libnfb_ext_ops* ops) noexcept
 

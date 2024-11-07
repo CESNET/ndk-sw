@@ -3,26 +3,25 @@ from Cython.Build import cythonize
 from setuptools import Extension, setup, find_namespace_packages
 
 setup(
-    name="libnfb_ext_python",
+    name="libnfb-ext-python",
     version="0.1.0",
     author="Martin Spinler",
     author_email="spinler@cesnet.cz",
-    ext_package="libnfb-ext-python",
+    ext_package="nfb.ext.python",
     ext_modules=cythonize(
         [
             Extension(
-                "libnfb_ext_python",
+                "shim",
                 [
-                    "libnfb_ext_python/libnfb_ext_python.pyx",
-                    "libnfb_ext_python/libnfb_ext_python_shim.c",
+                    "nfb/ext/python/shim.pyx",
+                    "nfb/ext/python/ext_entry.c",
                 ],
                 libraries=["nfb", "fdt"],
             ),
         ],
-        include_path=["libnfb_ext_python"],
+        include_path=["nfb/ext/python"],
         compiler_directives={"embedsignature": True, "binding": False},
     ),
-    py_modules=["libnfb_ext_python"],
     packages=find_namespace_packages(include=["nfb.*"]),
     install_requires=['fdt'],
 )

@@ -1,4 +1,11 @@
-cdef api const char *nfb_pynfb_prefix = "pynfb:"
+cdef api const char *libnfb_ext_compatible_pattern = "libnfb-ext-compat_pattern:"
+
+def get_libnfb_ext_path(nfb):
+    # early version of libnfb relies on a pattern "libnfb-ext-" somewhere in device string/path
+    base = __file__ + ":" + libnfb_ext_compatible_pattern.decode()
+    # new extension identification string must have a "libnfb-ext:" prefix (backward incompatible)
+    #base = "libnfb-ext:" + __file__ + ":"
+    return base + str(id(nfb))
 
 cdef class __NfbWrapper:
     cdef char * fdt
@@ -13,7 +20,7 @@ cdef int nfb_ext_python_open(const char *devname, int oflag, void **priv, void *
     cdef PyObject* _nfb
     cdef __NfbWrapper wrap
 
-    addr = strtoull(devname + strlen(nfb_pynfb_prefix), NULL, 10)
+    addr = strtoull(devname + strlen(libnfb_ext_compatible_pattern), NULL, 10)
     _nfb = <PyObject*> <void*> addr
     nfb = <object> _nfb
 
@@ -254,9 +261,6 @@ cdef void nfb_pynfb_comp_unlock(const nfb_comp *comp, uint32_t features) noexcep
     pass
 
 cdef int pynfb_ext_get_ops(const char *devname, libnfb_ext_ops* ops) noexcept:
-    if strncmp(devname, nfb_pynfb_prefix, strlen(nfb_pynfb_prefix)) != 0:
-        return 0
-
     ops.open = nfb_ext_python_open
     ops.close = nfb_ext_python_close
     ops.bus_open_mi = nfb_pynfb_bus_open

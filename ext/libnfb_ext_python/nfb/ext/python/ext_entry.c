@@ -6,13 +6,13 @@
 
 #include <nfb/ndp.h>
 
-#include "libnfb_ext_python_api.h"
+#include "shim_api.h"
 
 struct libnfb_ext_abi_version libnfb_ext_abi_version = libnfb_ext_abi_version_current;
 
 int libnfb_ext_get_ops(const char *devname, struct libnfb_ext_ops *ops)
 {
-	if (import_libnfb_ext_python())
+	if (import_shim())
 		return 0;
 
 	return pynfb_ext_get_ops(devname, ops);
