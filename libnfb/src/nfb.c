@@ -75,20 +75,110 @@ const char * nfb_default_dev_path()
 	return devname;
 }
 
-struct nfb_device *nfb_open_ext(const char *devname, int oflag)
+int load_lib_extension(const char * lib_name, const char * dev_name, struct nfb_device *dev)
 {
-	int ret;
-	int ext_ops_loaded = 0;
-	struct nfb_device *dev;
-	char path[PATH_LEN];
-	unsigned index;
-
-	char *ext_name;
+	int ret = 0;
 
 	struct libnfb_ext_abi_version *ext_abi_version;
 	struct libnfb_ext_abi_version current_abi_version = libnfb_ext_abi_version_current;
 
 	libnfb_ext_get_ops_t* get_ops;
+
+	dev->ext_lib = dlopen(lib_name, RTLD_NOW);
+	if (dev->ext_lib == NULL) {
+		fprintf(stderr, "libnfb fatal: can't open extension library '%s': %s\n", lib_name, dlerror());
+		ret = -ENOENT;
+		goto err_dlopen;
+	}
+
+	*(void**)(&get_ops) = dlsym(dev->ext_lib, "libnfb_ext_get_ops");
+	*(void**)(&ext_abi_version) = dlsym(dev->ext_lib, "libnfb_ext_abi_version");
+	if (ext_abi_version == NULL) {
+		fprintf(stderr, "libnfb fatal: extension doesn't have libnfb_ext_abi_version symbol.\n");
+		ret = -EBADF;
+		goto err_no_abi;
+	}
+
+	if (ext_abi_version->major != current_abi_version.major) {
+		fprintf(stderr, "libnfb fatal: extension ABI major version doesn't match.\n");
+		ret = -EBADF;
+		goto err_abi_mismatch;
+	}
+
+	if (ext_abi_version->minor != current_abi_version.minor) {
+		fprintf(stderr, "libnfb warning: extension ABI minor version doesn't match.\n");
+	}
+
+	if (get_ops == NULL) {
+		ret = -EBADF;
+		goto err_no_ops;
+	}
+
+	ret = get_ops(dev_name, &dev->ops);
+	if (ret <= 0) {
+		dlclose(dev->ext_lib);
+		dev->ext_lib = NULL;
+	}
+	return ret;
+
+err_no_ops:
+err_abi_mismatch:
+err_no_abi:
+	dlclose(dev->ext_lib);
+	dev->ext_lib = NULL;
+err_dlopen:
+	return ret;
+}
+
+int load_extension(const char **devname, struct nfb_device *dev)
+{
+	int ret;
+	char *lib_name = NULL;
+	const char *dev_name = *devname;
+	const char *ext_name = NULL;
+	const char *ext_name_end = NULL;
+
+	const char *LIBNFB_EXT_PREFIX = "libnfb-ext:";
+	const char *LIBNFB_EXT_PATTERN = "libnfb-ext-";
+
+	/* Check for prefix */
+	if (strstr(dev_name, LIBNFB_EXT_PREFIX) == dev_name) {
+		ext_name = dev_name + strlen(LIBNFB_EXT_PREFIX);
+		ext_name_end = strchr(ext_name, ':');
+	/* Check for pattern: deprecated */
+	} else if (strstr(dev_name, LIBNFB_EXT_PATTERN)) {
+		ext_name = dev_name;
+		ext_name_end = strchr(dev_name, ':');
+	}
+
+	if (ext_name == NULL)
+		return 0;
+
+	/* No colon means whole string for library name and empty device name */
+	if (ext_name_end == NULL) {
+		ext_name_end = ext_name + strlen(ext_name);
+		dev_name = ext_name_end;
+	} else {
+		dev_name = ext_name_end + 1;
+	}
+
+	lib_name = strndup(ext_name, (ext_name_end - ext_name));
+	if (!lib_name)
+		return -ENOMEM;
+	ret = load_lib_extension(lib_name, dev_name, dev);
+	free(lib_name);
+
+	*devname = dev_name;
+
+	return ret;
+}
+
+struct nfb_device *nfb_open_ext(const char *devname, int oflag)
+{
+	int ret;
+	struct nfb_device *dev;
+	char path[PATH_LEN];
+	unsigned index;
 
 	if (devname == NULL)
 		devname = nfb_default_dev_path();
@@ -111,38 +201,10 @@ struct nfb_device *nfb_open_ext(const char *devname, int oflag)
 	memset(dev, 0, sizeof(struct nfb_device));
 	dev->fd = -1;
 
-	ext_name = strchr(devname, ':');
-	if (ext_name && strstr(devname, "libnfb-ext-")) {
-		ext_name = strndup(devname, (ext_name - devname));
-		devname = strchr(devname, ':') + 1;
-		dev->ext_lib = dlopen(ext_name, RTLD_NOW);
-		if (dev->ext_lib) {
-			*(void**)(&get_ops) = dlsym(dev->ext_lib, "libnfb_ext_get_ops");
-			*(void**)(&ext_abi_version) = dlsym(dev->ext_lib, "libnfb_ext_abi_version");
-			if (ext_abi_version == NULL) {
-				fprintf(stderr, "libnfb fatal: extension doesn't have libnfb_ext_abi_version symbol.\n");
-			} else {
-				if (ext_abi_version->major != current_abi_version.major) {
-					fprintf(stderr, "libnfb fatal: extension ABI major version doesn't match.\n");
-				} else {
-					if (ext_abi_version->minor != current_abi_version.minor) {
-						fprintf(stderr, "libnfb warning: extension ABI minor version doesn't match.\n");
-					}
-
-					if (get_ops) {
-						ret = get_ops(devname, &dev->ops);
-						if (ret > 0)
-							ext_ops_loaded = 1;
-					}
-				}
-			}
-		} else {
-			fprintf(stderr, "libnfb fatal: can't open extension library '%s': %s\n", ext_name, dlerror());
-		}
-		free(ext_name);
-	}
-
-	if (!ext_ops_loaded) {
+	ret = load_extension(&devname, dev);
+	if (ret < 0) {
+		goto err_ext_load;
+	} else if (ret == 0) {
 		dev->ops = nfb_base_ops;
 	}
 
@@ -177,6 +239,9 @@ err_fdt_check_header:
 	free(dev->fdt);
 err_ops:
 err_open:
+err_ext_load:
+	if (dev->ext_lib)
+		dlclose(dev->ext_lib);
 	free(dev);
 err_malloc_dev:
 	return NULL;
