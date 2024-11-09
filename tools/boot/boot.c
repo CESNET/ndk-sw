@@ -577,6 +577,21 @@ int do_boot(const char *path, int slot)
 	return ret;
 }
 
+int card_requires_sleep(const void *fdt) {
+	int fdt_offset;
+	const void *prop;
+	int len;
+
+	fdt_offset = fdt_path_offset(fdt, "/firmware/");
+	prop = fdt_getprop(fdt, fdt_offset, "card-name", &len);
+	if (prop != NULL) {
+		if (!strcmp(prop, "N6010")) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 int do_quick_boot(const char *path, int slot, const char *filename, int flags)
 {
 	int ret;
@@ -609,6 +624,9 @@ int do_quick_boot(const char *path, int slot, const char *filename, int flags)
 		warnx("can't check firmware equality, write enforced");
 
 	if (diff != DIFF_SAME) {
+		if (card_requires_sleep(nfb_get_fdt(dev))) {
+			usleep(1000000);
+		}
 		ret = do_write_with_dev(dev, slot, filename, fdt, flags);
 		if (ret) {
 			nfb_close(dev);
