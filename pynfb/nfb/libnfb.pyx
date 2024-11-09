@@ -100,9 +100,6 @@ cdef class Nfb:
         # TODO: use Nfb.dma only for statistic, not for transfers
         self.dma = self.ndp
 
-    def __dealloc__(self):
-        pass
-
     def __enter__(self):
         self._handle.check_handle()
         return self
@@ -198,7 +195,7 @@ cdef class Comp:
             PyErr_SetFromErrno(OSError)
         self._nfb_dev.add_close_cb(self._close_handle)
 
-    def __dealloc__(self):
+    def __del__(self):
         self._close_handle()
 
     def _close_handle(self):
@@ -558,7 +555,7 @@ cdef class NdpQueue:
         self._running = False
         self._node = node
 
-    def __dealloc__(self):
+    def __del__(self):
         self._close_handle()
 
     def _close_handle(self):
@@ -624,7 +621,7 @@ cdef class NdpQueueRx(NdpQueue):
         self._nc_queue = libnetcope.nc_rxqueue_open(self._handle._dev, nfb._fdt_path_offset(node))
         self._handle.add_close_cb(self._close_handle)
 
-    def __dealloc__(self):
+    def __del__(self):
         self._close_handle()
 
     def _close_handle(self):
@@ -765,7 +762,7 @@ cdef class NdpQueueTx(NdpQueue):
         self._nc_queue = libnetcope.nc_txqueue_open(self._handle._dev, nfb._fdt_path_offset(node))
         self._handle.add_close_cb(self._close_handle)
 
-    def __dealloc__(self):
+    def __del__(self):
         self._close_handle()
 
     def _close_handle(self):
