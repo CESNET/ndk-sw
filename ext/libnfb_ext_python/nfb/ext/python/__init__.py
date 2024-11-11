@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 import importlib
 import fdt
 
+from . import shim
 
 class AbstractNdpQueue(ABC):
     def start(self):
@@ -52,7 +53,4 @@ class AbstractNfb(ABC):
         return 0
 
     def path(self):
-        __libnfb_ext_python = importlib.import_module(
-            "libnfb-ext-python.libnfb_ext_python"
-        )
-        return __libnfb_ext_python.__file__ + ":pynfb:" + str(id(self))
+        return shim.get_libnfb_ext_path(self)
