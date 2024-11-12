@@ -342,7 +342,7 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 
 		nfb_fdt_create_boot_type(fdt, node, "INTEL-AVST", 0);
 	} else if (!strcmp(name, nfb_card_name_generic)) {
-		if (!strcmp(card_name, "IA-420F")) {
+		if (!strcmp(card_name, "IA-420F") || !strcmp(card_name, "TERASIC-A2700")) {
 			prop32 = cpu_to_fdt32(1);
 			fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
 			prop32 = cpu_to_fdt32(256 * 1024 * 1024);
