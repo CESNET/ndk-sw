@@ -13,14 +13,14 @@ project(libnfb-ext-grpc C CXX)
 include(GNUInstallDirs)
 
 find_package(Protobuf CONFIG)
+find_package(gRPC QUIET)
 
 set(PROTO_FILES nfb_grpc.proto)
 
 add_library(nfb-ext-grpc SHARED nfb_grpc_client.cc)
 add_executable(nfb-grpc-server nfb_grpc_server.cc)
 
-if (EXISTS ${Protobuf_DIR})
-	find_package(gRPC CONFIG)
+if (${gRPC_FOUND})
 
 	include_directories(${Protobuf_INCLUDE_DIRS})
 	include_directories(${CMAKE_CURRENT_BINARY_DIR})
