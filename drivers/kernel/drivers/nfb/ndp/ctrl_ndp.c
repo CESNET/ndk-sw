@@ -16,6 +16,7 @@
 #include <linux/mutex.h>
 #include <linux/pci.h>
 #include <linux/timer.h>
+#include <linux/vmalloc.h>
 
 #include "../fdt/libfdt.h"
 #include "../nfb.h"
