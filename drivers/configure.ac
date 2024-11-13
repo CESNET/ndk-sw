@@ -134,6 +134,12 @@ struct spi_controller *sc;
 void test(void);
 void test(void) {spi_get_chipselect(NULL, 0);}]],[AC_DEFINE([CONFIG_HAVE_SPI_CONTROLLER], [1], [Define if kernel has struct spi_controller]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
+AC_MSG_CHECKING([whether kernel has simplified eventfd_signal])
+KERNEL_TRY_COMPILE([[
+#include <linux/eventfd.h>
+void test(void);
+void test(void) {eventfd_signal(NULL);}]],[AC_DEFINE([CONFIG_HAVE_SIMPLIFIED_EVENTFD_SIGNAL], [1], [Define if kernel has simplified eventfd_signal]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
 AC_SUBST(KDIR)
 AC_SUBST(KSRC)
 
