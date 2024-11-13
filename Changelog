@@ -1,3 +1,14 @@
+* Wed Nov 13 2024 Martin Spinler <spinler@cesnet.cz> - 6.24.0-1
+- [FEATURE] drivers: add support for Terasic A2700 card
+- [FEATURE] drivers: check subdevices by card_name (and DSN) in all PCI endpoint FDTs
+- [FEATURE] nfb-bus: introduce byte mode for read & writes
+- [FEATURE] libnfb, drivers: report errors when accessing outside component space
+- [FEATURE] libnfb: support library extension with device prefix "libnfb-ext:"
+- [HOTFIX] nfb-boot: quick boot on N6010
+- [FIX] libnfb, tools: disable mavx2/sse when compiler support is missing
+- [FIX] pynfb: rewrite __dealloc__ methods to __del__
+- [MAINTENANCE] libnfb-ext-python: fix package name and binary path
+
 * Fri Oct 4 2024 Martin Spinler <spinler@cesnet.cz> - 6.23.6-1
 - [BUGFIX] libnfb - MDIO: fix deadlock due to recursive lock
 
