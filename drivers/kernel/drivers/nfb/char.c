@@ -17,8 +17,8 @@
 #include <libfdt.h>
 
 #include "nfb.h"
+#include "ndp/ndp.h"
 
-int ndp_char_poll(void *priv, void *app_priv, struct file *filp, struct poll_table_struct *wait);
 
 /* Global variables */
 static int nfb_major;
@@ -165,7 +165,7 @@ int nfb_char_unregister_mmap(struct nfb_device *nfb, size_t offset)
  * @inode: inode of chardev
  * @file: file pointer in user application
  */
-int nfb_char_open(struct inode *inode, struct file *file)
+static int nfb_char_open(struct inode *inode, struct file *file)
 {
 	int i;
 	int size;
@@ -254,7 +254,7 @@ err_append:
  * @inode: inode of chardev
  * @file: file pointer in user application
  */
-int nfb_char_release(struct inode *inode, struct file *file)
+static int nfb_char_release(struct inode *inode, struct file *file)
 {
 	int i;
 	struct nfb_app *app = file->private_data;
@@ -277,7 +277,7 @@ int nfb_char_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-loff_t nfb_char_llseek(struct file *file, loff_t off, int whence)
+static loff_t nfb_char_llseek(struct file *file, loff_t off, int whence)
 {
 	struct nfb_app *app = file->private_data;
 	loff_t newpos;
@@ -303,7 +303,7 @@ loff_t nfb_char_llseek(struct file *file, loff_t off, int whence)
 	return newpos;
 }
 
-ssize_t nfb_char_read(struct file *file, char __user *buffer, size_t length, loff_t *offset)
+static ssize_t nfb_char_read(struct file *file, char __user *buffer, size_t length, loff_t *offset)
 {
 	struct nfb_app *app = file->private_data;
 	int ret = 0;
@@ -328,7 +328,7 @@ ssize_t nfb_char_read(struct file *file, char __user *buffer, size_t length, lof
  * @file: file pointer in user application
  * @vma: pointer to describing vm_area_struct
  */
-int nfb_char_mmap(struct file *file, struct vm_area_struct *vma)
+static int nfb_char_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	int ret = -EINVAL;
 	struct nfb_app *app = file->private_data;
@@ -361,7 +361,7 @@ int nfb_char_mmap(struct file *file, struct vm_area_struct *vma)
  * @cmd: type of IOC command
  * @arg: argument for IOC command
  */
-long nfb_char_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long nfb_char_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int i;
 	int ret = -ENXIO;
@@ -391,7 +391,7 @@ long nfb_char_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
  * @file: file pointer in user application
  * @wait: struct poll_table_struct
  */
-unsigned int nfb_char_poll(struct file *file, struct poll_table_struct *wait)
+static unsigned int nfb_char_poll(struct file *file, struct poll_table_struct *wait)
 {
 	struct nfb_app *app = file->private_data;
 	struct nfb_device *nfb = app->nfb;

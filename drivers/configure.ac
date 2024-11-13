@@ -79,12 +79,14 @@ struct timespec ts;
 AC_MSG_CHECKING([whether kernel has netif_rx_ni])
 KERNEL_TRY_COMPILE([[
 #include <linux/netdevice.h>
+void test(void);
 void test(void) {netif_rx_ni(NULL);}
 ]],[AC_DEFINE([CONFIG_HAVE_NETIF_RX_NI], [1], [Define if kernel have netif_rx_ni]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([whether kernel has eth_hw_addr_set])
 KERNEL_TRY_COMPILE([[
 #include <linux/etherdevice.h>
+void test(void);
 void test(void) {eth_hw_addr_set(NULL, NULL);}
 ]],[AC_DEFINE([CONFIG_HAVE_ETH_HW_ADDR_SET], [1], [Define if kernel have eth_hw_addr_set]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
@@ -92,13 +94,15 @@ AC_MSG_CHECKING([whether kernel has regmap_reg_range and read_poll_timeout])
 KERNEL_TRY_COMPILE([[
 #include <linux/regmap.h>
 #include <linux/iopoll.h>
+void test(void);
 static const struct regmap_range regmap_range_test[] = {regmap_reg_range(0,0)};
-int trd(off_t a) {return 0;} void test(void) {int ret; read_poll_timeout(trd, ret, (!ret), 1, 2, false, 0);}
+static int trd(off_t a) {return 0;} void test(void) {int ret; read_poll_timeout(trd, ret, (!ret), 1, 2, false, 0);}
 ]],[AC_DEFINE([CONFIG_NFB_ENABLE_PMCI], [1], [Define if kernel have regmap_reg_range and read_poll_timeout]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([whether kernel has devm_kstrdup_const])
 KERNEL_TRY_COMPILE([[
 #include <linux/device.h>
+void test(void);
 struct device dev;
 void test(void) {devm_kstrdup_const(&dev, "test", GFP_KERNEL);}
 ]],[AC_DEFINE([CONFIG_NFB_ENABLE_HWMON], [1], [Define if kernel has devm_kstrdup_const()]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
@@ -106,25 +110,29 @@ void test(void) {devm_kstrdup_const(&dev, "test", GFP_KERNEL);}
 AC_MSG_CHECKING([whether kernel has vm_flags_set])
 KERNEL_TRY_COMPILE([[
 #include <linux/mm.h>
+void test(void);
 void test(void) {vm_flags_set(NULL, 0);}
 ]],[AC_DEFINE([CONFIG_HAVE_VM_FLAGS_SET], [1], [Define if kernel has vm_flags_set()]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([whether struct ptp_clock_info has adjfreq])
 KERNEL_TRY_COMPILE([[
 #include <linux/ptp_clock_kernel.h>
+void test(void);
 void test(void) {struct ptp_clock_info ci; ci.ajdfreq = NULL;}
 ]],[AC_DEFINE([CONFIG_HAVE_PTP_CLOCK_INFO_ADJFREQ], [1], [Define if struct ptp_clock_info has adjfreq]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([whether class_create has only one parameter])
 KERNEL_TRY_COMPILE([[
 #include <linux/device.h>
+void test(void);
 void test(void) {struct class *c = class_create(""); if (c) {} }
 ]],[AC_DEFINE([CONFIG_CLASS_CREATE_HAVE_ONE_PARAMETER], [1], [Define if class_create has only one parameter]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([whether kernel has read_poll_timeout_atomic])
 KERNEL_TRY_COMPILE([[
 #include <linux/iopoll.h>
-int trd(off_t a) {return 0;} void test(void) {int ret; read_poll_timeout_atomic(trd, ret, (!ret), 1, 2, false, 0);}
+void test(void);
+static int trd(off_t a) {return 0;} void test(void) {int ret; read_poll_timeout_atomic(trd, ret, (!ret), 1, 2, false, 0);}
 ]],[AC_DEFINE([CONFIG_HAVE_READ_POLL_TIMEOUT_ATOMIC], [1], [Define if kernel has read_poll_timeout_atomic]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([whether kernel has struct spi_controller])

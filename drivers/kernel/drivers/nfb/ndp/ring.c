@@ -95,7 +95,7 @@ void ndp_block_free(struct device *dev, struct ndp_block *blocks,
 	}
 }
 
-void ndp_channel_update_fdt(struct ndp_channel *channel)
+static void ndp_channel_update_fdt(struct ndp_channel *channel)
 {
 	int node;
 	int fdt_offset;
@@ -126,7 +126,7 @@ void ndp_channel_update_fdt(struct ndp_channel *channel)
  * @size: block size (must be PAGE_SIZE aligned)
  *
  */
-int ndp_channel_ring_alloc(struct device *dev,
+static int ndp_channel_ring_alloc(struct device *dev,
 		struct ndp_channel *channel, size_t count, size_t size)
 {
 	int i, j, k;
@@ -182,7 +182,7 @@ err_block_alloc:
  * @channel: channel for deallocation
  *
  */
-void ndp_channel_ring_free(struct ndp_channel * channel)
+static void ndp_channel_ring_free(struct ndp_channel * channel)
 {
 	if (channel->ring.vmap)
 		vunmap(channel->ring.vmap);

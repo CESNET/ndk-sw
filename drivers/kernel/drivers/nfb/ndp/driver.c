@@ -32,13 +32,6 @@ struct ndp_ctrl_create {
 	struct ndp_channel* (*create)(struct ndp *ndp, int index, int node_offset);
 };
 
-struct ndp_channel *ndp_ctrl_v1_create_rx(struct ndp *ndp, int index, int node_offset);
-struct ndp_channel *ndp_ctrl_v1_create_tx(struct ndp *ndp, int index, int node_offset);
-struct ndp_channel *ndp_ctrl_v2_create_rx(struct ndp *ndp, int index, int node_offset);
-struct ndp_channel *ndp_ctrl_v2_create_tx(struct ndp *ndp, int index, int node_offset);
-struct ndp_channel *ndp_ctrl_v3_create_rx(struct ndp *ndp, int index, int node_offset);
-struct ndp_channel *ndp_ctrl_v3_create_tx(struct ndp *ndp, int index, int node_offset);
-
 struct ndp_ctrl_create ndp_ctrls[] = {
 	{.compatible = "netcope,dma_ctrl_sze_rx", .create = ndp_ctrl_v1_create_rx},
 	{.compatible = "netcope,dma_ctrl_sze_tx", .create = ndp_ctrl_v1_create_tx},

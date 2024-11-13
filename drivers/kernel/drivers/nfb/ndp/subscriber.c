@@ -24,7 +24,7 @@
 
 #include "ndp.h"
 
-size_t ndp_subscriber_new_data(struct ndp_subscriber *subscriber)
+static size_t ndp_subscriber_new_data(struct ndp_subscriber *subscriber)
 {
 	size_t ret = 0, max;
 	struct ndp_subscription *sub, *max_sub;
@@ -47,7 +47,7 @@ size_t ndp_subscriber_new_data(struct ndp_subscriber *subscriber)
 	return ret;
 }
 
-enum hrtimer_restart ndp_subscriber_poll_timer(struct hrtimer *timer)
+static enum hrtimer_restart ndp_subscriber_poll_timer(struct hrtimer *timer)
 {
 	int ret;
 	struct ndp_subscriber *subscriber = container_of(timer, struct ndp_subscriber, poll_timer);

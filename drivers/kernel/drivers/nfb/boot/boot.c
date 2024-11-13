@@ -133,7 +133,7 @@ static void nfb_boot_read_card_subtype(struct nfb_device *nfb, struct nfb_boot *
 	}
 }
 
-long nfb_boot_ioctl_reload(struct nfb_boot *boot, int * __user _image)
+static long nfb_boot_ioctl_reload(struct nfb_boot *boot, int * __user _image)
 {
 	int image;
 	int node;

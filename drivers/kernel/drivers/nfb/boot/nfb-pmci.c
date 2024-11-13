@@ -157,7 +157,7 @@ static const struct regmap_bus indirect_bus = {
 	.reg_read =  indirect_bus_reg_read,
 };
 
-struct regmap *nfb_devm_regmap_init_indirect_register(struct device *dev,
+static struct regmap *nfb_devm_regmap_init_indirect_register(struct device *dev,
 		off_t offset, struct nfb_comp *comp, struct regmap_config *cfg)
 {
 	struct indirect_ctx *ctx;

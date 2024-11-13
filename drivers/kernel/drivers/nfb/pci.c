@@ -657,7 +657,7 @@ err_no_fdt:
  * @irq: interrupt vector
  * @pnfb: pointer to NFB device
  */
-irqreturn_t nfb_interrupt(int irq, void *pnfb)
+static irqreturn_t nfb_interrupt(int irq, void *pnfb)
 {
 	//struct nfb_device *nfb = (struct nfb_device *) pnfb;
 	return IRQ_NONE;
@@ -757,7 +757,7 @@ static int nfb_pci_device_is_attachable(struct nfb_device *nfb, struct nfb_pci_d
 	return 1;
 }
 
-struct nfb_pci_device *_nfb_pci_device_find(struct pci_dev *pci)
+static struct nfb_pci_device *_nfb_pci_device_find(struct pci_dev *pci)
 {
 	struct nfb_pci_device *pci_device = NULL;
 
@@ -770,7 +770,7 @@ struct nfb_pci_device *_nfb_pci_device_find(struct pci_dev *pci)
 	return NULL;
 }
 
-struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
+static struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
 {
 	struct nfb_pci_device *pci_device = NULL;
 
@@ -791,7 +791,7 @@ struct nfb_pci_device *_nfb_pci_device_create(struct pci_dev *pci)
 	return pci_device;
 }
 
-struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
+static struct nfb_pci_device *nfb_pci_device_find_or_create(struct pci_dev *pci)
 {
 	int proplen;
 	int node;
@@ -918,7 +918,7 @@ void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus)
  * nfb_pci_detach_all_slaves - Detach all slave endpoints from NFB device
  * @nfb: NFB device
  */
-void nfb_pci_detach_endpoints(struct nfb_device *nfb, struct nfb_pci_device *self)
+static void nfb_pci_detach_endpoints(struct nfb_device *nfb, struct nfb_pci_device *self)
 {
 	struct nfb_pci_device *pci_device, *temp;
 
@@ -933,7 +933,7 @@ void nfb_pci_detach_endpoints(struct nfb_device *nfb, struct nfb_pci_device *sel
 	}
 }
 
-void nfb_pci_try_attach(struct nfb_pci_device *self)
+static void nfb_pci_try_attach(struct nfb_pci_device *self)
 {
 	struct nfb_device * nfb;
 	struct nfb_pci_device *pci_device;
@@ -1164,7 +1164,7 @@ err_nfb_create:
  * nfb_remove - called when kernel removes NFB device
  * @pci: PCI device object
  */
-void nfb_pci_remove(struct pci_dev *pci)
+static void nfb_pci_remove(struct pci_dev *pci)
 {
 	struct nfb_pci_device *pci_device = (struct nfb_pci_device *) pci_get_drvdata(pci);
 	struct nfb_device *nfb;

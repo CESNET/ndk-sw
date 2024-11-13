@@ -741,7 +741,7 @@ static int ndp_ctrl_off_mmap(struct vm_area_struct *vma, unsigned long offset, u
 	return ret;
 }
 
-void *ndp_ctrl_vmap_shadow(int size, void *virt)
+static void *ndp_ctrl_vmap_shadow(int size, void *virt)
 {
 	int i;
 	int page_count;

@@ -51,7 +51,7 @@ void *nfb_get_priv_for_attach_fn(struct nfb_device *nfb, nfb_driver_ops_attach_t
  * nfb_attach_drivers - attach embedded drivers to NFB device
  * @nfb: NFB device structure
  */
-void nfb_attach_driver(struct nfb_device* nfb, int i)
+static void nfb_attach_driver(struct nfb_device* nfb, int i)
 {
 	int ret;
 
@@ -61,7 +61,7 @@ void nfb_attach_driver(struct nfb_device* nfb, int i)
 	}
 }
 
-void nfb_detach_driver(struct nfb_device *nfb, int i)
+static void nfb_detach_driver(struct nfb_device *nfb, int i)
 {
 	if (nfb->list_drivers[i].status == NFB_DRIVER_STATUS_OK) {
 		nfb_registered_drivers[i].detach(nfb, nfb->list_drivers[i].priv);
@@ -69,7 +69,7 @@ void nfb_detach_driver(struct nfb_device *nfb, int i)
 	nfb->list_drivers[i].status = NFB_DRIVER_STATUS_NONE;
 }
 
-void nfb_attach_drivers_early(struct nfb_device* nfb)
+static void nfb_attach_drivers_early(struct nfb_device* nfb)
 {
 	int i;
 	mutex_lock(&nfb_driver_register_mutex);
@@ -79,7 +79,7 @@ void nfb_attach_drivers_early(struct nfb_device* nfb)
 	mutex_unlock(&nfb_driver_register_mutex);
 }
 
-void nfb_attach_drivers(struct nfb_device* nfb)
+static void nfb_attach_drivers(struct nfb_device* nfb)
 {
 	int i;
 	mutex_lock(&nfb_driver_register_mutex);
@@ -93,7 +93,7 @@ void nfb_attach_drivers(struct nfb_device* nfb)
  * nfb_detach_drivers - detach embedded drivers from NFB device
  * @nfb: NFB device structure
  */
-void nfb_detach_drivers(struct nfb_device* nfb)
+static void nfb_detach_drivers(struct nfb_device* nfb)
 {
 	int i;
 

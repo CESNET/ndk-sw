@@ -307,4 +307,15 @@ static inline int ndp_kill_signal_pending(struct task_struct *p)
 	return ret;
 }
 
+struct ndp_channel *ndp_ctrl_v1_create_rx(struct ndp *ndp, int index, int node_offset);
+struct ndp_channel *ndp_ctrl_v1_create_tx(struct ndp *ndp, int index, int node_offset);
+struct ndp_channel *ndp_ctrl_v2_create_rx(struct ndp *ndp, int index, int node_offset);
+struct ndp_channel *ndp_ctrl_v2_create_tx(struct ndp *ndp, int index, int node_offset);
+struct ndp_channel *ndp_ctrl_v3_create_rx(struct ndp *ndp, int index, int node_offset);
+struct ndp_channel *ndp_ctrl_v3_create_tx(struct ndp *ndp, int index, int node_offset);
+
+int ndp_ctrl_v2_get_vmaps(struct ndp_channel *channel, void **hdr, void **off);
+
+int ndp_char_poll(void *priv, void *app_priv, struct file *filp, struct poll_table_struct *wait);
+
 #endif

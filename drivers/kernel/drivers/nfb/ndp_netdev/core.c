@@ -212,7 +212,7 @@ static int nfb_ndp_netdev_close(struct net_device *ndev)
  * nfb_ndp_netdev_xmit_dma - transmit packet
  * @skb: structure containing packet data
  */
-netdev_tx_t nfb_ndp_netdev_xmit_dma(struct sk_buff *skb, struct net_device *dev)
+static netdev_tx_t nfb_ndp_netdev_xmit_dma(struct sk_buff *skb, struct net_device *dev)
 {
 	int ret;
 	unsigned cnt;
@@ -342,7 +342,7 @@ const struct attribute_group *nfb_ndp_netdev_attr_groups[] = {
  * nfb_ndp_netdev_create - creates and registers new network device in the system
  * @index: index of network interface
  */
-struct nfb_ndp_netdev *nfb_ndp_netdev_create(struct nfb_mod_ndp_netdev *eth, int index)
+static struct nfb_ndp_netdev *nfb_ndp_netdev_create(struct nfb_mod_ndp_netdev *eth, int index)
 {
 	struct nfb_device *nfb = eth->nfb;
 	struct nfb_ndp_netdev *ethdev;
@@ -404,7 +404,7 @@ err_alloc:
 /**
  * nfb_ndp_netdev_destroy - remove network device from the system
  */
-void nfb_ndp_netdev_destroy(struct nfb_ndp_netdev *ethdev)
+static void nfb_ndp_netdev_destroy(struct nfb_ndp_netdev *ethdev)
 {
 	unregister_netdev(ethdev->ndev);
 	device_del(&ethdev->device);

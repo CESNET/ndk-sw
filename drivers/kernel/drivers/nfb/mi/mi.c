@@ -20,7 +20,7 @@
 
 static bool mi_debug = 0;
 
-ssize_t nfb_bus_mi_read(struct nfb_bus *bus, void *buf, size_t nbyte, off_t offset)
+static ssize_t nfb_bus_mi_read(struct nfb_bus *bus, void *buf, size_t nbyte, off_t offset)
 {
 	struct nfb_mi_node *mi_node = bus->priv;
 	if (mi_node->mem_virt == NULL)
@@ -40,7 +40,7 @@ ssize_t nfb_bus_mi_read(struct nfb_bus *bus, void *buf, size_t nbyte, off_t offs
 	return nbyte;
 }
 
-ssize_t nfb_bus_mi_write(struct nfb_bus *bus, const void *buf, size_t nbyte, off_t offset)
+static ssize_t nfb_bus_mi_write(struct nfb_bus *bus, const void *buf, size_t nbyte, off_t offset)
 {
 	struct nfb_mi_node *mi_node = bus->priv;
 	if (mi_node->mem_virt == NULL)
@@ -60,7 +60,7 @@ ssize_t nfb_bus_mi_write(struct nfb_bus *bus, const void *buf, size_t nbyte, off
 	return nbyte;
 }
 
-int nfb_mi_mmap(struct vm_area_struct *vma, unsigned long offset, unsigned long size, void *priv)
+static int nfb_mi_mmap(struct vm_area_struct *vma, unsigned long offset, unsigned long size, void *priv)
 {
 	struct nfb_mi* mi = (struct nfb_mi*) priv;
 	struct nfb_mi_node *mi_node;
@@ -85,7 +85,7 @@ int nfb_mi_mmap(struct vm_area_struct *vma, unsigned long offset, unsigned long 
 	return -ENOENT;
 }
 
-int nfb_mi_map(struct nfb_device *nfb, struct nfb_mi_node *mi_node, struct nfb_pci_device *pci_device)
+static int nfb_mi_map(struct nfb_device *nfb, struct nfb_mi_node *mi_node, struct nfb_pci_device *pci_device)
 {
 	int ret;
 	char nodename[64];
@@ -140,7 +140,7 @@ err_request_mem_region:
 	return -EBADF;
 }
 
-void nfb_mi_unmap(struct nfb_device *nfb, struct nfb_mi_node *mi)
+static void nfb_mi_unmap(struct nfb_device *nfb, struct nfb_mi_node *mi)
 {
 	char nodename[64];
 	int node_offset;
@@ -160,7 +160,7 @@ void nfb_mi_unmap(struct nfb_device *nfb, struct nfb_mi_node *mi)
 	}
 }
 
-int nfb_mi_attach_bus(struct nfb_device *nfb, void *priv, int node_offset)
+static int nfb_mi_attach_bus(struct nfb_device *nfb, void *priv, int node_offset)
 {
 	int ret;
 	int mapped = 0;
@@ -237,7 +237,7 @@ err_fdt_get_path:
 	return ret;
 }
 
-int nfb_mi_attach_node(struct nfb_device *nfb, void *priv, int base_offset)
+static int nfb_mi_attach_node(struct nfb_device *nfb, void *priv, int base_offset)
 {
 	int base_depth;
 	int supernode_offset;
@@ -319,7 +319,7 @@ int nfb_mi_attach(struct nfb_device *nfb, void **priv)
 	return 0;
 }
 
-void nfb_mi_detach_bus(struct nfb_device *nfb, struct nfb_mi* nfb_mi, int node_offset)
+static void nfb_mi_detach_bus(struct nfb_device *nfb, struct nfb_mi* nfb_mi, int node_offset)
 {
 	int ret;
 	int pci_index, bar;
@@ -351,7 +351,7 @@ void nfb_mi_detach_bus(struct nfb_device *nfb, struct nfb_mi* nfb_mi, int node_o
 	}
 }
 
-void nfb_mi_detach_node(struct nfb_device *nfb, void *priv, int base_offset)
+static void nfb_mi_detach_node(struct nfb_device *nfb, void *priv, int base_offset)
 {
 	int base_depth;
 	int supernode_offset;

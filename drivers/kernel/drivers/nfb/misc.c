@@ -18,7 +18,7 @@
 
 #define NFB_FDT_BURSTSIZE (16384)
 
-uint64_t reverse(const uint64_t n, const uint64_t k)
+static uint64_t reverse(const uint64_t n, const uint64_t k)
 {
         uint64_t i, r = 0;
         for (i = 0; i < k; ++i)

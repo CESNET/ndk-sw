@@ -14,6 +14,7 @@
 #include <linux/device.h>
 #include <linux/pci.h>
 
+#include "gecko.h"
 #include "../nfb.h"
 #include "../pci.h"
 

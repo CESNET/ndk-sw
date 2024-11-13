@@ -34,7 +34,7 @@ static inline uint64_t fr_64b_to_ns(uint64_t fr)
 	return fr / 18446744073llu;
 }
 
-int nfb_tsu_adjfine(struct ptp_clock_info *ptp, long scaled_ppm)
+static int nfb_tsu_adjfine(struct ptp_clock_info *ptp, long scaled_ppm)
 {
 	struct nfb_net *net = container_of(ptp, struct nfb_net, ptp_info);
 	uint64_t inc_prev, inc;
@@ -51,13 +51,13 @@ int nfb_tsu_adjfine(struct ptp_clock_info *ptp, long scaled_ppm)
 }
 
 #ifdef HAVE_PTP_CLOCK_INFO_ADJFREQ
-int nfb_tsu_adjfreq(struct ptp_clock_info *ptp, s32 delta)
+static int nfb_tsu_adjfreq(struct ptp_clock_info *ptp, s32 delta)
 {
 	return -EOPNOTSUPP;
 }
 #endif
 
-int nfb_tsu_adjtime(struct ptp_clock_info *ptp, s64 delta)
+static int nfb_tsu_adjtime(struct ptp_clock_info *ptp, s64 delta)
 {
 	struct nfb_net *net = container_of(ptp, struct nfb_net, ptp_info);
 	struct nc_tsu_time rtr = nc_tsu_get_rtr(net->ptp_tsu_comp);
@@ -71,7 +71,7 @@ int nfb_tsu_adjtime(struct ptp_clock_info *ptp, s64 delta)
 	return 0;
 }
 
-int nfb_tsu_gettimex64(struct ptp_clock_info *ptp, struct timespec64 *ts,
+static int nfb_tsu_gettimex64(struct ptp_clock_info *ptp, struct timespec64 *ts,
 		struct ptp_system_timestamp *sts)
 {
 	struct nfb_net *net = container_of(ptp, struct nfb_net, ptp_info);
@@ -107,7 +107,7 @@ int nfb_tsu_gettimex64(struct ptp_clock_info *ptp, struct timespec64 *ts,
 	return 0;
 }
 
-int nfb_tsu_settime64(struct ptp_clock_info *p, const struct timespec64 *ts)
+static int nfb_tsu_settime64(struct ptp_clock_info *p, const struct timespec64 *ts)
 {
 	struct nfb_net *net = container_of(p, struct nfb_net, ptp_info);
 	struct nc_tsu_time rtr;
@@ -118,13 +118,13 @@ int nfb_tsu_settime64(struct ptp_clock_info *p, const struct timespec64 *ts)
 //	printk("PTP TSU settime: %lld . %lld\n", ts->tv_sec, ts->tv_nsec);
 	return 0;
 }
-int nfb_tsu_enable(struct ptp_clock_info *ptp,
+static int nfb_tsu_enable(struct ptp_clock_info *ptp,
 	      struct ptp_clock_request *request, int on)
 {
 	printk("PTP TSU enable: not supported\n");
 	return -EOPNOTSUPP;
 }
-int nfb_tsu_verify(struct ptp_clock_info *ptp, unsigned int pin,
+static int nfb_tsu_verify(struct ptp_clock_info *ptp, unsigned int pin,
 	      enum ptp_pin_function func, unsigned int chan)
 {
 	printk("PTP TSU verify: not supported\n");

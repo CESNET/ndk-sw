@@ -220,8 +220,8 @@ static void nfb_net_service_task(struct work_struct *work)
 	clear_bit(NFBNET_SERVICE_SCHED, &priv->state);
 }
 
-
-u32 nfb_net_get_link(struct net_device *netdev)
+#if 0
+static u32 nfb_net_get_link(struct net_device *netdev)
 {
 	struct nfb_net_device *priv = netdev_priv(netdev);
 
@@ -231,7 +231,7 @@ u32 nfb_net_get_link(struct net_device *netdev)
 
 	return 0;
 }
-
+#endif
 
 static void nfb_set_rx_mode(struct net_device *netdev)
 {
@@ -600,7 +600,7 @@ err_kthread_create:
 }
 
 
-netdev_tx_t nfb_start_xmit(struct sk_buff *skb, struct net_device *netdev)
+static netdev_tx_t nfb_start_xmit(struct sk_buff *skb, struct net_device *netdev)
 {
 	struct nfb_net_device *priv = netdev_priv(netdev);
 	struct nfb_net_queue *txq = &priv->txqs[skb->queue_mapping];
@@ -709,7 +709,7 @@ static const struct net_device_ops netdev_ops = {
 };
 
 
-int nfb_net_queues_init(struct net_device *netdev)
+static int nfb_net_queues_init(struct net_device *netdev)
 {
 	struct nfb_net_device *priv = netdev_priv(netdev);
 
@@ -758,7 +758,7 @@ err_alloc_rxqs:
 }
 
 
-void nfb_net_queues_deinit(struct net_device *netdev)
+static void nfb_net_queues_deinit(struct net_device *netdev)
 {
 	struct nfb_net_device *priv = netdev_priv(netdev);
 
