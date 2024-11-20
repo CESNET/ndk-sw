@@ -39,17 +39,42 @@
 
 #define virt_to_phys_shift(x) (virt_to_phys(x) >> PAGE_SHIFT)
 
+#define NDP_CTRL_DEFAULT_BUFFER_SIZE 4096
+#define NDP_CTRL_DEFAULT_INITIAL_OFFSET 0
+
+extern unsigned long ndp_ring_size;
+
+static const uint32_t mps_non_first_block_max_offset = PAGE_SIZE;
+
 typedef uint64_t ndp_offset_t;
 
 /* Size of buffer for one packet in ring */
-static int buffer_size = 4096;
+static unsigned long ndp_ctrl_buffer_size = NDP_CTRL_DEFAULT_BUFFER_SIZE;
+static unsigned long ndp_ctrl_initial_offset = NDP_CTRL_DEFAULT_INITIAL_OFFSET;
+
+struct ndp_ctrl_cfg {
+	uint32_t buffer_count;
+	uint32_t buffer_size;
+	uint32_t block_count;
+	uint32_t block_size;
+	uint32_t initial_offset;
+};
+
+/* buffer/ring pointers for walkthrough in packet-simple mode */
+struct ndp_ctrl_state_mps {
+	struct ndp_ctrl_cfg cfg; /* read-only after attach_ring */
+	uint32_t block_offset;
+	uint32_t block_index;
+	uint32_t buffer_index;
+};
 
 struct ndp_ctrl {
 	struct nc_ndp_ctrl c;
 	uint32_t php; /* Pushed header pointer (converted to descriptors) */
 	uint32_t free_desc;
+	struct ndp_ctrl_state_mps mps;
+	struct ndp_ctrl_cfg cfg; /* applied at next attach_ring / ndp_channel_rinng_resize call */
 
-	uint64_t mps_last_offset;
 	uint32_t mode;
 
 	/* INFO: virtual memory: shadowed */
@@ -105,6 +130,97 @@ struct ndp_packet {
 	uint16_t len;
 };
 
+static inline void ndp_ctrl_medusa_mps_meta_first(struct ndp_ctrl_state_mps *s)
+{
+	s->buffer_index = 0;
+	s->block_offset = s->cfg.initial_offset;
+	s->block_index = 0;
+}
+
+static inline void ndp_ctrl_medusa_mps_meta_init(struct ndp_ctrl_state_mps *s, uint32_t block_size, uint32_t block_count, uint32_t buffer_size, size_t buffer_count, uint32_t initial_offset)
+{
+	s->cfg.block_size = block_size;
+	s->cfg.block_count = block_count;
+	s->cfg.buffer_size = buffer_size;
+	s->cfg.buffer_count = buffer_count;
+	s->cfg.initial_offset = initial_offset;
+	ndp_ctrl_medusa_mps_meta_first(s);
+}
+
+/* Walk through ring for every packet.
+ * returns -1 on ring wrap
+ *          1 on block increment (without ring wrap)
+ *          0 otherwise
+ */
+static inline int ndp_ctrl_medusa_mps_inc(struct ndp_ctrl_state_mps *s)
+{
+	s->buffer_index++;
+	if (s->buffer_index == s->cfg.buffer_count) {
+		/* wrap ring to first buffer */
+		ndp_ctrl_medusa_mps_meta_first(s);
+		return -1;
+	} else {
+		/* move offset to next buffer */
+		s->block_offset += s->cfg.buffer_size;
+		if (s->block_offset + s->cfg.buffer_size > s->cfg.block_size) {
+			/* this offset crosses the current block and therefore cannot be used; advance to next block */
+			s->block_index++;
+			/* do not reset block_offset, ideally continue with the same value,
+			 * but use some reasonable maximum offset in the block */
+			s->block_offset %= mps_non_first_block_max_offset;
+			if (s->block_index == s->cfg.block_count) {
+				/* wrap ring block (initial offset is larger than block_size) */
+				s->block_index = 0;
+			}
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/* Check buffer configuration and compute block_count for ring allocation.
+ * Optionally resize the ring with new configuration.
+ */
+static int ndp_ctrl_medusa_req_block_update(struct ndp_ctrl *ctrl, int do_resize, size_t buffer_size, size_t buffer_count, size_t initial_offset)
+{
+	int ret = 0;
+	/* optimization - enable shadowed mmap, which needs at least PAGE_SIZE space */
+	const int min_buffer_items = PAGE_SIZE / min(NDP_CTRL_RX_DESC_SIZE, NDP_CTRL_RX_NDP_HDR_SIZE);
+
+	struct ndp_ctrl_state_mps s;
+
+	if (buffer_size == 0 || buffer_count < min_buffer_items)
+		return -EINVAL;
+
+	/* walk through (virtual) ring to obtain parameters
+	 * - the inc with buffer_count = 0 never wraps/resets buffer_index
+	 * - the inc with block_count = 0 never wraps/resets block_index
+	 */
+	ndp_ctrl_medusa_mps_meta_init(&s, ctrl->channel.req_block_size, 0, buffer_size, 0, initial_offset);
+	while (s.buffer_index < buffer_count) {
+		ndp_ctrl_medusa_mps_inc(&s);
+	}
+	/* Check if last buffer(s) fits into offseted first block.
+	 * This save one block for some configurations. */
+	if (s.block_offset <= s.cfg.initial_offset)
+		s.block_index--;
+
+	s.cfg.block_count = s.block_index + 1;
+	s.cfg.buffer_count = s.buffer_index;
+
+	ctrl->cfg = s.cfg;
+	ctrl->channel.req_block_count = s.cfg.block_count;
+
+	if (do_resize) {
+		ret = ndp_channel_ring_resize(&ctrl->channel);
+	}
+
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
 /// @brief Function sets `hdr` and `off` with information from `channel`. Returns header count.
 /// @param channel
 /// @param hdr buffer of headers
@@ -123,14 +239,14 @@ static void ndp_ctrl_mps_fill_rx_descs(struct ndp_ctrl *ctrl, uint64_t count)
 	int i;
 	uint32_t sdp = ctrl->c.sdp;
 	struct nc_ndp_desc *desc = ctrl->desc_buffer_v + sdp;
-	ssize_t block_size = ctrl->channel.ring.blocks[0].size;
 	uint64_t last_upper_addr = ctrl->c.last_upper_addr;
 
 	/* TODO: Table of prepared descriptor bursts with all meta (desc. count etc) */
 	for (i = 0; i < count; i++) {
 		dma_addr_t addr;
-		addr = ctrl->channel.ring.blocks[ctrl->mps_last_offset / block_size].phys;
-		addr += ctrl->mps_last_offset % block_size;
+
+		addr = ctrl->channel.ring.blocks[ctrl->mps.block_index].phys;
+		addr += ctrl->mps.block_offset;
 
 		if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(addr) != last_upper_addr)) {
 			last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(addr);
@@ -138,10 +254,9 @@ static void ndp_ctrl_mps_fill_rx_descs(struct ndp_ctrl *ctrl, uint64_t count)
 			desc[i] = nc_ndp_rx_desc0(addr);
 			continue;
 		}
-		desc[i] = nc_ndp_rx_desc2(addr, buffer_size, 0);
-		ctrl->mps_last_offset += buffer_size;
-		if (ctrl->mps_last_offset >= ctrl->channel.ring.size)
-			ctrl->mps_last_offset = 0;
+		desc[i] = nc_ndp_rx_desc2(addr, ctrl->mps.cfg.buffer_size, 0);
+
+		ndp_ctrl_medusa_mps_inc(&ctrl->mps);
 	}
 	ctrl->c.sdp = (sdp + count) & ctrl->c.mdp;
 }
@@ -356,7 +471,6 @@ static void ndp_ctrl_medusa_tx_set_swptr(struct ndp_channel *channel, uint64_t p
 	int count;
 
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
-	ssize_t block_size = channel->ring.blocks[0].size;
 	uint64_t last_upper_addr = ctrl->c.last_upper_addr;
 	uint32_t sdp = ctrl->c.sdp;
 	uint32_t shp = ctrl->c.shp;
@@ -376,8 +490,8 @@ static void ndp_ctrl_medusa_tx_set_swptr(struct ndp_channel *channel, uint64_t p
 		if (ctrl->mode == NDP_CTRL_MODE_USER) {
 			addr = *off;
 		} else {
-			addr = channel->ring.blocks[*off / block_size].phys;
-			addr += *off % block_size;
+			addr = channel->ring.blocks[ctrl->mps.block_index].phys;
+			addr += ctrl->mps.block_offset;
 		}
 
 		if (ndp_ctrl_medusa_tx_wait_for_free_desc(channel, 2))
@@ -394,6 +508,8 @@ static void ndp_ctrl_medusa_tx_set_swptr(struct ndp_channel *channel, uint64_t p
 		desc[sdp] = nc_ndp_tx_desc2(addr, hdr->frame_len, hdr->meta, 0);
 		sdp++;
 		ctrl->free_desc--;
+
+		ndp_ctrl_medusa_mps_inc(&ctrl->mps);
 	}
 	/*
 	if (unlikely(dirty)) {
@@ -538,11 +654,12 @@ static int ndp_ctrl_start(struct ndp_ctrl *ctrl, struct nc_ndp_ctrl_start_params
 
 static int ndp_ctrl_medusa_start(struct ndp_channel *channel, uint64_t *hwptr)
 {
-
 	int ret;
 	struct nc_ndp_ctrl_start_params sp;
 
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	ndp_offset_t *off;
 
 	sp.update_buffer_virt = ctrl->update_buffer;
 	sp.desc_buffer = ctrl->desc_buffer_phys;
@@ -555,19 +672,18 @@ static int ndp_ctrl_medusa_start(struct ndp_channel *channel, uint64_t *hwptr)
 	if (ret)
 		return ret;
 
-	ctrl->mps_last_offset = 0;
 	ctrl->next_sdp = 0;
 
 	ctrl->mode = NDP_CTRL_MODE_PACKET_SIMPLE;
 
 	if (ctrl->mode == NDP_CTRL_MODE_PACKET_SIMPLE) {
-		int i;
-		ndp_offset_t *off;
-
 		/* Constant packet offsets in this mode */
-		for (i = 0, off = ctrl->off_buffer_v; i < ctrl->desc_buffer_size / NDP_CTRL_RX_DESC_SIZE; i++, off++) {
-			*off = i * buffer_size;
-		}
+		off = ctrl->off_buffer_v;
+
+		ndp_ctrl_medusa_mps_meta_first(&ctrl->mps);
+		do {
+			*(off++) = (ctrl->mps.block_index * ctrl->mps.cfg.block_size) + ctrl->mps.block_offset;
+		} while (ndp_ctrl_medusa_mps_inc(&ctrl->mps) != -1);
 	} else if (ctrl->mode == NDP_CTRL_MODE_USER) {
 		if (channel->id.type == NDP_CHANNEL_TYPE_RX) {
 			ctrl->free_desc = ctrl->c.mhp;
@@ -737,29 +853,21 @@ static int ndp_ctrl_medusa_attach_ring(struct ndp_channel *channel)
 
 	struct device *dev = channel->ring.dev;
 
-	const int min_buffer_items = PAGE_SIZE / min(NDP_CTRL_RX_DESC_SIZE, NDP_CTRL_RX_NDP_HDR_SIZE);
-
 	if (channel->ring.size == 0)
 		return -EINVAL;
 
-	if (buffer_size == 0 || !ispow2(buffer_size)) {
-		dev_err(ctrl->nfb->dev, "NDP queue %s: ndp_ctrl_buffer_size value must be power of two, but is %d.\n",
-				dev_name(&channel->dev), buffer_size);
-                return -EINVAL;
-	}
-
-	ctrl->desc_count = channel->ring.size / buffer_size;
-	if (ctrl->desc_count < min_buffer_items) {
-		/* Can't do shadow-map for this desc/hdr ring size */
-		dev_err(ctrl->nfb->dev, "NDP queue %s: descriptor buffer size must be at least %d items, but is %d.\n",
-				dev_name(&channel->dev), min_buffer_items, ctrl->desc_count);
+	/* just check already requested ring parameters */
+	if (ndp_ctrl_medusa_req_block_update(ctrl, 0, ctrl->cfg.buffer_size, ctrl->cfg.buffer_count, ctrl->cfg.initial_offset))
 		return -EINVAL;
-	}
 
-	ctrl->hdr_count = ctrl->desc_count;
+	/* apply configuration */
+	ctrl->mps.cfg = ctrl->cfg;
+
+	ctrl->desc_count = ctrl->hdr_count = ctrl->mps.cfg.buffer_count;
 
 	channel->ptrmask = ctrl->hdr_count - 1;
 
+	/* allocate update buffer */
 	ctrl->update_buffer = dma_alloc_coherent(dev, ALIGN(NDP_CTRL_UPDATE_SIZE, PAGE_SIZE),
 			&ctrl->update_buffer_phys, GFP_KERNEL);
 	if (ctrl->update_buffer == NULL) {
@@ -826,7 +934,7 @@ static int ndp_ctrl_medusa_attach_ring(struct ndp_channel *channel)
 	fdt_setprop_u64(fdt, node_offset, "off_mmap_base", ctrl->off_mmap_offset);
 	fdt_setprop_u64(fdt, node_offset, "off_mmap_size", ctrl->off_buffer_size * 2);
 
-	fdt_setprop_u32(fdt, node_offset, "buffer_size", buffer_size);
+	fdt_setprop_u32(fdt, node_offset, "buffer_size", ctrl->mps.cfg.buffer_size);
 
 	return 0;
 
@@ -1064,6 +1172,9 @@ static void ndp_ctrl_destroy(struct device *dev)
 	kfree(ctrl);
 }
 
+static struct ndp_channel_ops ndp_ctrl_tx_ops;
+static struct ndp_channel_ops ndp_ctrl_rx_ops;
+
 static struct ndp_channel *ndp_ctrl_create(struct ndp *ndp, struct ndp_channel_id id,
 		const struct attribute_group **attrs, struct ndp_channel_ops *ops, int node_offset)
 {
@@ -1076,6 +1187,9 @@ static struct ndp_channel *ndp_ctrl_create(struct ndp *ndp, struct ndp_channel_i
 	struct nfb_pci_device *pci_device;
 
 	struct device *dev = NULL;
+	size_t ndp_buffer_size;
+
+	int is_medusa = (ops == &ndp_ctrl_rx_ops || ops == &ndp_ctrl_tx_ops);
 
 	prop = fdt_getprop(ndp->nfb->fdt, node_offset, "pcie", &proplen);
 	if (proplen >= sizeof(*prop)) {
@@ -1115,6 +1229,15 @@ static struct ndp_channel *ndp_ctrl_create(struct ndp *ndp, struct ndp_channel_i
 	ret = nc_ndp_ctrl_open(ndp->nfb, node_offset, &ctrl->c);
 	if (ret)
 		goto err_ctrl_open;
+
+	if (is_medusa) {
+		/* Set initial parameters for ring */
+		ndp_buffer_size = ndp_ctrl_buffer_size == 0 ? NDP_CTRL_DEFAULT_BUFFER_SIZE : ndp_ctrl_buffer_size,
+		ndp_ctrl_medusa_req_block_update(ctrl, 0,
+				ndp_buffer_size,
+				ndp_ring_size / ndp_buffer_size,
+				(id.index + 1) * ndp_ctrl_initial_offset);
+	}
 
 	return channel;
 
@@ -1262,5 +1385,8 @@ struct ndp_channel *ndp_ctrl_v3_create_tx(struct ndp *ndp, int index, int node_o
 	return ndp_ctrl_create(ndp, id, ndp_ctrl_calypte_attr_tx_groups, &ndp_ctrl_calypte_tx_ops, node_offset);
 }
 
-module_param_cb(ndp_ctrl_buffer_size, &ndp_param_size_ops, &buffer_size, S_IRUGO);
+module_param_cb(ndp_ctrl_buffer_size, &ndp_param_size_ops, &ndp_ctrl_buffer_size, S_IRUGO);
 MODULE_PARM_DESC(ndp_ctrl_buffer_size, "Size of buffer for one packet in NDP ring (max size of RX/TX packet) [4096]");
+
+module_param_cb(ndp_ctrl_initial_offset, &ndp_param_size_ops, &ndp_ctrl_initial_offset, S_IRUGO);
+MODULE_PARM_DESC(ndp_ctrl_initial_offset, "Offset for the first buffer (packet) in ring in bytes; will be multiplied by (channel_index + 1) [0]");
