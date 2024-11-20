@@ -9,7 +9,7 @@
 
 DEFAULT_PACKAGE_NAME="nfb"
 AC_PREREQ([2.63])
-AC_INIT(m4_esyscmd([ if [[ -z $CMAKE_PACKAGE_NAME ]]; then echo -n $DEFAULT_PACKAGE_NAME; else echo -n $CMAKE_PACKAGE_NAME; fi;]), m4_esyscmd([ if [[ -z $CMAKE_PACKAGE_VERSION ]]; then cut -f1 ../VERSION | tr -d '\n'; else echo -n $CMAKE_PACKAGE_VERSION; fi;]))
+AC_INIT(m4_esyscmd([ if [ -z $CMAKE_PACKAGE_NAME ]; then echo -n $DEFAULT_PACKAGE_NAME; else echo -n $CMAKE_PACKAGE_NAME; fi;]), m4_esyscmd([ if [ -z $CMAKE_PACKAGE_VERSION ]; then cut -f1 ../VERSION | tr -d '\n'; else echo -n $CMAKE_PACKAGE_VERSION; fi;]))
 
 AC_CONFIG_HEADERS(config.h)
 
