@@ -27,15 +27,19 @@
 
 /*! Acceptable command line arguments */
 /*! -d path to device file */
+/*! -B buffer size */
+/*! -C buffer count */
 /*! -i RX or TX index */
 /*! -r use only RX; */
 /*! -t use only TX; */
 /*! -R reset counters */
+/*! -S ring size */
+/*! -O initial offset*/
 /*! -h print help; */
 /*! -v verbose mode; */
 /*! -V version */
 
-#define ARGUMENTS			"d:i:q:rtRS:Tvh"
+#define ARGUMENTS			"d:i:q:rtRS:B:C:O:Tvh"
 
 enum commands {
 	CMD_PRINT_STATUS,
@@ -43,6 +47,9 @@ enum commands {
 	CMD_COUNTER_RESET,
 	CMD_COUNTER_READ_AND_RESET,
 	CMD_SET_RING_SIZE,
+	CMD_SET_BUFFER_SIZE,
+	CMD_SET_BUFFER_COUNT,
+	CMD_SET_INITIAL_OFFSET,
 	CMD_QUERY,
 };
 
@@ -93,7 +100,10 @@ void usage(const char *me, int verbose)
 	printf("-R              Resets packet counters (use -RR for read & reset)\n");
 	printf("-T              Print the sum of all counters of selected queues\n"
 	       "                (use -TT to print each queue separately)\n");
-	printf("-S size         Set kernel ring buffer size (can be with K/M/G suffix)\n");
+	printf("-S ring_size    Set kernel ring buffer size (can be with K/M/G suffix)\n");
+	printf("-B buffer_size  Set kernel buffer size (for single packet; DMA Medusa only)\n");
+	printf("-C buffer_count Set kernel buffer count (replacement for ring_size; DMA Medusa only)\n");
+	printf("-O initial_off  Set initial offset in ring buffer (first buffer offset; DMA Medusa only)\n");
 	printf("-q query        Get specific informations%s\n", verbose ? "" : " (-v for more info)");
 	if (verbose) {
 		for (unsigned i = 0; i < NC_ARRAY_SIZE(queries); i++) {
@@ -106,18 +116,18 @@ void usage(const char *me, int verbose)
 	printf("-h              Show this text\n");
 }
 
-int set_ring_size(struct nfb_device *dev, int dir, int index, const char* csize)
+int set_ring_size(struct nfb_device *dev, int dir, int index, const char* csize, const char *target)
 {
 	FILE *f;
 	char path_buffer[128];
 
 	snprintf(path_buffer, sizeof(path_buffer),
-		"/sys/class/nfb/nfb%d/ndp/%cx%d/ring_size",
-		nfb_get_system_id(dev), dir == 0 ? 'r' : 't', index);
+		"/sys/class/nfb/nfb%d/ndp/%cx%d/%s",
+		nfb_get_system_id(dev), dir == 0 ? 'r' : 't', index, target);
 
 	f = fopen(path_buffer, "wb");
 	if (f == NULL)
-		err(errno, "Can't set ring size");
+		err(errno, "Can't set %s", target);
 	fwrite(csize, 1, strlen(csize) + 1, f);
 	fclose(f);
 	return 0;
@@ -519,6 +529,18 @@ int main(int argc, char *argv[])
 			cmd = CMD_SET_RING_SIZE;
 			csize = optarg;
 			break;
+		case 'B':
+			cmd = CMD_SET_BUFFER_SIZE;
+			csize = optarg;
+			break;
+		case 'C':
+			cmd = CMD_SET_BUFFER_COUNT;
+			csize = optarg;
+			break;
+		case 'O':
+			cmd = CMD_SET_INITIAL_OFFSET;
+			csize = optarg;
+			break;
 		default:
 			err(-EINVAL, "Unknown argument -%c", optopt);
 		}
@@ -583,7 +605,16 @@ int main(int argc, char *argv[])
 							sum_rx.discarded_bytes += cntr_rx.discarded_bytes;
 							break;
 						case CMD_SET_RING_SIZE:
-							set_ring_size(dev, 0, i, csize);
+							set_ring_size(dev, 0, i, csize, "ring_size");
+							break;
+						case CMD_SET_BUFFER_SIZE:
+							set_ring_size(dev, 0, i, csize, "buffer_size");
+							break;
+						case CMD_SET_BUFFER_COUNT:
+							set_ring_size(dev, 0, i, csize, "buffer_count");
+							break;
+						case CMD_SET_INITIAL_OFFSET:
+							set_ring_size(dev, 0, i, csize, "initial_offset");
 							break;
 
 						default:
@@ -620,7 +651,16 @@ int main(int argc, char *argv[])
 						case CMD_SET_RING_SIZE:
 							if (txq->type == QUEUE_TYPE_CALYPTE)
 								err(errno, "TX Calypte controller does not support setting of ring buffer size.");
-							set_ring_size(dev, 1, i, csize);
+							set_ring_size(dev, 1, i, csize, "ring_size");
+							break;
+						case CMD_SET_BUFFER_SIZE:
+							set_ring_size(dev, 1, i, csize, "buffer_size");
+							break;
+						case CMD_SET_BUFFER_COUNT:
+							set_ring_size(dev, 1, i, csize, "buffer_count");
+							break;
+						case CMD_SET_INITIAL_OFFSET:
+							set_ring_size(dev, 1, i, csize, "initial_offset");
 							break;
 						default:
 							break;
