@@ -366,11 +366,25 @@ static uint64_t ndp_ctrl_rx_get_hwptr(struct ndp_channel *channel)
 
 static uint64_t ndp_ctrl_medusa_tx_get_hwptr(struct ndp_channel *channel);
 
+inline int ndp_ctrl_medusa_tx_wait_for_free_desc(struct ndp_channel *channel, int count)
+{
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	while (ctrl->free_desc < count) {
+		udelay(10);
+		ndp_ctrl_medusa_tx_get_hwptr(channel);
+
+		if (unlikely(ndp_kill_signal_pending(current))) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 static void ndp_ctrl_medusa_tx_set_swptr(struct ndp_channel *channel, uint64_t ptr)
 {
 	int i;
 	int count;
-	int dirty = 0;
 
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 	ssize_t block_size = channel->ring.blocks[0].size;
@@ -396,33 +410,16 @@ static void ndp_ctrl_medusa_tx_set_swptr(struct ndp_channel *channel, uint64_t p
 			addr = channel->ring.blocks[*off / block_size].phys;
 			addr += *off % block_size;
 		}
-		if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(addr) != last_upper_addr)) {
-			while (ctrl->free_desc == 0) {
-				udelay(10);
-				ndp_ctrl_medusa_tx_get_hwptr(channel);
 
-				if (unlikely(ndp_kill_signal_pending(current))) {
-					dirty = 1;
-					break;
-				}
-			}
-			if (unlikely(dirty)) {
-				break;
-			}
+		if (ndp_ctrl_medusa_tx_wait_for_free_desc(channel, 2))
+			break;
+
+		if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(addr) != last_upper_addr)) {
 			last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(addr);
 			ctrl->c.last_upper_addr = last_upper_addr;
 			desc[sdp] = nc_ndp_tx_desc0(addr);
 			sdp++;
 			ctrl->free_desc--;
-		}
-
-		while (ctrl->free_desc == 0) {
-			udelay(10);
-			ndp_ctrl_medusa_tx_get_hwptr(channel);
-			if (ndp_kill_signal_pending(current)) {
-				dirty = 1;
-				break;
-			}
 		}
 
 		desc[sdp] = nc_ndp_tx_desc2(addr, hdr->frame_len, hdr->meta, 0);
