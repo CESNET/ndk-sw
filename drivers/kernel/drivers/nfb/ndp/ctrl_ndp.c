@@ -221,6 +221,109 @@ static int ndp_ctrl_medusa_req_block_update(struct ndp_ctrl *ctrl, int do_resize
 	return 0;
 }
 
+static ssize_t ndp_ctrl_get_buffer_size(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct ndp_channel *channel = dev_get_drvdata(dev);
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	return scnprintf(buf, PAGE_SIZE, "%u\n", ctrl->cfg.buffer_size);
+}
+
+static ssize_t ndp_ctrl_set_buffer_size(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	int ret = -1;
+	unsigned long long value;
+	struct ndp_channel *channel = dev_get_drvdata(dev);
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	value = memparse(buf, NULL);
+
+	ndp_ctrl_medusa_req_block_update(ctrl, 1, value, ctrl->cfg.buffer_count, ctrl->cfg.initial_offset);
+	if (ret)
+		return ret;
+
+	return size;
+}
+
+static ssize_t ndp_ctrl_get_buffer_count(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct ndp_channel *channel = dev_get_drvdata(dev);
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	return scnprintf(buf, PAGE_SIZE, "%u\n", ctrl->cfg.buffer_count);
+}
+
+static ssize_t ndp_ctrl_set_buffer_count(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	int ret = -1;
+	unsigned long long value;
+	struct ndp_channel *channel = dev_get_drvdata(dev);
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	value = memparse(buf, NULL);
+
+	ndp_ctrl_medusa_req_block_update(ctrl, 1, ctrl->cfg.buffer_size, value, ctrl->cfg.initial_offset);
+	if (ret)
+		return ret;
+
+	return size;
+}
+
+static ssize_t ndp_ctrl_get_initial_offset(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct ndp_channel *channel = dev_get_drvdata(dev);
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	return scnprintf(buf, PAGE_SIZE, "%u\n", ctrl->cfg.initial_offset);
+}
+
+static ssize_t ndp_ctrl_set_initial_offset(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	int ret = -1;
+	unsigned long long value;
+	struct ndp_channel *channel = dev_get_drvdata(dev);
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	value = memparse(buf, NULL);
+
+	ret = ndp_ctrl_medusa_req_block_update(ctrl, 1, ctrl->cfg.buffer_size, ctrl->cfg.buffer_count, value);
+	if (ret)
+		return ret;
+
+	return size;
+}
+
+static ssize_t ndp_ctrl_get_ring_size(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct ndp_channel *channel = dev_get_drvdata(dev);
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+	return scnprintf(buf, PAGE_SIZE, "%u\n", ctrl->cfg.buffer_size * ctrl->cfg.buffer_count);
+}
+
+static ssize_t ndp_ctrl_set_ring_size(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	int ret = -1;
+	unsigned long long value;
+	unsigned long buffer_count = 1;
+	struct ndp_channel *channel = dev_get_drvdata(dev);
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	value = memparse(buf, NULL);
+
+	while (buffer_count * 2 <= value / ctrl->cfg.buffer_size)
+		buffer_count *= 2;
+
+	ret = ndp_ctrl_medusa_req_block_update(ctrl, 1, ctrl->cfg.buffer_size, value, ctrl->cfg.initial_offset);
+	if (ret)
+		return ret;
+
+	return size;
+}
+
 /// @brief Function sets `hdr` and `off` with information from `channel`. Returns header count.
 /// @param channel
 /// @param hdr buffer of headers
@@ -1301,17 +1404,26 @@ static struct ndp_channel_ops ndp_ctrl_calypte_tx_ops =
 };
 
 /* Attributes for sysfs - declarations */
-static DEVICE_ATTR(ring_size,   (S_IRUGO | S_IWGRP | S_IWUSR), ndp_channel_get_ring_size, ndp_channel_set_ring_size);
+static DEVICE_ATTR(ring_size,   (S_IRUGO | S_IWGRP | S_IWUSR), ndp_ctrl_get_ring_size, ndp_ctrl_set_ring_size);
+static DEVICE_ATTR(buffer_size, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_ctrl_get_buffer_size, ndp_ctrl_set_buffer_size);
+static DEVICE_ATTR(buffer_count, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_ctrl_get_buffer_count, ndp_ctrl_set_buffer_count);
+static DEVICE_ATTR(initial_offset, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_ctrl_get_initial_offset, ndp_ctrl_set_initial_offset);
 
 static struct device_attribute dev_attr_calypte_ring_size = __ATTR(ring_size, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_channel_get_ring_size, ndp_channel_set_ring_size);
 
 static struct attribute *ndp_ctrl_rx_attrs[] = {
 	&dev_attr_ring_size.attr,
+	&dev_attr_buffer_size.attr,
+	&dev_attr_buffer_count.attr,
+	&dev_attr_initial_offset.attr,
 	NULL,
 };
 
 static struct attribute *ndp_ctrl_tx_attrs[] = {
 	&dev_attr_ring_size.attr,
+	&dev_attr_buffer_size.attr,
+	&dev_attr_buffer_count.attr,
+	&dev_attr_initial_offset.attr,
 	NULL,
 };
 
