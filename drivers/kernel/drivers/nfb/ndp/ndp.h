@@ -147,6 +147,9 @@ struct ndp_channel {
 	struct device dev;
 	struct ndp *ndp;
 	struct ndp_channel_id id;
+
+	size_t req_block_count;
+	size_t req_block_size;
 };
 
 /**
@@ -211,7 +214,8 @@ extern void ndp_close(struct ndp_subscriber *app);
 int ndp_channel_ring_create(struct ndp_channel *channel, struct device *dev,
 		 size_t block_count, size_t block_size);
 void ndp_channel_ring_destroy(struct ndp_channel *channel);
-int ndp_channel_ring_resize(struct ndp_channel *channel, size_t size);
+int ndp_channel_ring_resize(struct ndp_channel *channel);
+int ndp_channel_ring_req_block_update_by_size(struct ndp_channel *channel, unsigned long long req_size);
 
 ssize_t ndp_channel_get_discard(struct device *dev, struct device_attribute *attr, char *buf);
 ssize_t ndp_channel_set_discard(struct device *dev, struct device_attribute *attr, const char *buf, size_t size);

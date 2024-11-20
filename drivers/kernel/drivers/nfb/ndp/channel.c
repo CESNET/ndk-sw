@@ -56,6 +56,8 @@ void ndp_channel_init(struct ndp_channel *channel, struct ndp_channel_id id)
 	device_initialize(&channel->dev);
 	dev_set_name(&channel->dev, channel->id.type == NDP_CHANNEL_TYPE_TX ? "tx%d" :"rx%d", channel->id.index);
 	dev_set_drvdata(&channel->dev, channel);
+
+	ndp_channel_ring_req_block_update_by_size(channel, ndp_ring_size);
 }
 
 int ndp_channel_add(struct ndp_channel *channel, struct ndp *ndp, uint32_t phandle)
@@ -71,9 +73,7 @@ int ndp_channel_add(struct ndp_channel *channel, struct ndp *ndp, uint32_t phand
 	node_offset = fdt_add_subnode(ndp->nfb->fdt, node_offset, dev_name(&channel->dev));
 	fdt_setprop_u32(ndp->nfb->fdt, node_offset, "ctrl", phandle);
 
-	if (ndp_ring_size < ndp_ring_block_size)
-		ndp_ring_block_size = ndp_ring_size;
-	ndp_channel_ring_create(channel, channel->ring.dev, ndp_ring_size / ndp_ring_block_size, ndp_ring_block_size);
+	ndp_channel_ring_create(channel, channel->ring.dev, channel->req_block_count, channel->req_block_size);
 
 	ret = device_add(&channel->dev);
 	if (ret)
