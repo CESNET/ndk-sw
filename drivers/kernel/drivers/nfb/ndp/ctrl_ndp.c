@@ -105,6 +105,9 @@ struct ndp_ctrl {
 	int desc_count;
 	int hdr_count;
 
+	uint32_t max_hp_mask;
+	uint32_t max_dp_mask;
+
 	void *hdr_buffer;
 
 	uint8_t hdr_buff_en_rw_map;
@@ -189,7 +192,7 @@ static int ndp_ctrl_medusa_req_block_update(struct ndp_ctrl *ctrl, int do_resize
 
 	struct ndp_ctrl_state_mps s;
 
-	if (buffer_size == 0 || buffer_count < min_buffer_items)
+	if (buffer_size == 0 || buffer_count < min_buffer_items || buffer_count > ctrl->max_dp_mask + 1)
 		return -EINVAL;
 
 	/* walk through (virtual) ring to obtain parameters
@@ -1334,6 +1337,8 @@ static struct ndp_channel *ndp_ctrl_create(struct ndp *ndp, struct ndp_channel_i
 		goto err_ctrl_open;
 
 	if (is_medusa) {
+		nc_ndp_ctrl_medusa_get_max_ptr_mask(&ctrl->c, &ctrl->max_dp_mask, &ctrl->max_hp_mask);
+
 		/* Set initial parameters for ring */
 		ndp_buffer_size = ndp_ctrl_buffer_size == 0 ? NDP_CTRL_DEFAULT_BUFFER_SIZE : ndp_ctrl_buffer_size,
 		ndp_ctrl_medusa_req_block_update(ctrl, 0,
