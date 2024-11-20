@@ -1103,6 +1103,7 @@ static struct ndp_channel *ndp_ctrl_create(struct ndp *ndp, struct ndp_channel_i
 	int proplen;
 	int device_index;
 	struct ndp_ctrl *ctrl;
+	struct ndp_channel *channel;
 	struct nfb_pci_device *pci_device;
 
 	struct device *dev = NULL;
@@ -1132,12 +1133,13 @@ static struct ndp_channel *ndp_ctrl_create(struct ndp *ndp, struct ndp_channel_i
 		ret = -ENOMEM;
 		goto err_alloc_ctrl;
 	}
-	ndp_channel_init(&ctrl->channel, id);
+	channel = &ctrl->channel;
+	ndp_channel_init(channel, id);
 
-	ctrl->channel.dev.groups = attrs;
-	ctrl->channel.dev.release = ndp_ctrl_destroy;
-	ctrl->channel.ops = ops;
-	ctrl->channel.ring.dev = dev;
+	channel->dev.groups = attrs;
+	channel->dev.release = ndp_ctrl_destroy;
+	channel->ops = ops;
+	channel->ring.dev = dev;
 
 	ctrl->nfb = ndp->nfb;
 
@@ -1145,7 +1147,7 @@ static struct ndp_channel *ndp_ctrl_create(struct ndp *ndp, struct ndp_channel_i
 	if (ret)
 		goto err_ctrl_open;
 
-	return &ctrl->channel;
+	return channel;
 
 //	nc_ndp_ctrl_close(&ctrl->c);
 err_ctrl_open:
