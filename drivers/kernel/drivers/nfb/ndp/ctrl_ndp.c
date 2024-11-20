@@ -105,37 +105,6 @@ struct ndp_packet {
 	uint16_t len;
 };
 
-/* Attributes for sysfs - declarations */
-static DEVICE_ATTR(ring_size,   (S_IRUGO | S_IWGRP | S_IWUSR), ndp_channel_get_ring_size, ndp_channel_set_ring_size);
-
-static struct attribute *ndp_ctrl_rx_attrs[] = {
-	&dev_attr_ring_size.attr,
-	NULL,
-};
-
-static struct attribute *ndp_ctrl_tx_attrs[] = {
-	&dev_attr_ring_size.attr,
-	NULL,
-};
-
-static struct attribute_group ndp_ctrl_attr_rx_group = {
-	.attrs = ndp_ctrl_rx_attrs,
-};
-
-static struct attribute_group ndp_ctrl_attr_tx_group = {
-	.attrs = ndp_ctrl_tx_attrs,
-};
-
-static const struct attribute_group *ndp_ctrl_attr_rx_groups[] = {
-	&ndp_ctrl_attr_rx_group,
-	NULL,
-};
-
-static const struct attribute_group *ndp_ctrl_attr_tx_groups[] = {
-	&ndp_ctrl_attr_tx_group,
-	NULL,
-};
-
 /// @brief Function sets `hdr` and `off` with information from `channel`. Returns header count.
 /// @param channel
 /// @param hdr buffer of headers
@@ -1206,6 +1175,37 @@ static struct ndp_channel_ops ndp_ctrl_calypte_tx_ops =
 	.attach_ring = ndp_ctrl_tx_calypte_attach_ring,
 	.detach_ring = ndp_ctrl_calypte_detach_ring,
 	.get_free_space = ndp_ctrl_calypte_tx_get_free_space,
+};
+
+/* Attributes for sysfs - declarations */
+static DEVICE_ATTR(ring_size,   (S_IRUGO | S_IWGRP | S_IWUSR), ndp_channel_get_ring_size, ndp_channel_set_ring_size);
+
+static struct attribute *ndp_ctrl_rx_attrs[] = {
+	&dev_attr_ring_size.attr,
+	NULL,
+};
+
+static struct attribute *ndp_ctrl_tx_attrs[] = {
+	&dev_attr_ring_size.attr,
+	NULL,
+};
+
+static struct attribute_group ndp_ctrl_attr_rx_group = {
+	.attrs = ndp_ctrl_rx_attrs,
+};
+
+static struct attribute_group ndp_ctrl_attr_tx_group = {
+	.attrs = ndp_ctrl_tx_attrs,
+};
+
+static const struct attribute_group *ndp_ctrl_attr_rx_groups[] = {
+	&ndp_ctrl_attr_rx_group,
+	NULL,
+};
+
+static const struct attribute_group *ndp_ctrl_attr_tx_groups[] = {
+	&ndp_ctrl_attr_tx_group,
+	NULL,
 };
 
 struct ndp_channel *ndp_ctrl_v2_create_rx(struct ndp *ndp, int index, int node_offset)
