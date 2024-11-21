@@ -1180,6 +1180,8 @@ static struct ndp_channel_ops ndp_ctrl_calypte_tx_ops =
 /* Attributes for sysfs - declarations */
 static DEVICE_ATTR(ring_size,   (S_IRUGO | S_IWGRP | S_IWUSR), ndp_channel_get_ring_size, ndp_channel_set_ring_size);
 
+static struct device_attribute dev_attr_calypte_ring_size = __ATTR(ring_size, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_channel_get_ring_size, ndp_channel_set_ring_size);
+
 static struct attribute *ndp_ctrl_rx_attrs[] = {
 	&dev_attr_ring_size.attr,
 	NULL,
@@ -1208,6 +1210,34 @@ static const struct attribute_group *ndp_ctrl_attr_tx_groups[] = {
 	NULL,
 };
 
+static struct attribute *ndp_ctrl_calypte_rx_attrs[] = {
+	&dev_attr_calypte_ring_size.attr,
+	NULL,
+};
+
+static struct attribute *ndp_ctrl_calypte_tx_attrs[] = {
+	&dev_attr_calypte_ring_size.attr,
+	NULL,
+};
+
+static struct attribute_group ndp_ctrl_calypte_attr_rx_group = {
+	.attrs = ndp_ctrl_calypte_rx_attrs,
+};
+
+static struct attribute_group ndp_ctrl_calypte_attr_tx_group = {
+	.attrs = ndp_ctrl_calypte_tx_attrs,
+};
+
+static const struct attribute_group *ndp_ctrl_calypte_attr_rx_groups[] = {
+	&ndp_ctrl_calypte_attr_rx_group,
+	NULL,
+};
+
+static const struct attribute_group *ndp_ctrl_calypte_attr_tx_groups[] = {
+	&ndp_ctrl_calypte_attr_tx_group,
+	NULL,
+};
+
 struct ndp_channel *ndp_ctrl_v2_create_rx(struct ndp *ndp, int index, int node_offset)
 {
 	struct ndp_channel_id id = {.index = index, .type = NDP_CHANNEL_TYPE_RX};
@@ -1223,13 +1253,13 @@ struct ndp_channel *ndp_ctrl_v2_create_tx(struct ndp *ndp, int index, int node_o
 struct ndp_channel *ndp_ctrl_v3_create_rx(struct ndp *ndp, int index, int node_offset)
 {
 	struct ndp_channel_id id = {.index = index, .type = NDP_CHANNEL_TYPE_RX};
-	return ndp_ctrl_create(ndp, id, ndp_ctrl_attr_rx_groups, &ndp_ctrl_calypte_rx_ops, node_offset);
+	return ndp_ctrl_create(ndp, id, ndp_ctrl_calypte_attr_rx_groups, &ndp_ctrl_calypte_rx_ops, node_offset);
 }
 
 struct ndp_channel *ndp_ctrl_v3_create_tx(struct ndp *ndp, int index, int node_offset)
 {
 	struct ndp_channel_id id = {.index = index, .type = NDP_CHANNEL_TYPE_TX};
-	return ndp_ctrl_create(ndp, id, ndp_ctrl_attr_tx_groups, &ndp_ctrl_calypte_tx_ops, node_offset);
+	return ndp_ctrl_create(ndp, id, ndp_ctrl_calypte_attr_tx_groups, &ndp_ctrl_calypte_tx_ops, node_offset);
 }
 
 module_param_cb(ndp_ctrl_buffer_size, &ndp_param_size_ops, &buffer_size, S_IRUGO);
