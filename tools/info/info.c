@@ -53,6 +53,10 @@ enum queries {
 	QUERY_PORT,
 	QUERY_CARD,
 	QUERY_PCI,
+	QUERY_PCIPATH,
+	QUERY_PCIPATH_S,
+	QUERY_DEFAULT_DEV,
+	QUERY_DEFAULT_DEV_S,
 	QUERY_NUMA,
 };
 static const char * const queries[] = {
@@ -66,6 +70,10 @@ static const char * const queries[] = {
 	"port",
 	"card",
 	"pci",
+	"pci-path",
+	"pp",
+	"default-dev",
+	"dd",
 	"numa"
 };
 
@@ -85,6 +93,8 @@ void usage(const char *progname, int verbose)
 		printf(" * port             Ethernet ports\n");
 		printf(" * card             Card name\n");
 		printf(" * pci              PCI slot\n");
+		printf(" * pci-path / pp    Fixed path to device\n");
+		printf(" * default-dev / dd Command for setting as default device in current shell\n");
 		printf(" * numa             NUMA node\n");
 		printf(" example of usage: '-q project,build,card'\n");
 	}
@@ -187,11 +197,26 @@ int print_specific_info(struct nfb_device *dev, int query)
 	const uint32_t *prop32;
 	const void *fdt;
 
+	const char *prefix = "";
+
 	char buffer[BUFFER_SIZE];
 	time_t build_time;
 
 	fdt = nfb_get_fdt(dev);
 	fdt_offset = fdt_path_offset(fdt, "/firmware/");
+
+	switch (query) {
+	case QUERY_PCIPATH:
+	case QUERY_PCIPATH_S:
+		prefix = "/dev/nfb/by-pci-slot/";
+		query = QUERY_PCI;
+		break;
+	case QUERY_DEFAULT_DEV:
+	case QUERY_DEFAULT_DEV_S:
+		prefix = "export LIBNFB_DEFAULT_DEV=/dev/nfb/by-pci-slot/";
+		query = QUERY_PCI;
+		break;
+	}
 
 	/* FDT String properties */
 	switch (query) {
@@ -210,7 +235,7 @@ int print_specific_info(struct nfb_device *dev, int query)
 		if (len <= 0)
 			return -1;
 
-		printf("%s", (const char *)prop);
+		printf("%s%s", prefix, (const char *)prop);
 		return 0;
 	}
 
