@@ -12,9 +12,29 @@
 #include "ndp.h"
 #include "../nfb.h"
 
-unsigned long ndp_ring_size = 4 * 1024 * 1024;
-unsigned long ndp_ring_block_size = 4 * 1024 * 1024;
 
+#define NDP_RING_BLOCK_SIZE_DEFAULT (4 * 1024 * 1024)
+#define NDP_RING_BLOCK_COUNT_DEFAULT (1)
+#define NDP_RING_SIZE_DEFAULT (NDP_RING_BLOCK_SIZE_DEFAULT * NDP_RING_BLOCK_COUNT_DEFAULT)
+
+unsigned long ndp_ring_size = NDP_RING_SIZE_DEFAULT;
+unsigned long ndp_ring_block_size = NDP_RING_BLOCK_SIZE_DEFAULT;
+
+int ndp_channel_ring_req_block_update_by_size(struct ndp_channel *channel, unsigned long long req_size)
+{
+	if (!ispow2(req_size) || req_size < PAGE_SIZE)
+		return -EINVAL;
+
+	channel->req_block_size = ndp_ring_block_size;
+	if (req_size < channel->req_block_size)
+		channel->req_block_size = req_size;
+
+	if (channel->req_block_size == 0 || !ispow2(channel->req_block_size))
+		channel->req_block_size = NDP_RING_BLOCK_SIZE_DEFAULT;
+
+	channel->req_block_count = req_size / channel->req_block_size;
+	return 0;
+}
 
 ssize_t ndp_channel_get_ring_size(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -30,7 +50,11 @@ ssize_t ndp_channel_set_ring_size(struct device *dev,
 	struct ndp_channel *channel = dev_get_drvdata(dev);
 
 	value = memparse(buf, NULL);
-	ret = ndp_channel_ring_resize(channel, value);
+
+	ret = ndp_channel_ring_req_block_update_by_size(channel, value);
+	if (ret)
+		return ret;
+	ret = ndp_channel_ring_resize(channel);
 	if (ret)
 		return ret;
 
@@ -50,6 +74,9 @@ struct ndp_block *ndp_block_alloc(struct device *dev,
 	int ret = -ENOMEM;
 	struct ndp_block *block;
 	struct ndp_block *blocks;
+
+	if (count == 0 || size == 0)
+		return NULL;
 
 	blocks = kmalloc_node(count * sizeof(struct ndp_block), GFP_KERNEL, dev_to_node(dev));
 	if (blocks == NULL)
@@ -284,20 +311,17 @@ void ndp_channel_ring_destroy(struct ndp_channel *channel)
 	}
 }
 
-int ndp_channel_ring_resize(struct ndp_channel *channel, size_t size)
+int ndp_channel_ring_resize(struct ndp_channel *channel)
 {
 	int ret = -EBUSY;
 	struct device *dev;
 
-	size_t original_size;
-	size_t block_count;
+	size_t orig_block_size = 0;
+	size_t orig_block_count;
 
-	original_size = channel->ring.size;
-
-	if (!ispow2(size))
-		return -EINVAL;
-
-	block_count = size / ndp_ring_block_size;
+	orig_block_count = channel->ring.block_count;
+	if (orig_block_count)
+		orig_block_size = channel->ring.blocks[0].size;
 
 	mutex_lock(&channel->mutex);
 
@@ -314,7 +338,7 @@ int ndp_channel_ring_resize(struct ndp_channel *channel, size_t size)
 	ndp_channel_ring_destroy(channel);
 
 	/* Create new ring */
-	ret = ndp_channel_ring_create(channel, dev, block_count, ndp_ring_block_size);
+	ret = ndp_channel_ring_create(channel, dev, channel->req_block_count, channel->req_block_size);
 	if (ret)
 		goto err_ring_create;
 
@@ -323,8 +347,8 @@ int ndp_channel_ring_resize(struct ndp_channel *channel, size_t size)
 	return 0;
 
 err_ring_create:
-	if (original_size)
-		ndp_channel_ring_create(channel, dev, original_size / ndp_ring_block_size, ndp_ring_block_size);
+	if (orig_block_count)
+		ndp_channel_ring_create(channel, dev, orig_block_count, orig_block_size);
 err_nodev:
 err_started:
 	mutex_unlock(&channel->mutex);

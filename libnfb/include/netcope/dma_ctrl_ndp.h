@@ -407,6 +407,21 @@ err_comp_lock:
 	return ret;
 }
 
+static inline void nc_ndp_ctrl_medusa_get_max_ptr_mask(struct nc_ndp_ctrl *ctrl, uint32_t* dp, uint32_t* hp)
+{
+	uint32_t orig;
+
+	orig = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_MHP);
+	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MHP, 0xFFFFFFFF);
+	*hp = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_MHP) / 2;
+	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MHP, orig);
+
+	orig = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_MDP);
+	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MDP, 0xFFFFFFFF);
+	*dp = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_MDP) / 2;
+	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MDP, orig);
+}
+
 static inline int _nc_ndp_ctrl_stop(struct nc_ndp_ctrl *ctrl, int force)
 {
 	int ret = 0;
