@@ -231,6 +231,12 @@ ssize_t nfb_fw_read_for_dev(const struct nfb_device *dev, FILE *fd, void **data)
 		return ret;
 	}
 
+	fdt_for_each_compatible_node(fdt, node, "brnologic,m10bmc_spi") {
+		format = BITSTREAM_FORMAT_NATIVE;
+		ret = nfb_fw_open_rpd(fd, data, format);
+		return ret;
+	}
+
 	/* For Intel Stratix 10 and Agilex FPGAs */
 	fdt_for_each_compatible_node(fdt, node, "netcope,intel_sdm_controller") {
 		prop32 = fdt_getprop(fdt, node, "boot_en", &proplen);

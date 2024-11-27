@@ -16,7 +16,13 @@ nfb-objs += mi/mi.o
 nfb-objs += ndp/ctrl.o ndp/ctrl_ndp.o ndp/channel.o ndp/subscription.o ndp/subscriber.o ndp/ring.o ndp/char.o ndp/driver.o ndp/kndp.o
 nfb-objs += ndp_netdev/core.o
 nfb-objs += boot/flash.o boot/reload.o boot/boot.o boot/gecko.o boot/sdm.o
-nfb-objs += ../mfd/intel-m10-bmc-core.o ../fpga/fpga-image-load.o ../fpga/intel-m10-bmc-sec-update.o ../hwmon/intel-m10-bmc-hwmon.o ../mfd/intel-m10-bmc-log.o boot/nfb-pmci.o
+ifndef CONFIG_REGMAP_SPI_AVMM
+nfb-objs += ../base/regmap/regmap-spi-avmm.o
+endif
+ifndef CONFIG_SPI_ALTERA_CORE
+nfb-objs += ../spi/spi-altera-core.o
+endif
+nfb-objs += ../mfd/intel-m10-bmc-core.o ../fpga/fpga-image-load.o ../fpga/intel-m10-bmc-sec-update.o ../hwmon/intel-m10-bmc-hwmon.o ../mfd/intel-m10-bmc-log.o boot/nfb-pmci.o boot/nfb-spi.o
 nfb-objs += net/driver.o net/device.o net/ethtool.o net/sysfs.o
 nfb-objs += qdr/qdr.o
 nfb-objs += misc.o lock.o bus.o char.o pci.o core.o

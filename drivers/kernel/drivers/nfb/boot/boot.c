@@ -267,6 +267,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	boot->nfb = nfb;
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	ret = nfb_pmci_attach(boot);
+	ret = nfb_spi_attach(boot);
 #endif
 	/* Cards with Intel FPGA (Stratix10, Agilex) use Secure Device Manager for QSPI Flash access and Boot */
 	boot->sdm = NULL;
@@ -292,7 +293,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,boot_controller");
 	// FIXME: better create some general boot controller interface
 	if (fdt_offset < 0) {
-		if (boot->sdm_boot_en == 0 && boot->pmci == NULL) {
+		if (boot->sdm_boot_en == 0 && boot->pmci == NULL && boot->m10bmc_spi == NULL) {
 			ret = -ENODEV;
 			dev_warn(&nfb->pci->dev, "nfb_boot: No boot_controller found in FDT.\n");
 			goto err_nocomp;
@@ -302,7 +303,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	}
 
 	boot->comp = nfb_comp_open(nfb, fdt_offset);
-	if (!boot->comp && boot->pmci == NULL) {
+	if (!boot->comp && boot->pmci == NULL && boot->m10bmc_spi == NULL) {
 		ret = -ENODEV;
 		goto err_comp_open;
 	}
@@ -371,6 +372,7 @@ err_comp_open:
 err_nocomp:
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	nfb_pmci_detach(boot);
+	nfb_spi_detach(boot);
 #endif
 	kfree(boot);
 err_kmalloc:
@@ -400,6 +402,8 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	if (boot->pmci)
 		nfb_pmci_detach(boot);
+	if (boot->m10bmc_spi)
+		nfb_spi_detach(boot);
 #endif
 	kfree(boot);
 }
@@ -407,7 +411,13 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 int nfb_boot_init()
 {
 #ifdef CONFIG_NFB_ENABLE_PMCI
-	return nfb_pmci_init();
+    int ret;
+	ret = nfb_pmci_init();
+    if (ret)
+        goto err_pmci;
+    ret = nfb_spi_init();
+err_pmci:
+    return ret;
 #else
 	return 0;
 #endif
@@ -417,6 +427,7 @@ void nfb_boot_exit()
 {
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	nfb_pmci_exit();
+	nfb_spi_exit();
 #endif
 }
 

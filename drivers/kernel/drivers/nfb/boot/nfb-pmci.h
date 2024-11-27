@@ -9,6 +9,8 @@
 
 #include <linux/mfd/nfb-intel-m10-bmc.h>
 
+#include "nfb-common.h"
+
 #ifndef NFB_BOOT_PMCI_H
 #define NFB_BOOT_PMCI_H
 
@@ -20,11 +22,6 @@ int nfb_pmci_attach(struct nfb_boot *boot);
 void nfb_pmci_detach(struct nfb_boot *boot);
 
 struct m10bmc_sec;
-
-struct image_load {
-	const char *name;
-	int (*load_image)(struct m10bmc_sec *sec);
-};
 
 struct pmci_device {
 	struct intel_m10bmc m10bmc;

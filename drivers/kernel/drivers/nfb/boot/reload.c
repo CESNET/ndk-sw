@@ -97,32 +97,114 @@ static int nfb_boot_reload_rescan(struct nfb_pci_device *card)
 	return 0;
 }
 
+static int nfb_boot_n5014_reload_rescan(struct nfb_pci_device *card) {
+	struct pci_dev *root;
+	struct pci_dev *bus_dev;
+	struct pci_bus *b = NULL;
+	int reload_time_ms = 5000;
+	int ext_cap_pos;
+
+	root = pcie_find_root_port(card->pci);
+	if (root == NULL) {
+		dev_err(&card->bus->self->dev, "Cannot find PCIE root port!\n");
+		return -ENODEV;
+	}
+
+	// Stop and remove PCIE bus from root port
+	pci_stop_and_remove_bus_device_locked(root);
+
+	// Wait for a while before rescaning the bus
+	msleep(reload_time_ms);
+
+	// First try to rescan bus
+	pci_lock_rescan_remove();
+	while ((b = pci_find_next_bus(b)) != NULL)
+		pci_rescan_bus(b);
+	pci_unlock_rescan_remove();
+
+	// Wait again for all devices after the PCIe bridge to appear
+	msleep(reload_time_ms);
+
+	// Second try to rescan bus
+	pci_lock_rescan_remove();
+	while ((b = pci_find_next_bus(b)) != NULL)
+		pci_rescan_bus(b);
+	pci_unlock_rescan_remove();
+
+	card->pci = pci_get_slot(card->bus, card->devfn);
+	if (card->pci == NULL) {
+		return -ENODEV;
+	}
+
+	bus_dev = card->pci->bus->self;
+	root = pcie_find_root_port(bus_dev);
+	if (root == NULL) {
+		dev_err(&card->bus->self->dev, "Cannot find PCIE root port!\n");
+		return -ENODEV;
+	}
+
+	// Restore errors
+	dev_info(&bus_dev->dev, "nfb: restoring errors on PCI bridge\n");
+	ext_cap_pos = pci_find_ext_capability(root, PCI_EXT_CAP_ID_ERR);
+	pci_write_config_word(bus_dev, PCI_COMMAND, card->bridge_command);
+	pci_write_config_word(bus_dev, bus_dev->pcie_cap + PCI_EXP_DEVCTL, card->bridge_devctl);
+	if (ext_cap_pos) {
+		pci_write_config_dword(root, ext_cap_pos + PCI_ERR_ROOT_COMMAND, card->bridge_root_aer_cmd);
+	}
+
+	pci_dev_put(card->pci);
+
+	pr_info("nfb: firmware reload done\n");
+	return 0;
+}
+
 /*
  * nfb_pci_errors_disable - disable errors that can occur on hot reboot (firmware reload)
  * @card: struct nfb_pci_device instance
  */
-static int nfb_pci_errors_disable(struct nfb_pci_device *card)
+static int nfb_pci_errors_disable(struct nfb_pci_device *card, int use_root_port_cmds)
 {
 	struct pci_dev *bridge = card->bus->self;
+	struct pci_dev *root = pcie_find_root_port(bridge);
+	int ext_cap_pos = 0;
+
 	dev_info(&card->bus->self->dev, "disabling errors on PCI bridge\n");
 
 	/* save state of error registers */
 	pci_read_config_word(bridge, PCI_COMMAND, &card->bridge_command);
 	pci_read_config_word(bridge, bridge->pcie_cap + PCI_EXP_DEVCTL, &card->bridge_devctl);
+	if (use_root_port_cmds) {
+		if (root == NULL) {
+			dev_err(&card->bus->self->dev, "Cannot find PCIE root port!\n");
+			return -ENODEV;
+		}
+		ext_cap_pos = pci_find_ext_capability(root, PCI_EXT_CAP_ID_ERR);
+	}
+	if (ext_cap_pos) {
+		pci_read_config_dword(root, ext_cap_pos + PCI_ERR_ROOT_COMMAND, &card->bridge_root_aer_cmd);
+	}
 
 	pci_write_config_word(bridge, PCI_COMMAND, card->bridge_command & ~PCI_COMMAND_SERR);
 	pci_write_config_word(bridge, bridge->pcie_cap + PCI_EXP_DEVCTL,
 			card->bridge_devctl & ~(PCI_EXP_DEVCTL_NFERE | PCI_EXP_DEVCTL_FERE));
+	if (ext_cap_pos) {
+		pci_write_config_dword(root, ext_cap_pos + PCI_ERR_ROOT_COMMAND, 0);
+	}
 	return 0;
 }
 
 int nfb_boot_ioctl_error_disable(struct nfb_boot *nfb_boot)
 {
 	int ret;
+	int use_root_port_cmds = 0;
 	struct nfb_pci_device *card;
 
+	if (nfb_boot->m10bmc_spi) {
+		use_root_port_cmds = 1;
+	}
+
 	list_for_each_entry(card, &nfb_boot->nfb->pci_devices, pci_device_list) {
-		ret = nfb_pci_errors_disable(card);
+		ret = nfb_pci_errors_disable(card, use_root_port_cmds);
 		if (ret)
 			return ret;
 	}
@@ -179,6 +261,9 @@ int nfb_boot_reload(void *arg)
 	if (boot->pmci) {
 		boot->pmci->image_load[boot->num_image].load_image(boot->pmci->sec);
 		reload_time_ms = 5000;
+	} else if (boot->m10bmc_spi) {
+		boot->m10bmc_spi->image_load[boot->num_image].load_image(boot->m10bmc_spi->sec);
+		return nfb_boot_n5014_reload_rescan(master);
 	} else if (boot->sdm && boot->sdm_boot_en) {
 		sdm_rsu_image_update(boot->sdm, boot->num_image);
 	} else if (boot->comp) {

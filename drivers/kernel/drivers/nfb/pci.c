@@ -237,6 +237,7 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 		"netcope,boot_controller",
 		"netcope,intel_sdm_controller",
 		"cesnet,pmci",
+		"brnologic,m10bmc_spi",
 	};
 
 	name = nfb->pci_name;
@@ -359,6 +360,11 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 			subnode = nfb_fdt_create_binary_slot(fdt, node, "image1", "fpga_user2",   1, 4, -1, 0, 0);
 			n6010_binary_slot_prepare(fdt, subnode, "\x00\x00\x01\x00", "\xff\xff\xff\xff", 4);
 			subnode = nfb_fdt_create_binary_slot(fdt, node, "image0", "fpga_user1",   0, 3, -1, 0, 0);
+			n6010_binary_slot_prepare(fdt, subnode, "\x00\x00\x00\x00", "\xff\xff\xff\xff", 4);
+		} else if (!strcmp(card_name, "N5014")) {
+			subnode = nfb_fdt_create_binary_slot(fdt, node, "image1", "fpga_factory", 1, 0, -1, 0, 0);
+			n6010_binary_slot_prepare(fdt, subnode, "\x03\x00\x00\x00", "\xff\xff\xff\xff", 4);
+			subnode = nfb_fdt_create_binary_slot(fdt, node, "image0", "fpga_user",    0, 1, -1, 0, 0);
 			n6010_binary_slot_prepare(fdt, subnode, "\x00\x00\x00\x00", "\xff\xff\xff\xff", 4);
 		} else if (!strcmp(card_name, "ALVEO_U200") || !strcmp(card_name, "ALVEO_U250") || !strcmp(card_name, "ALVEO_U55C")) {
 			prop32 = cpu_to_fdt32(1);
