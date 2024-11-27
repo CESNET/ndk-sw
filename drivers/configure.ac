@@ -142,6 +142,13 @@ struct spi_controller *sc;
 void test(void);
 void test(void) {spi_get_chipselect(NULL, 0);}]],[AC_DEFINE([CONFIG_HAVE_SPI_CONTROLLER], [1], [Define if kernel has struct spi_controller]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
+AC_MSG_CHECKING([whether kernel has ctrl in struct spi_bitbang])
+KERNEL_TRY_COMPILE([[
+#include <linux/spi/spi_bitbang.h>
+struct spi_bitbang sb;
+void test(void);
+void test(void) {sb.ctrl = NULL;}]],[AC_DEFINE([CONFIG_HAVE_SPI_BITBANG_CTRL], [1], [Define if kernel has ctrl in struct spi_bitbang]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+
 AC_MSG_CHECKING([whether kernel has altera_spi_init_master])
 KERNEL_TRY_COMPILE([[
 #include <linux/spi/altera.h>
