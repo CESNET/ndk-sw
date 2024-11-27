@@ -316,7 +316,6 @@ static inline void _ndp_queue_tx_sync_v3_us(struct nc_ndp_queue *q)
 			/* TODO: magic number */
 			if (q->u.v3.uspace_acc >= 32) {
 				q->u.v3.uspace_acc = 0;
-				nfb_comp_write64(q->u.v3.comp, NDP_CTRL_REG_SDP, q->u.v3.uspace_sdp | (((uint64_t) q->u.v3.uspace_shp) << 32));
 			}
 		}
 	}

@@ -3,7 +3,7 @@ import time
 import cython
 
 from itertools import islice
-from typing import Union, Optional, List, Tuple
+from typing import Union, Optional, List, Tuple, Iterable
 
 from libc.stdlib cimport malloc
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t
@@ -809,7 +809,7 @@ cdef class NdpQueueTx(NdpQueue):
                 'passed_bytes': counters.sent_bytes,
         }
 
-    cdef _sendmsg(self, pkts: List[Tuple[bytes, bytes, int]]): # -> None:
+    cdef _sendmsg(self, pkts: Iterable[Tuple[bytes, bytes, int]]): # -> None:
         cdef int cnt
         cdef int icnt
         cdef ndp_packet ndppkt[64]
@@ -859,7 +859,7 @@ cdef class NdpQueueTx(NdpQueue):
 
         self.sendmsg(zip(pkts, hdrs, flags), flush)
 
-    def sendmsg(self, pkts: List[Tuple[bytes, bytes, int]], flush: bool = True) -> None:
+    def sendmsg(self, pkts: Iterable[Tuple[bytes, bytes, int]], flush: bool = True) -> None:
         """
         Send burst of messages
 

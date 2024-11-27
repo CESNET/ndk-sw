@@ -1,7 +1,8 @@
 def projectpath = "ndk/swbase"
 def osreleasevers = [
 //		["centos", "centos7", "7.9.2009", "rpm"],
-		["oraclelinux", "oraclelinux8", "8", "rpm"],
+        ["oraclelinux", "oraclelinux8", "8", "rpm"],
+		["oraclelinux", "oraclelinux9", "9", "rpm"],
 		["ubuntu", "ubuntu", "focal", "deb"]
 	]
 def dockertarget = "default"
