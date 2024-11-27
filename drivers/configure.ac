@@ -154,6 +154,9 @@ KERNEL_TRY_COMPILE([[
 #include <linux/spi/altera.h>
 struct spi_controller sc;
 void test(void);
+#if !IS_ENABLED(CONFIG_SPI_ALTERA)
+#error CONFIG_SPI_ALTERA is not enabled, failing altera_spi_init_master test explicitly
+#endif
 void test(void) {altera_spi_init_master(&sc);}]],[AC_DEFINE([CONFIG_HAVE_SPI_INIT_MASTER], [1], [Define if kernel has altera_spi_init_master]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([whether kernel has altera_spi_init_host])
@@ -161,6 +164,9 @@ KERNEL_TRY_COMPILE([[
 #include <linux/spi/altera.h>
 struct spi_controller sc;
 void test(void);
+#if !IS_ENABLED(CONFIG_SPI_ALTERA)
+#error CONFIG_SPI_ALTERA is not enabled, failing altera_spi_init_host test explicitly
+#endif
 void test(void) {altera_spi_init_host(&sc);}]],[AC_DEFINE([CONFIG_HAVE_SPI_INIT_HOST], [1], [Define if kernel has altera_spi_init_host]) AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([whether kernel has simplified eventfd_signal])
