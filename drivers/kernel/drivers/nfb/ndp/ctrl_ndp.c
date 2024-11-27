@@ -40,7 +40,7 @@
 #define virt_to_phys_shift(x) (virt_to_phys(x) >> PAGE_SHIFT)
 
 #define NDP_CTRL_DEFAULT_BUFFER_SIZE 4096
-#define NDP_CTRL_DEFAULT_INITIAL_OFFSET 0
+#define NDP_CTRL_DEFAULT_INITIAL_OFFSET 64
 
 extern unsigned long ndp_ring_size;
 
@@ -1501,4 +1501,4 @@ module_param_cb(ndp_ctrl_buffer_size, &ndp_param_size_ops, &ndp_ctrl_buffer_size
 MODULE_PARM_DESC(ndp_ctrl_buffer_size, "Size of buffer for one packet in NDP ring (max size of RX/TX packet) [4096]");
 
 module_param_cb(ndp_ctrl_initial_offset, &ndp_param_size_ops, &ndp_ctrl_initial_offset, S_IRUGO);
-MODULE_PARM_DESC(ndp_ctrl_initial_offset, "Offset for the first buffer (packet) in ring in bytes; will be multiplied by (channel_index + 1) [0]");
+MODULE_PARM_DESC(ndp_ctrl_initial_offset, "Offset for the first buffer (packet) in ring in bytes; will be multiplied by (channel_index + 1) [64]");
