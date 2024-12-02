@@ -274,7 +274,7 @@ int main(int argc, char *argv[])
 					printf("%c", spacer);
 
 				if (show_address && spacer == '\n')
-					printf("%08x: ", offset + i * 4);
+					printf("%08x: ", offset + i);
 
 				memcpy(&data32, data + i, 4);
 				printf("%08x", data32);
