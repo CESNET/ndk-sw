@@ -45,7 +45,7 @@ void usage(const char *progname, int verbose)
 	printf("-S              Show etherStats counters\n");
 	printf("-l length       Minimal allowed frame length\n");
 	printf("-L length       Maximal allowed frame length\n");
-/*  printf("-m mask         Set error mask 0-31\n"); */
+	printf("-m mask         Set RXMAC error bitmask value (integer; use -v to view current configuration)\n");
 	printf("-c type         Set PMA type/mode by name or enable/disable feature (+feat/-feat)\n");
 	printf("-p repeater_cfg Set transmit data source%s\n", verbose ? "" : " (-hv for more info)");
 	if (verbose) {
@@ -212,10 +212,9 @@ int main(int argc, char *argv[])
 					p.param < 0 || p.param > 31) {
 				errx(EXIT_FAILURE, "Wrong error mask.");
 			}
-			p.command = CMD_SET_MASK;
+			p.command = CMD_SET_ERROR_MASK;
 			cmds++;
 			break;
-
 		case 'M':
 			switch (tolower(optarg[0])) {
 			case 's': p.command = CMD_SHOW_MACS; break;
