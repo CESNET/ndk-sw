@@ -66,6 +66,8 @@ struct nc_rxmac_etherstats {
 	unsigned long long pkts256to511Octets;   /*!< Total number of received packets that were between 256 and 511 bytes long */
 	unsigned long long pkts512to1023Octets;  /*!< Total number of received packets that were between 512 and 1023 bytes long */
 	unsigned long long pkts1024to1518Octets; /*!< Total number of received packets that were between 1024 and 1518 bytes long */
+	unsigned long long underMinPkts;         /*!< Total number of received packets that were shorter than configured minimum */
+	unsigned long long overMaxPkts;          /*!< Total number of received packets that were longer than configured maximum */
 };
 
 struct nc_rxmac_status {
@@ -341,8 +343,11 @@ static inline int nc_rxmac_read_counters(struct nc_rxmac *mac, struct nc_rxmac_c
 		if (mac->has_counter_below_64) {
 			s->undersizePkts       = RXMAC_READ_CNT(comp, ES_FRAMES_BELOW_64);
 		} else {
-			s->undersizePkts       = RXMAC_READ_CNT(comp, ES_UNDERSIZE);
+			s->undersizePkts       = 0;
 		}
+
+		s->underMinPkts            = RXMAC_READ_CNT(comp, ES_UNDERSIZE);
+		s->overMaxPkts             = RXMAC_READ_CNT(comp, ES_OVERSIZE);
 		s->oversizePkts            = RXMAC_READ_CNT(comp, ES_FRAMES_OVER_1518);
 		s->fragments               = RXMAC_READ_CNT(comp, ES_FRAGMENTS);
 		s->jabbers                 = RXMAC_READ_CNT(comp, ES_JABBERS);

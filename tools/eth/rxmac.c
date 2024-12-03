@@ -96,7 +96,6 @@ void rxmac_print_ether_stats(struct nc_rxmac *rxmac)
 	}
 
 	printf("---------------------------- RXMAC etherStatsTable ----\n");
-//	printf("etherStatsDropEvents          : %llu\n")
 	printf("etherStatsOctets              : %llu\n", s.octets);
 	printf("etherStatsPkts                : %llu\n", s.pkts);
 	printf("etherStatsBroadcastPkts       : %llu\n", s.broadcastPkts);
@@ -104,16 +103,16 @@ void rxmac_print_ether_stats(struct nc_rxmac *rxmac)
 	printf("etherStatsCRCAlignErrors      : %llu\n", s.CRCAlignErrors);
 	printf("etherStatsUndersizePkts       : %llu\n", s.undersizePkts);
 	printf("etherStatsOversizePkts        : %llu\n", s.oversizePkts);
-//	printf("etherStatsOversizePkts        : %llu\n");
 	printf("etherStatsFragments           : %llu\n", s.fragments);
 	printf("etherStatsJabbers             : %llu\n", s.jabbers);
-//	printf("etherStatsCollisions          : %llu\n");
 	printf("etherStatsPkts64Octets        : %llu\n", s.pkts64Octets);
 	printf("etherStatsPkts65to127Octets   : %llu\n", s.pkts65to127Octets);
 	printf("etherStatsPkts128to255Octets  : %llu\n", s.pkts128to255Octets);
 	printf("etherStatsPkts256to511Octets  : %llu\n", s.pkts256to511Octets);
 	printf("etherStatsPkts512to1023Octets : %llu\n", s.pkts512to1023Octets);
 	printf("etherStatsPkts1024to1518Octets: %llu\n", s.pkts1024to1518Octets);
+	printf("underMinPkts                  : %llu\n", s.underMinPkts);
+	printf("overMaxPkts                   : %llu\n", s.overMaxPkts);
 }
 
 int clear_mac_addresses(struct nc_rxmac *rxmac)
