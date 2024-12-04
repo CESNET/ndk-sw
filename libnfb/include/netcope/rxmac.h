@@ -101,78 +101,6 @@ static inline void             nc_rxmac_set_error_mask(struct nc_rxmac *mac, uns
 /* ~~~~[ REGISTERS ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 #define RXMAC_REG_CNT_PACKETS_LO                0x0000
 #define RXMAC_REG_CNT_PACKETS_HI                0x0010
-#define RXMAC_REG_CNT_RECEIVED_LO               0x0004
-#define RXMAC_REG_CNT_RECEIVED_HI               0x0014
-#define RXMAC_REG_CNT_DISCARDED_LO              0x0008
-#define RXMAC_REG_CNT_DISCARDED_HI              0x0018
-#define RXMAC_REG_CNT_OVERFLOW_LO               0x000C
-#define RXMAC_REG_CNT_OVERFLOW_HI               0x001C
-#define RXMAC_REG_CNT_OCTETS_LO                 0x003C
-#define RXMAC_REG_CNT_OCTETS_HI                 0x0040
-
-/* Total received packets with bad CRC (etherStatsCRCAlignErrors) */
-#define RXMAC_REG_CNT_ES_CRC_ERR_LO             0x0100
-#define RXMAC_REG_CNT_ES_CRC_ERR_HI             0x0138
-
-/* Total received packets over set MTU */
-#define RXMAC_REG_CNT_ES_OVERSIZE_LO            0x0104
-#define RXMAC_REG_CNT_ES_OVERSIZE_HI            0x013C
-
-/* Total received packets below set minimal length */
-#define RXMAC_REG_CNT_ES_UNDERSIZE_LO           0x0108
-#define RXMAC_REG_CNT_ES_UNDERSIZE_HI           0x0140
-
-/* Total received packets with broadcast address (etherStatsBroadcastPkts) */
-#define RXMAC_REG_CNT_ES_BCAST_LO               0x010C
-#define RXMAC_REG_CNT_ES_BCAST_HI               0x0144
-
-/* Total received packets with multicast address (etherStatsMulticastPkts) */
-#define RXMAC_REG_CNT_ES_MCAST_LO               0x0110
-#define RXMAC_REG_CNT_ES_MCAST_HI               0x0148
-
-/* Total received fragment frames (etherStatsFragments) */
-#define RXMAC_REG_CNT_ES_FRAGMENTS_LO           0x0114
-#define RXMAC_REG_CNT_ES_FRAGMENTS_HI           0x014C
-
-/* Total received jabber frames (etherStatsJabbers) */
-#define RXMAC_REG_CNT_ES_JABBERS_LO             0x0118
-#define RXMAC_REG_CNT_ES_JABBERS_HI             0x0150
-
-/* Total transfered octets (etherStatsOctets) */
-#define RXMAC_REG_CNT_ES_OCTETS_LO              0x011C
-#define RXMAC_REG_CNT_ES_OCTETS_HI              0x0154
-
-/* Total received frames with length 64B (etherStatsPkts64Octets) */
-#define RXMAC_REG_CNT_ES_FRAMES_64_LO           0x0120
-#define RXMAC_REG_CNT_ES_FRAMES_64_HI           0x0158
-
-/* Total received frames with length from 65B to 127B (etherStatsPkts65to127Octets) */
-#define RXMAC_REG_CNT_ES_FRAMES_65_127_LO       0x0124
-#define RXMAC_REG_CNT_ES_FRAMES_65_127_HI       0x015C
-
-/* Total received frames with length from 128B to 255B (etherStatsPkts128to255Octets) */
-#define RXMAC_REG_CNT_ES_FRAMES_128_255_LO      0x0128
-#define RXMAC_REG_CNT_ES_FRAMES_128_255_HI      0x0160
-
-/* Total received frames with length from 256B to 511B (etherStatsPkts256to511Octets) */
-#define RXMAC_REG_CNT_ES_FRAMES_256_511_LO      0x012C
-#define RXMAC_REG_CNT_ES_FRAMES_256_511_HI      0x0164
-
-/* Total received frames with length from 512B to 1023B (etherStatsPkts512to1023Octets) */
-#define RXMAC_REG_CNT_ES_FRAMES_512_1023_LO     0x0130
-#define RXMAC_REG_CNT_ES_FRAMES_512_1023_HI     0x0168
-
-/* Total received frames with length from 1024B to 1518B (etherStatsPkts1024to1518Octets) */
-#define RXMAC_REG_CNT_ES_FRAMES_1024_1518_LO    0x0134
-#define RXMAC_REG_CNT_ES_FRAMES_1024_1518_HI    0x016C
-
-/* Total received frames with length above 1518B (etherStatsOversizePkts) */
-#define RXMAC_REG_CNT_ES_FRAMES_OVER_1518_LO    0x0170
-#define RXMAC_REG_CNT_ES_FRAMES_OVER_1518_HI    0x0174
-
-/* Total received frames with length below 64B (etherStatsUndersizePkts) */
-#define RXMAC_REG_CNT_ES_FRAMES_BELOW_64_LO     0x0178
-#define RXMAC_REG_CNT_ES_FRAMES_BELOW_64_HI     0x017C
 
 #define RXMAC_REG_ENABLE             0x0020
 #define RXMAC_REG_ERROR_MASK         0x0024
@@ -194,9 +122,83 @@ enum nc_rxmac_cmds {
 	RXMAC_CMD_RESET  = 0x02,
 };
 
+union _nc_rxmac_reg_status_buffer {
+	/* Register range: 0x0020 - 0x003C */
+	struct __attribute__((packed)) {
+		uint32_t enabled;
+		uint32_t error_mask;
+		uint32_t status;
+		uint32_t control;
+		uint32_t frame_length_min;
+		uint32_t frame_length_max;
+		uint32_t mac_filter;
+	} r1;
+};
+
+union _nc_rxmac_reg_buffer {
+	/* Register range: 0x0000 - 0x0020 */
+	struct __attribute__((packed)) {
+		uint32_t total_l;
+		uint32_t received_l;
+		uint32_t discarded_l;
+		uint32_t overflowed_l;
+		uint32_t total_h;
+		uint32_t received_h;
+		uint32_t discarded_h;
+		uint32_t overflowed_h;
+	} r1;
+
+	/* Register range: 0x003C - 0x0040 */
+	struct __attribute__((packed)) {
+		uint32_t octets_l;
+		uint32_t octets_h;
+	} r2;
+
+	/* Register range: 0x0100 - 0x0180 */
+	struct __attribute__((packed)) {
+		uint32_t CRCAlignErrors_l;
+		uint32_t oversize_l;
+		uint32_t undersize_l;
+		uint32_t broadcastPkts_l;
+		uint32_t multicastPkts_l;
+		uint32_t fragments_l;
+		uint32_t jabbers_l;
+		uint32_t octets_l;
+		uint32_t pkts64Octets_l;
+		uint32_t pkts65to127Octets_l;
+		uint32_t pkts128to255Octets_l;
+		uint32_t pkts256to511Octets_l;
+		uint32_t pkts512to1023Octets_l;
+		uint32_t pkts1024to1518Octets_l;
+		uint32_t CRCAlignErrors_h;
+		uint32_t oversize_h;
+		uint32_t undersize_h;
+		uint32_t broadcastPkts_h;
+		uint32_t multicastPkts_h;
+		uint32_t fragments_h;
+		uint32_t jabbers_h;
+		uint32_t octets_h;
+		uint32_t pkts64Octets_h;
+		uint32_t pkts65to127Octets_h;
+		uint32_t pkts128to255Octets_h;
+		uint32_t pkts256to511Octets_h;
+		uint32_t pkts512to1023Octets_h;
+		uint32_t pkts1024to1518Octets_h;
+		uint32_t over1518_l;
+		uint32_t over1518_h;
+		uint32_t below64_l;
+		uint32_t below64_h;
+	} e1;
+};
+
 #define RXMAC_READ_CNT(comp, name) \
 	(((uint64_t)nfb_comp_read32((comp), RXMAC_REG_CNT_##name##_HI)) << 32 | \
                 nfb_comp_read32((comp), RXMAC_REG_CNT_##name##_LO))
+
+#define _NC_RXMAC_REG_BUFFER_PAIR(s, name) ( \
+		(((uint64_t)((s).name##_h)) << 32) | \
+		(((uint64_t)((s).name##_l)) <<  0) \
+	)
 
 #define COMP_NETCOPE_RXMAC "netcope,rxmac"
 
@@ -277,27 +279,28 @@ static inline int nc_rxmac_get_link(struct nc_rxmac *mac)
 static inline int nc_rxmac_read_status(struct nc_rxmac *mac, struct nc_rxmac_status *s)
 {
 	struct nfb_comp *comp = nfb_user_to_comp(mac);
-	uint32_t reg;
+	union _nc_rxmac_reg_status_buffer buf;
 
 	if (!nfb_comp_lock(comp, RXMAC_COMP_LOCK))
 		return -EAGAIN;
 
-	s->enabled          = nfb_comp_read32(comp, RXMAC_REG_ENABLE);
-	s->error_mask       = nfb_comp_read32(comp, RXMAC_REG_ERROR_MASK);
-	s->mac_filter       = (enum nc_rxmac_mac_filter) nfb_comp_read32(comp, RXMAC_REG_MAC_FILTER);
-	s->frame_length_min = nfb_comp_read32(comp, RXMAC_REG_FRAME_LEN_MIN);
-	s->frame_length_max = nfb_comp_read32(comp, RXMAC_REG_FRAME_LEN_MAX);
+	nfb_comp_read(comp, &buf.r1, sizeof(buf.r1), 0x0020);
 
-	reg                 = nfb_comp_read32(comp, RXMAC_REG_STATUS);
-	__nc_rxmac_update_mac_addr_count(mac, reg);
+	s->enabled          = buf.r1.enabled;
+	s->error_mask       = buf.r1.error_mask;
+	s->mac_filter       = (enum nc_rxmac_mac_filter) buf.r1.mac_filter;
+	s->frame_length_min = buf.r1.frame_length_min;
+	s->frame_length_max = buf.r1.frame_length_max;
 
-	s->link_up          = (reg & RXMAC_REG_STATUS_LINK) ? 1 : 0;
-	s->overflow         = (reg & RXMAC_REG_STATUS_OVER) ? 1 : 0;
+	__nc_rxmac_update_mac_addr_count(mac, buf.r1.status);
+
+	s->link_up          = (buf.r1.status & RXMAC_REG_STATUS_LINK) ? 1 : 0;
+	s->overflow         = (buf.r1.status & RXMAC_REG_STATUS_OVER) ? 1 : 0;
 	s->mac_addr_count   = nc_rxmac_mac_address_count(mac);
 
 	s->frame_length_max_capable = mac->mtu;
 
-	s->speed = (enum nc_mac_speed) ((reg >> 4) & 0x7);
+	s->speed = (enum nc_mac_speed) ((buf.r1.status >> 4) & 0x7);
 	switch (s->speed) {
 		case MAC_SPEED_10G:
 		case MAC_SPEED_40G:
@@ -314,49 +317,46 @@ static inline int nc_rxmac_read_status(struct nc_rxmac *mac, struct nc_rxmac_sta
 static inline int nc_rxmac_read_counters(struct nc_rxmac *mac, struct nc_rxmac_counters *c, struct nc_rxmac_etherstats *s)
 {
 	struct nfb_comp *comp = nfb_user_to_comp(mac);
-
-	unsigned long long cnt_total = 0;
+	union _nc_rxmac_reg_buffer buf;
 
 	if (!nfb_comp_lock(comp, RXMAC_COMP_LOCK))
 		return -EAGAIN;
 
 	nfb_comp_write32(comp, RXMAC_REG_CONTROL, RXMAC_CMD_STROBE);
 
-	if (c || s) {
-		cnt_total        = RXMAC_READ_CNT(comp, PACKETS);
-	}
-
 	if (c) {
-		c->cnt_total        = cnt_total;
-		c->cnt_received     = RXMAC_READ_CNT(comp, RECEIVED);
-		c->cnt_overflowed   = RXMAC_READ_CNT(comp, OVERFLOW);
-		c->cnt_erroneous    = RXMAC_READ_CNT(comp, DISCARDED) - c->cnt_overflowed;
-		c->cnt_octets       = RXMAC_READ_CNT(comp, OCTETS);
+		nfb_comp_read(comp, &buf.r1, sizeof(buf.r1), 0x0000);
+		c->cnt_total               = _NC_RXMAC_REG_BUFFER_PAIR(buf.r1, total);
+		c->cnt_received            = _NC_RXMAC_REG_BUFFER_PAIR(buf.r1, received);
+		c->cnt_overflowed          = _NC_RXMAC_REG_BUFFER_PAIR(buf.r1, overflowed);
+		c->cnt_erroneous           = _NC_RXMAC_REG_BUFFER_PAIR(buf.r1, discarded) - c->cnt_overflowed;
+
+		nfb_comp_read(comp, &buf.r2, sizeof(buf.r2), 0x003C);
+		c->cnt_octets              = _NC_RXMAC_REG_BUFFER_PAIR(buf.r2, octets);
 	}
 
 	if (s) {
-		s->octets                  = RXMAC_READ_CNT(comp, ES_OCTETS);
-		s->pkts                    = cnt_total;
-		s->broadcastPkts           = RXMAC_READ_CNT(comp, ES_BCAST);
-		s->multicastPkts           = RXMAC_READ_CNT(comp, ES_MCAST);
-		s->CRCAlignErrors          = RXMAC_READ_CNT(comp, ES_CRC_ERR);
-		if (mac->has_counter_below_64) {
-			s->undersizePkts       = RXMAC_READ_CNT(comp, ES_FRAMES_BELOW_64);
-		} else {
-			s->undersizePkts       = 0;
-		}
+		nfb_comp_read(comp, &buf.e1, sizeof(buf.e1), 0x0100);
 
-		s->underMinPkts            = RXMAC_READ_CNT(comp, ES_UNDERSIZE);
-		s->overMaxPkts             = RXMAC_READ_CNT(comp, ES_OVERSIZE);
-		s->oversizePkts            = RXMAC_READ_CNT(comp, ES_FRAMES_OVER_1518);
-		s->fragments               = RXMAC_READ_CNT(comp, ES_FRAGMENTS);
-		s->jabbers                 = RXMAC_READ_CNT(comp, ES_JABBERS);
-		s->pkts64Octets            = RXMAC_READ_CNT(comp, ES_FRAMES_64);
-		s->pkts65to127Octets       = RXMAC_READ_CNT(comp, ES_FRAMES_65_127);
-		s->pkts128to255Octets      = RXMAC_READ_CNT(comp, ES_FRAMES_128_255);
-		s->pkts256to511Octets      = RXMAC_READ_CNT(comp, ES_FRAMES_256_511);
-		s->pkts512to1023Octets     = RXMAC_READ_CNT(comp, ES_FRAMES_512_1023);
-		s->pkts1024to1518Octets    = RXMAC_READ_CNT(comp, ES_FRAMES_1024_1518);
+		s->pkts                    = c ? c->cnt_total : RXMAC_READ_CNT(comp, PACKETS);
+		s->undersizePkts           = mac->has_counter_below_64 ? _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, below64) : 0;
+
+		s->CRCAlignErrors          = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, CRCAlignErrors);
+		s->broadcastPkts           = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, broadcastPkts);
+		s->multicastPkts           = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, multicastPkts);
+		s->fragments               = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, fragments);
+		s->jabbers                 = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, jabbers);
+		s->octets                  = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, octets);
+		s->pkts64Octets            = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, pkts64Octets);
+		s->pkts65to127Octets       = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, pkts65to127Octets);
+		s->pkts128to255Octets      = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, pkts128to255Octets);
+		s->pkts256to511Octets      = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, pkts256to511Octets);
+		s->pkts512to1023Octets     = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, pkts512to1023Octets);
+		s->pkts1024to1518Octets    = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, pkts1024to1518Octets);
+		s->oversizePkts            = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, over1518);
+
+		s->underMinPkts            = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, undersize);
+		s->overMaxPkts             = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, oversize);
 	}
 
 	nfb_comp_unlock(comp, RXMAC_COMP_LOCK);

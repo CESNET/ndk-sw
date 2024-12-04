@@ -69,9 +69,28 @@ enum nc_txmac_cmds {
 	((uint64_t)nfb_comp_read32((comp), TXMAC_REG_CNT_##name##_HI) << 32 | \
 	           nfb_comp_read32((comp), TXMAC_REG_CNT_##name##_LO))
 
+#define _NC_TXMAC_REG_BUFFER_PAIR(s, name) ( \
+		(((uint64_t)((s).name##_h)) << 32) | \
+		(((uint64_t)((s).name##_l)) <<  0) \
+	)
+
 #define COMP_NETCOPE_TXMAC "netcope,txmac"
 
 #define TXMAC_COMP_LOCK (1 << 0)
+
+union _nc_txmac_reg_buffer {
+	/* Register range: 0x0000 - 0x0020 */
+	struct __attribute__((packed)) {
+		uint32_t total_l;
+		uint32_t octets_l;
+		uint32_t discarded_l;
+		uint32_t sent_l;
+		uint32_t total_h;
+		uint32_t octets_h;
+		uint32_t discarded_h;
+		uint32_t sent_h;
+	} r1;
+};
 
 /* ~~~~[ IMPLEMENTATION ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 static inline struct nc_txmac *nc_txmac_open(struct nfb_device *dev, int fdt_offset)
@@ -143,16 +162,19 @@ static inline int nc_txmac_read_status(struct nc_txmac *mac, struct nc_txmac_sta
 static inline int nc_txmac_read_counters(struct nc_txmac *mac, struct nc_txmac_counters *counters)
 {
 	struct nfb_comp *comp = nfb_user_to_comp(mac);
+	union _nc_txmac_reg_buffer buf;
 
 	if (!nfb_comp_lock(comp, TXMAC_COMP_LOCK))
 		return -EAGAIN;
 
 	nfb_comp_write32(comp, TXMAC_REG_CONTROL, TXMAC_CMD_STROBE);
 
-	counters->cnt_total = TXMAC_READ_CNT(comp, PACKETS);
-	counters->cnt_sent = TXMAC_READ_CNT(comp, SENT);
-	counters->cnt_erroneous = TXMAC_READ_CNT(comp, DISCARDED);
-	counters->cnt_octets = TXMAC_READ_CNT(comp, OCTETS);
+	nfb_comp_read(comp, &buf.r1, sizeof(buf.r1), 0x0000);
+
+	counters->cnt_total             = _NC_TXMAC_REG_BUFFER_PAIR(buf.r1, total);
+	counters->cnt_octets            = _NC_TXMAC_REG_BUFFER_PAIR(buf.r1, octets);
+	counters->cnt_sent              = _NC_TXMAC_REG_BUFFER_PAIR(buf.r1, sent);
+	counters->cnt_erroneous         = _NC_TXMAC_REG_BUFFER_PAIR(buf.r1, discarded);
 
 	nfb_comp_unlock(comp, TXMAC_COMP_LOCK);
 	return 0;
