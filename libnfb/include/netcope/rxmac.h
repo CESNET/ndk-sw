@@ -55,7 +55,7 @@ struct nc_rxmac_etherstats {
 	unsigned long long pkts;                 /*!< Total number of packets received (including bad packets) */
 	unsigned long long broadcastPkts;        /*!< Total number of good broadcast packets received */
 	unsigned long long multicastPkts;        /*!< Total number of good multicast packets received */
-	unsigned long long CRCAlignErrors;       /*!< Total number of received packets that were between 64 and 1518 bytes long and had FCS error */
+	unsigned long long CRCAlignErrors;       /*!< Total number of received packets that had FCS error; not exactly etherStatsCRCAlignErrors (condition: were between 64 and 1518 bytes long) */
 	unsigned long long undersizePkts;        /*!< Total number of received packets that were shorter than 64 bytes and OK */
 	unsigned long long oversizePkts;         /*!< Total number of received packets that were longer than 1518 bytes and OK */
 	unsigned long long fragments;            /*!< Total number of received packets that were shorter than 64 bytes and had FCS error */
@@ -66,8 +66,8 @@ struct nc_rxmac_etherstats {
 	unsigned long long pkts256to511Octets;   /*!< Total number of received packets that were between 256 and 511 bytes long */
 	unsigned long long pkts512to1023Octets;  /*!< Total number of received packets that were between 512 and 1023 bytes long */
 	unsigned long long pkts1024to1518Octets; /*!< Total number of received packets that were between 1024 and 1518 bytes long */
-	unsigned long long underMinPkts;         /*!< Total number of received packets that were shorter than configured minimum */
-	unsigned long long overMaxPkts;          /*!< Total number of received packets that were longer than configured maximum */
+	unsigned long long underMinPkts;         /*!< Total number of received packets that were shorter than configured minimum (not in etherStats) */
+	unsigned long long overMaxPkts;          /*!< Total number of received packets that were longer than configured maximum (not in etherStats) */
 };
 
 struct nc_rxmac_status {
