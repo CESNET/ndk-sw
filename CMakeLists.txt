@@ -18,6 +18,9 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "Main")
 
 #check_function_exists(cmake_host_system_information HAVE_HSI)
 #cmake_host_system_information(RESULT DISTRIB_ID_LIKE QUERY DISTRIB_ID_LIKE)
+
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/")
+
 if (EXISTS "/etc/debian_version")
 	set(PLATFORM          "Debian")
 	set(CPACK_GENERATOR   "DEB" )
@@ -25,8 +28,12 @@ elseif (EXISTS "/etc/centos-release" OR EXISTS "/etc/sl-release" OR EXISTS "/etc
 	set(PLATFORM          "Centos")
 	set(CPACK_GENERATOR   "RPM")
 else ()
-	message(WARNING "Failed to determine platform, cannot build package")
-	set(CPACK_GENERATOR   "Invalid" )
+	message(WARNING "Failed to determine platform, using TGZ for packaging")
+	set(CPACK_GENERATOR   "TGZ")
+	set(CPACK_ARCHIVE_COMPONENT_INSTALL 1)
+
+	set(CPACK_SET_DESTDIR "ON")
+	unset(CPACK_PACKAGING_INSTALL_PREFIX)
 endif ()
 
 set(PACKAGE_NAME "${PROJECT_NAME}")
@@ -79,8 +86,6 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY   "NDK software library")
 set(CPACK_PACKAGE_CONTACT               "spinler@cesnet.cz")
 set(CPACK_PACKAGE_RELOCATABLE           OFF)
 set(CPACK_PACKAGE_DESCRIPTION_FILE      "${CMAKE_CURRENT_LIST_DIR}/package/description.txt")
-
-set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/")
 
 # RPM (CentOS) package settings
 set(CPACK_RPM_FILE_NAME                 RPM-DEFAULT)
