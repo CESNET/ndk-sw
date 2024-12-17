@@ -82,6 +82,8 @@ For other operating systems, the installation procedure may be slightly differen
 
 6. Load Linux driver manually.
 
+    `sudo modprobe spi-altera-core regmap-spi-avmm`
+
     `sudo insmod drivers/kernel/drivers/nfb/nfb.ko`
 
 
