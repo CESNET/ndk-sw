@@ -21,6 +21,9 @@ extern "C" {
 #include <nfb/nfb.h>
 #include <nfb/ext.h>
 
+#include "client_dma_vas.hh"
+
+
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::ClientReader;
@@ -44,6 +47,8 @@ class NfbClient
 	std::string m_path;
 
 public:
+	std::unique_ptr<Nfb::Stub> stub_;
+
 	NfbClient(std::string path, std::shared_ptr<Channel> channel) :
 			stub_(Nfb::NewStub(channel)),
 			m_fdt(NULL),
@@ -90,20 +95,18 @@ public:
 
 		return m_fdt;
 	}
-
-	std::unique_ptr<Nfb::Stub> stub_;
 };
 
 class NfbBus
 {
 	int comp_node;
 	off_t m_base;
-	NfbClient *m_dev;
+	std::shared_ptr<NfbClient> m_dev;
 
 	std::string m_comp_path;
 public:
 
-	NfbBus(NfbClient *dev, int bus_node, int comp_node) :
+	NfbBus(std::shared_ptr<NfbClient> & dev, int bus_node, int comp_node) :
 			m_dev(dev)
 	{
 		void *fdt;
@@ -168,41 +171,107 @@ public:
 
 extern "C" {
 
+static const int NG_FLAG_DDMA = (1 << 0);
 
-static const char *nfb_grpc_prefix = "grpc:";
+int parse_devname(const char *devname, int *flags)
+{
+	const char *orig_devname = devname;
+
+	const char *c_prefix = "grpc";
+	const char *c_ddma = "+dma_vas";
+
+	/* Check for plugin prefix */
+	if (strncmp(devname, c_prefix, strlen(c_prefix)) != 0)
+		return -1;
+
+	devname += strlen(c_prefix);
+	/* Check for next parameter availability */
+	if (strlen(devname) == 0)
+		return -1;
+
+	while (strlen(devname) > 0) {
+		if (devname[0] == ':') { /* next value is address / real devname */
+			devname += 1;
+			break;
+		} else if (strncmp(devname, c_ddma, strlen(c_ddma)) == 0) {
+			devname += strlen(c_ddma);
+			*flags |= NG_FLAG_DDMA;
+		} else {
+			return -1;
+		}
+	}
+	return devname - orig_devname;
+}
+
+
+struct nfb_grpc_dev {
+	std::shared_ptr<NfbClient> nfb;
+	std::shared_ptr<NfbDmaClient> dma;
+	std::string path;
+};
+
+static std::map<std::string, std::weak_ptr<NfbDmaClient>> nfb_grpc_dma_clients;
 
 static int nfb_grpc_open(const char *devname, int oflag, void **priv, void **fdt)
 {
-	NfbClient *nfb;
+	int ret;
+	int flags = 0;
 
-	devname += strlen(nfb_grpc_prefix);
+	struct nfb_grpc_dev *dev;
+	std::string path;
+	std::shared_ptr<Channel> channel;
+	std::shared_ptr<NfbClient> nfb;
+	std::shared_ptr<NfbDmaClient> dma;
+
+	ret = parse_devname(devname, &flags);
+	if (ret < 0)
+		return -EINVAL;
+
+	devname += ret;
+
 	try {
-		nfb = new NfbClient(
-			devname,
-			grpc::CreateChannel(
-				devname,
-				grpc::InsecureChannelCredentials()
-			)
+		path = devname;
+		channel = grpc::CreateChannel(
+			path,
+			grpc::InsecureChannelCredentials()
 		);
-	} catch(...) {
-		return -ENODEV;
-	}
 
-	try {
+		nfb = std::make_shared<NfbClient>(
+			path,
+			channel
+		);
+
 		*fdt = nfb->get_fdt();
-	} catch(...) {
-		delete nfb;
+
+		if (flags & NG_FLAG_DDMA) {
+			/* If in current process exists DMA connection, do not create new one */
+			if (nfb_grpc_dma_clients.count(path) == 0 || !(dma = nfb_grpc_dma_clients[path].lock())) {
+				dma = std::make_shared<NfbDmaClient>(channel);
+				nfb_grpc_dma_clients[path] = dma;
+			}
+		}
+		dev = new struct nfb_grpc_dev;
+		dev->nfb = nfb;
+		dev->dma = dma;
+		dev->path = path;
+		*priv = dev;
+	} catch (...) {
 		return -ENODEV;
 	}
 
-	*priv = nfb;
 	return 0;
 }
 
 static void nfb_grpc_close(void *dev_priv)
 {
-	NfbClient *nfb = (NfbClient *)dev_priv;
-	delete nfb;
+	struct nfb_grpc_dev *dev = (struct nfb_grpc_dev*) dev_priv;
+	std::string path = dev->path;
+	std::shared_ptr<NfbDmaClient> dma;
+	delete dev;
+
+	if (nfb_grpc_dma_clients.count(path) != 0 && !(dma = nfb_grpc_dma_clients[path].lock())) {
+		nfb_grpc_dma_clients.erase(path);
+	}
 }
 
 static ssize_t nfb_bus_grpc_read(void *bus_priv, void *buf, size_t nbyte, off_t offset)
@@ -219,10 +288,11 @@ static ssize_t nfb_bus_grpc_write(void *bus_priv, const void *buf, size_t nbyte,
 
 static int nfb_grpc_bus_open(void *dev_priv, int bus_node, int comp_node, void ** bus_priv, struct libnfb_bus_ext_ops* ops)
 {
-	NfbClient* dev = (NfbClient *) dev_priv;
+	struct nfb_grpc_dev *dev = (struct nfb_grpc_dev*) dev_priv;
+
 	NfbBus *bus;
 	try {
-		bus = new NfbBus(dev, bus_node, comp_node);
+		bus = new NfbBus(dev->nfb, bus_node, comp_node);
 	} catch (...) {
 		return -EBADF;
 	}
@@ -263,7 +333,9 @@ static struct libnfb_ext_ops nfb_grpc_ops = {
 
 int libnfb_ext_get_ops(const char *devname, struct libnfb_ext_ops *ops)
 {
-	if (strncmp(devname, nfb_grpc_prefix, strlen(nfb_grpc_prefix)) == 0) {
+	int flags = 0;
+
+	if (parse_devname(devname, &flags) >= 0) {
 		*ops = nfb_grpc_ops;
 		return 1;
 	} else {
