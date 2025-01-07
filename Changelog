@@ -1,3 +1,17 @@
+* Tue Jan 7 2025 Martin Spinler <spinler@cesnet.cz> - 6.25.0-1
+- [FEATURE] drivers: add support for newer kernels
+- [FEATURE] drivers: add support for Silicom N5014 card
+- [FEATURE] nfb-info: add query for pci-path/pp and default-dev/dd
+- [FEATURE] nfb-dma: allow to set buffer_size, buffer_count and initial_offset
+- [FEATURE] nfb-eth: allow user to set RxMAC error mask with parameter -m
+- [FEATURE] libnfb/nfb-eth: add underMinPkts and overMaxPkts to etherstats
+- [FIX] libnfb: use correct value for pkts in RxMAC etherStats
+- [FIX] libnfb: count queues in no-driver mode
+- [FIX] pynfb: fix argument type passed to sendmsg
+- [FIX] drivers: check for FW pointer maximum size in DMA Medusa
+- [OPT] drivers: set default initial offset to 64B for DMA Medusa
+- [OPT] latency optimalitazion for DMA Calypte controllers
+
 * Wed Nov 13 2024 Martin Spinler <spinler@cesnet.cz> - 6.24.0-1
 - [FEATURE] drivers: add support for Terasic A2700 card
 - [FEATURE] drivers: check subdevices by card_name (and DSN) in all PCI endpoint FDTs
