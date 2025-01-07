@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package nfb.ext.protobuf.v1;
+
+// Extension for the libnfb
+service Nfb {
+	// Obtain FDT from the device
+	rpc GetFdt(google.protobuf.Empty) returns (FdtResponse) {}
+	// Read data from a component
+	rpc ReadComp(ReadCompRequest) returns (ReadCompResponse) {}
+	// Write data to a component
+	rpc WriteComp(WriteCompRequest) returns (WriteCompResponse) {}
+}
+
+// Initial request for the FDT
+// Initial response with the FDT
+message FdtResponse {
+	// Raw Flattened Device Tree
+	bytes fdt = 1;
+}
+
+// Component data read request
+message ReadCompRequest {
+	// FDT path of the accessed component
+	string path = 1;
+	// Number of bytes to read
+	int32 nbyte = 2;
+	// Starting offset relative to base address of the component
+	int32 offset = 3;
+}
+
+// Component data read response
+message ReadCompResponse {
+	// Status of the read operation
+	int32 status = 1;
+	// Data readen from the component
+	bytes data = 2;
+}
+
+// Component data write request
+message WriteCompRequest {
+	// FDT path of the accessed component
+	string path = 1;
+	// Number of bytes to write
+	int32 nbyte = 2;
+	// Starting offset relative to base address of the component
+	int32 offset = 3;
+	// Data to be writen into the component
+	bytes data = 4;
+}
+
+// Component data write response
+message WriteCompResponse {
+	// Status of the write operation
+	int32 status = 1;
+}

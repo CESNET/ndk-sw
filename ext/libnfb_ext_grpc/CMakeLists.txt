@@ -15,10 +15,10 @@ include(GNUInstallDirs)
 find_package(Protobuf CONFIG)
 find_package(gRPC QUIET)
 
-set(PROTO_FILES nfb_grpc.proto)
+set(PROTO_FILES nfb.proto)
 
-add_library(nfb-ext-grpc SHARED nfb_grpc_client.cc)
-add_executable(nfb-grpc-server nfb_grpc_server.cc)
+add_library(nfb-ext-grpc SHARED client.cc)
+add_executable(nfb-grpc-server server.cc)
 
 if (${gRPC_FOUND})
 
@@ -45,10 +45,10 @@ else()
 	get_filename_component(nfb_proto ${PROTO_FILES} ABSOLUTE)
 	get_filename_component(nfb_proto_path "${nfb_proto}" PATH)
 
-	set(nfb_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/nfb_grpc.pb.cc")
-	set(nfb_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/nfb_grpc.pb.h")
-	set(nfb_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/nfb_grpc.grpc.pb.cc")
-	set(nfb_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/nfb_grpc.grpc.pb.h")
+	set(nfb_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/nfb.pb.cc")
+	set(nfb_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/nfb.pb.h")
+	set(nfb_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/nfb.grpc.pb.cc")
+	set(nfb_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/nfb.grpc.pb.h")
 
 	add_custom_command(
 		  OUTPUT "${nfb_proto_srcs}" "${nfb_proto_hdrs}" "${nfb_grpc_srcs}" "${nfb_grpc_hdrs}"
@@ -71,7 +71,7 @@ target_sources(nfb-ext-grpc PRIVATE ${PROTO_OUT_FILES})
 target_sources(nfb-grpc-server PRIVATE ${PROTO_OUT_FILES})
 
 target_link_libraries(nfb-ext-grpc ${Protobuf_LIBRARIES} ${gRPC_LIB_PREFIX}grpc++ nfb fdt)
-target_link_libraries(nfb-grpc-server ${Protobuf_LIBRARIES} ${gRPC_LIB_PREFIX}grpc++ nfb)
+target_link_libraries(nfb-grpc-server ${Protobuf_LIBRARIES} ${gRPC_LIB_PREFIX}grpc++ nfb fdt)
 
 set_target_properties(nfb-ext-grpc PROPERTIES
 	OUTPUT_NAME nfb-ext-grpc
@@ -85,7 +85,7 @@ install(TARGETS nfb-ext-grpc
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	PUBLIC_HEADER
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nfb/ext/protobuf/
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nfb/ext/protobuf/v1/
 )
 
 install(TARGETS nfb-grpc-server

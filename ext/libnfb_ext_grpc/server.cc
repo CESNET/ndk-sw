@@ -5,18 +5,16 @@
 #include <memory>
 #include <string>
 
+extern "C" {
 #include <libfdt.h>
+}
 
 #include <grpc/grpc.h>
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
-#ifdef BAZEL_BUILD
-#include "examples/protos/route_guide.grpc.pb.h"
-#else
-#include "nfb_grpc.grpc.pb.h"
-#endif
+#include "nfb.grpc.pb.h"
 
 #include <nfb/nfb.h>
 
@@ -28,16 +26,20 @@ using grpc::ServerReaderWriter;
 using grpc::ServerWriter;
 using grpc::Status;
 
-using nfb_grpc::Nfb;
-using nfb_grpc::nfb_fdt;
-using nfb_grpc::nfb_rpc_device;
-using nfb_grpc::nfb_read_req;
-using nfb_grpc::nfb_write_req;
-using nfb_grpc::nfb_read_resp;
-using nfb_grpc::nfb_write_resp;
+using google::protobuf::Empty;
+
+using nfb::ext::protobuf::v1::Nfb;
+using nfb::ext::protobuf::v1::FdtResponse;
+using nfb::ext::protobuf::v1::ReadCompRequest;
+using nfb::ext::protobuf::v1::WriteCompRequest;
+using nfb::ext::protobuf::v1::ReadCompResponse;
+using nfb::ext::protobuf::v1::WriteCompResponse;
 
 class NfbServerImpl final : public Nfb::Service
 {
+	struct nfb_device * m_dev;
+	const void *m_fdt;
+
 public:
 	explicit NfbServerImpl(const std::string& path)
 	{
@@ -45,29 +47,26 @@ public:
 		if (m_dev == NULL) {
 			throw std::system_error(errno, std::system_category());
 		}
+		m_fdt = nfb_get_fdt(m_dev);
 	}
 
-	Status Nfb_fdt_get(ServerContext* context, const nfb_rpc_device* dev, nfb_fdt* fdt) override
+	Status GetFdt(ServerContext* context, const Empty* req, FdtResponse* res) override
 	{
-		const void * raw_fdt = nfb_get_fdt(m_dev);
-		int size = fdt_totalsize(raw_fdt);
-
-		fdt->set_fdt(raw_fdt, size);
-
+		res->set_fdt(m_fdt, fdt_totalsize(m_fdt));
 		return Status::OK;
 	}
 
-	Status Nfb_comp_read(ServerContext* context, const nfb_read_req* req, nfb_read_resp* resp) override
+	Status ReadComp(ServerContext* context, const ReadCompRequest* req, ReadCompResponse* resp) override
 	{
-		struct nfb_comp * comp = nfb_comp_open(m_dev, req->fdt_offset());
+		struct nfb_comp * comp;
 		uint8_t * data;
 		int nbyte;
 
+		comp = nfb_comp_open(m_dev, fdt_path_offset(m_fdt, req->path().c_str()));
 		if (comp == NULL) {
 			throw std::system_error(errno, std::system_category());
 		}
 
-		//data = (uint8_t*) malloc(req->nbyte());
 		data = new uint8_t[req->nbyte()];
 		nbyte = nfb_comp_read(comp, data, req->nbyte(), req->offset());
 		
@@ -80,11 +79,12 @@ public:
 		return Status::OK;
 	}
 
-	Status Nfb_comp_write(ServerContext* context, const nfb_write_req* req, nfb_write_resp* resp) override
+	Status WriteComp(ServerContext* context, const WriteCompRequest* req, WriteCompResponse* resp) override
 	{
-		struct nfb_comp * comp = nfb_comp_open(m_dev, req->fdt_offset());
+		struct nfb_comp * comp;
 		int nbyte;
 
+		comp = nfb_comp_open(m_dev, fdt_path_offset(m_fdt, req->path().c_str()));
 		if (comp == NULL) {
 			throw std::system_error(errno, std::system_category());
 		}
@@ -101,12 +101,9 @@ public:
 	{
 		nfb_close(m_dev);
 	}
-
-private:
-	struct nfb_device * m_dev;
 };
 
-void RunServer(const std::string& path, const std::string& addr)
+void run_server(const std::string& path, const std::string& addr)
 {
 	std::string server_address(addr);
 	NfbServerImpl service(path);
@@ -134,7 +131,7 @@ int main(int argc, char** argv)
 	            exit(EXIT_FAILURE);
 		}
         }
-	RunServer(path, addr);
+	run_server(path, addr);
 
 	return 0;
 }
