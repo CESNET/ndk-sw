@@ -16,7 +16,8 @@ dependencies = [
 	"grpcio",
 ]
 
-[tool.setuptools]
-packages = [
-	"nfb",
-]
+[project.scripts]
+nfb-python-grpc-server = "nfb.ext.grpc.server:main"
+
+[tool.setuptools.packages.find]
+include = ["nfb*"]
