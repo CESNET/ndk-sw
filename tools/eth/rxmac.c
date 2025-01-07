@@ -55,14 +55,15 @@ void rxmac_print_status(struct nc_rxmac *rxmac, struct eth_params *p)
 		return;
 
 	printf("------------------------------ RXMAC Configuration ----\n");
-	printf("Frame error from MII  [1]  : %s", (s.error_mask & 0x00000001) ? "enabled\n" : "disabled\n");
-	printf("CRC check             [2]  : %s", (s.error_mask & 0x00000002) ? "enabled\n" : "disabled\n");
-	printf("Minimum frame length  [4]  : %s\n"
-			"* length                   : %d B\n",
+	printf("Error mask register        : 0x%02x\n", s.error_mask);
+	printf(" * Frame error from MII [0]: %s\n", (s.error_mask & 0x00000001) ? "enabled" : "disabled");
+	printf(" * CRC check            [1]: %s\n", (s.error_mask & 0x00000002) ? "enabled" : "disabled");
+	printf(" * Minimum frame length [2]: %s\n"
+			"   * length                : %d B\n",
 			(s.error_mask & 0x00000004) ? "enabled" : "disabled",
 			s.frame_length_min);
-	printf("MTU frame length      [8]  : %s\n"
-			"* length                   : %d B",
+	printf(" * MTU frame length     [3]: %s\n"
+			"   * length                : %d B",
 			(s.error_mask & 0x00000008) ? "enabled" : "disabled",
 			s.frame_length_max);
 
@@ -78,8 +79,8 @@ void rxmac_print_status(struct nc_rxmac *rxmac, struct eth_params *p)
 	case RXMAC_MAC_FILTER_TABLE_BCAST:	text = "Filter by MAC address table, allow broadcast"; break;
 	case RXMAC_MAC_FILTER_TABLE_BCAST_MCAST:text = "Filter by MAC address table, allow broadcast + multicast"; break;
 	}
-	printf("MAC address check     [16] : %s\n"
-			"* mode                     : %s\n",
+	printf(" * MAC address check    [4]: %s\n"
+			"   * mode                  : %s\n",
 			(s.error_mask & 0x00000010) ? "enabled" : "disabled", text);
 	printf("MAC address table size     : %d\n", s.mac_addr_count);
 }
@@ -96,7 +97,6 @@ void rxmac_print_ether_stats(struct nc_rxmac *rxmac)
 	}
 
 	printf("---------------------------- RXMAC etherStatsTable ----\n");
-//	printf("etherStatsDropEvents          : %llu\n")
 	printf("etherStatsOctets              : %llu\n", s.octets);
 	printf("etherStatsPkts                : %llu\n", s.pkts);
 	printf("etherStatsBroadcastPkts       : %llu\n", s.broadcastPkts);
@@ -104,16 +104,16 @@ void rxmac_print_ether_stats(struct nc_rxmac *rxmac)
 	printf("etherStatsCRCAlignErrors      : %llu\n", s.CRCAlignErrors);
 	printf("etherStatsUndersizePkts       : %llu\n", s.undersizePkts);
 	printf("etherStatsOversizePkts        : %llu\n", s.oversizePkts);
-//	printf("etherStatsOversizePkts        : %llu\n");
 	printf("etherStatsFragments           : %llu\n", s.fragments);
 	printf("etherStatsJabbers             : %llu\n", s.jabbers);
-//	printf("etherStatsCollisions          : %llu\n");
 	printf("etherStatsPkts64Octets        : %llu\n", s.pkts64Octets);
 	printf("etherStatsPkts65to127Octets   : %llu\n", s.pkts65to127Octets);
 	printf("etherStatsPkts128to255Octets  : %llu\n", s.pkts128to255Octets);
 	printf("etherStatsPkts256to511Octets  : %llu\n", s.pkts256to511Octets);
 	printf("etherStatsPkts512to1023Octets : %llu\n", s.pkts512to1023Octets);
 	printf("etherStatsPkts1024to1518Octets: %llu\n", s.pkts1024to1518Octets);
+	printf("underMinPkts                  : %llu\n", s.underMinPkts);
+	printf("overMaxPkts                   : %llu\n", s.overMaxPkts);
 }
 
 int clear_mac_addresses(struct nc_rxmac *rxmac)
@@ -237,6 +237,9 @@ int rxmac_execute_operation(struct nc_rxmac *rxmac, struct eth_params *p)
 	case CMD_SET_MIN_LENGTH:
 		nc_rxmac_set_frame_length(rxmac, p->param,
 				p->command == CMD_SET_MAX_LENGTH ? RXMAC_FRAME_LENGTH_MAX : RXMAC_FRAME_LENGTH_MIN);
+		break;
+	case CMD_SET_ERROR_MASK:
+		nc_rxmac_set_error_mask(rxmac, p->param);
 		break;
 	case CMD_SHOW_MACS:
 		ret = show_mac_addresses(rxmac);

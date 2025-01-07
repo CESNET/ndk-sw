@@ -66,6 +66,8 @@ struct nc_rxmac_etherstats {
 	unsigned long long pkts256to511Octets;   /*!< Total number of received packets that were between 256 and 511 bytes long */
 	unsigned long long pkts512to1023Octets;  /*!< Total number of received packets that were between 512 and 1023 bytes long */
 	unsigned long long pkts1024to1518Octets; /*!< Total number of received packets that were between 1024 and 1518 bytes long */
+	unsigned long long underMinPkts;         /*!< Total number of received packets that were shorter than configured minimum */
+	unsigned long long overMaxPkts;          /*!< Total number of received packets that were longer than configured maximum */
 };
 
 struct nc_rxmac_status {
@@ -112,9 +114,9 @@ static inline void             nc_rxmac_set_error_mask(struct nc_rxmac *mac, uns
 #define RXMAC_REG_CNT_ES_CRC_ERR_LO             0x0100
 #define RXMAC_REG_CNT_ES_CRC_ERR_HI             0x0138
 
-/* Total received packets over set MTU (etherStatsPkts) */
-#define RXMAC_REG_CNT_ES_PKTS_LO                0x0104
-#define RXMAC_REG_CNT_ES_PKTS_HI                0x013C
+/* Total received packets over set MTU */
+#define RXMAC_REG_CNT_ES_OVERSIZE_LO            0x0104
+#define RXMAC_REG_CNT_ES_OVERSIZE_HI            0x013C
 
 /* Total received packets below set minimal length */
 #define RXMAC_REG_CNT_ES_UNDERSIZE_LO           0x0108
@@ -313,13 +315,19 @@ static inline int nc_rxmac_read_counters(struct nc_rxmac *mac, struct nc_rxmac_c
 {
 	struct nfb_comp *comp = nfb_user_to_comp(mac);
 
+	unsigned long long cnt_total = 0;
+
 	if (!nfb_comp_lock(comp, RXMAC_COMP_LOCK))
 		return -EAGAIN;
 
 	nfb_comp_write32(comp, RXMAC_REG_CONTROL, RXMAC_CMD_STROBE);
 
+	if (c || s) {
+		cnt_total        = RXMAC_READ_CNT(comp, PACKETS);
+	}
+
 	if (c) {
-		c->cnt_total        = RXMAC_READ_CNT(comp, PACKETS);
+		c->cnt_total        = cnt_total;
 		c->cnt_received     = RXMAC_READ_CNT(comp, RECEIVED);
 		c->cnt_overflowed   = RXMAC_READ_CNT(comp, OVERFLOW);
 		c->cnt_erroneous    = RXMAC_READ_CNT(comp, DISCARDED) - c->cnt_overflowed;
@@ -328,15 +336,18 @@ static inline int nc_rxmac_read_counters(struct nc_rxmac *mac, struct nc_rxmac_c
 
 	if (s) {
 		s->octets                  = RXMAC_READ_CNT(comp, ES_OCTETS);
-		s->pkts                    = RXMAC_READ_CNT(comp, ES_PKTS);
+		s->pkts                    = cnt_total;
 		s->broadcastPkts           = RXMAC_READ_CNT(comp, ES_BCAST);
 		s->multicastPkts           = RXMAC_READ_CNT(comp, ES_MCAST);
 		s->CRCAlignErrors          = RXMAC_READ_CNT(comp, ES_CRC_ERR);
 		if (mac->has_counter_below_64) {
 			s->undersizePkts       = RXMAC_READ_CNT(comp, ES_FRAMES_BELOW_64);
 		} else {
-			s->undersizePkts       = RXMAC_READ_CNT(comp, ES_UNDERSIZE);
+			s->undersizePkts       = 0;
 		}
+
+		s->underMinPkts            = RXMAC_READ_CNT(comp, ES_UNDERSIZE);
+		s->overMaxPkts             = RXMAC_READ_CNT(comp, ES_OVERSIZE);
 		s->oversizePkts            = RXMAC_READ_CNT(comp, ES_FRAMES_OVER_1518);
 		s->fragments               = RXMAC_READ_CNT(comp, ES_FRAGMENTS);
 		s->jabbers                 = RXMAC_READ_CNT(comp, ES_JABBERS);
