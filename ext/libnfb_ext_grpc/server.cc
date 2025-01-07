@@ -14,9 +14,10 @@ extern "C" {
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
-#include "nfb.grpc.pb.h"
 
 #include <nfb/nfb.h>
+
+#include "nfb/ext/protobuf/v1/nfb.grpc.pb.h"
 
 using grpc::Server;
 using grpc::ServerBuilder;

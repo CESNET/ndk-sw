@@ -12,7 +12,7 @@
 #include <grpcpp/create_channel.h>
 #include <grpcpp/security/credentials.h>
 
-#include <nfb.grpc.pb.h>
+#include "nfb/ext/protobuf/v1/nfb.grpc.pb.h"
 
 extern "C" {
 #include <libfdt.h>

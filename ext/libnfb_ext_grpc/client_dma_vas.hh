@@ -13,7 +13,7 @@
 #include <mutex>
 #include <queue>
 
-#include <dma.grpc.pb.h>
+#include "nfb/ext/protobuf/v1/dma.grpc.pb.h"
 
 
 namespace pb_dma = nfb::ext::protobuf::v1;

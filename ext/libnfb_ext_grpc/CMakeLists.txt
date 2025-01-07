@@ -15,8 +15,8 @@ include(GNUInstallDirs)
 find_package(Protobuf CONFIG)
 find_package(gRPC QUIET)
 
-set(PROTO_NFB nfb.proto)
-set(PROTO_DMA dma.proto)
+set(PROTO_NFB nfb/ext/protobuf/v1/nfb.proto)
+set(PROTO_DMA nfb/ext/protobuf/v1/dma.proto)
 set(PROTO_FILES ${PROTO_NFB} ${PROTO_DMA})
 
 add_library(nfb-ext-proto INTERFACE ${PROTO_FILES})
