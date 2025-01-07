@@ -15,8 +15,11 @@ include(GNUInstallDirs)
 find_package(Protobuf CONFIG)
 find_package(gRPC QUIET)
 
-set(PROTO_FILES nfb.proto)
+set(PROTO_NFB nfb.proto)
+set(PROTO_DMA dma.proto)
+set(PROTO_FILES ${PROTO_NFB} ${PROTO_DMA})
 
+add_library(nfb-ext-proto INTERFACE ${PROTO_FILES})
 add_library(nfb-ext-grpc SHARED client.cc)
 add_executable(nfb-grpc-server server.cc)
 
@@ -25,8 +28,8 @@ if (${gRPC_FOUND})
 	include_directories(${Protobuf_INCLUDE_DIRS})
 	include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-	target_sources(nfb-ext-grpc PRIVATE ${PROTO_FILES})
-	target_sources(nfb-grpc-server PRIVATE ${PROTO_FILES})
+	target_sources(nfb-ext-grpc PRIVATE ${PROTO_NFB})
+	target_sources(nfb-grpc-server PRIVATE ${PROTO_NFB})
 
 	get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
 	protobuf_generate(TARGET nfb-ext-grpc LANGUAGE cpp)
@@ -42,8 +45,8 @@ else()
 	find_program(_GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin)
 	find_program(_PROTOBUF_PROTOC protoc)
 
-	get_filename_component(nfb_proto ${PROTO_FILES} ABSOLUTE)
-	get_filename_component(nfb_proto_path "${nfb_proto}" PATH)
+	get_filename_component(nfb_proto_abs ${PROTO_NFB} ABSOLUTE)
+	get_filename_component(nfb_proto_path "${nfb_proto_abs}" PATH)
 
 	set(nfb_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/nfb.pb.cc")
 	set(nfb_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/nfb.pb.h")
@@ -57,8 +60,8 @@ else()
 			--cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
 			-I "${nfb_proto_path}"
 			--plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-			"${nfb_proto}"
-		  DEPENDS "${nfb_proto}")
+			"${nfb_proto_abs}"
+		  DEPENDS "${nfb_proto_abs}")
 
 	include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
@@ -77,13 +80,21 @@ set_target_properties(nfb-ext-grpc PROPERTIES
 	OUTPUT_NAME nfb-ext-grpc
 	VERSION ${GIT_VERSION}
 	SOVERSION ${GIT_VERSION_MAJOR}
-	PUBLIC_HEADER ${PROTO_FILES}
+)
+
+set_target_properties(nfb-ext-proto
+    PROPERTIES
+	PUBLIC_HEADER "${PROTO_FILES}"
 )
 
 install(TARGETS nfb-ext-grpc
 	COMPONENT NfbExtGrpc
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(TARGETS nfb-ext-proto
+	COMPONENT NfbExtGrpc
 	PUBLIC_HEADER
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nfb/ext/protobuf/v1/
 )
