@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools", "setuptools-grpc"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "libnfb_ext_grpc"
+version = "0.1.0"
+authors = [{name = "Martin Spinler", email="spinler@cesnet.cz"}]
+description = "Python wrapper for libnfb gRPC extension"
+classifiers=[
+	"Programming Language :: Python :: 3",
+	"Operating System :: OS Independent",
+]
+dependencies = [
+	"protobuf",
+	"grpcio",
+]
+
+[tool.setuptools]
+packages = [
+	"nfb",
+]
