@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package nfb.ext.protobuf.v1;
+
+// Direct Memory Access
+service Dma {
+	rpc RqStream (stream DmaResponse) returns (stream DmaRequest) {}
+	rpc Logout(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+}
+
+enum DmaOperation {
+	DMA_READ = 0;
+	DMA_WRITE = 1;
+}
+
+message DmaRequest {
+	DmaOperation type = 1;
+	int64 addr = 2;
+	int32 nbyte = 3;
+	bytes data = 4;
+}
+
+message DmaResponse {
+	int32 status = 1;
+	bytes data = 2;
+}
