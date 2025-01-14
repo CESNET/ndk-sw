@@ -4,3 +4,7 @@ requires = [
 	"Cython",
 ]
 build-backend = "setuptools.build_meta"
+
+[[tool.mypy.overrides]]
+module = "fdt"
+ignore_missing_imports = true

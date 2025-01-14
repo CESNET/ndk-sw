@@ -33,16 +33,15 @@ def _batched(iterable, n):
         batch = tuple(islice(it, n))
 
 
-def open(path: str = '0') -> Nfb:
+def open(path: Optional[str] = None) -> Nfb:
     """Open a handle to NFB device in system
 
     :param path: Path to device node, default leads to ``/dev/nfb0``
     :return: The :class:`libnfb.Nfb` object, enhanced by :class:`eth.EthManager`
     """
 
-    dev = Nfb(path)
-    eth.EthManager(dev)
-    return dev
+    return Nfb(path)
+
 
 cdef class NfbDeviceHandle:
     def __cinit__(self, path: str):
@@ -84,8 +83,11 @@ cdef class Nfb:
 
     default_dev_path = nfb_default_dev_path().decode()
 
-    def __init__(self, path: str):
+    def __init__(self, path: Optional[str] = None):
         cdef const char* _fdtc
+
+        if path is None:
+            path = self.default_dev_path
 
         self._handle = NfbDeviceHandle(path)
         # Deprecated. Use _handle._dev
@@ -96,6 +98,7 @@ cdef class Nfb:
         dtb = <bytes>fdtc[:c_fdt_totalsize(self._fdt)]
         self.fdt = fdt.parse_dtb(dtb)
 
+        self.eth = eth.EthManager(self)
         self.ndp = QueueManager(self)
         # TODO: use Nfb.dma only for statistic, not for transfers
         self.dma = self.ndp
@@ -164,7 +167,7 @@ cdef class Nfb:
                     return self.fdt.get_node(path)
         return None
 
-    def read_temperature(self, units="celsius"):
+    def read_temperature(self, units: str = "celsius") -> float:
         cdef int32_t int32 = 0
         assert units == "celsius"
 
@@ -328,7 +331,7 @@ cdef class Comp:
         reg = getattr(self, f"read{width}")(addr)
         return True if (reg & (1 << bit)) else False
 
-    def wait_for_bit(self, addr, bit, timeout=5.0, delay=0.01, level=True, width=32):
+    def wait_for_bit(self, addr, bit, timeout=5.0, delay=0.01, level=True, width=32) -> bool:
         """
         Wait for bit in comenent register
 
@@ -415,8 +418,8 @@ cdef class QueueManager:
             for d in compatibles
         )
 
-    def _get_q(self, q, tx = False):
-        if q == None:
+    def _get_q(self, q, tx = False) -> list[int]:
+        if q is None:
             q = [i for i in range(len(self.tx if tx else self.rx))]
         elif isinstance(q, int):
             q = [q]
@@ -463,7 +466,7 @@ cdef class QueueManager:
         for qi in self._get_q(i, True):
             self.tx[qi].send(pkts, hdrs, flags, flush)
 
-    def sendmsg(self, pkts: List[Tuple[bytes, bytes, int]], flush: bool = True, i: Optional[Union[int, List[int]]] = None) -> None:
+    def sendmsg(self, pkts: Union[List[Tuple[bytes, bytes, int]], Tuple[bytes, bytes, int]], flush: bool = True, i: Optional[Union[int, List[int]]] = None) -> None:
         """
         Send burst of messages to multiple queues
 
@@ -474,7 +477,7 @@ cdef class QueueManager:
         for qi in self._get_q(i, True):
             self.tx[qi].sendmsg(pkts, flush)
 
-    def flush(self, i = None):
+    def flush(self, i: Optional[Iterable[int] | int] = None):
         """
         Flush the prepared packets/messages on multiple queues
 
@@ -805,8 +808,8 @@ cdef class NdpQueueTx(NdpQueue):
         libnetcope.nc_txqueue_read_counters(self._nc_queue, &counters)
 
         return {
-                'passed': counters.sent,
-                'passed_bytes': counters.sent_bytes,
+            'passed': counters.sent,
+            'passed_bytes': counters.sent_bytes,
         }
 
     cdef _sendmsg(self, pkts: Iterable[Tuple[bytes, bytes, int]]): # -> None:
@@ -834,7 +837,7 @@ cdef class NdpQueueTx(NdpQueue):
                 memcpy(ndppkt[i].header, c_hdr, len(hdr))
             ndp_tx_burst_put(self._q)
 
-    def send(self, pkts: Union[bytes, List[bytes]], hdrs: Optional[Union[bytes, List[bytes]]] = None, flags: Optional[Union[int, List[int]]] = None, flush: bool = True) -> None:
+    def send(self, pkts: Union[bytes, Iterable[bytes]], hdrs: Optional[Union[bytes, Iterable[bytes]]] = None, flags: Optional[Union[int, Iterable[int]]] = None, flush: bool = True) -> None:
         """
         Send a packet or burst of packets
 
@@ -859,7 +862,7 @@ cdef class NdpQueueTx(NdpQueue):
 
         self.sendmsg(zip(pkts, hdrs, flags), flush)
 
-    def sendmsg(self, pkts: Iterable[Tuple[bytes, bytes, int]], flush: bool = True) -> None:
+    def sendmsg(self, pkts: Union[Tuple[bytes, bytes, int], Iterable[Tuple[bytes, bytes, int]]], flush: bool = True) -> None:
         """
         Send burst of messages
 
