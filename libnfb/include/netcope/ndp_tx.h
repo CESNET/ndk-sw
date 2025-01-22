@@ -436,7 +436,10 @@ static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *pac
 
 		hdr = hdr_base + i;
 
-		header_size = packets[i].header_length;
+		if (unlikely(packets[i].header_length > NDP_CALYPTE_METADATA_HDR_SIZE_MASK))
+			return 0;
+
+		header_size = packets[i].header_length & NDP_CALYPTE_METADATA_HDR_SIZE_MASK;
 		packet_size = packets[i].data_length + header_size;
 
 		if (unlikely(packet_size < q->frame_size_min)) {
