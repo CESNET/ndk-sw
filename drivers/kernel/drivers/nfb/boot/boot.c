@@ -276,7 +276,12 @@ int nfb_boot_load(struct nfb_boot *boot,
 	load.data = data;
 
 	/* call the subdriver */
-	ret = -ENXIO;
+	if (boot->bw_bmc) {
+		ret = nfb_boot_bw_bmc_load(boot, &load);
+	} else {
+		ret = -ENXIO;
+	}
+
 	if (ret) {
 		goto err_load;
 	}
@@ -373,6 +378,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	ret = nfb_pmci_attach(boot);
 	ret = nfb_spi_attach(boot);
 #endif
+	ret = nfb_boot_bw_bmc_attach(boot);
 	/* Cards with Intel FPGA (Stratix10, Agilex) use Secure Device Manager for QSPI Flash access and Boot */
 	boot->sdm = NULL;
 	boot->sdm_boot_en = 0;
@@ -397,7 +403,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,boot_controller");
 	// FIXME: better create some general boot controller interface
 	if (fdt_offset < 0) {
-		if (boot->sdm_boot_en == 0 && boot->pmci == NULL && boot->m10bmc_spi == NULL) {
+		if (boot->sdm_boot_en == 0 && boot->pmci == NULL && boot->m10bmc_spi == NULL && boot->bw_bmc == NULL) {
 			ret = -ENODEV;
 			dev_warn(&nfb->pci->dev, "nfb_boot: No boot_controller found in FDT.\n");
 			goto err_nocomp;
@@ -407,7 +413,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	}
 
 	boot->comp = nfb_comp_open(nfb, fdt_offset);
-	if (!boot->comp && boot->pmci == NULL && boot->m10bmc_spi == NULL) {
+	if (!boot->comp && boot->pmci == NULL && boot->m10bmc_spi == NULL && boot->bw_bmc == NULL) {
 		ret = -ENODEV;
 		goto err_comp_open;
 	}
@@ -503,6 +509,8 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 	if (boot->comp)
 		nfb_comp_close(boot->comp);
 	sdm_free(boot->sdm);
+
+	nfb_boot_bw_bmc_detach(boot);
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	if (boot->pmci)
 		nfb_pmci_detach(boot);

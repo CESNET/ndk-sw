@@ -25,6 +25,7 @@
 #include "sdm.h"
 #include "nfb-pmci.h"
 #include "nfb-spi.h"
+#include "nfb-bw-bmc.h"
 
 struct nfb_boot {
 	struct nfb_comp *comp;
@@ -32,6 +33,8 @@ struct nfb_boot {
 	struct nfb_device *nfb;
 	struct pmci_device *pmci;
 	struct m10bmc_spi_nfb_device *m10bmc_spi;
+
+	void *bw_bmc;
 
 	int num_image;
 
