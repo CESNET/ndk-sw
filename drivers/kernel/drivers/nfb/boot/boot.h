@@ -47,6 +47,7 @@ struct nfb_boot {
 	int mtd_bit;
 	unsigned long mtd_size;
 	int fb_active_flash;
+	struct mutex load_mutex;
 };
 
 struct mtd_info *cfi_probe(struct map_info *map);

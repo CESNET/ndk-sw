@@ -210,6 +210,100 @@ int nfb_boot_get_sensor_ioc(struct nfb_boot *boot, struct nfb_boot_ioc_sensor __
 	return 0;
 }
 
+int nfb_boot_load(struct nfb_boot *boot,
+		struct nfb_boot_ioc_load __user *_load,
+		void *app_priv)
+{
+	struct nfb_boot_ioc_load load;
+	struct nfb_boot_ioc_load load_orig;
+
+	int ret = 0;
+	char * buf = NULL;
+	char * name;
+	char * node;
+	unsigned char * data;
+
+	if (copy_from_user(&load, _load, sizeof(load)))
+		return -EFAULT;
+
+	/* Copy fields from user */
+
+	if (mutex_trylock(&boot->load_mutex) == 0)
+		return -EBUSY;
+
+	load_orig = load;
+
+	if (load.name_size != 0 || load.node_size != 0 || load.data_size != 0) {
+		buf = vmalloc(load.name_size + load.node_size + load.data_size);
+		if (buf == NULL) {
+			ret = -ENOMEM;
+			goto err_vmalloc;
+		}
+	}
+
+	/* get filename */
+	name = buf;
+	ret = strncpy_from_user(name, load.name, load.name_size);
+	if (load.name_size != 0 && ret != load.name_size - 1) {
+		ret = -EINVAL;
+		goto err_copy_items;
+	}
+	load.name = name;
+
+	/* get FDT node path */
+	node = name + load.name_size;
+	ret = strncpy_from_user(node, load.node, load.node_size);
+	if (load.node_size != 0 && ret != load.node_size - 1) {
+		ret = -EINVAL;
+		goto err_copy_items;
+	}
+	load.node = node;
+
+	/* get data */
+	data = node + load.node_size;
+	ret = copy_from_user(data, load.data, load.data_size);
+	if (ret != 0) {
+		ret = -EINVAL;
+		goto err_copy_items;
+	}
+	load.data = data;
+
+	/* call the subdriver */
+	ret = -ENXIO;
+	if (ret) {
+		goto err_load;
+	}
+
+#if 0
+	/* Copy "return" values */
+	load_orig.phase = load.phase;
+	load_orig.progress = load.progress;
+	if (copy_to_user(_load, &load_orig, sizeof(load_orig)))
+		return -EFAULT;
+#else
+	load.name = load_orig.name;
+	load.node = load_orig.node;
+	load.data = load_orig.data;
+
+	if (copy_to_user(_load, &load, sizeof(load))) {
+		ret = -EFAULT;
+		goto err_copy_to_user;
+	}
+#endif
+
+	vfree(buf);
+	mutex_unlock(&boot->load_mutex);
+	return ret;
+
+err_copy_to_user:
+err_load:
+err_copy_items:
+	vfree(buf);
+err_vmalloc:
+	mutex_unlock(&boot->load_mutex);
+	return ret;
+}
+
 long nfb_boot_ioctl(void *priv, void *app_priv, struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct nfb_boot *nfb_boot = priv;
@@ -233,6 +327,8 @@ long nfb_boot_ioctl(void *priv, void *app_priv, struct file *file, unsigned int 
 		return nfb_boot_ioctl_mtd_erase(nfb_boot, argp);
 	case NFB_BOOT_IOC_SENSOR_READ:
 		return nfb_boot_get_sensor_ioc(nfb_boot, argp);
+	case NFB_BOOT_IOC_LOAD:
+		return nfb_boot_load(nfb_boot, argp, app_priv);
 	default:
 		return -ENOTTY;
 	}
@@ -265,6 +361,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	*priv = boot;
 
 	boot->nfb = nfb;
+	mutex_init(&boot->load_mutex);
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	ret = nfb_pmci_attach(boot);
 	ret = nfb_spi_attach(boot);

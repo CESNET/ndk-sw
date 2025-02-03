@@ -57,6 +57,30 @@ struct nfb_boot_ioc_sensor {
 	long value;
 };
 
+
+#define NFB_BOOT_IOC_LOAD_CMD_NONE      0
+#define NFB_BOOT_IOC_LOAD_CMD_ERASE     (1 << 0)
+#define NFB_BOOT_IOC_LOAD_CMD_WRITE     (1 << 1)
+#define NFB_BOOT_IOC_LOAD_CMD_PRIORITY  (1 << 2)
+
+#define NFB_BOOT_IOC_LOAD_FLAG_USE_ID   (1 << 0)
+#define NFB_BOOT_IOC_LOAD_FLAG_USE_NODE (1 << 1)
+
+struct nfb_boot_ioc_load
+{
+	__u64 cmd; /* bitmask: erase, write */
+	__u64 flags;
+	__u64 id;
+        __u64 data_size;
+
+	__u32 node_size; /* \0 must be included */
+	__u32 name_size; /* \0 must be included */
+        char *data;
+        char *node; /* device tree path to unit / image */
+        const char *name; /* name of the image */
+};
+
+
 /*
  * Ioctl definitions
  */
@@ -70,5 +94,8 @@ struct nfb_boot_ioc_sensor {
 #define NFB_BOOT_IOC_MTD_ERASE  _IOW (NFB_BOOT_IOC, 4, struct nfb_boot_ioc_mtd)
 
 #define NFB_BOOT_IOC_SENSOR_READ _IOR(NFB_BOOT_IOC, 5, struct nfb_boot_ioc_sensor)
+
+#define NFB_BOOT_IOC_LOAD       _IOWR(NFB_BOOT_IOC, 6, struct nfb_boot_ioc_load)
+
 
 #endif /* _LINUX_NFB_BOOT_H_ */
