@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
@@ -231,6 +232,12 @@ ssize_t nfb_fw_read_for_dev(const struct nfb_device *dev, FILE *fd, void **data)
 		return ret;
 	}
 
+	fdt_for_each_compatible_node(fdt, node, "bittware,bmc") {
+		format = BITSTREAM_FORMAT_NATIVE;
+		ret = nfb_fw_open_rpd(fd, data, format);
+		return ret;
+	}
+
 	fdt_for_each_compatible_node(fdt, node, "brnologic,m10bmc_spi") {
 		format = BITSTREAM_FORMAT_NATIVE;
 		ret = nfb_fw_open_rpd(fd, data, format);
@@ -403,8 +410,70 @@ err_ioctl_write:
 	return ret;
 }
 
+int nfb_fw_load_boot_load(const struct nfb_device *dev, void *data, size_t size, int flags, int slot_fdt_offset, const char *filename)
+{
+	const int FDT_MAX_PATH_LENGTH = 512;
+
+	int ret;
+	int node_cp;
+	struct nfb_boot_ioc_load load;
+	const void *fdt = nfb_get_fdt(dev);
+
+	char node_path[FDT_MAX_PATH_LENGTH];
+
+	int32_t id = -1;
+	uint32_t offset = 0xDEADBEEF;
+	const void *prop;
+
+	char *fn = NULL;
+
+	ret = fdt_get_path(fdt, slot_fdt_offset, node_path, sizeof(node_path));
+	if (ret < 0)
+		return -EINVAL;
+
+	//prop32 = fdt_getprop(fdt, node, "id", &proplen);
+	fdt_getprop32(fdt, slot_fdt_offset, "id", &id);
+	if (id == -1)
+		return -EINVAL;
+	prop = fdt_getprop(fdt, slot_fdt_offset, "empty", NULL);
+
+	node_cp = fdt_subnode_offset(fdt, slot_fdt_offset, "control-param");
+	fdt_getprop32(fdt, node_cp, "base", &offset);
+
+	fn = strdup(filename ? filename : "cesnet-ndk-image.rbf");
+	if (fn == NULL) {
+		return -ENOMEM;
+	}
+
+	if (flags & NFB_FW_LOAD_FLAG_VERBOSE) {
+		printf("Bitstream size: %lu B\n", size);
+	}
+
+	load.node = node_path;
+	load.node_size = strlen(load.node) + 1;
+
+	load.name = basename(fn);
+	load.name_size = strlen(load.name) + 1;
+
+	load.data = data;
+	load.data_size = size;
+
+	load.id = id;
+	load.cmd = NFB_BOOT_IOC_LOAD_CMD_WRITE | (prop == NULL ? NFB_BOOT_IOC_LOAD_CMD_ERASE : 0);
+	load.flags = NFB_BOOT_IOC_LOAD_FLAG_USE_NODE;
+
+	ret = ioctl(dev->fd, NFB_BOOT_IOC_LOAD, &load);
+	if (ret != 0)
+		ret = -errno;
+
+	free(fn);
+
+	return ret;
+}
+
 int nfb_fw_load_ext_name(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags, const char *filename)
 {
+	int ret;
 	int node = -1;
 	int fdt_offset = -1;
 	int proplen;
@@ -447,6 +516,10 @@ int nfb_fw_load_ext_name(const struct nfb_device *dev, unsigned int image, void 
 			return nfb_fw_load_fpga_image_load(dev, data, size, flags, node);
 		}
 	}
+
+	ret = nfb_fw_load_boot_load(dev, data, size, flags, node, filename);
+	if (ret != -ENXIO)
+		return ret;
 
 	prop = fdt_getprop(fdt, fdt_offset, "bitstream-offset", &proplen);
 	if (proplen == sizeof(*prop)) {
