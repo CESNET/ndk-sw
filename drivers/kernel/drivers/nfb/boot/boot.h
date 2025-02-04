@@ -48,6 +48,14 @@ struct nfb_boot {
 	unsigned long mtd_size;
 	int fb_active_flash;
 	struct mutex load_mutex;
+	struct boot_load {
+		unsigned start_ops;
+		unsigned done_ops;
+		unsigned pending_ops;
+		unsigned current_op;
+		unsigned current_op_progress_max;
+		unsigned current_op_progress;
+	} load;
 };
 
 struct mtd_info *cfi_probe(struct map_info *map);
@@ -80,6 +88,7 @@ int nfb_boot_ioctl_error_disable(struct nfb_boot *nfb_boot);
 int nfb_boot_reload(void *arg);
 
 int nfb_boot_get_sensor_ioc(struct nfb_boot *boot, struct nfb_boot_ioc_sensor __user *);
+ssize_t nfb_boot_load_get_status(struct nfb_boot *boot, char *buf);
 
 #define NFB_BOOT_FLAG_FB_SELECT_FLASH 1
 #define NFB_BOOT_FLAG_FLASH_SET_ASYNC 2

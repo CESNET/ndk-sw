@@ -19,6 +19,8 @@
 #include "nfb.h"
 #include "ndp/ndp.h"
 
+#include "boot/boot.h"
+
 
 /* Global variables */
 static int nfb_major;
@@ -50,15 +52,28 @@ static ssize_t nfb_char_get_pcislot(struct device *dev, struct device_attribute 
 	return scnprintf(buf, PAGE_SIZE, "%s\n", pci_name(nfb->pci));
 }
 
+static ssize_t nfb_boot_get_load_status(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct nfb_device *nfb = dev_get_drvdata(dev);
+	struct nfb_boot *nfb_boot = nfb_get_priv_for_attach_fn(nfb, nfb_boot_attach);
+
+	if (nfb_boot == NULL)
+		return scnprintf(buf, PAGE_SIZE, "\n");
+
+	return nfb_boot_load_get_status(nfb_boot, buf);
+}
+
 /* Attributes for sysfs - declarations */
 DEVICE_ATTR(serial,   S_IRUGO, nfb_char_get_serial,   NULL);
 DEVICE_ATTR(cardname, S_IRUGO, nfb_char_get_cardname, NULL);
 DEVICE_ATTR(pcislot,  S_IRUGO, nfb_char_get_pcislot,  NULL);
+DEVICE_ATTR(boot_load_status, S_IRUGO, nfb_boot_get_load_status,   NULL);
 
 struct attribute *nfb_char_attrs[] = {
 	&dev_attr_serial.attr,
 	&dev_attr_cardname.attr,
 	&dev_attr_pcislot.attr,
+	&dev_attr_boot_load_status.attr,
 	NULL,
 };
 

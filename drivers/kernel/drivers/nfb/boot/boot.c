@@ -210,6 +210,13 @@ int nfb_boot_get_sensor_ioc(struct nfb_boot *boot, struct nfb_boot_ioc_sensor __
 	return 0;
 }
 
+ssize_t nfb_boot_load_get_status(struct nfb_boot *boot, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "0,%u,%u,%u,%u,%u,%u\n",
+		boot->load.start_ops, boot->load.done_ops, boot->load.pending_ops,
+		boot->load.current_op, boot->load.current_op_progress_max, boot->load.current_op_progress);
+}
+
 int nfb_boot_load(struct nfb_boot *boot,
 		struct nfb_boot_ioc_load __user *_load,
 		void *app_priv)
