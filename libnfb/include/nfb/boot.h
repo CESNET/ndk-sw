@@ -43,6 +43,10 @@ void nfb_fw_close(void *data);
 
 void nfb_fw_print_slots(const struct nfb_device *dev);
 
+void *nfb_fw_load_progress_init(struct nfb_device *dev);
+void nfb_fw_load_progress_destroy(void *priv);
+void nfb_fw_load_progress_print(void *priv);
+
 int nfb_sensor_get(struct nfb_device *dev, struct nfb_boot_ioc_sensor *s);
 
 #ifdef __cplusplus

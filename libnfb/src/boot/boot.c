@@ -471,6 +471,98 @@ int nfb_fw_load_boot_load(const struct nfb_device *dev, void *data, size_t size,
 	return ret;
 }
 
+struct boot_load_progress {
+	char path[PATH_MAX];
+	unsigned op;
+	unsigned done;
+	unsigned progress;
+};
+
+struct boot_load_status {
+	unsigned start_ops;
+	unsigned done_ops;
+	unsigned pending_ops;
+	unsigned current_op;
+	unsigned current_op_progress_max;
+	unsigned current_op_progress;
+} bs;
+
+void *nfb_fw_load_progress_init(struct nfb_device *dev)
+{
+	int node;
+	const void *fdt = nfb_get_fdt(dev);
+	const void *prop;
+	struct boot_load_progress *lp;
+
+	lp = calloc(1, sizeof(*lp));
+	if (lp == NULL) {
+		return NULL;
+	}
+
+	node = fdt_path_offset(fdt, "/system/device/endpoint0");
+	prop = fdt_getprop(fdt, node, "pci-slot", NULL);
+	snprintf(lp->path, sizeof(lp->path), "/sys/bus/pci/devices/%s/nfb/nfb%d/boot_load_status", (const char*)prop, nfb_get_system_id(dev));
+
+	return lp;
+}
+
+void nfb_fw_load_progress_destroy(void *priv)
+{
+	struct boot_load_progress *lp = priv;
+	if (lp != NULL) {
+		if (lp->op) {
+			nfb_fw_load_progress_print(priv);
+		}
+		free(lp);
+	}
+}
+
+void nfb_fw_load_progress_print(void *priv)
+{
+	FILE *file;
+	int n;
+
+	struct boot_load_progress *lp = priv;
+	struct boot_load_status bs;
+
+	if (lp == NULL)
+		return;
+
+	file = fopen(lp->path, "r");
+	if (file == NULL)
+		return;
+
+	n = fscanf(file, "0,%u,%u,%u,%u,%u,%u", &bs.start_ops, &bs.done_ops, &bs.pending_ops,
+			&bs.current_op, &bs.current_op_progress_max, &bs.current_op_progress);
+
+	fclose(file);
+	if (n != 6)
+		return;
+
+	if (bs.current_op_progress_max) {
+		lp->progress = bs.current_op_progress * 100ull / bs.current_op_progress_max;
+	} else {
+		lp->progress = 0;
+	}
+
+	if (bs.current_op != lp->op) {
+		lp->progress = 100;
+	}
+
+	if ((lp->done & lp->op) == 0) {
+		if (lp->op == NFB_BOOT_IOC_LOAD_CMD_WRITE) {
+			nfb_fw_print_progress("Writing image: %3d%%", lp->progress);
+		}
+	}
+
+	if (lp->progress == 100) {
+		lp->done |= lp->op;
+	}
+	if (bs.current_op != lp->op) {
+		lp->op = bs.current_op;
+	}
+}
+
 int nfb_fw_load_ext_name(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags, const char *filename)
 {
 	int ret;
