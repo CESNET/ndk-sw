@@ -18,6 +18,7 @@
 #include <err.h>
 #include <archive.h>
 #include <archive_entry.h>
+#include <pthread.h>
 #include <linux/limits.h>
 
 #include <nfb/nfb.h>
@@ -55,6 +56,12 @@ enum commands {
 	CMD_QUICK_BOOT,
 	CMD_INJECT_DTB,
 };
+
+struct progress_state {
+	void *priv;
+	int done;
+};
+
 
 void usage(const char *me)
 {
@@ -445,6 +452,17 @@ int print_info(const char *filename, int verbose)
 	return 0;
 }
 
+static void *show_progress(void *arg)
+{
+	struct progress_state *ps = arg;
+	do {
+		nfb_fw_load_progress_print(ps->priv);
+		usleep(200000);
+	} while (ps->done == 0);
+
+	return NULL;
+}
+
 int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, const void *fdt, int flags)
 {
 	unsigned int i;
@@ -460,6 +478,9 @@ int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, co
 		".rpd",
 		".bin",
 	};
+
+	pthread_t pt;
+	struct progress_state ps;
 
 	if (fdt == NULL) {
 		/* RAW bitsream is supplied */
@@ -508,7 +529,20 @@ int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, co
 		goto err_nfb_fw_open;
 	}
 
+	if ((flags & FLAG_QUIET) == 0 ) {
+		ps.done = 0;
+		ps.priv = nfb_fw_load_progress_init(dev);
+		pthread_create(&pt, NULL, show_progress, &ps);
+	}
+
 	ret = nfb_fw_load_ext(dev, slot, data, size, flags & FLAG_QUIET ? 0 : NFB_FW_LOAD_FLAG_VERBOSE);
+
+	if ((flags & FLAG_QUIET) == 0 ) {
+		ps.done = 1;
+		pthread_join(pt, NULL);
+		nfb_fw_load_progress_destroy(ps.priv);
+	}
+
 	switch (ret) {
 	case 0:
 		break;
