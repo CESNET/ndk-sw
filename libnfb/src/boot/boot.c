@@ -403,7 +403,7 @@ err_ioctl_write:
 	return ret;
 }
 
-int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags)
+int nfb_fw_load_ext_name(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags, const char *filename)
 {
 	int node = -1;
 	int fdt_offset = -1;
@@ -511,6 +511,11 @@ int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data
 	if (flags & NFB_FW_LOAD_FLAG_VERBOSE)
 		nfb_fw_print_progress("Writing Flash: %3d%%", 100);
 	return 0;
+}
+
+int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags)
+{
+	return nfb_fw_load_ext_name(dev, image, data, size, flags, NULL);
 }
 
 void nfb_fw_print_slots(const struct nfb_device *dev)
