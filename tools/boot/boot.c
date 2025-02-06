@@ -28,7 +28,7 @@
 #include <netcope/nccommon.h>
 
 /* define input arguments of tool */
-#define ARGUMENTS	"d:w:f:b:F:i:I:lqvh"
+#define ARGUMENTS	"d:D:w:f:b:F:i:I:lqvh"
 
 #define PRINT_WARNING_WHEN_USING_BITSTREAM 0
 #define REQUIRE_FORCE_WHEN_USING_BITSTREAM 0
@@ -55,6 +55,7 @@ enum commands {
 	CMD_WRITE,
 	CMD_QUICK_BOOT,
 	CMD_INJECT_DTB,
+	CMD_DELETE,
 };
 
 struct progress_state {
@@ -71,6 +72,7 @@ void usage(const char *me)
 	printf("-w slot file    Write configuration from file to device slot\n");
 	printf("-f slot file    Write configuration from file to device slot and boot device\n");
 	printf("-b slot file    Quick boot, see below\n");
+	printf("-D slot         Delete device slot\n");
 	printf("-i file         Print information about configuration file\n");
 	printf("-I dtb          Inject DTB to PCI device\n");
 	printf("                The device arg should be in BDF+domain notation: dddd:BB:DD.F\n");
@@ -383,6 +385,22 @@ int print_slots(const char *path)
 	nfb_close(dev);
 
 	return 0;
+}
+
+int do_delete(const char *path, int slot)
+{
+	int ret;
+	struct nfb_device *dev;
+
+	dev = nfb_open(path);
+	if (dev == NULL) {
+		warn("can't open device file");
+		return -ENODEV;
+	}
+
+	ret = nfb_fw_delete(dev, slot);
+	nfb_close(dev);
+	return ret;
 }
 
 int print_info(const char *filename, int verbose)
@@ -727,6 +745,10 @@ int main(int argc, char *argv[])
 			cmd = CMD_BOOT;
 			slot_arg = optarg;
 			break;
+		case 'D':
+			cmd = CMD_DELETE;
+			slot_arg = optarg;
+			break;
 		case 'i':
 			cmd = CMD_PRINT_INFO;
 			filename = optarg;
@@ -778,6 +800,9 @@ int main(int argc, char *argv[])
 		break;
 	case CMD_INJECT_DTB:
 		ret = inject_fdt(path, filename, flags);
+		break;
+	case CMD_DELETE:
+		ret = do_delete(path, slot);
 		break;
 	case CMD_UNKNOWN:
 		warnx("no command");
