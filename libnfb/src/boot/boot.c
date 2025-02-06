@@ -29,6 +29,8 @@
 #include "boot.h"
 
 
+static const int FDT_MAX_PATH_LENGTH = 512;
+
 int nfb_fw_boot(const char *devname, unsigned int image)
 {
 	int ret;
@@ -412,8 +414,6 @@ err_ioctl_write:
 
 int nfb_fw_load_boot_load(const struct nfb_device *dev, void *data, size_t size, int flags, int slot_fdt_offset, const char *filename)
 {
-	const int FDT_MAX_PATH_LENGTH = 512;
-
 	int ret;
 	int node_cp;
 	struct nfb_boot_ioc_load load;
@@ -681,6 +681,62 @@ int nfb_fw_load_ext_name(const struct nfb_device *dev, unsigned int image, void 
 int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags)
 {
 	return nfb_fw_load_ext_name(dev, image, data, size, flags, NULL);
+}
+
+int nfb_fw_delete(const struct nfb_device *dev, unsigned int image)
+{
+	int ret;
+	int node;
+	const fdt32_t *prop;
+	const void *fdt;
+	int proplen;
+	int fdt_offset = -1;
+
+	struct nfb_boot_ioc_load load;
+
+	char node_path[FDT_MAX_PATH_LENGTH];
+	const char *title;
+
+	fdt = nfb_get_fdt(dev);
+
+	fdt_for_each_compatible_node(fdt, node, "netcope,binary_slot") {
+		prop = fdt_getprop(fdt, node, "id", &proplen);
+
+		if (proplen != sizeof(*prop))
+			continue;
+		if (fdt32_to_cpu(*prop) == image) {
+			fdt_offset = node;
+			break;
+		}
+	}
+	if (fdt_offset < 0)
+		return ENODEV;
+
+	ret = fdt_get_path(fdt, fdt_offset, node_path, sizeof(node_path));
+	if (ret < 0)
+		return -EINVAL;
+
+	title = fdt_getprop(fdt, node, "title", &proplen);
+	if (title == NULL)
+		return -EINVAL;
+
+	load.node = node_path;
+	load.node_size = strlen(load.node) + 1;
+
+	load.name = title;
+	load.name_size = strlen(load.name) + 1;
+
+	load.data = NULL;
+	load.data_size = 0;
+
+	load.id = image;
+	load.cmd = NFB_BOOT_IOC_LOAD_CMD_ERASE;
+	load.flags = 0;
+
+	ret = ioctl(dev->fd, NFB_BOOT_IOC_LOAD, &load);
+	if (ret != 0)
+		ret = errno;
+	return ret;
 }
 
 void nfb_fw_print_slots(const struct nfb_device *dev)
