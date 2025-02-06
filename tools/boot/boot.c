@@ -535,7 +535,7 @@ int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, co
 		pthread_create(&pt, NULL, show_progress, &ps);
 	}
 
-	ret = nfb_fw_load_ext(dev, slot, data, size, flags & FLAG_QUIET ? 0 : NFB_FW_LOAD_FLAG_VERBOSE);
+	ret = nfb_fw_load_ext_name(dev, slot, data, size, flags & FLAG_QUIET ? 0 : NFB_FW_LOAD_FLAG_VERBOSE, filename);
 
 	if ((flags & FLAG_QUIET) == 0 ) {
 		ps.done = 1;
