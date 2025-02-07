@@ -39,6 +39,14 @@ def main():
             n_mi.append(n_pmci)
             n_pmci.append(fdt.PropWords('reg', *pmci_reg))
             n_pmci.append(fdt.PropStrings("compatible", "cesnet,pmci"))
+    elif args.card in ['IA-440I']:
+        reg = [0x2000, 0x44]
+
+        n_bmc = fdt.Node('bmc')
+        n_mi.append(n_bmc)
+        n_bmc.append(fdt.PropWords('reg', *reg))
+        n_bmc.append(fdt.PropStrings("compatible", "bittware,bmc"))
+        n_bmc.append(fdt.Property("throttle_write"))
 
     with open(args.dtb, "wb") as f:
         f.write(dt.to_dtb(version=17))
