@@ -336,9 +336,7 @@ static inline unsigned nc_ndp_v3_rx_burst_get(void *priv, struct ndp_packet *pac
 			break;
 		}
 
-		if (!(hdr->metadata & NDP_CALYPTE_METADATA_NOT_VALID))
-			header_size = hdr->metadata & NDP_CALYPTE_METADATA_HDR_SIZE_MASK;
-
+		header_size = le16_to_cpu(hdr->metadata) & NDP_CALYPTE_METADATA_HDR_SIZE_MASK;
 		packet_size = le16_to_cpu(hdr->frame_len) - header_size;
 
 		data = data_base + hdr->frame_ptr * NDP_RX_CALYPTE_BLOCK_SIZE;

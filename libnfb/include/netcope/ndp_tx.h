@@ -436,7 +436,10 @@ static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *pac
 
 		hdr = hdr_base + i;
 
-		header_size = packets[i].header_length;
+		if (unlikely(packets[i].header_length > NDP_CALYPTE_METADATA_HDR_SIZE_MASK))
+			return 0;
+
+		header_size = packets[i].header_length & NDP_CALYPTE_METADATA_HDR_SIZE_MASK;
 		packet_size = packets[i].data_length + header_size;
 
 		if (unlikely(packet_size < q->frame_size_min)) {
@@ -449,7 +452,7 @@ static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *pac
 		}
 
 		/* Write DMA TX header */
-		hdr->metadata = 0;
+		hdr->metadata = cpu_to_le16(header_size);
 		hdr->frame_len = cpu_to_le16(packet_size);
 		hdr->frame_ptr = sdp_int & q->u.v3.data_ptr_mask;
 
