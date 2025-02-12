@@ -28,7 +28,7 @@
 #include <netcope/nccommon.h>
 
 /* define input arguments of tool */
-#define ARGUMENTS	"d:D:w:f:b:F:i:I:lqvh"
+#define ARGUMENTS	"d:D:P:w:f:b:F:i:I:lqvh"
 
 #define PRINT_WARNING_WHEN_USING_BITSTREAM 0
 #define REQUIRE_FORCE_WHEN_USING_BITSTREAM 0
@@ -56,6 +56,7 @@ enum commands {
 	CMD_QUICK_BOOT,
 	CMD_INJECT_DTB,
 	CMD_DELETE,
+	CMD_SET_PRIORITY,
 };
 
 struct progress_state {
@@ -73,6 +74,7 @@ void usage(const char *me)
 	printf("-f slot file    Write configuration from file to device slot and boot device\n");
 	printf("-b slot file    Quick boot, see below\n");
 	printf("-D slot         Delete device slot\n");
+	printf("-P slot_list    Set priority for slots, eg: 0,4,1\n");
 	printf("-i file         Print information about configuration file\n");
 	printf("-I dtb          Inject DTB to PCI device\n");
 	printf("                The device arg should be in BDF+domain notation: dddd:BB:DD.F\n");
@@ -403,6 +405,52 @@ int do_delete(const char *path, int slot)
 	return ret;
 }
 
+int do_set_priority(const char *path, char* priority)
+{
+	size_t i;
+	int ret;
+	struct nfb_device *dev;
+	struct list_range lr;
+	unsigned int *id_list, *prio_list;
+
+	list_range_init(&lr);
+	ret = list_range_parse(&lr, priority);
+	if (ret <= 0) {
+		warn("can't parse priority list");
+		return -EINVAL;
+	}
+
+	dev = nfb_open(path);
+	if (dev == NULL) {
+		warn("can't open device file");
+		return -ENODEV;
+	}
+
+	id_list = malloc(ret * (sizeof(*id_list) + sizeof(*prio_list)));
+	if (id_list == NULL)
+		return -ENOMEM;
+
+	prio_list = id_list + ret;
+
+	for (i = 0; i < lr.items; i++) {
+		if (lr.min[i] != lr.max[i]) {
+			ret = -EINVAL;
+			goto err_param;
+		}
+		id_list[i] = lr.min[i];
+		prio_list[i] = i;
+	}
+
+	ret = nfb_fw_set_priority(dev, id_list, prio_list, ret);
+	nfb_close(dev);
+	return ret;
+
+err_param:
+	free(id_list);
+	nfb_close(dev);
+	return ret;
+}
+
 int print_info(const char *filename, int verbose)
 {
 	static const int BUFFER_SIZE = 64;
@@ -703,6 +751,7 @@ int main(int argc, char *argv[])
 	int c;
 	long slot = -1;
 	char *slot_arg = NULL;
+	char *prio_arg = NULL;
 	const char *path = nfb_default_dev_path();
 	char path_by_pci[PATH_MAX];
 	char *filename = NULL;
@@ -748,6 +797,10 @@ int main(int argc, char *argv[])
 		case 'D':
 			cmd = CMD_DELETE;
 			slot_arg = optarg;
+			break;
+		case 'P':
+			cmd = CMD_SET_PRIORITY;
+			prio_arg = optarg;
 			break;
 		case 'i':
 			cmd = CMD_PRINT_INFO;
@@ -803,6 +856,9 @@ int main(int argc, char *argv[])
 		break;
 	case CMD_DELETE:
 		ret = do_delete(path, slot);
+		break;
+	case CMD_SET_PRIORITY:
+		ret = do_set_priority(path, prio_arg);
 		break;
 	case CMD_UNKNOWN:
 		warnx("no command");
