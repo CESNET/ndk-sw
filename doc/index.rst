@@ -65,8 +65,13 @@ well as process data (network traffic) at very high speeds.
 
 
 .. toctree::
-   :maxdepth: 1
    :caption: Linux driver
 
    Modules <driver/modules>
    Userspace access <driver/userspace>
+
+.. toctree::
+	:maxdepth: 2
+	:caption: XDP submodule
+
+	XDP submodule <driver/xdp>
