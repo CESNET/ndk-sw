@@ -782,6 +782,7 @@ void nfb_fw_print_slots(const struct nfb_device *dev)
 	const void *fdt;
 	const char *module;
 	const char *title;
+	const uint32_t *priority;
 	const fdt32_t *prop;
 
 	fdt = nfb_get_fdt(dev);
@@ -801,6 +802,11 @@ void nfb_fw_print_slots(const struct nfb_device *dev)
 		if (proplen <= 0)
 			continue;
 
-		printf("%d: %s (%s)\n", id, title, module);
+		priority = fdt_getprop(fdt, node, "priority", &proplen);
+
+		printf("%d: %s (%s)", id, title, module);
+		if (priority)
+			printf(" [%d]", fdt32_to_cpu(*priority));
+		printf("\n");
 	}
 }
