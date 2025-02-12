@@ -739,6 +739,41 @@ int nfb_fw_delete(const struct nfb_device *dev, unsigned int image)
 	return ret;
 }
 
+int nfb_fw_set_priority(const struct nfb_device *dev, unsigned int *id_list, unsigned int *prio_list, size_t item_count)
+{
+	unsigned i;
+	int ret;
+	struct nfb_boot_ioc_load load = {0};
+
+	uint64_t *prio_pid;
+	uint64_t *prio_val;
+	const size_t sz_prio_item = sizeof(*prio_pid) + sizeof(*prio_val);
+
+	load.cmd = NFB_BOOT_IOC_LOAD_CMD_PRIORITY;
+
+	load.data_size = item_count * sizeof(uint64_t) * 2;
+	load.data = malloc(load.data_size);
+	if (load.data == NULL)
+		return -ENOMEM;
+	for (i = 0; i < item_count; i++) {
+		prio_pid = (uint64_t*) (load.data + i * sz_prio_item);
+		prio_val = (uint64_t*) (load.data + i * sz_prio_item + sizeof(prio_pid));
+
+		*prio_pid = id_list[i];
+		if (prio_list != NULL)
+			*prio_val = prio_list[i];
+		else
+			*prio_val = i;
+	}
+
+	ret = ioctl(dev->fd, NFB_BOOT_IOC_LOAD, &load);
+	if (ret != 0)
+		ret = errno;
+	free(load.data);
+
+	return ret;
+}
+
 void nfb_fw_print_slots(const struct nfb_device *dev)
 {
 	int id;

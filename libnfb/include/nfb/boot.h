@@ -32,6 +32,7 @@ int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data
 int nfb_fw_load_ext_name(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags, const char *filename);
 
 int nfb_fw_delete(const struct nfb_device *dev, unsigned int image);
+int nfb_fw_set_priority(const struct nfb_device *dev, unsigned int *id_list, unsigned int *prio_list, size_t item_count);
 
 ssize_t nfb_fw_read_for_dev(const struct nfb_device *dev, FILE *fd, void **data);
 
