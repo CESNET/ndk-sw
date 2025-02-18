@@ -40,7 +40,8 @@ assert isinstance(phandle, int)
 node = dev.fdt_get_phandle(phandle)
 
 # show full path of node in DT
-print(node.path + "/" + node.name)
+if node is not None:
+    print(node.path + "/" + node.name)
 
 
 # 1.C Component manipulation

@@ -22,7 +22,7 @@ dev = nfb.open()
 eth = dev.eth[0]
 
 # enable or disable RxMAC / TxMAC
-for mac in [eth.rxmac, eth.txmac]:
+for mac in (eth.rxmac, eth.txmac):
     mac.enable()
     mac.enable(False)
     mac.disable()
@@ -38,7 +38,7 @@ rx_stats = eth.rxmac.read_stats()
 tx_stats = eth.txmac.read_stats()
 
 # reset RxMAC / TxMAC statistic counters
-for mac in [eth.rxmac, eth.txmac]:
+for mac in (eth.rxmac, eth.txmac):
     mac.reset_stats()
 
 
@@ -51,7 +51,7 @@ eth.pcspma.pma_local_loopback = True
 # disable loopback in register 1.7
 eth.pcspma.mdio.write(1, 7, 0)
 # read 16b value from register 1.7: val = 0
-val = eth.pcspma.mdio.read(1, 7)
+val_b = eth.pcspma.mdio.read(1, 7)
 
 pmd = eth.pmd
 pmd.is_present() in [True, False]
@@ -61,9 +61,9 @@ val = pmd.read_vendor_name()
 val = pmd.read_vendor_pn()
 val = pmd.read_vendor_sn()
 if hasattr(pmd, "mdio"):
-    val = pmd.mdio.read(3, 0)
+    val_i = pmd.mdio.read(3, 0)
 elif hasattr(pmd, "i2c"):
-    val = pmd.i2c.read_reg(148, 16)
+    val_i = pmd.i2c.read_reg(148, 16)
 
 
 # 3.C Shortcuts for Ethernet ports manipulation

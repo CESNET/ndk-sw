@@ -17,16 +17,16 @@ ext_extra_args = dict(
 )
 
 libnfb_ext_extra_args = libnetcope_ext_extra_args = dict()
-#libnfb_ext_extra_args = libnetcope_ext_extra_args = ext_extra_args
+# libnfb_ext_extra_args = libnetcope_ext_extra_args = ext_extra_args
 
 
 setup(
-    name = "nfb",
-    version = "0.2.1",
-    author = "Martin Spinler",
-    author_email = "spinler@cesnet.cz",
-    ext_package = "nfb",
-    ext_modules = cythonize(
+    name="nfb",
+    version="0.2.1",
+    author="Martin Spinler",
+    author_email="spinler@cesnet.cz",
+    ext_package="nfb",
+    ext_modules=cythonize(
         [
             Extension("libnfb", ["nfb/libnfb.pyx"], libraries=["nfb", "fdt"], **libnfb_ext_extra_args),
             Extension("libnetcope", ["nfb/libnetcope.pyx"], libraries=["nfb", "fdt"], **libnetcope_ext_extra_args),
@@ -37,7 +37,7 @@ setup(
     py_modules=['nfb'],
     packages=['nfb'],
     package_dir={'nfb': 'nfb'},
-    package_data = {
+    package_data={
         'nfb': ['*.pxd'],
     },
     install_requires=['fdt'],

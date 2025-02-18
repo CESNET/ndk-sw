@@ -76,7 +76,7 @@ pkts = rxq.recv(cnt=1)
 pkts = rxq.recv(cnt=1, timeout=2)
 
 # receive specific count of frames, wait indefinitely
-#rxq.recv(cnt=1, timeout=None)
+# rxq.recv(cnt=1, timeout=None)
 
 # receive list of messages
 # message is a tuple(pkt: bytes, hdr: bytes, flags: int)
@@ -118,7 +118,7 @@ ndp.recv(i=1)
 # receive pending frames on first three queues
 ndp.recv(i=[0, 1, 2])
 # receive specific count of frames from any queues, wait indefinitely
-#ndp.recv(timeout=None)
+# ndp.recv(timeout=None)
 
 # receive pending messages from all queues, return value is list of tuple(tuple(pkt: bytes, hdr: bytes, flags: int), queue_index: int)
 msgs = rxq.recvmsg()

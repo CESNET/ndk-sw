@@ -20,8 +20,8 @@ comp = dev.comp_open("netcope,rxmac", index=0)
 comp.write16(0x04, 0xFFFF)
 comp.write(0x12, bytes([0xDE, 0xAD, 0xBE]))
 
-val = comp.read64(0x04)
-val = comp.read(0x12, 3)
+val_i = comp.read64(0x04)
+val_b = comp.read(0x12, 3)
 
 # 2.A Data transmission
 ndp = dev.ndp
@@ -60,7 +60,7 @@ assert txq.read_stats()["passed"] == 0
 eth = dev.eth[0]
 link_ready = eth.rxmac.link
 
-for mac in [eth.rxmac, eth.txmac]:
+for mac in (eth.rxmac, eth.txmac):
     mac.enable(enable=True)
     mac.disable()
     mac.reset_stats()
