@@ -452,9 +452,10 @@ static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *pac
 		}
 
 		/* Write DMA TX header */
-		hdr->metadata = cpu_to_le16(header_size);
+		hdr->header_size = cpu_to_le16(header_size);
 		hdr->frame_len = cpu_to_le16(packet_size);
 		hdr->frame_ptr = sdp_int & q->u.v3.data_ptr_mask;
+		hdr->flags = packets[i].flags & 0xF;
 
 		/* Set pointers, where user can write packet content */
 		packets[i].header = data_base + sdp_int;

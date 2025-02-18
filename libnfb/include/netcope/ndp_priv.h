@@ -32,8 +32,10 @@ struct ndp_v3_packethdr {
 	__u16 frame_len;        /**< size of the packet */
 	__u16 frame_ptr;        /**< index into the data array */
 	unsigned valid : 1;     /**< bit indicating the validity of the header/packet */
-	unsigned reserved : 7;  /**< bits reserved for future use */
-	unsigned metadata:24;   /**< user metadata */
+	unsigned reserved1 : 7;  /**< bits reserved for future use */
+	unsigned header_size : 8;   /**< size of application header (optional)*/
+	unsigned flags : 4;   /**< packet specific flags */
+	unsigned reserved2 : 12; /**< bits reserved for future use*/
 } __attribute((packed));
 
 struct ndp_queue;
