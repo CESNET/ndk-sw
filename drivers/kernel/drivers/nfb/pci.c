@@ -375,7 +375,7 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 			nfb_fdt_create_binary_slot(fdt, node, "image0", "application0" , 0, 0, 0, 0x01002000, 0x04000000);
 
 			nfb_fdt_create_boot_type(fdt, node, "SPI", 4);
-		} else if (!strcmp(card_name, "ALVEO_UL3524")) {
+		} else if (!strcmp(card_name, "ALVEO_UL3524") || !strcmp(card_name, "ALVEO_X3522")) {
 			prop32 = cpu_to_fdt32(1);
 			fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
 			prop32 = cpu_to_fdt32(256 * 1024 * 1024);
