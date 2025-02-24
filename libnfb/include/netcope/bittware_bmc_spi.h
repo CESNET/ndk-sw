@@ -30,7 +30,7 @@ static inline struct nc_bw_bmc *nc_bw_bmc_open(const struct nfb_device *dev, int
 static inline void nc_bw_bmc_close(struct nc_bw_bmc *spi);
 static inline int nc_bw_bmc_send_mctp(struct nc_bw_bmc *spi);
 static inline int nc_bw_bmc_send_mctp_ext(struct nc_bw_bmc *spi, const unsigned char *bytes, int len, int last, int wait_for_status);
-static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned char* bytes, unsigned int len, unsigned int *readen);
+static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned char* bytes, unsigned int len, unsigned int *received);
 
 
 /* ~~~~[ REGISTERS ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -189,7 +189,7 @@ static inline int nc_bw_bmc_min(int a, int b) {
     return a < b ? a : b;
 }
 
-static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned char* data, unsigned int len, unsigned int *readen)
+static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned char* data, unsigned int len, unsigned int *received)
 {
 	struct nfb_comp * comp = nfb_user_to_comp(spi);
 
@@ -198,7 +198,7 @@ static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned cha
 	uint32_t status;
 	uint32_t bytes;
 
-	*readen = 0;
+	*received = 0;
 
 	status = nfb_comp_read32(comp, NC_BW_BMC_SPI_RD_CSR);
 	while ((status & 1) == 0 && ++retries < 100000) {
@@ -238,15 +238,15 @@ static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned cha
 		}
 
 		data[i] = status & 0xFF;
-		(*readen)++;
+		(*received)++;
 
 		if (status & 0x100)
 			break;
 	}
 
 	/* Data continues */
-	if (!(status & 0x100) || bytes > *readen)
-		return bytes - *readen;
+	if (!(status & 0x100) || bytes > *received)
+		return bytes - *received;
 
 	nc_bw_bmc_write32(comp, NC_BW_BMC_SPI_RD_CSR, 1 << 1); /* Read Transfer Complete */
 
