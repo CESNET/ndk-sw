@@ -90,4 +90,7 @@ struct nfb_pci_device *nfb_pci_attach_endpoint(struct nfb_device *nfb, struct nf
 void nfb_pci_attach_all_slaves(struct nfb_device *nfb, struct pci_bus *bus);
 void nfb_pci_detach_all_slaves(struct nfb_device *nfb);
 
+int nfb_fdt_create_binary_slot(void *fdt, int node, const char *name, const char *title, int id,
+		int boot_id, int mtd, int base, int size);
+
 #endif // NFB_PCI_H

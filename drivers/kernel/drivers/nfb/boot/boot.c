@@ -210,6 +210,112 @@ int nfb_boot_get_sensor_ioc(struct nfb_boot *boot, struct nfb_boot_ioc_sensor __
 	return 0;
 }
 
+ssize_t nfb_boot_load_get_status(struct nfb_boot *boot, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "0,%u,%u,%u,%u,%u,%u\n",
+		boot->load.start_ops, boot->load.done_ops, boot->load.pending_ops,
+		boot->load.current_op, boot->load.current_op_progress_max, boot->load.current_op_progress);
+}
+
+int nfb_boot_load(struct nfb_boot *boot,
+		struct nfb_boot_ioc_load __user *_load,
+		void *app_priv)
+{
+	struct nfb_boot_ioc_load load;
+	struct nfb_boot_ioc_load load_orig;
+
+	int ret = 0;
+	char * buf = NULL;
+	char * name;
+	char * node;
+	unsigned char * data;
+
+	if (copy_from_user(&load, _load, sizeof(load)))
+		return -EFAULT;
+
+	/* Copy fields from user */
+
+	if (mutex_trylock(&boot->load_mutex) == 0)
+		return -EBUSY;
+
+	load_orig = load;
+
+	if (load.name_size != 0 || load.node_size != 0 || load.data_size != 0) {
+		buf = vmalloc(load.name_size + load.node_size + load.data_size);
+		if (buf == NULL) {
+			ret = -ENOMEM;
+			goto err_vmalloc;
+		}
+	}
+
+	/* get filename */
+	name = buf;
+	ret = strncpy_from_user(name, load.name, load.name_size);
+	if (load.name_size != 0 && ret != load.name_size - 1) {
+		ret = -EINVAL;
+		goto err_copy_items;
+	}
+	load.name = name;
+
+	/* get FDT node path */
+	node = name + load.name_size;
+	ret = strncpy_from_user(node, load.node, load.node_size);
+	if (load.node_size != 0 && ret != load.node_size - 1) {
+		ret = -EINVAL;
+		goto err_copy_items;
+	}
+	load.node = node;
+
+	/* get data */
+	data = node + load.node_size;
+	ret = copy_from_user(data, load.data, load.data_size);
+	if (ret != 0) {
+		ret = -EINVAL;
+		goto err_copy_items;
+	}
+	load.data = data;
+
+	/* call the subdriver */
+	if (boot->bw_bmc) {
+		ret = nfb_boot_bw_bmc_load(boot, &load);
+	} else {
+		ret = -ENXIO;
+	}
+
+	if (ret) {
+		goto err_load;
+	}
+
+#if 0
+	/* Copy "return" values */
+	load_orig.phase = load.phase;
+	load_orig.progress = load.progress;
+	if (copy_to_user(_load, &load_orig, sizeof(load_orig)))
+		return -EFAULT;
+#else
+	load.name = load_orig.name;
+	load.node = load_orig.node;
+	load.data = load_orig.data;
+
+	if (copy_to_user(_load, &load, sizeof(load))) {
+		ret = -EFAULT;
+		goto err_copy_to_user;
+	}
+#endif
+
+	vfree(buf);
+	mutex_unlock(&boot->load_mutex);
+	return ret;
+
+err_copy_to_user:
+err_load:
+err_copy_items:
+	vfree(buf);
+err_vmalloc:
+	mutex_unlock(&boot->load_mutex);
+	return ret;
+}
+
 long nfb_boot_ioctl(void *priv, void *app_priv, struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct nfb_boot *nfb_boot = priv;
@@ -233,6 +339,8 @@ long nfb_boot_ioctl(void *priv, void *app_priv, struct file *file, unsigned int 
 		return nfb_boot_ioctl_mtd_erase(nfb_boot, argp);
 	case NFB_BOOT_IOC_SENSOR_READ:
 		return nfb_boot_get_sensor_ioc(nfb_boot, argp);
+	case NFB_BOOT_IOC_LOAD:
+		return nfb_boot_load(nfb_boot, argp, app_priv);
 	default:
 		return -ENOTTY;
 	}
@@ -265,10 +373,12 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	*priv = boot;
 
 	boot->nfb = nfb;
+	mutex_init(&boot->load_mutex);
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	ret = nfb_pmci_attach(boot);
 	ret = nfb_spi_attach(boot);
 #endif
+	ret = nfb_boot_bw_bmc_attach(boot);
 	/* Cards with Intel FPGA (Stratix10, Agilex) use Secure Device Manager for QSPI Flash access and Boot */
 	boot->sdm = NULL;
 	boot->sdm_boot_en = 0;
@@ -293,7 +403,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	fdt_offset = fdt_node_offset_by_compatible(nfb->fdt, -1, "netcope,boot_controller");
 	// FIXME: better create some general boot controller interface
 	if (fdt_offset < 0) {
-		if (boot->sdm_boot_en == 0 && boot->pmci == NULL && boot->m10bmc_spi == NULL) {
+		if (boot->sdm_boot_en == 0 && boot->pmci == NULL && boot->m10bmc_spi == NULL && boot->bw_bmc == NULL) {
 			ret = -ENODEV;
 			dev_warn(&nfb->pci->dev, "nfb_boot: No boot_controller found in FDT.\n");
 			goto err_nocomp;
@@ -303,7 +413,7 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	}
 
 	boot->comp = nfb_comp_open(nfb, fdt_offset);
-	if (!boot->comp && boot->pmci == NULL && boot->m10bmc_spi == NULL) {
+	if (!boot->comp && boot->pmci == NULL && boot->m10bmc_spi == NULL && boot->bw_bmc == NULL) {
 		ret = -ENODEV;
 		goto err_comp_open;
 	}
@@ -399,6 +509,8 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 	if (boot->comp)
 		nfb_comp_close(boot->comp);
 	sdm_free(boot->sdm);
+
+	nfb_boot_bw_bmc_detach(boot);
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	if (boot->pmci)
 		nfb_pmci_detach(boot);

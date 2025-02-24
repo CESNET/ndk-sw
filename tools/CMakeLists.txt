@@ -60,6 +60,10 @@ foreach(PIE_TARGET IN LISTS PIE_TARGETS)
 	set_property(TARGET ${PIE_TARGET} PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endforeach()
 
+target_link_libraries(nfb-boot
+	PRIVATE ${CMAKE_THREAD_LIBS_INIT}
+)
+
 target_compile_options(ndp-tool PRIVATE -O3 -funroll-loops)
 target_link_libraries(ndp-tool
 	PRIVATE ${NUMA_LIBRARIES} ${NCURSES_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}

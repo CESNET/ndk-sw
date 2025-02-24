@@ -18,6 +18,7 @@
 #include <err.h>
 #include <archive.h>
 #include <archive_entry.h>
+#include <pthread.h>
 #include <linux/limits.h>
 
 #include <nfb/nfb.h>
@@ -27,7 +28,7 @@
 #include <netcope/nccommon.h>
 
 /* define input arguments of tool */
-#define ARGUMENTS	"d:w:f:b:F:i:I:lqvh"
+#define ARGUMENTS	"d:D:P:w:f:b:F:i:I:lqvh"
 
 #define PRINT_WARNING_WHEN_USING_BITSTREAM 0
 #define REQUIRE_FORCE_WHEN_USING_BITSTREAM 0
@@ -54,7 +55,15 @@ enum commands {
 	CMD_WRITE,
 	CMD_QUICK_BOOT,
 	CMD_INJECT_DTB,
+	CMD_DELETE,
+	CMD_SET_PRIORITY,
 };
+
+struct progress_state {
+	void *priv;
+	int done;
+};
+
 
 void usage(const char *me)
 {
@@ -64,6 +73,8 @@ void usage(const char *me)
 	printf("-w slot file    Write configuration from file to device slot\n");
 	printf("-f slot file    Write configuration from file to device slot and boot device\n");
 	printf("-b slot file    Quick boot, see below\n");
+	printf("-D slot         Delete device slot\n");
+	printf("-P slot_list    Set priority for slots, eg: 0,4,1\n");
 	printf("-i file         Print information about configuration file\n");
 	printf("-I dtb          Inject DTB to PCI device\n");
 	printf("                The device arg should be in BDF+domain notation: dddd:BB:DD.F\n");
@@ -378,6 +389,68 @@ int print_slots(const char *path)
 	return 0;
 }
 
+int do_delete(const char *path, int slot)
+{
+	int ret;
+	struct nfb_device *dev;
+
+	dev = nfb_open(path);
+	if (dev == NULL) {
+		warn("can't open device file");
+		return -ENODEV;
+	}
+
+	ret = nfb_fw_delete(dev, slot);
+	nfb_close(dev);
+	return ret;
+}
+
+int do_set_priority(const char *path, char* priority)
+{
+	size_t i;
+	int ret;
+	struct nfb_device *dev;
+	struct list_range lr;
+	unsigned int *id_list, *prio_list;
+
+	list_range_init(&lr);
+	ret = list_range_parse(&lr, priority);
+	if (ret <= 0) {
+		warn("can't parse priority list");
+		return -EINVAL;
+	}
+
+	dev = nfb_open(path);
+	if (dev == NULL) {
+		warn("can't open device file");
+		return -ENODEV;
+	}
+
+	id_list = malloc(ret * (sizeof(*id_list) + sizeof(*prio_list)));
+	if (id_list == NULL)
+		return -ENOMEM;
+
+	prio_list = id_list + ret;
+
+	for (i = 0; i < lr.items; i++) {
+		if (lr.min[i] != lr.max[i]) {
+			ret = -EINVAL;
+			goto err_param;
+		}
+		id_list[i] = lr.min[i];
+		prio_list[i] = i;
+	}
+
+	ret = nfb_fw_set_priority(dev, id_list, prio_list, ret);
+	nfb_close(dev);
+	return ret;
+
+err_param:
+	free(id_list);
+	nfb_close(dev);
+	return ret;
+}
+
 int print_info(const char *filename, int verbose)
 {
 	static const int BUFFER_SIZE = 64;
@@ -445,6 +518,17 @@ int print_info(const char *filename, int verbose)
 	return 0;
 }
 
+static void *show_progress(void *arg)
+{
+	struct progress_state *ps = arg;
+	do {
+		nfb_fw_load_progress_print(ps->priv);
+		usleep(200000);
+	} while (ps->done == 0);
+
+	return NULL;
+}
+
 int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, const void *fdt, int flags)
 {
 	unsigned int i;
@@ -460,6 +544,9 @@ int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, co
 		".rpd",
 		".bin",
 	};
+
+	pthread_t pt;
+	struct progress_state ps;
 
 	if (fdt == NULL) {
 		/* RAW bitsream is supplied */
@@ -508,7 +595,20 @@ int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, co
 		goto err_nfb_fw_open;
 	}
 
-	ret = nfb_fw_load_ext(dev, slot, data, size, flags & FLAG_QUIET ? 0 : NFB_FW_LOAD_FLAG_VERBOSE);
+	if ((flags & FLAG_QUIET) == 0 ) {
+		ps.done = 0;
+		ps.priv = nfb_fw_load_progress_init(dev);
+		pthread_create(&pt, NULL, show_progress, &ps);
+	}
+
+	ret = nfb_fw_load_ext_name(dev, slot, data, size, flags & FLAG_QUIET ? 0 : NFB_FW_LOAD_FLAG_VERBOSE, filename);
+
+	if ((flags & FLAG_QUIET) == 0 ) {
+		ps.done = 1;
+		pthread_join(pt, NULL);
+		nfb_fw_load_progress_destroy(ps.priv);
+	}
+
 	switch (ret) {
 	case 0:
 		break;
@@ -651,6 +751,7 @@ int main(int argc, char *argv[])
 	int c;
 	long slot = -1;
 	char *slot_arg = NULL;
+	char *prio_arg = NULL;
 	const char *path = nfb_default_dev_path();
 	char path_by_pci[PATH_MAX];
 	char *filename = NULL;
@@ -692,6 +793,14 @@ int main(int argc, char *argv[])
 		case 'F':
 			cmd = CMD_BOOT;
 			slot_arg = optarg;
+			break;
+		case 'D':
+			cmd = CMD_DELETE;
+			slot_arg = optarg;
+			break;
+		case 'P':
+			cmd = CMD_SET_PRIORITY;
+			prio_arg = optarg;
 			break;
 		case 'i':
 			cmd = CMD_PRINT_INFO;
@@ -744,6 +853,12 @@ int main(int argc, char *argv[])
 		break;
 	case CMD_INJECT_DTB:
 		ret = inject_fdt(path, filename, flags);
+		break;
+	case CMD_DELETE:
+		ret = do_delete(path, slot);
+		break;
+	case CMD_SET_PRIORITY:
+		ret = do_set_priority(path, prio_arg);
 		break;
 	case CMD_UNKNOWN:
 		warnx("no command");

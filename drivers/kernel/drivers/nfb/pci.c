@@ -33,7 +33,7 @@
 
 static bool fallback_fdt = 1;
 static bool fallback_fdt_boot = 0;
-static bool flash_recovery_ro = 1;
+bool flash_recovery_ro = 1;
 
 struct mutex global_pci_device_list_lock;
 struct mutex global_try_attach_lock;
@@ -107,7 +107,7 @@ MODULE_DEVICE_TABLE(pci, nfb_ids);
 /*
  * nfb_fdt_create_binary_slot - add one binary slot to DT for Flash access and booting
  */
-static int nfb_fdt_create_binary_slot(void *fdt, int node, char *name, char *title, int id,
+int nfb_fdt_create_binary_slot(void *fdt, int node, const char *name, const char *title, int id,
 		int boot_id, int mtd, int base, int size)
 {
 	int fdt_offset, fdt_subnode_offset;

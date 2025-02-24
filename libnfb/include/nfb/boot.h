@@ -29,6 +29,10 @@ int            nfb_mtd_erase(struct nfb_device *dev, int index, size_t addr, siz
 int nfb_fw_boot(const char *devname, unsigned int image);
 int nfb_fw_load(const struct nfb_device *dev, unsigned int image, void *data, size_t size);
 int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags);
+int nfb_fw_load_ext_name(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags, const char *filename);
+
+int nfb_fw_delete(const struct nfb_device *dev, unsigned int image);
+int nfb_fw_set_priority(const struct nfb_device *dev, unsigned int *id_list, unsigned int *prio_list, size_t item_count);
 
 ssize_t nfb_fw_read_for_dev(const struct nfb_device *dev, FILE *fd, void **data);
 
@@ -41,6 +45,10 @@ ssize_t nfb_fw_read_bit(FILE *fp, void **data);
 void nfb_fw_close(void *data);
 
 void nfb_fw_print_slots(const struct nfb_device *dev);
+
+void *nfb_fw_load_progress_init(struct nfb_device *dev);
+void nfb_fw_load_progress_destroy(void *priv);
+void nfb_fw_load_progress_print(void *priv);
 
 int nfb_sensor_get(struct nfb_device *dev, struct nfb_boot_ioc_sensor *s);
 

@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
@@ -27,6 +28,8 @@
 #include "../nfb.h"
 #include "boot.h"
 
+
+static const int FDT_MAX_PATH_LENGTH = 512;
 
 int nfb_fw_boot(const char *devname, unsigned int image)
 {
@@ -231,6 +234,12 @@ ssize_t nfb_fw_read_for_dev(const struct nfb_device *dev, FILE *fd, void **data)
 		return ret;
 	}
 
+	fdt_for_each_compatible_node(fdt, node, "bittware,bmc") {
+		format = BITSTREAM_FORMAT_NATIVE;
+		ret = nfb_fw_open_rpd(fd, data, format);
+		return ret;
+	}
+
 	fdt_for_each_compatible_node(fdt, node, "brnologic,m10bmc_spi") {
 		format = BITSTREAM_FORMAT_NATIVE;
 		ret = nfb_fw_open_rpd(fd, data, format);
@@ -403,8 +412,160 @@ err_ioctl_write:
 	return ret;
 }
 
-int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags)
+int nfb_fw_load_boot_load(const struct nfb_device *dev, void *data, size_t size, int flags, int slot_fdt_offset, const char *filename)
 {
+	int ret;
+	int node_cp;
+	struct nfb_boot_ioc_load load;
+	const void *fdt = nfb_get_fdt(dev);
+
+	char node_path[FDT_MAX_PATH_LENGTH];
+
+	int32_t id = -1;
+	uint32_t offset = 0xDEADBEEF;
+	const void *prop;
+
+	char *fn = NULL;
+
+	ret = fdt_get_path(fdt, slot_fdt_offset, node_path, sizeof(node_path));
+	if (ret < 0)
+		return -EINVAL;
+
+	//prop32 = fdt_getprop(fdt, node, "id", &proplen);
+	fdt_getprop32(fdt, slot_fdt_offset, "id", &id);
+	if (id == -1)
+		return -EINVAL;
+	prop = fdt_getprop(fdt, slot_fdt_offset, "empty", NULL);
+
+	node_cp = fdt_subnode_offset(fdt, slot_fdt_offset, "control-param");
+	fdt_getprop32(fdt, node_cp, "base", &offset);
+
+	fn = strdup(filename ? filename : "cesnet-ndk-image.rbf");
+	if (fn == NULL) {
+		return -ENOMEM;
+	}
+
+	if (flags & NFB_FW_LOAD_FLAG_VERBOSE) {
+		printf("Bitstream size: %lu B\n", size);
+	}
+
+	load.node = node_path;
+	load.node_size = strlen(load.node) + 1;
+
+	load.name = basename(fn);
+	load.name_size = strlen(load.name) + 1;
+
+	load.data = data;
+	load.data_size = size;
+
+	load.id = id;
+	load.cmd = NFB_BOOT_IOC_LOAD_CMD_WRITE | (prop == NULL ? NFB_BOOT_IOC_LOAD_CMD_ERASE : 0);
+	load.flags = NFB_BOOT_IOC_LOAD_FLAG_USE_NODE;
+
+	ret = ioctl(dev->fd, NFB_BOOT_IOC_LOAD, &load);
+	if (ret != 0)
+		ret = -errno;
+
+	free(fn);
+
+	return ret;
+}
+
+struct boot_load_progress {
+	char path[PATH_MAX];
+	unsigned op;
+	unsigned done;
+	unsigned progress;
+};
+
+struct boot_load_status {
+	unsigned start_ops;
+	unsigned done_ops;
+	unsigned pending_ops;
+	unsigned current_op;
+	unsigned current_op_progress_max;
+	unsigned current_op_progress;
+} bs;
+
+void *nfb_fw_load_progress_init(struct nfb_device *dev)
+{
+	int node;
+	const void *fdt = nfb_get_fdt(dev);
+	const void *prop;
+	struct boot_load_progress *lp;
+
+	lp = calloc(1, sizeof(*lp));
+	if (lp == NULL) {
+		return NULL;
+	}
+
+	node = fdt_path_offset(fdt, "/system/device/endpoint0");
+	prop = fdt_getprop(fdt, node, "pci-slot", NULL);
+	snprintf(lp->path, sizeof(lp->path), "/sys/bus/pci/devices/%s/nfb/nfb%d/boot_load_status", (const char*)prop, nfb_get_system_id(dev));
+
+	return lp;
+}
+
+void nfb_fw_load_progress_destroy(void *priv)
+{
+	struct boot_load_progress *lp = priv;
+	if (lp != NULL) {
+		if (lp->op) {
+			nfb_fw_load_progress_print(priv);
+		}
+		free(lp);
+	}
+}
+
+void nfb_fw_load_progress_print(void *priv)
+{
+	FILE *file;
+	int n;
+
+	struct boot_load_progress *lp = priv;
+	struct boot_load_status bs;
+
+	if (lp == NULL)
+		return;
+
+	file = fopen(lp->path, "r");
+	if (file == NULL)
+		return;
+
+	n = fscanf(file, "0,%u,%u,%u,%u,%u,%u", &bs.start_ops, &bs.done_ops, &bs.pending_ops,
+			&bs.current_op, &bs.current_op_progress_max, &bs.current_op_progress);
+
+	fclose(file);
+	if (n != 6)
+		return;
+
+	if (bs.current_op_progress_max) {
+		lp->progress = bs.current_op_progress * 100ull / bs.current_op_progress_max;
+	} else {
+		lp->progress = 0;
+	}
+
+	if (bs.current_op != lp->op) {
+		lp->progress = 100;
+	}
+
+	if ((lp->done & lp->op) == 0) {
+		if (lp->op == NFB_BOOT_IOC_LOAD_CMD_WRITE) {
+			nfb_fw_print_progress("Writing image: %3d%%", lp->progress);
+		}
+	}
+
+	if (lp->progress == 100) {
+		lp->done |= lp->op;
+	}
+	if (bs.current_op != lp->op) {
+		lp->op = bs.current_op;
+	}
+}
+
+int nfb_fw_load_ext_name(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags, const char *filename)
+{
+	int ret;
 	int node = -1;
 	int fdt_offset = -1;
 	int proplen;
@@ -447,6 +608,10 @@ int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data
 			return nfb_fw_load_fpga_image_load(dev, data, size, flags, node);
 		}
 	}
+
+	ret = nfb_fw_load_boot_load(dev, data, size, flags, node, filename);
+	if (ret != -ENXIO)
+		return ret;
 
 	prop = fdt_getprop(fdt, fdt_offset, "bitstream-offset", &proplen);
 	if (proplen == sizeof(*prop)) {
@@ -513,6 +678,102 @@ int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data
 	return 0;
 }
 
+int nfb_fw_load_ext(const struct nfb_device *dev, unsigned int image, void *data, size_t size, int flags)
+{
+	return nfb_fw_load_ext_name(dev, image, data, size, flags, NULL);
+}
+
+int nfb_fw_delete(const struct nfb_device *dev, unsigned int image)
+{
+	int ret;
+	int node;
+	const fdt32_t *prop;
+	const void *fdt;
+	int proplen;
+	int fdt_offset = -1;
+
+	struct nfb_boot_ioc_load load;
+
+	char node_path[FDT_MAX_PATH_LENGTH];
+	const char *title;
+
+	fdt = nfb_get_fdt(dev);
+
+	fdt_for_each_compatible_node(fdt, node, "netcope,binary_slot") {
+		prop = fdt_getprop(fdt, node, "id", &proplen);
+
+		if (proplen != sizeof(*prop))
+			continue;
+		if (fdt32_to_cpu(*prop) == image) {
+			fdt_offset = node;
+			break;
+		}
+	}
+	if (fdt_offset < 0)
+		return ENODEV;
+
+	ret = fdt_get_path(fdt, fdt_offset, node_path, sizeof(node_path));
+	if (ret < 0)
+		return -EINVAL;
+
+	title = fdt_getprop(fdt, node, "title", &proplen);
+	if (title == NULL)
+		return -EINVAL;
+
+	load.node = node_path;
+	load.node_size = strlen(load.node) + 1;
+
+	load.name = title;
+	load.name_size = strlen(load.name) + 1;
+
+	load.data = NULL;
+	load.data_size = 0;
+
+	load.id = image;
+	load.cmd = NFB_BOOT_IOC_LOAD_CMD_ERASE;
+	load.flags = 0;
+
+	ret = ioctl(dev->fd, NFB_BOOT_IOC_LOAD, &load);
+	if (ret != 0)
+		ret = errno;
+	return ret;
+}
+
+int nfb_fw_set_priority(const struct nfb_device *dev, unsigned int *id_list, unsigned int *prio_list, size_t item_count)
+{
+	unsigned i;
+	int ret;
+	struct nfb_boot_ioc_load load = {0};
+
+	uint64_t *prio_pid;
+	uint64_t *prio_val;
+	const size_t sz_prio_item = sizeof(*prio_pid) + sizeof(*prio_val);
+
+	load.cmd = NFB_BOOT_IOC_LOAD_CMD_PRIORITY;
+
+	load.data_size = item_count * sizeof(uint64_t) * 2;
+	load.data = malloc(load.data_size);
+	if (load.data == NULL)
+		return -ENOMEM;
+	for (i = 0; i < item_count; i++) {
+		prio_pid = (uint64_t*) (load.data + i * sz_prio_item);
+		prio_val = (uint64_t*) (load.data + i * sz_prio_item + sizeof(prio_pid));
+
+		*prio_pid = id_list[i];
+		if (prio_list != NULL)
+			*prio_val = prio_list[i];
+		else
+			*prio_val = i;
+	}
+
+	ret = ioctl(dev->fd, NFB_BOOT_IOC_LOAD, &load);
+	if (ret != 0)
+		ret = errno;
+	free(load.data);
+
+	return ret;
+}
+
 void nfb_fw_print_slots(const struct nfb_device *dev)
 {
 	int id;
@@ -521,6 +782,7 @@ void nfb_fw_print_slots(const struct nfb_device *dev)
 	const void *fdt;
 	const char *module;
 	const char *title;
+	const uint32_t *priority;
 	const fdt32_t *prop;
 
 	fdt = nfb_get_fdt(dev);
@@ -540,6 +802,11 @@ void nfb_fw_print_slots(const struct nfb_device *dev)
 		if (proplen <= 0)
 			continue;
 
-		printf("%d: %s (%s)\n", id, title, module);
+		priority = fdt_getprop(fdt, node, "priority", &proplen);
+
+		printf("%d: %s (%s)", id, title, module);
+		if (priority)
+			printf(" [%d]", fdt32_to_cpu(*priority));
+		printf("\n");
 	}
 }

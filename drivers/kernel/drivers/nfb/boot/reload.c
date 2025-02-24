@@ -264,6 +264,8 @@ int nfb_boot_reload(void *arg)
 	} else if (boot->m10bmc_spi) {
 		boot->m10bmc_spi->image_load[boot->num_image].load_image(boot->m10bmc_spi->sec);
 		return nfb_boot_n5014_reload_rescan(master);
+	} else if (boot->bw_bmc) {
+		nfb_boot_bw_bmc_reload(boot);
 	} else if (boot->sdm && boot->sdm_boot_en) {
 		sdm_rsu_image_update(boot->sdm, boot->num_image);
 	} else if (boot->comp) {
