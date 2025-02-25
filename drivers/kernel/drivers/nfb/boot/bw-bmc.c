@@ -450,10 +450,6 @@ int nfb_boot_bw_bmc_load(struct nfb_boot *boot,
 	if (size < load->data_size)
 		return -ENOMEM;
 
-	name = fdt_getprop(fdt, node_image, "filename", NULL);
-	if (name == NULL)
-		return -EINVAL;
-
 	prop = fdt_getprop(fdt, node_image, "empty", NULL);
 
 	boot->load.start_ops = load->cmd;
@@ -461,6 +457,14 @@ int nfb_boot_bw_bmc_load(struct nfb_boot *boot,
 
 	/* execute requested commands */
 	if (load->cmd & NFB_BOOT_IOC_LOAD_CMD_ERASE) {
+		name = fdt_getprop(fdt, node_image, "filename", NULL);
+		/* a) Can't erase already empty partition.
+		 * b) If isn't empty, the filename must be set. */
+		if (prop != NULL || name == NULL) {
+			ret = -EINVAL;
+			goto err_cmd;
+		}
+
 		boot->load.current_op = NFB_BOOT_IOC_LOAD_CMD_ERASE;
 
 		boot->load.current_op_progress_max = 1;
