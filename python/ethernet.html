@@ -114,7 +114,7 @@ This allows simple configuration access to the ethernet ports.</p>
 <span class="n">eth</span> <span class="o">=</span> <span class="n">dev</span><span class="o">.</span><span class="n">eth</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
 <span class="c1"># enable or disable RxMAC / TxMAC</span>
-<span class="k">for</span> <span class="n">mac</span> <span class="ow">in</span> <span class="p">[</span><span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="p">,</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="p">]:</span>
+<span class="k">for</span> <span class="n">mac</span> <span class="ow">in</span> <span class="p">(</span><span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="p">,</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="p">):</span>
     <span class="n">mac</span><span class="o">.</span><span class="n">enable</span><span class="p">()</span>
     <span class="n">mac</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">mac</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
@@ -130,7 +130,7 @@ This allows simple configuration access to the ethernet ports.</p>
 <span class="n">tx_stats</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="o">.</span><span class="n">read_stats</span><span class="p">()</span>
 
 <span class="c1"># reset RxMAC / TxMAC statistic counters</span>
-<span class="k">for</span> <span class="n">mac</span> <span class="ow">in</span> <span class="p">[</span><span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="p">,</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="p">]:</span>
+<span class="k">for</span> <span class="n">mac</span> <span class="ow">in</span> <span class="p">(</span><span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="p">,</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="p">):</span>
     <span class="n">mac</span><span class="o">.</span><span class="n">reset_stats</span><span class="p">()</span>
 
 
@@ -147,7 +147,7 @@ Some of the features are so useful that they have own property.</p>
 <span class="c1"># disable loopback in register 1.7</span>
 <span class="n">eth</span><span class="o">.</span><span class="n">pcspma</span><span class="o">.</span><span class="n">mdio</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 <span class="c1"># read 16b value from register 1.7: val = 0</span>
-<span class="n">val</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">pcspma</span><span class="o">.</span><span class="n">mdio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+<span class="n">val_b</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">pcspma</span><span class="o">.</span><span class="n">mdio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
 
 <span class="n">pmd</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">pmd</span>
 <span class="n">pmd</span><span class="o">.</span><span class="n">is_present</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
@@ -157,9 +157,9 @@ Some of the features are so useful that they have own property.</p>
 <span class="n">val</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">read_vendor_pn</span><span class="p">()</span>
 <span class="n">val</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">read_vendor_sn</span><span class="p">()</span>
 <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pmd</span><span class="p">,</span> <span class="s2">&quot;mdio&quot;</span><span class="p">):</span>
-    <span class="n">val</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">mdio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">val_i</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">mdio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pmd</span><span class="p">,</span> <span class="s2">&quot;i2c&quot;</span><span class="p">):</span>
-    <span class="n">val</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">i2c</span><span class="o">.</span><span class="n">read_reg</span><span class="p">(</span><span class="mi">148</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+    <span class="n">val_i</span> <span class="o">=</span> <span class="n">pmd</span><span class="o">.</span><span class="n">i2c</span><span class="o">.</span><span class="n">read_reg</span><span class="p">(</span><span class="mi">148</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
 
 
 </pre></div>

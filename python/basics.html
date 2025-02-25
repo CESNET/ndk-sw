@@ -137,7 +137,8 @@
 <span class="n">node</span> <span class="o">=</span> <span class="n">dev</span><span class="o">.</span><span class="n">fdt_get_phandle</span><span class="p">(</span><span class="n">phandle</span><span class="p">)</span>
 
 <span class="c1"># show full path of node in DT</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
 
 </pre></div>

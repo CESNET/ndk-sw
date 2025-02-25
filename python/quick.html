@@ -122,8 +122,8 @@
 <span class="n">comp</span><span class="o">.</span><span class="n">write16</span><span class="p">(</span><span class="mh">0x04</span><span class="p">,</span> <span class="mh">0xFFFF</span><span class="p">)</span>
 <span class="n">comp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="mh">0x12</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">([</span><span class="mh">0xDE</span><span class="p">,</span> <span class="mh">0xAD</span><span class="p">,</span> <span class="mh">0xBE</span><span class="p">]))</span>
 
-<span class="n">val</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">read64</span><span class="p">(</span><span class="mh">0x04</span><span class="p">)</span>
-<span class="n">val</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mh">0x12</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">val_i</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">read64</span><span class="p">(</span><span class="mh">0x04</span><span class="p">)</span>
+<span class="n">val_b</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mh">0x12</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 
 </pre></div>
 </div>
@@ -172,7 +172,7 @@
 <span class="n">eth</span> <span class="o">=</span> <span class="n">dev</span><span class="o">.</span><span class="n">eth</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">link_ready</span> <span class="o">=</span> <span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="o">.</span><span class="n">link</span>
 
-<span class="k">for</span> <span class="n">mac</span> <span class="ow">in</span> <span class="p">[</span><span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="p">,</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="p">]:</span>
+<span class="k">for</span> <span class="n">mac</span> <span class="ow">in</span> <span class="p">(</span><span class="n">eth</span><span class="o">.</span><span class="n">rxmac</span><span class="p">,</span> <span class="n">eth</span><span class="o">.</span><span class="n">txmac</span><span class="p">):</span>
     <span class="n">mac</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="n">enable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">mac</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
     <span class="n">mac</span><span class="o">.</span><span class="n">reset_stats</span><span class="p">()</span>

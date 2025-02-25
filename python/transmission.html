@@ -168,7 +168,7 @@
 <span class="n">pkts</span> <span class="o">=</span> <span class="n">rxq</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="n">cnt</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
 <span class="c1"># receive specific count of frames, wait indefinitely</span>
-<span class="c1">#rxq.recv(cnt=1, timeout=None)</span>
+<span class="c1"># rxq.recv(cnt=1, timeout=None)</span>
 
 <span class="c1"># receive list of messages</span>
 <span class="c1"># message is a tuple(pkt: bytes, hdr: bytes, flags: int)</span>
@@ -213,7 +213,7 @@
 <span class="c1"># receive pending frames on first three queues</span>
 <span class="n">ndp</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 <span class="c1"># receive specific count of frames from any queues, wait indefinitely</span>
-<span class="c1">#ndp.recv(timeout=None)</span>
+<span class="c1"># ndp.recv(timeout=None)</span>
 
 <span class="c1"># receive pending messages from all queues, return value is list of tuple(tuple(pkt: bytes, hdr: bytes, flags: int), queue_index: int)</span>
 <span class="n">msgs</span> <span class="o">=</span> <span class="n">rxq</span><span class="o">.</span><span class="n">recvmsg</span><span class="p">()</span>
