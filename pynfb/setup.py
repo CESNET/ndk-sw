@@ -22,7 +22,7 @@ libnfb_ext_extra_args = libnetcope_ext_extra_args = dict()
 
 setup(
     name="nfb",
-    version="0.2.1",
+    version="0.2.2",
     author="Martin Spinler",
     author_email="spinler@cesnet.cz",
     ext_package="nfb",

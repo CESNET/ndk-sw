@@ -1,3 +1,13 @@
+* Tue Feb 25 2025 Martin Spinler <spinler@cesnet.cz> - 6.26.0-1
+- [FEATURE]: add boot load interface (ia-440i) - load, delete, set priority
+- [FEATURE]: add support for BittWare ia-440i (drivers/boot, nfb-bootstrap)
+- [FEATURE] drivers: add support for Alveo x3552 card
+- [FEATURE] pynfb: add type hints
+- [FEATURE] libnfb/NDP: add missing packet flags for v3 queue
+- [FEATURE] gRPC: add virtual address space DMA plugin (dma.proto)
+- [FEATURE] gRPC: add Python package with generated protobuf/grpc files
+- [MAINTENANCE] gRPC: rename rpcs and messages
+
 * Tue Jan 7 2025 Martin Spinler <spinler@cesnet.cz> - 6.25.0-1
 - [FEATURE] drivers: add support for newer kernels
 - [FEATURE] drivers: add support for Silicom N5014 card
