@@ -319,6 +319,7 @@ struct ndp_channel *ndp_ctrl_v3_create_rx(struct ndp *ndp, int index, int node_o
 struct ndp_channel *ndp_ctrl_v3_create_tx(struct ndp *ndp, int index, int node_offset);
 
 int ndp_ctrl_v2_get_vmaps(struct ndp_channel *channel, void **hdr, void **off);
+int ndp_ctrl_v3_get_vmaps(struct ndp_channel *channel, void **hdr, size_t * hdr_size, size_t * data_buf_size, size_t * hdr_buf_size);
 
 int ndp_char_poll(void *priv, void *app_priv, struct file *filp, struct poll_table_struct *wait);
 
