@@ -361,13 +361,22 @@ static int nc_ndp_queue_start(void *priv)
 	struct nc_ndp_queue *q = priv;
 	int ret;
 
+	int shared_q = 1;
+
+	if (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE)
+		shared_q = 0;
+
 	q->sync.flags = 0;
 
 	if ((ret = _ndp_queue_start(q)))
 		return ret;
 
-	if (q->channel.type == NDP_CHANNEL_TYPE_RX && q->protocol == 2 && (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) == 0) {
-		q->u.v2.rhp = q->sync.hwptr;
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX && shared_q) {
+		if (q->protocol == 2)
+			q->u.v2.rhp = q->sync.hwptr;
+		else if (q->protocol == 3) {
+			q->u.v3.shp = q->sync.hwptr;
+		}
 	}
 
 #ifndef __KERNEL__
