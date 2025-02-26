@@ -144,15 +144,14 @@ err_fdt_getprop:
 
 static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt,  int fdt_offset, int ctrl_offset, int dir)
 {
-#ifndef __KERNEL__
-	int prot;
-	int ret = 0;
 	size_t hdr_mmap_size = 0;
-	off_t hdr_mmap_offset = 0;
-
 	size_t hdr_buff_size = 0;
 	size_t data_buff_size = 0;
 
+#ifndef __KERNEL__
+	off_t hdr_mmap_offset = 0;
+	int prot;
+	int ret;
 #endif
 	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
 
@@ -162,7 +161,12 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	q->u.v3.sdp = 0;
 	q->u.v3.shp = 0;
 
-#ifndef __KERNEL__
+#ifdef __KERNEL__
+	ndp_ctrl_v3_get_vmaps(
+			q->sub->channel, (void**)&q->u.v3.hdrs,
+			&hdr_mmap_size, &hdr_buff_size, &data_buff_size);
+
+#else
 	q->u.v3.uspace_shp = 0;
 	q->u.v3.uspace_hhp = 0;
 	q->u.v3.uspace_hdp = 0;
