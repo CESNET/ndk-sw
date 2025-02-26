@@ -120,6 +120,7 @@ struct ndp_ctrl {
 	unsigned long desc_buffer_size;
 	unsigned long off_buffer_size;
 	unsigned long hdr_buffer_size;
+	unsigned long data_buffer_size;
 
 	size_t hdr_mmap_offset;
 	size_t off_mmap_offset;
@@ -337,6 +338,16 @@ int ndp_ctrl_v2_get_vmaps(struct ndp_channel *channel, void **hdr, void **off)
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 	*hdr = ctrl->ts.common.hdr_buffer_v;
 	*off = ctrl->off_buffer_v;
+	return ctrl->hdr_count;
+}
+
+int ndp_ctrl_v3_get_vmaps(struct ndp_channel *channel, void **hdr, size_t * hdr_mmap_size, size_t * data_buf_size, size_t * hdr_buf_size)
+{
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+	*hdr = ctrl->ts.common.hdr_buffer_v;
+	*hdr_mmap_size = ctrl->hdr_buffer_size * 2;
+	*hdr_buf_size = ctrl->hdr_buffer_size;
+	*data_buf_size = ctrl->data_buffer_size;
 	return ctrl->hdr_count;
 }
 
@@ -1146,7 +1157,6 @@ static int ndp_ctrl_tx_calypte_attach_ring(struct ndp_channel *channel)
 	void *fdt = channel->ndp->nfb->fdt;
 	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
 	int ctrl_node_offset = -1;
-	unsigned long data_buffer_size = -1;
 	int buffer_offset = -1;
 	int proplen;
 	const fdt32_t *prop = NULL;
@@ -1170,7 +1180,7 @@ static int ndp_ctrl_tx_calypte_attach_ring(struct ndp_channel *channel)
 	if (prop == NULL)
 		return -EBADFD;
 
-	data_buffer_size = fdt32_to_cpu(prop[1]);
+	ctrl->data_buffer_size = fdt32_to_cpu(prop[1]);
 
 	// Find mask for the header buffer
 	buffer_offset = fdt_node_offset_by_phandle_ref(fdt, ctrl_node_offset, "hdr_buff");
@@ -1200,12 +1210,12 @@ static int ndp_ctrl_tx_calypte_attach_ring(struct ndp_channel *channel)
 	}
 
 	// Store read values of buffer sizes to structure variables
-	ctrl->c.mdp = (data_buffer_size/2 -1) & 0x0000FFFFul;
+	ctrl->c.mdp = (ctrl->data_buffer_size/2 -1) & 0x0000FFFFul;
 	ctrl->c.mhp = (ctrl->hdr_buffer_size/(2*NDP_CTRL_RX_CALYPTE_HDR_SIZE) -1) & 0x0000FFFFul;
 	channel->ptrmask = ctrl->c.mhp;
 
 	fdt_setprop_u32(fdt, node_offset, "protocol", 3);
-	fdt_setprop_u32(fdt, node_offset, "data_buff_size", data_buffer_size);
+	fdt_setprop_u32(fdt, node_offset, "data_buff_size", ctrl->data_buffer_size);
 	fdt_setprop_u32(fdt, node_offset, "hdr_buff_size", ctrl->hdr_buffer_size);
 
 	fdt_setprop_u64(fdt, node_offset, "hdr_mmap_base", ctrl->hdr_mmap_offset);
