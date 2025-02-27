@@ -317,6 +317,9 @@ static ssize_t ndp_ctrl_set_ring_size(struct device *dev,
 
 	value = memparse(buf, NULL);
 
+	if (ctrl->cfg.buffer_size == 0)
+		return -EINVAL;
+
 	while (buffer_count * 2 <= value / ctrl->cfg.buffer_size)
 		buffer_count *= 2;
 
