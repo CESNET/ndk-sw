@@ -98,6 +98,7 @@ void usage(const char *progname, int verbose)
 		printf(" * numa             NUMA node\n");
 		printf(" example of usage: '-q project,build,card'\n");
 	}
+	printf("-l              Print list of available devices\n");
 	printf("-v              Increase verbosity\n");
 	printf("-V              Show version\n");
 	printf("-h              Show this text\n");
