@@ -3,7 +3,7 @@ def osreleasevers = [
 //		["centos", "centos7", "7.9.2009", "rpm"],
         ["oraclelinux", "oraclelinux8", "8", "rpm"],
 		["oraclelinux", "oraclelinux9", "9", "rpm"],
-		["ubuntu", "ubuntu", "focal", "deb"]
+		["ubuntu", "ubuntu", "jammy", "deb"]
 	]
 def dockertarget = "default"
 
@@ -50,7 +50,7 @@ checkout scm
 				}
 			}
 
-			if (osreleasever != '7.9.2009' && osreleasever != 'focal') {
+			if (osreleasever != '7.9.2009' && osname != 'ubuntu') {
 				stage("Build dpdk RPMs") {
 					sh './build.sh --purge'
 					sh 'sudo ./build.sh --bootstrap-dpdk'

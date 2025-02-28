@@ -7,8 +7,8 @@
 #   Martin Spinler <spinler@cesnet.cz
 #
 
-cmake_minimum_required(VERSION 3.15)
-cmake_policy(VERSION 3.15)
+cmake_minimum_required(VERSION 3.20)
+cmake_policy(VERSION 3.20)
 project(nfb-framework LANGUAGES C)
 include(${CMAKE_CURRENT_LIST_DIR}/functions.cmake)
 
@@ -152,6 +152,7 @@ string(JOIN ", " CPACK_DEBIAN_PYTHON_PACKAGE_DEPENDS ${DEB_PYTHON_DEP_LIST})
 
 include(python/nfb-tools/nfb-tools.cmake)
 
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS	"../${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME}/${CPACK_PACKAGING_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS      ON)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
 	"${CMAKE_CURRENT_BINARY_DIR}/package/preinst"
