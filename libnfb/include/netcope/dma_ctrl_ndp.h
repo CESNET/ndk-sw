@@ -266,6 +266,26 @@ static inline void nc_ndp_ctrl_sdp_flush(struct nc_ndp_ctrl *ctrl)
 	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_SDP, ctrl->sdp);
 }
 
+static inline void _nc_ndp_ctrl_medusa_get_max_ptr_mask(struct nc_ndp_ctrl *ctrl, uint32_t* dp, uint32_t* hp, int set_orig)
+{
+	uint64_t orig;
+	uint64_t val_max;
+
+	if (set_orig)
+		orig = nfb_comp_read64(ctrl->comp, NDP_CTRL_REG_MDP);
+
+	val_max = 0xFFFFFFFFFFFFFFFFull;
+	nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_MDP, val_max);
+	val_max = nfb_comp_read64(ctrl->comp, NDP_CTRL_REG_MDP);
+
+	if (set_orig)
+		nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_MDP, orig);
+
+	/* TODO: LE/BE */
+	*dp = ((val_max >>  0) & 0xFFFFFFFF) >> 1;
+	*hp = ((val_max >> 32) & 0xFFFFFFFF) >> 1;
+}
+
 static inline int nc_ndp_ctrl_open(struct nfb_device* nfb, int fdt_offset, struct nc_ndp_ctrl *ctrl)
 {
 	int ret;
@@ -312,6 +332,8 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 	uint32_t status;
 	uint32_t nb_d = 0;
 	uint64_t d_buffer = 0;
+
+	uint32_t mdp_max, mhp_max;
 
 	if (ctrl->type == DMA_TYPE_MEDUSA) {
 		nb_d = sp->nb_desc;
@@ -384,6 +406,11 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 
 	/* Set buffer size (mask) */
 	if (!(ctrl->type == DMA_TYPE_CALYPTE && ctrl->dir == 1)) {
+		_nc_ndp_ctrl_medusa_get_max_ptr_mask(ctrl, &mdp_max, &mhp_max, 0);
+		if (ctrl->mdp > mdp_max || ctrl->mhp > mhp_max) {
+			ret = -ENOMEM;
+			goto err_mask_mismatch;
+		}
 		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MDP, ctrl->mdp);
 		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MHP, ctrl->mhp);
 	}
@@ -400,6 +427,7 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_CONTROL, NDP_CTRL_REG_CONTROL_START);
 	return 0;
 
+err_mask_mismatch:
 err_comp_running:
 	nfb_comp_unlock(ctrl->comp, COMP_NC_DMA_CTRL_LOCK);
 err_comp_lock:
@@ -408,17 +436,7 @@ err_comp_lock:
 
 static inline void nc_ndp_ctrl_medusa_get_max_ptr_mask(struct nc_ndp_ctrl *ctrl, uint32_t* dp, uint32_t* hp)
 {
-	uint32_t orig;
-
-	orig = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_MHP);
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MHP, 0xFFFFFFFF);
-	*hp = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_MHP) / 2;
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MHP, orig);
-
-	orig = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_MDP);
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MDP, 0xFFFFFFFF);
-	*dp = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_MDP) / 2;
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_MDP, orig);
+	_nc_ndp_ctrl_medusa_get_max_ptr_mask(ctrl, dp, hp, 1);
 }
 
 static inline int _nc_ndp_ctrl_stop(struct nc_ndp_ctrl *ctrl, int force)
