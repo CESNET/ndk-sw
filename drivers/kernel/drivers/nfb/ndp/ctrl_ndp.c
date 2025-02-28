@@ -239,7 +239,7 @@ static ssize_t ndp_ctrl_set_buffer_size(struct device *dev,
 
 	value = memparse(buf, NULL);
 
-	ndp_ctrl_medusa_req_block_update(ctrl, 1, value, ctrl->cfg.buffer_count, ctrl->cfg.initial_offset);
+	ret = ndp_ctrl_medusa_req_block_update(ctrl, 1, value, ctrl->cfg.buffer_count, ctrl->cfg.initial_offset);
 	if (ret)
 		return ret;
 
@@ -264,7 +264,7 @@ static ssize_t ndp_ctrl_set_buffer_count(struct device *dev,
 
 	value = memparse(buf, NULL);
 
-	ndp_ctrl_medusa_req_block_update(ctrl, 1, ctrl->cfg.buffer_size, value, ctrl->cfg.initial_offset);
+	ret = ndp_ctrl_medusa_req_block_update(ctrl, 1, ctrl->cfg.buffer_size, value, ctrl->cfg.initial_offset);
 	if (ret)
 		return ret;
 
