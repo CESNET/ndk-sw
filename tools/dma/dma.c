@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <err.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -118,18 +119,23 @@ void usage(const char *me, int verbose)
 
 int set_ring_size(struct nfb_device *dev, int dir, int index, const char* csize, const char *target)
 {
-	FILE *f;
+	int fd;
 	char path_buffer[128];
+	ssize_t ret, sz;
 
 	snprintf(path_buffer, sizeof(path_buffer),
 		"/sys/class/nfb/nfb%d/ndp/%cx%d/%s",
 		nfb_get_system_id(dev), dir == 0 ? 'r' : 't', index, target);
 
-	f = fopen(path_buffer, "wb");
-	if (f == NULL)
+	fd = open(path_buffer, O_RDWR);
+	if (fd == -1)
 		err(errno, "Can't set %s", target);
-	fwrite(csize, 1, strlen(csize) + 1, f);
-	fclose(f);
+	sz = strlen(csize) + 1;
+	ret = write(fd, csize, sz);
+	if (ret != sz) {
+		err(ret, "Can't set %s", target);
+	}
+	close(fd);
 	return 0;
 }
 
