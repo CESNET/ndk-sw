@@ -74,28 +74,13 @@ void *ndp_mode_receive_thread(void *tmp)
 
 static int ndp_mode_receive_prepare(struct ndp_tool_params *p)
 {
-	int ret = -1;
+	int ret;
 
 	p->si.progress_letter = 'R';
 
-	/* Open device and queues */
-	p->dev = nfb_open(p->nfb_path);
-	if (p->dev == NULL){
-		warnx("nfb_open() for queue %d failed.", p->queue_index);
-		goto err_nfb_open;
-	}
-
-	p->rx = ndp_open_rx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
-	if (p->rx == NULL) {
-		warnx("ndp_open_rx_queue(%d) failed.", p->queue_index);
-		goto err_ndp_open_rx;
-	}
-
-	/* Start queues */
-	ret = ndp_queue_start(p->rx);
-	if (ret != 0) {
-		warnx("ndp_rx_queue_start(%d) failed.", p->queue_index);
-		goto err_ndp_start_rx;
+	ret = ndp_mode_common_prepare(p, 1, 0);
+	if (ret) {
+		goto err_common_prepare;
 	}
 
 	p->pcap_file = pcap_write_begin(p->pcap_filename);
@@ -113,21 +98,15 @@ static int ndp_mode_receive_prepare(struct ndp_tool_params *p)
 	fclose(p->pcap_file);
 	p->pcap_file = NULL;
 err_init_pcap_file:
-	ndp_queue_stop(p->rx);
-err_ndp_start_rx:
- 	ndp_close_rx_queue(p->rx);
-err_ndp_open_rx:
-	nfb_close(p->dev);
-err_nfb_open:
+	ndp_mode_common_close(p, 1, 0);
+err_common_prepare:
 	return ret;
 }
 
 static int ndp_mode_receive_exit(struct ndp_tool_params *p)
 {
 	gettimeofday(&p->si.endTime, NULL);
-	ndp_queue_stop(p->rx);
-	ndp_close_rx_queue(p->rx);
-	nfb_close(p->dev);
+	ndp_mode_common_close(p, 1, 0);
 	fclose(p->pcap_file);
 	return 0;
 }

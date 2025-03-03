@@ -16,6 +16,7 @@
 #include <wordexp.h>
 #include <getopt.h>
 
+#include <nfb/nfb.h>
 #include <nfb/ndp.h>
 #include <netcope/nccommon.h>
 
@@ -214,6 +215,9 @@ void update_stats_loop_thread(int interval, struct thread_data **pdata, int thre
 
 void gather_stats_info(struct stats_info *si, struct stats_info *thread);
 void print_stats(struct stats_info *si);
+
+int ndp_mode_common_prepare(struct ndp_tool_params *p, int rx, int tx);
+void ndp_mode_common_close(struct ndp_tool_params *p, int rx, int tx);
 
 enum ndp_modules {
 	NDP_MODULE_READ,
