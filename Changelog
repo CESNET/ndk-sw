@@ -1,3 +1,14 @@
+* Mon Mar 3 2025 Martin Spinler <spinler@cesnet.cz> - 6.26.1-1
+- [FIX] BittWare BMC: check for name only when erasing
+- [FIX] NDP driver: check for non-zero value of buffer_size (division by 0)
+- [FIX] NDP driver: check for return value in sysfs set_buffer_size/count
+- [FIX] libnetcope - dma_ctrl_ndp: verify written pointer mask in start
+- [FIX] nfb-info: show -l argument (print list of available devices) in help
+- [FIX] nfb-dma: report value errors when setting buffer parameters
+- [FIX] build - ubuntu: add missing dpkg-shlibdeps tool
+- [FIX] build - cpack: give dpkg-shlibdeps the path to libnfb at package build time
+- [MAINTENANCE]: build - ubuntu docker: update the container version to 22.04 jammy
+
 * Tue Feb 25 2025 Martin Spinler <spinler@cesnet.cz> - 6.26.0-1
 - [FEATURE]: add boot load interface (ia-440i) - load, delete, set priority
 - [FEATURE]: add support for BittWare ia-440i (drivers/boot, nfb-bootstrap)
