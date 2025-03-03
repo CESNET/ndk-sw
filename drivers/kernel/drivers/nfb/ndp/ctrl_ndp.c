@@ -509,6 +509,7 @@ static void ndp_ctrl_calypte_rx_set_swptr(struct ndp_channel *channel, uint64_t 
 	unsigned i;
 
 	for (i = 0; i < count; i++) {
+		hdr[i].valid = 0;
 		new_sdp += (hdr[i].frame_len + NDP_RX_CALYPTE_BLOCK_SIZE - 1) / NDP_RX_CALYPTE_BLOCK_SIZE;
 	}
 
