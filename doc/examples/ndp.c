@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <err.h>
 #include <nfb/nfb.h>
 #include <nfb/ndp.h>
 

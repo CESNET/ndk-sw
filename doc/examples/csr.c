@@ -1,3 +1,4 @@
+#include <err.h>
 #include <nfb/nfb.h>
 
 #define SUPERCORE_REG_CMD           0x00
