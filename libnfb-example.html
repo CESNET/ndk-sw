@@ -105,7 +105,8 @@
 <section id="simple-access-to-the-control-registers">
 <h2>Simple access to the control registers<a class="headerlink" href="#simple-access-to-the-control-registers" title="Link to this heading"></a></h2>
 <p>This example will perform some writes and reads to the user component in the firmware.</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nfb/nfb.h&gt;</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;err.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nfb/nfb.h&gt;</span>
 
 <span class="cp">#define SUPERCORE_REG_CMD           0x00</span>
 <span class="cp">#define SUPERCORE_REG_CMD_ADD       (1 &lt;&lt; 0)</span>
@@ -162,6 +163,7 @@
 <section id="ndp-data-transmit-example">
 <h2>NDP data transmit example<a class="headerlink" href="#ndp-data-transmit-example" title="Link to this heading"></a></h2>
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;err.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nfb/nfb.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nfb/ndp.h&gt;</span>
 
