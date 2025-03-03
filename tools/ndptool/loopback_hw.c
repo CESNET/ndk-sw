@@ -101,7 +101,7 @@ static int pregenerate(struct ndp_mode_loopback_hw_params *p)
 
 static int ndp_mode_loopback_hw_prepare(struct ndp_tool_params *p)
 {
-	int ret = -1;
+	int ret;
 	struct timeval seed_time;
 
 	/* Pregenerate packet sizes and IDs */
@@ -112,53 +112,15 @@ static int ndp_mode_loopback_hw_prepare(struct ndp_tool_params *p)
 		warnx("pregenerate() for queue %d failed.", p->queue_index);
 		goto err_pregen;
 	}
-	ret = -1;
 
 	p->si.progress_letter = 'L';
-	/* Open device and queues */
-	p->dev = nfb_open(p->nfb_path);
-	if (p->dev == NULL) {
-		warnx("nfb_open() for queue %d failed.", p->queue_index);
-		goto err_nfb_open;
-	}
 
-	p->rx = ndp_open_rx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
-	if (p->rx == NULL) {
-		warnx("ndp_open_rx_queue(%d) failed.", p->queue_index);
-		goto err_ndp_open_rx;
-	}
-
-	p->tx = ndp_open_tx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
-	if (p->tx == NULL) {
-		warnx("ndp_open_tx_queue(%d) failed.", p->queue_index);
-		goto err_ndp_open_tx;
-	}
-
-	/* Start queues */
-	ret = ndp_queue_start(p->tx);
-	if (ret != 0) {
-		warnx("ndp_tx_queue_start(%d) failed.", p->queue_index);
-		goto err_ndp_start_tx;
-	}
-	ret = ndp_queue_start(p->rx);
-	if (ret != 0) {
-		warnx("ndp_rx_queue_start(%d) failed.", p->queue_index);
-		goto err_ndp_start_rx;
-	}
+	ret = ndp_mode_common_prepare(p, 1, 1);
 
 	gettimeofday(&p->si.startTime, NULL);
-	return 0;
+	return ret;
 
 	/* Error handling */
-err_ndp_start_rx:
-	ndp_queue_stop(p->tx);
-err_ndp_start_tx:
- 	ndp_close_tx_queue(p->tx);
-err_ndp_open_tx:
- 	ndp_close_rx_queue(p->rx);
-err_ndp_open_rx:
-	nfb_close(p->dev);
-err_nfb_open:
 err_pregen:
 	return ret;
 }
@@ -166,11 +128,7 @@ err_pregen:
 static int ndp_mode_loopback_hw_exit(struct ndp_tool_params *p)
 {
 	gettimeofday(&p->si.endTime, NULL);
-	ndp_queue_stop(p->rx);
-	ndp_queue_stop(p->tx);
-	ndp_close_tx_queue(p->rx);
-	ndp_close_tx_queue(p->tx);
-	//nfb_close(p->dev);
+	ndp_mode_common_close(p, 1, 1);
 	return 0;
 }
 

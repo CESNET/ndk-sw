@@ -64,49 +64,21 @@ void *ndp_mode_read_thread(void *tmp)
 
 static int ndp_mode_read_prepare(struct ndp_tool_params *p)
 {
-	int ret = -1;
+	int ret;
 
 	p->si.progress_letter = 'R';
 
-	/* Open device and queues */
-	p->dev = nfb_open(p->nfb_path);
-	if (p->dev == NULL){
-		warnx("nfb_open() for queue %d failed.", p->queue_index);
-		goto err_nfb_open;
-	}
-
-	p->rx = ndp_open_rx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
-	if (p->rx == NULL) {
-		warnx("ndp_open_rx_queue(%d) failed.", p->queue_index);
-		goto err_ndp_open_rx;
-	}
-
-	/* Start queues */
-	ret = ndp_queue_start(p->rx);
-	if (ret != 0) {
-		warnx("ndp_rx_queue_start(%d) failed.", p->queue_index);
-		goto err_ndp_start_rx;
-	}
+	ret = ndp_mode_common_prepare(p, 1, 0);
 
 	gettimeofday(&p->si.startTime, NULL);
 
-	return 0;
-
-	/* Error handling */
-err_ndp_start_rx:
- 	ndp_close_rx_queue(p->rx);
-err_ndp_open_rx:
-	nfb_close(p->dev);
-err_nfb_open:
 	return ret;
 }
 
 static int ndp_mode_read_exit(struct ndp_tool_params *p)
 {
 	gettimeofday(&p->si.endTime, NULL);
-	ndp_queue_stop(p->rx);
-	ndp_close_rx_queue(p->rx);
-	nfb_close(p->dev);
+	ndp_mode_common_close(p, 1, 0);
 	return 0;
 }
 

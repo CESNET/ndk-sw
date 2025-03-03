@@ -93,3 +93,75 @@ void adjust_tx_throughput(unsigned status_num_of_loops, unsigned long long throu
 		}
 	}
 }
+
+int ndp_mode_common_prepare(struct ndp_tool_params *p, int rx, int tx)
+{
+	int ret = -ENODEV;
+
+	/* Open device and queues */
+	p->dev = nfb_open(p->nfb_path);
+	if (p->dev == NULL) {
+		warnx("nfb_open() for queue %d failed.", p->queue_index);
+		return ret;
+	}
+
+	if (rx) {
+		p->rx = ndp_open_rx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
+		if (p->rx == NULL) {
+			warnx("ndp_open_rx_queue(%d) failed.", p->queue_index);
+			goto err_ndp_open_rx;
+		}
+	}
+
+	if (tx) {
+		p->tx = ndp_open_tx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
+		if (p->tx == NULL) {
+			warnx("ndp_open_tx_queue(%d) failed.", p->queue_index);
+			goto err_ndp_open_tx;
+		}
+	}
+
+	/* Start queues */
+	if (rx) {
+		ret = ndp_queue_start(p->tx);
+		if (ret != 0) {
+			warnx("ndp_tx_queue_start(%d) failed.", p->queue_index);
+			goto err_ndp_start_tx;
+		}
+	}
+	if (tx) {
+		ret = ndp_queue_start(p->rx);
+		if (ret != 0) {
+			warnx("ndp_rx_queue_start(%d) failed.", p->queue_index);
+			goto err_ndp_start_rx;
+		}
+	}
+	return 0;
+
+err_ndp_start_rx:
+	if (tx)
+		ndp_queue_stop(p->tx);
+err_ndp_start_tx:
+	if (tx)
+		ndp_close_tx_queue(p->tx);
+err_ndp_open_tx:
+	if (rx)
+		ndp_close_rx_queue(p->rx);
+err_ndp_open_rx:
+	nfb_close(p->dev);
+	return ret;
+}
+
+void ndp_mode_common_close(struct ndp_tool_params *p, int rx, int tx)
+{
+	if (rx)
+		ndp_queue_stop(p->rx);
+	if (tx)
+		ndp_queue_stop(p->tx);
+	if (rx)
+		ndp_close_tx_queue(p->rx);
+	if (tx)
+		ndp_close_tx_queue(p->tx);
+
+	nfb_close(p->dev);
+}

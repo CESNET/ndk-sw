@@ -112,24 +112,9 @@ static int ndp_mode_transmit_prepare(struct ndp_tool_params *p, struct pcap_src 
 	int ret = -1;
 
 	p->si.progress_letter = 'T';
-	/* Open device and queues */
-	p->dev = nfb_open(p->nfb_path);
-	if (p->dev == NULL){
-		warnx("nfb_open() for queue %d failed.", p->queue_index);
-		goto err_nfb_open;
-	}
-
-	p->tx = ndp_open_tx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
-	if (p->tx == NULL) {
-		warnx("ndp_open_tx_queue(%d) failed.", p->queue_index);
-		goto err_ndp_open_tx;
-	}
-
-	/* Start queues */
-	ret = ndp_queue_start(p->tx);
-	if (ret != 0) {
-		warnx("ndp_tx_queue_start(%d) failed.", p->queue_index);
-		goto err_ndp_start_tx;
+	ret = ndp_mode_common_prepare(p, 0, 1);
+	if (ret) {
+		goto err_common_prepare;
 	}
 
 	ret = pcap_src_open(p, src);
@@ -146,12 +131,8 @@ static int ndp_mode_transmit_prepare(struct ndp_tool_params *p, struct pcap_src 
 	/* Error handling */
 	pcap_src_close(src);
 err_pcap_src_open:
-	ndp_queue_stop(p->tx);
-err_ndp_start_tx:
- 	ndp_close_tx_queue(p->tx);
-err_ndp_open_tx:
-	nfb_close(p->dev);
-err_nfb_open:
+	ndp_mode_common_close(p, 0, 1);
+err_common_prepare:
 	return ret;
 }
 
@@ -159,9 +140,8 @@ static int ndp_mode_transmit_exit(struct ndp_tool_params *p, struct pcap_src *sr
 {
 	gettimeofday(&p->si.endTime, NULL);
 	pcap_src_close(src);
-	ndp_queue_stop(p->tx);
-	ndp_close_tx_queue(p->tx);
-	nfb_close(p->dev);
+
+	ndp_mode_common_close(p, 0, 1);
 	return 0;
 }
 
