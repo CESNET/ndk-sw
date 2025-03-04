@@ -411,7 +411,7 @@ static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *pac
 	uint32_t sdp_int;
 
 	// All previously reserved packets need to be sent before new reservation takes place
-	if (unlikely(q->u.v3.pkts_to_send != 0))
+	if (unlikely(q->u.v3.pkts_to_send != 0 || q->u.v3.tx_pkts_cnt < count))
 		return 0;
 
 	__builtin_prefetch(q->u.v3.hdrs);
@@ -458,6 +458,7 @@ static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *pac
 		hdr->flags = packets[i].flags & 0xF;
 
 		/* Set pointers, where user can write packet content */
+		q->u.v3.tx_pkts[i] = data_base + sdp_int;
 		packets[i].header = data_base + sdp_int;
 		packets[i].data = data_base + sdp_int + header_size;
 
@@ -472,7 +473,6 @@ static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *pac
 	q->u.v3.pkts_available -= count;
 
 	// For packet sending
-	q->u.v3.packets = packets;
 	q->u.v3.pkts_to_send += count;
 	return count;
 }
@@ -481,7 +481,7 @@ static inline int nc_ndp_v3_tx_burst_flush(void *priv)
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
-	if (q->u.v3.shp >= (q->u.v3.hdr_ptr_mask +1)) {
+	if (q->u.v3.shp >= (q->u.v3.hdr_ptr_mask + 1)) {
 		q->u.v3.shp  -= (q->u.v3.hdr_ptr_mask + 1);
 		q->u.v3.hdrs -= (q->u.v3.hdr_ptr_mask + 1);
 	}
@@ -521,7 +521,6 @@ static inline int nc_ndp_v3_tx_burst_put(void *priv)
 
 	unsigned i;
 	uint32_t frame_len_ceil;
-	struct ndp_packet *packet = q->u.v3.packets;
 	struct ndp_v3_packethdr *hdr = q->u.v3.hdrs - q->u.v3.pkts_to_send;
 	uint32_t shp = q->u.v3.shp - q->u.v3.pkts_to_send;
 
@@ -535,7 +534,7 @@ static inline int nc_ndp_v3_tx_burst_put(void *priv)
 				return -1;
 		}
 
-		nfb_comp_write(q->u.v3.tx_data_buff, packet[i].header, hdr[i].frame_len, hdr[i].frame_ptr);
+		nfb_comp_write(q->u.v3.tx_data_buff, q->u.v3.tx_pkts[i], hdr[i].frame_len, hdr[i].frame_ptr);
 		q->u.v3.bytes_available -= frame_len_ceil;
 
 
@@ -543,7 +542,6 @@ static inline int nc_ndp_v3_tx_burst_put(void *priv)
 		// This below line needs to updated somewhere
 		shp = (shp + 1) & (q->u.v3.hdr_ptr_mask);
 	}
-	q->u.v3.packets -= q->u.v3.pkts_to_send;
 	q->u.v3.pkts_to_send = 0;
 	nc_ndp_v3_tx_burst_flush(priv);
 
