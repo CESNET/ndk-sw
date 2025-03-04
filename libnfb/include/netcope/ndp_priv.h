@@ -80,10 +80,11 @@ struct nc_ndp_queue {
 			uint32_t data_ptr_mask;
 			uint32_t hdr_ptr_mask;
 
-			// Packet descriptions
-			struct ndp_packet *packets;
 			// Buffer for headers
 			struct ndp_v3_packethdr *hdrs;
+			/* Store metadata for use in tx_burst_put */
+			void ** tx_pkts;
+			uint64_t tx_pkts_cnt; /* Number of tx_pkts items */
 #ifndef __KERNEL__
 			struct ndp_v3_packethdr *uspace_hdrs;
 			struct nfb_comp *comp;
