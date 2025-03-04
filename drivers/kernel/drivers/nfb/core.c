@@ -89,6 +89,16 @@ static void nfb_attach_drivers(struct nfb_device* nfb)
 	mutex_unlock(&nfb_driver_register_mutex);
 }
 
+void nfb_detach_driver_before_reload(struct nfb_device* nfb)
+{
+	int i;
+	for (i = NFB_DRIVERS_MAX - 1; i >= 0; i--) {
+		if ((nfb_registered_drivers[i].attach == nfb_ndp_netdev_attach) ||
+				(nfb_registered_drivers[i].attach == nfb_net_attach)) {
+			nfb_detach_driver(nfb, i);
+		}
+	}
+}
 /*
  * nfb_detach_drivers - detach embedded drivers from NFB device
  * @nfb: NFB device structure
@@ -296,7 +306,7 @@ void nfb_driver_unregister(struct nfb_driver_ops ops)
 EXPORT_SYMBOL_GPL(nfb_driver_unregister);
 
 static struct nfb_driver_ops embedded_driver_ops[] = {
-	/* INFO: Synchronize position of NDP driver with NFB_DRIVIER_NDP value! */
+	/* INFO: Synchronize position of NDP driver with NFB_DRIVER_NDP value! */
 	{
 		.attach = nfb_mi_attach,
 		.detach = nfb_mi_detach,

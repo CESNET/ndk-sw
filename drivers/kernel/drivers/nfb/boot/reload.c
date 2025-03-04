@@ -255,6 +255,7 @@ int nfb_boot_reload(void *arg)
 
 	/* Workaround: Close all MTDs within BootFPGA */
 	nfb_boot_mtd_destroy(boot);
+	nfb_detach_driver_before_reload(nfb);
 
 	reload_time_ms = 2000;
 	/* Send reload-fw command to BootFPGA component */

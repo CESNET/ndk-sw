@@ -148,6 +148,7 @@ void *nfb_nalloc(int numa_node, size_t size);
 void nfb_nfree(int numa_node, void *ptr, size_t size);
 
 void *nfb_get_priv_for_attach_fn(struct nfb_device *nfb, nfb_driver_ops_attach_t attach);
+void nfb_detach_driver_before_reload(struct nfb_device* nfb);
 
 void nfb_probe_endpoint_late(struct nfb_device *nfb, struct nfb_pci_device *pci_device);
 void nfb_remove_endpoint_early(struct nfb_device *nfb, struct nfb_pci_device *pci_device);
