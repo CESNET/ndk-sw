@@ -320,7 +320,7 @@ static ssize_t ndp_ctrl_set_ring_size(struct device *dev,
 	while (buffer_count * 2 <= value / ctrl->cfg.buffer_size)
 		buffer_count *= 2;
 
-	ret = ndp_ctrl_medusa_req_block_update(ctrl, 1, ctrl->cfg.buffer_size, value, ctrl->cfg.initial_offset);
+	ret = ndp_ctrl_medusa_req_block_update(ctrl, 1, ctrl->cfg.buffer_size, buffer_count, ctrl->cfg.initial_offset);
 	if (ret)
 		return ret;
 
