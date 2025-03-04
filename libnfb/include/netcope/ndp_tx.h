@@ -397,6 +397,8 @@ static inline int nc_ndp_v3_tx_request_space(struct nc_ndp_queue *q, uint32_t sh
 	return 0;
 }
 
+static inline int nc_ndp_v3_tx_burst_put(void *priv);
+
 static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *packets, unsigned count)
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
@@ -481,6 +483,11 @@ static inline int nc_ndp_v3_tx_burst_flush(void *priv)
 {
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
+	if (q->u.v3.pkts_to_send > 0) {
+		/* the tx_burst_put internally calls tx_burst_flush */
+		return nc_ndp_v3_tx_burst_put(q);
+	}
+
 	if (q->u.v3.shp >= (q->u.v3.hdr_ptr_mask + 1)) {
 		q->u.v3.shp  -= (q->u.v3.hdr_ptr_mask + 1);
 		q->u.v3.hdrs -= (q->u.v3.hdr_ptr_mask + 1);
@@ -523,7 +530,6 @@ static inline int nc_ndp_v3_tx_burst_put(void *priv)
 	uint32_t frame_len_ceil;
 	struct ndp_v3_packethdr *hdr = q->u.v3.hdrs - q->u.v3.pkts_to_send;
 	uint32_t shp = q->u.v3.shp - q->u.v3.pkts_to_send;
-
 
 	for (i = 0; i < q->u.v3.pkts_to_send; i++) {
 
