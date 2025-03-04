@@ -407,7 +407,7 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 	/* Set buffer size (mask) */
 	if (!(ctrl->type == DMA_TYPE_CALYPTE && ctrl->dir == 1)) {
 		_nc_ndp_ctrl_medusa_get_max_ptr_mask(ctrl, &mdp_max, &mhp_max, 0);
-		if (ctrl->mdp > mdp_max || ctrl->mhp > mhp_max) {
+		if (ctrl->mdp > mdp_max || (ctrl->dir == 0 && ctrl->mhp > mhp_max)) {
 			ret = -ENOMEM;
 			goto err_mask_mismatch;
 		}
