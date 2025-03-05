@@ -1,3 +1,7 @@
+* Wed Mar 5 2025 Martin Spinler <spinler@cesnet.cz> - 6.26.2-1
+- [FIX] NDP driver: use buffer_count in set_ring_size instead of total buffer_size
+- [FIX] libnetcope - dma_ctrl_ndp: check for valid header pointer mask only in RX
+
 * Mon Mar 3 2025 Martin Spinler <spinler@cesnet.cz> - 6.26.1-1
 - [FIX] BittWare BMC: check for name only when erasing
 - [FIX] NDP driver: check for non-zero value of buffer_size (division by 0)
