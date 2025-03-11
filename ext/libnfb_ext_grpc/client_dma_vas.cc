@@ -23,7 +23,11 @@
 
 DmaAccess::DmaAccess(pb_dma::Dma::Stub* stub) : bind(true)
 {
+#ifdef GRPC_ASYNC_EXPERIMENTAL
+	stub->experimental_async()->RqStream(&context, this);
+#else
 	stub->async()->RqStream(&context, this);
+#endif
 	StartRead(&req);
 	StartCall();
 }

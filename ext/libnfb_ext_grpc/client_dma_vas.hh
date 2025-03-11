@@ -31,7 +31,11 @@ public:
 
 namespace pb_dma = nfb::ext::protobuf::v1;
 
+#ifdef GRPC_ASYNC_EXPERIMENTAL
+class DmaAccess : public grpc::experimental::ClientBidiReactor<pb_dma::DmaResponse, pb_dma::DmaRequest>
+#else
 class DmaAccess : public grpc::ClientBidiReactor<pb_dma::DmaResponse, pb_dma::DmaRequest>
+#endif
 {
 protected:
 	grpc::ClientContext context;

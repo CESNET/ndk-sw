@@ -12,8 +12,11 @@ cmake_policy(VERSION 3.15)
 project(libnfb-ext-grpc C CXX)
 include(GNUInstallDirs)
 
+find_package(PkgConfig)
 find_package(Protobuf CONFIG)
 find_package(gRPC QUIET)
+
+pkg_check_modules(GRPC141 QUIET "grpc++<1.41")
 
 set(PROTO_NFB nfb/ext/protobuf/v1/nfb.proto)
 set(PROTO_DMA nfb/ext/protobuf/v1/dma.proto)
@@ -46,19 +49,22 @@ else()
 
 	# NFB proto
 	get_filename_component(nfb_proto_abs ${PROTO_NFB} ABSOLUTE)
-	get_filename_component(nfb_proto_path "${nfb_proto_abs}" PATH)
+	get_filename_component(nfb_proto_path "${nfb_proto_abs}" DIRECTORY)
+	get_filename_component(nfb_proto_path_rel ${PROTO_NFB} DIRECTORY)
 
-	set(nfb_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/nfb.pb.cc")
-	set(nfb_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/nfb.pb.h")
-	set(nfb_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/nfb.grpc.pb.cc")
-	set(nfb_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/nfb.grpc.pb.h")
+	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${nfb_proto_path_rel}/")
+
+	set(nfb_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/${nfb_proto_path_rel}/nfb.pb.cc")
+	set(nfb_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${nfb_proto_path_rel}/nfb.pb.h")
+	set(nfb_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/${nfb_proto_path_rel}/nfb.grpc.pb.cc")
+	set(nfb_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${nfb_proto_path_rel}/nfb.grpc.pb.h")
 
 	add_custom_command(
 		  OUTPUT "${nfb_proto_srcs}" "${nfb_proto_hdrs}" "${nfb_grpc_srcs}" "${nfb_grpc_hdrs}"
 		  COMMAND ${_PROTOBUF_PROTOC}
-		  ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
-			--cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
-			-I "${nfb_proto_path}"
+		  ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}/${nfb_proto_path_rel}"
+			--cpp_out "${CMAKE_CURRENT_BINARY_DIR}/${nfb_proto_path_rel}"
+			-I "${CMAKE_CURRENT_SOURCE_DIR}/${nfb_proto_path_rel}"
 			--plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
 			"${nfb_proto_abs}"
 		  DEPENDS "${nfb_proto_abs}")
@@ -67,19 +73,20 @@ else()
 
 	# DMA proto
 	get_filename_component(dma_proto_abs ${PROTO_DMA} ABSOLUTE)
-	get_filename_component(dma_proto_path "${dma_proto_abs}" PATH)
+	get_filename_component(dma_proto_path "${dma_proto_abs}" DIRECTORY)
+	get_filename_component(dma_proto_path_rel ${PROTO_DMA} DIRECTORY)
 
-	set(dma_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/dma.pb.cc")
-	set(dma_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/dma.pb.h")
-	set(dma_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/dma.grpc.pb.cc")
-	set(dma_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/dma.grpc.pb.h")
+	set(dma_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/${dma_proto_path_rel}/dma.pb.cc")
+	set(dma_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${dma_proto_path_rel}/dma.pb.h")
+	set(dma_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/${dma_proto_path_rel}/dma.grpc.pb.cc")
+	set(dma_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${dma_proto_path_rel}/dma.grpc.pb.h")
 
 	add_custom_command(
 		  OUTPUT "${dma_proto_srcs}" "${dma_proto_hdrs}" "${dma_grpc_srcs}" "${dma_grpc_hdrs}"
 		  COMMAND ${_PROTOBUF_PROTOC}
-		  ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
-			--cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
-			-I "${dma_proto_path}"
+		  ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}/${dma_proto_path_rel}"
+			--cpp_out "${CMAKE_CURRENT_BINARY_DIR}/${dma_proto_path_rel}"
+			-I "${CMAKE_CURRENT_SOURCE_DIR}/${dma_proto_path_rel}"
 			--plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
 			"${dma_proto_abs}"
 		  DEPENDS "${dma_proto_abs}")
@@ -112,6 +119,10 @@ set_target_properties(nfb-ext-proto
     PROPERTIES
 	PUBLIC_HEADER "${PROTO_FILES}"
 )
+
+if(${GRPC141_FOUND})
+	target_compile_definitions(nfb-ext-grpc PUBLIC GRPC_ASYNC_EXPERIMENTAL)
+endif()
 
 install(TARGETS nfb-ext-grpc
 	COMPONENT NfbExtGrpc
