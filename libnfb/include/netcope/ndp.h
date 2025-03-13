@@ -293,6 +293,10 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	}
 
 	q->buffer = q->sub->channel->ring.vmap;
+	if (q->buffer == NULL) {
+		ret = ENOMEM;
+		goto err_no_vmap;
+	}
 #else
 
 	if ((ret = ioctl(q->fd, NDP_IOC_SUBSCRIBE, &q->channel))) {
@@ -330,7 +334,11 @@ static inline int nc_ndp_queue_open_init_ext(const void *fdt, struct nc_ndp_queu
 	return 0;
 
 err_vx_open_queue:
-#ifndef __KERNEL__
+#ifdef __KERNEL__
+err_no_vmap:
+	ndp_subscription_destroy(q->sub);
+	q->sub = NULL;
+#else
 	munmap(q->buffer, q->size * 2);
 err_mmap:
 #endif

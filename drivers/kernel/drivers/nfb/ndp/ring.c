@@ -187,8 +187,6 @@ static int ndp_channel_ring_alloc(struct device *dev,
 	}
 	channel->ring.vmap = vmap(pages, page_count * 2, VM_MAP, PAGE_KERNEL);
 	kfree(pages);
-	if (channel->ring.vmap == NULL)
-		goto err_vmap;
 
 	channel->ring.block_count = count;
 	channel->ring.size = count * size;
@@ -196,7 +194,6 @@ static int ndp_channel_ring_alloc(struct device *dev,
 
 	return 0;
 
-err_vmap:
 err_pages_alloc:
 	ndp_block_free(dev, channel->ring.blocks, count);
 	channel->ring.blocks = NULL;
