@@ -250,6 +250,7 @@ int ndp_get_rx_queue_count(const struct nfb_device *dev)
 		return fdt_get_subnode_count(dev->fdt, "/drivers/ndp/rx_queues");
 	} else {
 		return
+				nfb_comp_count(dev, COMP_NETCOPE_RXQUEUE_SZE) +
 				nfb_comp_count(dev, COMP_NETCOPE_RXQUEUE_NDP) +
 				nfb_comp_count(dev, COMP_NETCOPE_RXQUEUE_CALYPTE);
 	}
@@ -261,6 +262,7 @@ int ndp_get_tx_queue_count(const struct nfb_device *dev)
 		return fdt_get_subnode_count(dev->fdt, "/drivers/ndp/tx_queues");
 	} else {
 		return
+				nfb_comp_count(dev, COMP_NETCOPE_TXQUEUE_SZE) +
 				nfb_comp_count(dev, COMP_NETCOPE_TXQUEUE_NDP) +
 				nfb_comp_count(dev, COMP_NETCOPE_TXQUEUE_CALYPTE);
 	}
