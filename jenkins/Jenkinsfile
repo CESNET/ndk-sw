@@ -1,21 +1,21 @@
 def projectpath = "ndk/swbase"
 def osreleasevers = [
 //		["centos", "centos7", "7.9.2009", "rpm"],
-        ["oraclelinux", "oraclelinux8", "8", "rpm"],
-		["oraclelinux", "oraclelinux9", "9", "rpm"],
-		["ubuntu", "ubuntu", "jammy", "deb"]
-	]
+	["oraclelinux", "oraclelinux8", "8", "rpm"],
+	["oraclelinux", "oraclelinux9", "9", "rpm"],
+	["ubuntu", "ubuntu", "jammy", "deb"]
+]
 def dockertarget = "default"
 
 node('docker') {
-cleanWs()
-checkout scm
+	cleanWs()
+	checkout scm
 
-	for (int i = 0; i < osreleasevers.size(); ++i) {
-		def osname = osreleasevers[i][0];
-		def dockerfile = osreleasevers[i][1];
-		def osreleasever = osreleasevers[i][2];
-		def pkg = osreleasevers[i][3];
+	for (ver in osreleasevers) {
+		def osname = ver[0]
+		def dockerfile = ver[1]
+		def osreleasever = ver[2]
+		def pkg = ver[3]
 
 		stage("Prepare docker for ${osname}:${osreleasever}") {
 			buildImage = docker.build("swbase-${osname}-${osreleasever}-${dockertarget}", "-f jenkins/${dockerfile}.Dockerfile --target ${dockertarget} --build-arg OSRELEASEVER=${osreleasever} --build-arg OSNAME=${osname} .")
@@ -85,5 +85,14 @@ node {
 			mkdir -p ${CI_SNAPSHOTS_PATH}/${projectpath}/${BRANCH_NAME}
 			rsync -ur --chmod=g+w artifacts/* ${CI_SNAPSHOTS_PATH}/${projectpath}/${BRANCH_NAME}
 		"""
+
+		for (ver in osreleasevers) {
+			def osname = ver[0]
+			def osreleasever = ver[2]
+			def pkg = ver[3]
+			if (pkg == "rpm") {
+				sh """createrepo --update ${CI_SNAPSHOTS_PATH}/${projectpath}/${BRANCH_NAME}/${osname}-${osreleasever}"""
+			}
+		}
 	}
 }
