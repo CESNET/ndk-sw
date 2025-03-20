@@ -37,7 +37,8 @@ int logfile;
 #define CONVERGEIN 10.0
 #define MAX_DIVERGENCE 600 // maximun divegence in sec - will reset card time if reached
 #define SYSTEM_TIME_TIMEOUT 10000
-#define GET_SYSTEM_TIME_REPEAT 10000
+#define GET_SYSTEM_TIME_REPEAT 5
+#define GET_SYSTEM_TIME_SPINUP 40000
 #define INC_MAX 2.980215192E-08
 
 #define PROGNAME "nfb-tsu"
@@ -231,7 +232,12 @@ int get_tsu_sys_timespecx_with_mindiff(struct timespecx *tsu_time, struct timesp
 
 	min = SYSTEM_TIME_TIMEOUT;
 
-	// try to get time more times to filter when get_system gets stuck
+	// spin up CPU before trying for real
+	for (j = 0; j < GET_SYSTEM_TIME_SPINUP; j++) {
+		sys_get_time(&sys_tsx);
+	}
+
+	// try GET_SYSTEM_TIME_REPEAT times, save the best result
 	for (j = 0; j < GET_SYSTEM_TIME_REPEAT; j++) {
 		tsu_get_time(&tsu0_fp);
 		sys_get_time(&sys_fp);
