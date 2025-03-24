@@ -472,6 +472,43 @@ static inline void nc_mdio_ftile_fgt_attribute_write(struct nc_mdio *mdio, int p
 	} while ((service_req != 0 || reset != 0) && ++retries < 1000);
 }
 
+
+static inline int _get_media_type(uint16_t pma_type)
+/* Return f-tile media type constant for given PMA type */
+{
+	static const int OPTIC = 0x14;
+	static const int METAL = 0x10;
+
+	switch (pma_type) {
+
+	case 0x63: return OPTIC; /* 400GBASE-ER8   */
+	case 0x62: return OPTIC; /* 400GBASE-LR4-6 */
+	case 0x61: return OPTIC; /* 400GBASE-FR4   */
+	case 0x60: return OPTIC; /* 400GBASE-SR4.2 */
+	case 0x5f: return OPTIC; /* 400GBASE-SR8   */
+	case 0x5c: return OPTIC; /* 400GBASE-LR8   */
+	case 0x5b: return OPTIC; /* 400GBASE-FR8   */
+	case 0x5a: return OPTIC; /* 400GBASE-DR4   */
+	case 0x59: return OPTIC; /* 400GBASE-SR16  */
+	case 0x58: return OPTIC; /* 200GBASE-ER4   */
+	case 0x55: return OPTIC; /* 200GBASE-LR4   */
+	case 0x54: return OPTIC; /* 200GBASE-FR4   */
+	case 0x53: return OPTIC; /* 200GBASE-DR4   */
+	case 0x52: return OPTIC; /* 200GBASE-SR4   */
+	case 0x4e: return OPTIC; /* 100GBASE-ZR    */
+	case 0x4d: return OPTIC; /* 100GBASE-LR    */
+	case 0x4c: return OPTIC; /* 100GBASE-FR    */
+	case 0x4b: return OPTIC; /* 100GBASE-DR    */
+	case 0x4a: return OPTIC; /* 100GBASE-SR2   */
+	case 0x45: return OPTIC; /* 50GBASE-ER     */
+	case 0x44: return OPTIC; /* 50GBASE-LR     */
+	case 0x43: return OPTIC; /* 50GBASE-FR     */
+	case 0x42: return OPTIC; /* 50GBASE-SR     */
+	default: return METAL; /* All -CR and -KR types */
+	}
+}
+
+
 static inline void nc_mdio_fixup_ftile_set_mode(struct nc_mdio *mdio, int prtad, uint16_t val)
 {
 	int i;
@@ -479,19 +516,8 @@ static inline void nc_mdio_fixup_ftile_set_mode(struct nc_mdio *mdio, int prtad,
 
 	if (mdio->link_encoding == MDIO_PMA_ENC_NRZ)
 		return; /* Not necessary to change media mode for NRZ modes */
-	if (
-		(val == 0x5B || val == 0x5C) ||  /* 400GBASE-R8  */
-		(val == 0x5F)                ||  /* 400GBASE-SR8 */
-		(val >= 0x52 && val <= 0x55) ||  /* 200GBASE-R4 */
-		(val == 0x4A)                ||  /* 100GBASE-R2 */
-		(val >= 0x42 && val <= 0x45))    /*  50GBASE-R1 */
-	{
-		media_type = 0x14; // optical
-	/* all other media types */
-	} else {
-		media_type = 0x10; // default = -CR
-	}
 
+	media_type = _get_media_type(val);
 	for (i = 0; i < mdio->pma_lanes; i++) {
 		nc_mdio_ftile_fgt_attribute_write(mdio, prtad, media_type, i, 0x64);
 	}
