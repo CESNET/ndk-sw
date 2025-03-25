@@ -18,6 +18,7 @@
 /* I2C registers addresses */
 #define SFF8636_IDENTIFIER        0
 #define SFF8636_REV_COMPLIANCE    1
+#define SFF8636_STATUS            2
 #define SFF8636_TEMPERATURE      22
 #define SFF8636_RX_INPUT_POWER   34
 #define SFF8636_STXDISABLE       86
@@ -409,6 +410,15 @@ void sff8636_print(struct nc_i2c_ctrl *ctrl)
 	uint8_t i;
 	uint8_t reg = 0xFF;
 	uint16_t reg16 = 0;
+	int retries = 0;
+	int ret;
+
+	/* Wait for Data Ready (max 2 sec according specs) */
+	/* TODO: this should be done in qsfp_i2c_common functions */
+	/* TODO: use nfb_comp_read32_poll_timeout, as this implemenation is time unstable */
+	do {
+		ret = nc_i2c_read_reg(ctrl, SFF8636_STATUS, &reg, 1);
+	} while (ret == 1 && ((reg & 0x01) == 0x1) && (++retries < 10000));
 
 	reg16 = qsfp_i2c_read16(ctrl, SFF8636_TEMPERATURE);
 	printf("Temperature                : %.2f C\n", ((float) reg16) / 256);
