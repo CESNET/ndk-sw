@@ -238,7 +238,7 @@ static inline unsigned nc_tsu_get_frequency(struct nc_tsu *tsu)
 
 static inline int nc_tsu_lock(struct nc_tsu *tsu)
 {
-	return nfb_comp_lock(nfb_user_to_comp(tsu), TSU_LOCK_MODIFY);
+	return nfb_comp_trylock(nfb_user_to_comp(tsu), TSU_LOCK_MODIFY, 100) == 0 ? 1 : 0;
 }
 
 static inline void nc_tsu_unlock(struct nc_tsu *tsu)
