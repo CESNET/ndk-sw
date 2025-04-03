@@ -22,36 +22,44 @@
 #include "ethdev.h"
 #include "channel.h"
 #include "ctrl_xdp.h"
+#include "sysfs.h"
 
-static int nfb_xdp_channels_init(struct net_device *netdev)
+static int nfb_xdp_channels_init(struct net_device *netdev, unsigned *channel_indexes, unsigned channel_count)
 {
-	int i, ret = 0;
+	int nfb_idx = 0, map_idx = 0, ch_idx = 0, ret = 0;
 	struct nfb_ethdev *ethdev = netdev_priv(netdev);
-	// printk("LOG: %s called", __func__);
-	ethdev->channels = kzalloc(sizeof(*ethdev->channels) * ethdev->channel_count, GFP_KERNEL);
+	struct nfb_xdp *module = ethdev->module;
+
+	ethdev->channels = kzalloc(sizeof(*ethdev->channels) * channel_count, GFP_KERNEL);
 	if (!ethdev->channels) {
 		ret = -ENOMEM;
 		goto err_channel_alloc;
 	}
 
-	for (i = 0; i < ethdev->channel_count; i++) {
-		mutex_init(&ethdev->channels[i].state_mutex);
-		ethdev->channels[i].ethdev = ethdev;
-		ethdev->channels[i].index = i;
-		ethdev->channels[i].nfb_index = i + ethdev->channel_count * ethdev->index;
-		ethdev->channels[i].numa = dev_to_node(&ethdev->nfb->pci->dev);
+	// Map the queues - lowest index to lowest index.
+	for (nfb_idx = 0; nfb_idx < module->channelc; nfb_idx++) {
+		for (ch_idx = 0; ch_idx < channel_count; ch_idx++) {
+			if(nfb_idx == channel_indexes[ch_idx]) {
+				mutex_init(&ethdev->channels[map_idx].state_mutex);
+				ethdev->channels[map_idx].ethdev = ethdev;
+				ethdev->channels[map_idx].index = map_idx;
+				ethdev->channels[map_idx].nfb_index = nfb_idx;
+				ethdev->channels[map_idx].numa = dev_to_node(&ethdev->nfb->pci->dev);
 #ifdef CONFIG_HAVE_NETIF_NAPI_ADD_WITH_WEIGHT
-		netif_napi_add(netdev, &ethdev->channels[i].rxq.napi_pp, nfb_xctrl_napi_poll_pp, NAPI_POLL_WEIGHT);
-		netif_napi_add(netdev, &ethdev->channels[i].rxq.napi_xsk, nfb_xctrl_napi_poll_rx_xsk, NAPI_POLL_WEIGHT);
+				netif_napi_add(netdev, &ethdev->channels[map_idx].rxq.napi_pp, nfb_xctrl_napi_poll_pp, NAPI_POLL_WEIGHT);
+				netif_napi_add(netdev, &ethdev->channels[map_idx].rxq.napi_xsk, nfb_xctrl_napi_poll_rx_xsk, NAPI_POLL_WEIGHT);
 #else
-		netif_napi_add_weight(netdev, &ethdev->channels[i].rxq.napi_pp, nfb_xctrl_napi_poll_pp, NAPI_POLL_WEIGHT);
-		netif_napi_add_weight(netdev, &ethdev->channels[i].rxq.napi_xsk, nfb_xctrl_napi_poll_rx_xsk, NAPI_POLL_WEIGHT);
+				netif_napi_add_weight(netdev, &ethdev->channels[map_idx].rxq.napi_pp, nfb_xctrl_napi_poll_pp, NAPI_POLL_WEIGHT);
+				netif_napi_add_weight(netdev, &ethdev->channels[map_idx].rxq.napi_xsk, nfb_xctrl_napi_poll_rx_xsk, NAPI_POLL_WEIGHT);
 #endif
 #ifdef CONFIG_HAVE_NETIF_NAPI_ADD_TX_WEIGHT
-		netif_napi_add_tx_weight(netdev, &ethdev->channels[i].txq.napi_xsk, nfb_xctrl_napi_poll_tx_xsk, NAPI_POLL_WEIGHT);
+				netif_napi_add_tx_weight(netdev, &ethdev->channels[map_idx].txq.napi_xsk, nfb_xctrl_napi_poll_tx_xsk, NAPI_POLL_WEIGHT);
 #else
-		netif_tx_napi_add(netdev, &ethdev->channels[i].txq.napi_xsk, nfb_xctrl_napi_poll_tx_xsk, NAPI_POLL_WEIGHT);
+				netif_tx_napi_add(netdev, &ethdev->channels[map_idx].txq.napi_xsk, nfb_xctrl_napi_poll_tx_xsk, NAPI_POLL_WEIGHT);
 #endif
+				map_idx++;
+			}
+		}
 	}
 
 err_channel_alloc:
@@ -62,7 +70,7 @@ static void nfb_xdp_channels_deinit(struct net_device *netdev)
 {
 	u32 i;
 	struct nfb_ethdev *ethdev = netdev_priv(netdev);
-	// printk("LOG: %s called", __func__);
+
 	for (i = 0; i < ethdev->channel_count; i++) {
 		netif_napi_del(&ethdev->channels[i].rxq.napi_pp);
 		netif_napi_del(&ethdev->channels[i].rxq.napi_xsk);
@@ -92,7 +100,7 @@ static void nfb_stop_channels(struct net_device *netdev)
 	struct nfb_xdp_channel *channel;
 	unsigned i;
 	struct bpf_prog *old_prog;
-	// printk("LOG: %s called", __func__);
+
 	spin_lock(&ethdev->prog_lock);
 	old_prog = rcu_replace_pointer(ethdev->prog, NULL, lockdep_is_held(&ethdev->prog_lock));
 	if (old_prog) {
@@ -103,12 +111,6 @@ static void nfb_stop_channels(struct net_device *netdev)
 
 	// Stop all TX queues
 	netif_tx_stop_all_queues(netdev);
-
-	// disable mac
-	if (ethdev->nc_rxmac)
-		nc_rxmac_disable(ethdev->nc_rxmac);
-	if (ethdev->nc_txmac)
-		nc_txmac_disable(ethdev->nc_txmac);
 
 	// Stop all threads
 	for (i = 0; i < ethdev->channel_count; i++) {
@@ -143,20 +145,10 @@ static int nfb_start_channels(struct net_device *netdev)
 	for (i = 0; i < ethdev->channel_count; i++) {
 		channel = &ethdev->channels[i];
 		if ((ret = channel_start_pp(channel))) {
-			goto err_channel_start;
+			printk(KERN_ERR "nfb: failed to start channels\n");
 		}
 	}
 
-	// enable mac
-	if (ethdev->nc_rxmac)
-		nc_rxmac_enable(ethdev->nc_rxmac);
-	if (ethdev->nc_txmac)
-		nc_txmac_enable(ethdev->nc_txmac);
-
-	return ret;
-err_channel_start:
-	printk(KERN_ERR "nfb: failed to start channels\n");
-	nfb_stop_channels(netdev);
 	return ret;
 }
 
@@ -164,7 +156,6 @@ static int nfb_xdp_open(struct net_device *netdev)
 {
 	int ret;
 	struct nfb_ethdev *ethdev = netdev_priv(netdev);
-	// printk("LOG: %s called", __func__);
 	ret = nfb_start_channels(netdev);
 	schedule_work(&ethdev->link_work);
 	mod_timer(&ethdev->link_timer, jiffies + HZ * 1);
@@ -173,7 +164,6 @@ static int nfb_xdp_open(struct net_device *netdev)
 
 static int nfb_xdp_stop(struct net_device *netdev)
 {
-	// printk("LOG: %s called\n", __func__);
 	nfb_stop_channels(netdev);
 	return 0;
 }
@@ -188,32 +178,58 @@ static const struct net_device_ops netdev_ops = {
 	.ndo_xsk_wakeup = nfb_xsk_wakeup,
 };
 
-void destroy_ethdev(struct nfb_ethdev *ethdev)
+// Destroy xdp netdev, index == -1 means destroy everything
+int destroy_ethdev(struct nfb_xdp *module, int index)
 {
-	struct net_device *netdev = ethdev->netdev;
-	// printk("LOG: %s called\n", __func__);
-	netif_carrier_off(netdev);
-	unregister_netdev(netdev); // calls nfb_xdp_stop
-	del_timer_sync(&ethdev->link_timer);
-	cancel_work_sync(&ethdev->link_work);
+	int i, ret;
+	struct nfb_ethdev *ethdev, *tmp;
+	struct net_device *netdev;
 
-	// close mac components
-	if (ethdev->nc_rxmac)
-		nc_rxmac_close(ethdev->nc_rxmac);
-	if (ethdev->nc_txmac)
-		nc_txmac_close(ethdev->nc_txmac);
-
-	nfb_xdp_channels_deinit(netdev);
-	free_netdev(netdev);
+	ret = -ENODEV;
+	mutex_lock(&module->list_mutex);
+	{
+		list_for_each_entry_safe(ethdev, tmp, &module->list_devices, list) {
+			if(index == ethdev->index || index == -1) {
+				ret = 0;
+				netdev = ethdev->netdev;
+				list_del(&ethdev->list);
+				del_timer_sync(&ethdev->link_timer);
+				cancel_work_sync(&ethdev->link_work);
+				netif_carrier_off(netdev);
+				// close mac components
+				for (i = 0; i < ethdev->mac_count; i++) {
+					if(ethdev->nc_rxmacs[i])
+						nc_rxmac_close(ethdev->nc_rxmacs[i]);
+				}
+				kfree(ethdev->nc_rxmacs);
+				// calls nfb_xdp_stop
+				unregister_netdev(netdev);
+				nfb_xdp_channels_deinit(netdev);
+				free_netdev(netdev);
+			}
+		}
+	}
+	mutex_unlock(&module->list_mutex);
+	return ret;
 }
 
 static void link_work_handler(struct work_struct *work)
 {
 	struct nfb_ethdev *ethdev = container_of(work, struct nfb_ethdev, link_work);
-	int ok;
-	if (ethdev->nc_rxmac) {
+	int ok, link, i;
+
+	if(ethdev->mac_count) {
+		// Check if all the opened macs are up
+		link = 1;
+		for (i = 0; i < ethdev->mac_count; i++) {
+			if (ethdev->nc_rxmacs[i]) {
+				if(!nc_rxmac_get_link(ethdev->nc_rxmacs[i])) {
+					link = 0;
+				}
+			}
+		}
 		ok = netif_carrier_ok(ethdev->netdev);
-		if (nc_rxmac_get_link(ethdev->nc_rxmac)) {
+		if (link) {
 			if (!ok) {
 				netif_carrier_on(ethdev->netdev);
 			}
@@ -232,85 +248,141 @@ static void link_timer_callback(struct timer_list *timer)
 	mod_timer(&ethdev->link_timer, jiffies + HZ * 1);
 }
 
-struct nfb_ethdev *create_ethdev(struct nfb_xdp *module, int fdt_offset, u16 index)
+int create_ethdev(struct nfb_xdp *module, u16 index, unsigned * channel_indexes, unsigned channel_count)
 {
 	struct nfb_device *nfb = module->nfb;
-	struct nfb_ethdev *ethdev;
+	struct nfb_ethdev *ethdev, *tmp;
 	struct net_device *netdev;
-	int fdt_comp;
+	int i, j, mac_idx;
+	int fdt_offset;
 	int ret;
+	unsigned channel_index;
+	
+	mutex_lock(&module->list_mutex);
+	{
+		// Check if index and queues are not already in use
+		list_for_each_entry_safe(ethdev, tmp, &module->list_devices, list) {
+			if(ethdev->index == index) {
+				dev_warn(&module->dev, "Failed to add XDP device, another device of index %d already exists.\n", index);
+				ret = -EINVAL;
+				goto err_sanity;
+			}
+			for (i = 0; i < channel_count; i++) {
+				for (j = 0; j < ethdev->channel_count; j++) {
+					if(channel_indexes[i] == ethdev->channels[j].nfb_index) {
+						dev_warn(&module->dev, "Failed to add XDP device, queue %d is already used by another XDP device.\n", i);
+						ret = -EINVAL;
+						goto err_sanity;
+					}
+				}
+			}
+		}
 
-	// allocate net_device
-	netdev = alloc_etherdev_mqs(sizeof(*ethdev), module->txqc / module->ethc, module->rxqc / module->ethc);
-	if (!netdev) {
-		ret = -ENOMEM;
-		goto err_alloc_etherdev;
+		// Allocate net_device
+		netdev = alloc_etherdev_mqs(sizeof(*ethdev), channel_count, channel_count);
+		if (!netdev) {
+			dev_warn(&module->dev, "Failed to add XDP device, error allocating netdevice\n");
+			ret = -ENOMEM;
+			goto err_alloc_etherdev;
+		}
+
+		// sets napi to threaded mode allowing for scheduler control
+		// without this mode scheduler cannot really work with napi
+		// so multiple napi softirqs can end up on the same cpu
+		ret = dev_set_threaded(netdev, true);
+		if (ret)
+			dev_warn(&module->dev, "Failed to allocate netdevice\n");
+
+		// Set the name of the interface
+		snprintf(netdev->name, IFNAMSIZ, "nfb%ux%u", nfb->minor, index);
+
+		// Initialize nfb_ethdev struct
+		ethdev = netdev_priv(netdev);
+		ethdev->index = index;
+		ethdev->channel_count = channel_count;
+		ethdev->module = module;
+		ethdev->nfb = nfb;
+		ethdev->netdev = netdev;
+
+		// Initialize channels
+		if ((ret = nfb_xdp_channels_init(netdev,channel_indexes, channel_count))) {
+			dev_warn(&module->dev, "Failed to add XDP device, error initializing channels\n");
+			goto err_channels_init;
+		}
+			
+		// NOTE: nc_mac_enable ~ nfb-eth -e1
+		// NOTE: XDP netdevice can have multiple macs, to set link all relevant macs need to be considered.
+		// open rx mac component
+		if(!(ethdev->nc_rxmacs = kzalloc(sizeof(struct nc_rxmac *) * module->ethc, GFP_KERNEL))) {
+			ret = -ENOMEM;
+			goto macs_alloc_error;
+		}
+
+		for (mac_idx = 0; mac_idx < module->ethc; mac_idx++) {
+			for (i = 0; i < channel_count; i++) {
+				channel_index = channel_indexes[i];
+				// If channel with the mac index is found, open the mac and test for next one
+				if (mac_idx == channel_index / (module->channelc / module->ethc)) {
+					if((fdt_offset = nfb_comp_find(nfb, "netcope,rxmac", mac_idx) < 0)) {
+						ethdev->nc_rxmacs[ethdev->mac_count] = NULL;
+						dev_warn(&module->dev, "Failed to add XDP device, error finding mac offset\n");
+						ret = -ENODEV;
+						goto macs_open_error;
+					}
+
+					ethdev->nc_rxmacs[ethdev->mac_count] = nc_rxmac_open(nfb, fdt_offset);
+					if (IS_ERR(ethdev->nc_rxmacs[ethdev->mac_count])) {
+						ethdev->nc_rxmacs[ethdev->mac_count] = NULL;
+						dev_warn(&module->dev, "Failed to add XDP device, error opening mac\n");
+						ret = -ENODEV;
+						goto macs_open_error;
+					}
+					ethdev->mac_count++;
+					break;
+				}
+			}
+		}
+
+
+		SET_NETDEV_DEV(netdev, &nfb->pci->dev);
+
+		// set mac address
+		nfb_net_set_dev_addr(nfb, netdev, index);
+		// NOTE: Register netdev with all tx queues stopped.
+		// 	Otherwise tx can be called when queues are not ready.
+		netif_tx_stop_all_queues(netdev);
+		// carrier needs to be manually set down on init else its state will show up as UNKNOWN
+		netif_carrier_off(netdev);
+		// Init periodical checking of link status
+		INIT_WORK(&ethdev->link_work, link_work_handler);
+		timer_setup(&ethdev->link_timer, link_timer_callback, 0);
+		netdev->netdev_ops = &netdev_ops;
+
+		// calls nfb_xdp_open
+		if ((ret = register_netdev(netdev))) {
+			dev_warn(&module->dev, "Failed to add XDP device, error registering netdevice.\n");
+			goto err_register_netdev;
+		}
+		list_add_tail(&ethdev->list, &module->list_devices);
 	}
-
-	// sets napi to threaded mode allowing for scheduler control
-	// without this mode scheduler cannot really work with napi
-	// so multiple napi softirqs can end up on the same cpu
-	ret = dev_set_threaded(netdev, true);
-	if (ret)
-		printk(KERN_WARNING "nfb: Couldn't set NAPI threaded mode.\n");
-
-	// Set the name of the interface
-	snprintf(netdev->name, IFNAMSIZ - 1, "nfb%up%u", nfb->minor, index);
-
-	// Initialize nfb_ethdev struct
-	ethdev = netdev_priv(netdev);
-	ethdev->index = index;
-	ethdev->channel_count = module->rxqc / module->ethc;
-	ethdev->module = module;
-	ethdev->nfb = nfb;
-	ethdev->netdev = netdev;
-
-	// Initialize channels
-	ret = nfb_xdp_channels_init(netdev);
-	if (ret)
-		goto err_channels_init;
-
-	// NOTE: nc_mac_enable ~ nfb-eth -e1
-	// open mac component
-	fdt_comp = nc_eth_get_rxmac_node(nfb->fdt, fdt_offset);
-	ethdev->nc_rxmac = nc_rxmac_open(nfb, fdt_comp);
-	if (IS_ERR(ethdev->nc_rxmac))
-		ethdev->nc_rxmac = NULL;
-
-	fdt_comp = nc_eth_get_txmac_node(nfb->fdt, fdt_offset);
-	ethdev->nc_txmac = nc_txmac_open(nfb, fdt_comp);
-	if (IS_ERR(ethdev->nc_txmac))
-		ethdev->nc_txmac = NULL;
-
-	// init periodical checking of link status
-	INIT_WORK(&ethdev->link_work, link_work_handler);
-	timer_setup(&ethdev->link_timer, link_timer_callback, 0);
-	netdev->netdev_ops = &netdev_ops;
-
-	SET_NETDEV_DEV(netdev, &nfb->pci->dev);
-
-	// set mac address
-	nfb_net_set_dev_addr(nfb, netdev, index);
-	// NOTE: Register netdev with all tx queues stopped.
-	// 	Otherwise tx can be called when queues are not ready.
-	netif_tx_stop_all_queues(netdev);
-	// carrier needs to be manually set down on init else its the state will show up as UNKNOWN
-	netif_carrier_off(netdev);
-	ret = register_netdev(netdev); // calls nfb_xdp_open
-	if (ret) {
-		goto err_register_netdev;
-	}
-
-	return ethdev;
+	mutex_unlock(&module->list_mutex);
+	return ret;
 
 err_register_netdev:
+	del_timer_sync(&ethdev->link_timer);
+	cancel_work_sync(&ethdev->link_work);
+macs_open_error:
+macs_alloc_error:
+	for (i = 0; i < ethdev->mac_count; i++) {
+		if(ethdev->nc_rxmacs[i])
+			nc_rxmac_close(ethdev->nc_rxmacs[i]);
+	}
+	kfree(ethdev->nc_rxmacs);
 	nfb_xdp_channels_deinit(netdev);
-	if (ethdev->nc_rxmac)
-		nc_rxmac_close(ethdev->nc_rxmac);
-	if (ethdev->nc_txmac)
-		nc_txmac_close(ethdev->nc_txmac);
 err_channels_init:
 	free_netdev(netdev);
 err_alloc_etherdev:
-	return NULL;
+err_sanity:
+	mutex_unlock(&module->list_mutex);
+	return ret;
 }

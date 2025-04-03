@@ -31,6 +31,6 @@ nfb-objs += misc.o lock.o bus.o char.o pci.o core.o
 nfb-objs += hwmon/nfb_hwmon.o
 
 ccflags-$(CONFIG_NFB_XDP) += -DCONFIG_NFB_ENABLE_XDP
-nfb-$(CONFIG_NFB_XDP) += xdp/driver.o xdp/ethdev.o xdp/ctrl_xdp_common.o xdp/ctrl_xdp_pp.o xdp/ctrl_xdp_xsk.o xdp/channel.o
+nfb-$(CONFIG_NFB_XDP) += xdp/driver.o xdp/ethdev.o xdp/ctrl_xdp_common.o xdp/ctrl_xdp_pp.o xdp/ctrl_xdp_xsk.o xdp/channel.o xdp/sysfs.o
 
 obj-m += nfb.o

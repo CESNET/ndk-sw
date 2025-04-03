@@ -17,13 +17,15 @@ void nfb_xdp_detach(struct nfb_device *nfb, void *priv);
 
 // struct holding xdp driver module info
 struct nfb_xdp {
-	struct nfb_device *nfb; /*Top level structure describing nfb device*/
-	struct device dev; /*device describing nfb_xdp module*/
-	struct list_head list_devices; /*List of eth devices*/
+	struct nfb_device *nfb; // Top level structure describing nfb device
+	struct device dev; // Device describing nfb_xdp module, used with sysfs
+	struct mutex list_mutex; // Mutex for list_devices
+	struct list_head list_devices; // List of virtual ETH devices
 
-	u16 ethc; /* Number of ETH ports*/
-	u16 rxqc; /* Absolute number of rx queues */
-	u16 txqc; /* Absolute number of tx queues */
+	u16 ethc; // Number of physical ETH ports
+	u16 channelc; // Number of usable channels
+
+	struct device *channel_sysfsdevs; // Channel devices for sysfs
 };
 
 #endif // NFB_XDP_DRIVER_H
