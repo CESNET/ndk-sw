@@ -41,6 +41,8 @@
 
 #define NJFD(x) ni_json_f_decim(x)
 
+#define COMPAT_NAMES 1
+
 static struct ni_context_item_default ni_items[] = {
 	[NI_SEC_ROOT]           = {ni_json_e,                           ni_user_n},
 	[NI_LIST_ETH]           = {ni_json_k("eth"),                    ni_user_v(NULL, 0, "\n", NULL)}, /* FIXME: no newline for 128 */
@@ -102,12 +104,25 @@ static struct ni_context_item_default ni_items[] = {
 	[NI_RXM_LINK]           = {ni_json_k("link"),                   ni_user_l("Link status")},
 	[NI_RXM_HFIFO_OVF]      = {ni_json_k("hfifo_overflow"),         ni_user_l("HFIFO overflow occurred")},
 
-	[NI_SEC_RXMAC_S]        = {ni_json_k("stats"),                  ni_user_n},
-	[NI_RXM_RECV_O]         = {ni_json_k("pass_octets"),            ni_user_f("Received octets", NUFC)},
-	[NI_RXM_PROCESSED]      = {ni_json_k("total"),                  ni_user_f("Processed", NUFC)},
-	[NI_RXM_RECEIVED]       = {ni_json_k("pass"),                   ni_user_f("Received", NUFC)},
-	[NI_RXM_ERRONEOUS]      = {ni_json_k("erroneous"),              ni_user_f("Erroneous", NUFC)},
-	[NI_RXM_OVERFLOWED]     = {ni_json_k("overflowed"),             ni_user_f("Overflowed", NUFC)},
+	[NI_SEC_MAC_S]          = {ni_json_k("stats"),                  ni_user_n},
+	[NI_MAC_TOTAL_O]        = {ni_json_k("total_octets"),           ni_user_f("Total octets", NUFC)},
+	[NI_MAC_DROP]           = {ni_json_k("drop"),                   ni_user_f("Dropped frames", NUFC)},
+	[NI_MAC_TOTAL]          = {ni_json_k("total"),                  ni_user_f(
+	                                                                        COMPAT_NAMES ? "Processed" :
+	                                                                        "Total frames", NUFC)},
+	[NI_MAC_DROP_ERR]       = {ni_json_k("drop_err"),               ni_user_f(
+	                                                                        COMPAT_NAMES ? "Erroneous" :
+	                                                                        " * Errors", NUFC)},
+
+	[NI_RXM_PASS_O]         = {ni_json_k("pass_octets"),            ni_user_f(
+	                                                                        COMPAT_NAMES ? "Received octets" :
+	                                                                        "Passed octets", NUFC)},
+	[NI_RXM_PASS]           = {ni_json_k("pass"),                   ni_user_f(
+	                                                                        COMPAT_NAMES ? "Received" :
+	                                                                        "Passed frames", NUFC)},
+	[NI_RXM_OVERFLOWED]     = {ni_json_k("drop_overflow"),          ni_user_f(
+	                                                                        COMPAT_NAMES ? "Overflowed" :
+	                                                                        " * Buffer overflow", NUFC)},
 
 	[NI_SEC_RXMAC_CONF]     = {ni_json_k("config"),                 ni_user_l("RXMAC configuration")},
 	[NI_RXM_ERR_MASK_REG]   = {ni_json_k("err_mask_reg"),           ni_user_l("Error mask register")},
@@ -144,11 +159,19 @@ static struct ni_context_item_default ni_items[] = {
 
 	[NI_SEC_TXMAC]          = {ni_json_k("txmac"),                  ni_user_l("TXMAC status")},
 	[NI_TXM_ENABLED]        = {ni_json_k("enabled"),                ni_user_l("TXMAC status")},
-	[NI_SEC_TXMAC_S]        = {ni_json_k("stats"),                  ni_user_n},
-	[NI_TXM_SENT_O]         = {ni_json_k("sent_octets"),            ni_user_f("Transmitted octets", NUFC)},
-	[NI_TXM_PROCESSED]      = {ni_json_k("processed"),              ni_user_f("Processed", NUFC)},
-	[NI_TXM_SENT]           = {ni_json_k("sent"),                   ni_user_f("Transmitted", NUFC)},
-	[NI_TXM_ERRONEOUS]      = {ni_json_k("erroneous"),              ni_user_f("Erroneous", NUFC)},
+	[NI_TXM_PASS_O]         = {ni_json_k("pass_octets"),            ni_user_f(
+	                                                                        COMPAT_NAMES ? "Transmitted octets" :
+	                                                                        "Passed octets", NUFC)},
+	[NI_TXM_PASS]           = {ni_json_k("pass"),                   ni_user_f(
+	                                                                        COMPAT_NAMES ? "Transmitted" :
+	                                                                        "Passed frames", NUFC)},
+
+	[NI_MAC_DROP_DISABLED]  = {ni_json_k("drop_disabled"),          ni_user_f(" * MAC disabled", NUFC)},
+	[NI_MAC_DROP_FILTERED]  = {ni_json_k("drop_filtered"),          ni_user_f(" * MAC filtered", NUFC)},
+	[NI_MAC_DROP_LINK]      = {ni_json_k("drop_link_down"),         ni_user_f(" * Link down", NUFC)},
+	[NI_MAC_DROP_ERR_LEN]   = {ni_json_k("drop_err_length"),        ni_user_f("   * Length error", NUFC)},
+	[NI_MAC_DROP_ERR_CRC]   = {ni_json_k("drop_err_crc"),           ni_user_f("   * CRC error", NUFC)},
+	[NI_MAC_DROP_ERR_MII]   = {ni_json_k("drop_err_mii"),           ni_user_f("   * MII error", NUFC)},
 
 	/* Still Eth section */
 	[NI_TRANS_PRSNT]        = {ni_json_k("present"),                ni_user_l("Transceiver status")},
