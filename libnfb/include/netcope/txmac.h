@@ -19,14 +19,20 @@ extern "C" {
 
 /* ~~~~[ DATA TYPES ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 struct nc_txmac {
-	int _unused;
+	unsigned has_ext_drop_counters : 1;
 };
 
 struct nc_txmac_counters {
-	unsigned long long cnt_total;     /*!< All processed frames */
-	unsigned long long cnt_octets;    /*!< Correct octets */
-	unsigned long long cnt_sent;      /*!< Correct frames */
-	unsigned long long cnt_erroneous; /*!< Discarded frames */
+	unsigned long long cnt_total;           /*!< All processed frames */
+	unsigned long long cnt_octets;          /*!< Correct octets */
+	unsigned long long cnt_sent;            /*!< Correct frames */
+	unsigned long long cnt_drop;            /*!< All discarded frames (multiple discard reasons can occur at once) */
+	unsigned long long cnt_total_octets;    /*!< All processed bytes */
+
+	unsigned long long cnt_drop_disabled;   /*!< Frames droped due to disabled MAC */
+	unsigned long long cnt_drop_link;       /*!< Frames droped due to link down */
+	unsigned long long cnt_erroneous;       /*!< Discarded frames due to error (subset of cnt_drop; multiple errors below can occur at once) */
+	unsigned long long cnt_err_length;      /*!< Frames droped due to MTU mismatch */
 };
 
 struct nc_txmac_status {
@@ -90,6 +96,14 @@ union _nc_txmac_reg_buffer {
 		uint32_t discarded_h;
 		uint32_t sent_h;
 	} r1;
+
+	/* Register range: 0x0040 - 0x0060 */
+	struct __attribute__((packed)) {
+		uint64_t total_octets;
+		uint64_t drop_link;
+		uint64_t err_length;
+		uint64_t drop_disabled;
+	} r2;
 };
 
 /* ~~~~[ IMPLEMENTATION ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -97,6 +111,9 @@ static inline struct nc_txmac *nc_txmac_open(struct nfb_device *dev, int fdt_off
 {
 	struct nc_txmac *mac;
 	struct nfb_comp *comp;
+	const fdt32_t *prop;
+	int proplen;
+	unsigned version = 0;
 
 	if (fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, COMP_NETCOPE_TXMAC))
 		return NULL;
@@ -106,6 +123,12 @@ static inline struct nc_txmac *nc_txmac_open(struct nfb_device *dev, int fdt_off
 		return NULL;
 
 	mac = (struct nc_txmac *) nfb_comp_to_user(comp);
+
+	prop = (const fdt32_t*) fdt_getprop(nfb_get_fdt(dev), fdt_offset, "version", &proplen);
+	if (proplen == sizeof(*prop))
+		version = fdt32_to_cpu(*prop);
+
+	mac->has_ext_drop_counters = version >= 0x00000003;
 
 	return mac;
 }
@@ -174,7 +197,25 @@ static inline int nc_txmac_read_counters(struct nc_txmac *mac, struct nc_txmac_c
 	counters->cnt_total             = _NC_TXMAC_REG_BUFFER_PAIR(buf.r1, total);
 	counters->cnt_octets            = _NC_TXMAC_REG_BUFFER_PAIR(buf.r1, octets);
 	counters->cnt_sent              = _NC_TXMAC_REG_BUFFER_PAIR(buf.r1, sent);
-	counters->cnt_erroneous         = _NC_TXMAC_REG_BUFFER_PAIR(buf.r1, discarded);
+	counters->cnt_drop              = _NC_TXMAC_REG_BUFFER_PAIR(buf.r1, discarded);
+
+	if (mac->has_ext_drop_counters) {
+		nfb_comp_read(comp, &buf.r2, sizeof(buf.r2), 0x0040);
+
+		counters->cnt_total_octets      = buf.r2.total_octets;
+		counters->cnt_drop_disabled     = buf.r2.drop_disabled;
+		counters->cnt_drop_link         = buf.r2.drop_link;
+		counters->cnt_err_length        = buf.r2.err_length;
+
+		counters->cnt_erroneous         = counters->cnt_err_length;
+	} else {
+		counters->cnt_total_octets      = 0;
+		counters->cnt_drop_disabled     = 0;
+		counters->cnt_drop_link         = 0;
+		counters->cnt_err_length        = 0;
+
+		counters->cnt_erroneous         = counters->cnt_drop;
+	}
 
 	nfb_comp_unlock(comp, TXMAC_COMP_LOCK);
 	return 0;

@@ -40,14 +40,22 @@ struct nc_rxmac {
 
 	unsigned has_counter_below_64 : 1;
 	unsigned mac_addr_count_valid : 1;
+	unsigned has_ext_drop_counters: 1;
 };
 
 struct nc_rxmac_counters {
 	unsigned long long cnt_total;            /*!< All processed frames */
+	unsigned long long cnt_total_octets;     /*!< All processed bytes */
 	unsigned long long cnt_octets;           /*!< Correct octets */
 	unsigned long long cnt_received;         /*!< Correct frames */
-	unsigned long long cnt_erroneous;        /*!< Discarded frames due to error */
-	unsigned long long cnt_overflowed;       /*!< Discarded frames due to buffer overflow */
+	unsigned long long cnt_drop;             /*!< All discarded frames (multiple discard reasons can occur at once) */
+	unsigned long long cnt_overflowed;       /*!< Discarded frames due to buffer overflow (subset of cnt_drop) */
+	unsigned long long cnt_drop_disabled;    /*!< Frames droped due to disabled MAC (subset of cnt_drop) */
+	unsigned long long cnt_drop_filtered;    /*!< Frames droped due to MAC address filter (subset of cnt_drop) */
+	unsigned long long cnt_erroneous;        /*!< Discarded frames due to error (subset of cnt_drop; multiple errors below can occur at once) */
+	unsigned long long cnt_err_length;       /*!< Frames droped due to MTU mismatch (subset of cnt_erroneous)*/
+	unsigned long long cnt_err_crc;          /*!< Frames droped due to bad CRC (subset of cnt_erroneous)*/
+	unsigned long long cnt_err_mii;          /*!< Frames droped due to errors on MII (subset of cnt_erroneous)*/
 };
 
 struct nc_rxmac_etherstats {
@@ -68,6 +76,10 @@ struct nc_rxmac_etherstats {
 	unsigned long long pkts1024to1518Octets; /*!< Total number of received packets that were between 1024 and 1518 bytes long */
 	unsigned long long underMinPkts;         /*!< Total number of received packets that were shorter than configured minimum (not in etherStats) */
 	unsigned long long overMaxPkts;          /*!< Total number of received packets that were longer than configured maximum (not in etherStats) */
+	unsigned long long pkts1519to2047Octets; /*!< Total number of received packets that were between 1519 and 2047 bytes long */
+	unsigned long long pkts2048to4095Octets; /*!< Total number of received packets that were between 2048 and 4095 bytes long */
+	unsigned long long pkts4096to8191Octets; /*!< Total number of received packets that were between 4096 and 8191 bytes long */
+	unsigned long long pktsOverBinsOctets;   /*!< Total number of received packets that were 8192 or more bytes long */
 };
 
 struct nc_rxmac_status {
@@ -101,6 +113,9 @@ static inline void             nc_rxmac_set_error_mask(struct nc_rxmac *mac, uns
 /* ~~~~[ REGISTERS ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 #define RXMAC_REG_CNT_PACKETS_LO                0x0000
 #define RXMAC_REG_CNT_PACKETS_HI                0x0010
+
+#define RXMAC_REG_CNT_ES_OCTETS_LO              0x011C
+#define RXMAC_REG_CNT_ES_OCTETS_HI              0x0154
 
 #define RXMAC_REG_ENABLE             0x0020
 #define RXMAC_REG_ERROR_MASK         0x0024
@@ -150,8 +165,7 @@ union _nc_rxmac_reg_buffer {
 
 	/* Register range: 0x003C - 0x0040 */
 	struct __attribute__((packed)) {
-		uint32_t octets_l;
-		uint32_t octets_h;
+		uint64_t octets;
 	} r2;
 
 	/* Register range: 0x0100 - 0x0180 */
@@ -184,11 +198,24 @@ union _nc_rxmac_reg_buffer {
 		uint32_t pkts256to511Octets_h;
 		uint32_t pkts512to1023Octets_h;
 		uint32_t pkts1024to1518Octets_h;
-		uint32_t over1518_l;
-		uint32_t over1518_h;
-		uint32_t below64_l;
-		uint32_t below64_h;
+		uint64_t over1518;
+		uint64_t below64;
+		/* 0x0180 */
+		uint64_t pkts1519to2047Octets;
+		uint64_t pkts2048to4095Octets;
+		uint64_t pkts4096to8191Octets;
+		uint64_t pkts8192plusOctets;
 	} e1;
+
+	/* Register range: 0x01A0 - 0x01D0 */
+	struct __attribute__((packed)) {
+		uint64_t drop_filtered;
+		uint64_t err;
+		uint64_t drop_disabled;
+		uint64_t err_mii;
+		uint64_t err_crc;
+		uint64_t err_length;
+	} r3;
 };
 
 #define RXMAC_READ_CNT(comp, name) \
@@ -227,6 +254,7 @@ static inline struct nc_rxmac *nc_rxmac_open(struct nfb_device *dev, int fdt_off
 		version = fdt32_to_cpu(*prop);
 
 	mac->has_counter_below_64 = version >= 0x00000002;
+	mac->has_ext_drop_counters = version >= 0x00000003;
 
 	prop = (const fdt32_t*) fdt_getprop(nfb_get_fdt(dev), fdt_offset, "mtu", &proplen);
 
@@ -329,17 +357,35 @@ static inline int nc_rxmac_read_counters(struct nc_rxmac *mac, struct nc_rxmac_c
 		c->cnt_total               = _NC_RXMAC_REG_BUFFER_PAIR(buf.r1, total);
 		c->cnt_received            = _NC_RXMAC_REG_BUFFER_PAIR(buf.r1, received);
 		c->cnt_overflowed          = _NC_RXMAC_REG_BUFFER_PAIR(buf.r1, overflowed);
-		c->cnt_erroneous           = _NC_RXMAC_REG_BUFFER_PAIR(buf.r1, discarded) - c->cnt_overflowed;
+		c->cnt_drop                = _NC_RXMAC_REG_BUFFER_PAIR(buf.r1, discarded);
 
 		nfb_comp_read(comp, &buf.r2, sizeof(buf.r2), 0x003C);
-		c->cnt_octets              = _NC_RXMAC_REG_BUFFER_PAIR(buf.r2, octets);
+		c->cnt_octets              = buf.r2.octets;
+
+		if (mac->has_ext_drop_counters) {
+			nfb_comp_read(comp, &buf.r3, sizeof(buf.r3), 0x01A0);
+			c->cnt_err_length       = buf.r3.err_length;
+			c->cnt_err_crc          = buf.r3.err_crc;
+			c->cnt_err_mii          = buf.r3.err_mii;
+			c->cnt_drop_disabled    = buf.r3.drop_disabled;
+			c->cnt_drop_filtered    = buf.r3.drop_filtered;
+
+			c->cnt_erroneous        = buf.r3.err;
+		} else {
+			c->cnt_err_length       = 0;
+			c->cnt_err_crc          = 0;
+			c->cnt_err_mii          = 0;
+			c->cnt_drop_disabled    = 0;
+			c->cnt_drop_filtered    = 0;
+
+			c->cnt_erroneous           = c->cnt_drop - c->cnt_overflowed;
+		}
 	}
 
 	if (s) {
 		nfb_comp_read(comp, &buf.e1, sizeof(buf.e1), 0x0100);
 
 		s->pkts                    = c ? c->cnt_total : RXMAC_READ_CNT(comp, PACKETS);
-		s->undersizePkts           = mac->has_counter_below_64 ? _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, below64) : 0;
 
 		s->CRCAlignErrors          = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, CRCAlignErrors);
 		s->broadcastPkts           = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, broadcastPkts);
@@ -353,10 +399,20 @@ static inline int nc_rxmac_read_counters(struct nc_rxmac *mac, struct nc_rxmac_c
 		s->pkts256to511Octets      = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, pkts256to511Octets);
 		s->pkts512to1023Octets     = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, pkts512to1023Octets);
 		s->pkts1024to1518Octets    = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, pkts1024to1518Octets);
-		s->oversizePkts            = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, over1518);
 
 		s->underMinPkts            = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, undersize);
 		s->overMaxPkts             = _NC_RXMAC_REG_BUFFER_PAIR(buf.e1, oversize);
+
+		s->undersizePkts           = mac->has_counter_below_64 ? buf.e1.below64 : 0;
+		s->oversizePkts            = buf.e1.over1518;
+		s->pkts1519to2047Octets    = buf.e1.pkts1519to2047Octets;
+		s->pkts2048to4095Octets    = buf.e1.pkts2048to4095Octets;
+		s->pkts4096to8191Octets    = buf.e1.pkts4096to8191Octets;
+		s->pktsOverBinsOctets      = buf.e1.pkts8192plusOctets;
+	}
+
+	if (c) {
+		c->cnt_total_octets        = s ? s->octets : RXMAC_READ_CNT(comp, ES_OCTETS);
 	}
 
 	nfb_comp_unlock(comp, RXMAC_COMP_LOCK);
