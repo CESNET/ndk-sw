@@ -140,6 +140,18 @@ struct ndp_mode_dpdk_params {
 	unsigned long      min_len;        /*!< Minimal allowed frame length that can be transferred. */
 };
 
+struct ndp_mode_xdp_params {
+	// queue indexes as user passed them into the programm
+	struct list_range queue_range;
+	unsigned socket_cnt;
+	// struct xdp_program *prog;
+	// array of sockets
+	struct ndp_mode_xdp_xsk_data *queue_data_arr;
+
+	// ndp compatibility params
+	struct ndp_mode_generate_params generate;
+};
+
 typedef void (*update_stats_t)(struct ndp_packet *packets, int count, struct stats_info *si);
 
 struct ndp_tool_params {
@@ -158,6 +170,7 @@ struct ndp_tool_params {
 		struct ndp_mode_receive_params receive;
 		struct ndp_mode_loopback_hw_params loopback_hw;
 		struct ndp_mode_dpdk_params dpdk;
+		struct ndp_mode_xdp_params xdp;
 	} mode;
 
 	const char *pcap_filename;
@@ -226,11 +239,15 @@ enum ndp_modules {
 	NDP_MODULE_TRANSMIT,
 	NDP_MODULE_LOOPBACK,
 	NDP_MODULE_LOOPBACK_HW,
-	NDP_MODULE_DPDK_GENERATE,
-	NDP_MODULE_DPDK_READ,
-	NDP_MODULE_DPDK_LOOPBACK,
-	NDP_MODULE_DPDK_RECEIVE,
-	NDP_MODULE_DPDK_TRANSMIT,
+	XDP_MODULE_READ,
+	XDP_MODULE_GENERATE,
+#ifdef USE_DPDK
+	DPDK_MODULE_GENERATE,
+	DPDK_MODULE_READ,
+	DPDK_MODULE_LOOPBACK,
+	DPDK_MODULE_RECEIVE,
+	DPDK_MODULE_TRANSMIT,
+#endif
 	/* NONE module must be last! */
 	NDP_MODULE_NONE,
 };

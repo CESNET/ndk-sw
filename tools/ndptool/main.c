@@ -168,7 +168,9 @@ int main(int argc, char *argv[])
 
 	/* Check if tool was executed from symlink */
 	if (strncmp(basename(argv[0]), "ndp-", 4) == 0 &&
-			strcmp(basename(argv[0]), "ndp-tool") != 0 && strcmp(basename(argv[0]), "ndp-tool-dpdk") != 0) {
+			strcmp(basename(argv[0]), "ndp-tool") != 0 &&
+			strcmp(basename(argv[0]), "ndp-tool-dpdk") != 0 &&
+			strcmp(basename(argv[0]), "ndp-tool-xdp") != 0) {
 		strmode = basename(argv[0]) + 4;
 	} else if (argc < 2) {
 		errx(-1, "No mode selected");
@@ -282,11 +284,14 @@ int main(int argc, char *argv[])
 	rx_queues = ndp_get_rx_queue_count(dev);
 	tx_queues = ndp_get_tx_queue_count(dev);
 #ifdef USE_DPDK
-	if (mode == NDP_MODULE_DPDK_GENERATE || mode == NDP_MODULE_DPDK_READ || mode == NDP_MODULE_DPDK_LOOPBACK
-		|| mode == NDP_MODULE_DPDK_RECEIVE || mode == NDP_MODULE_DPDK_TRANSMIT) {
+	if (mode == DPDK_MODULE_GENERATE || mode == DPDK_MODULE_READ || mode == DPDK_MODULE_LOOPBACK
+		|| mode == DPDK_MODULE_RECEIVE || mode == DPDK_MODULE_TRANSMIT) {
 		params.mode.dpdk.queue_range = queue_range;
 	}
 #endif // USE_DPDK
+	if (mode == XDP_MODULE_READ)
+		params.mode.xdp.queue_range = queue_range;
+
 	if (module->check)
 		ret = module->check(&params);
 
@@ -310,9 +315,10 @@ int main(int argc, char *argv[])
 				switch (mode) {
 				case NDP_MODULE_READ:
 				case NDP_MODULE_RECEIVE:
+				case XDP_MODULE_READ:
 #ifdef USE_DPDK
-				case NDP_MODULE_DPDK_READ:
-				case NDP_MODULE_DPDK_RECEIVE:
+				case DPDK_MODULE_READ:
+				case DPDK_MODULE_RECEIVE:
 #endif // USE_DPDK
 					if (ndp_rx_queue_is_available(dev, i))
 						list_range_add_number(&queue_range, i);
@@ -320,8 +326,8 @@ int main(int argc, char *argv[])
 				case NDP_MODULE_GENERATE:
 				case NDP_MODULE_TRANSMIT:
 #ifdef USE_DPDK
-				case NDP_MODULE_DPDK_GENERATE:
-				case NDP_MODULE_DPDK_TRANSMIT:
+				case DPDK_MODULE_GENERATE:
+				case DPDK_MODULE_TRANSMIT:
 #endif // USE_DPDK
 					if (ndp_tx_queue_is_available(dev, i))
 						list_range_add_number(&queue_range, i);
@@ -329,7 +335,7 @@ int main(int argc, char *argv[])
 				case NDP_MODULE_LOOPBACK_HW:
 				case NDP_MODULE_LOOPBACK:
 #ifdef USE_DPDK
-				case NDP_MODULE_DPDK_LOOPBACK:
+				case DPDK_MODULE_LOOPBACK:
 #endif // USE_DPDK
 					if (ndp_rx_queue_is_available(dev, i) && ndp_tx_queue_is_available(dev, i))
 						list_range_add_number(&queue_range, i);
@@ -365,8 +371,9 @@ int main(int argc, char *argv[])
 			thread_data[i]->thread_id = i;
 		}
 #ifdef USE_DPDK
-		if (mode == NDP_MODULE_DPDK_GENERATE || mode == NDP_MODULE_DPDK_READ ||
-			mode == NDP_MODULE_DPDK_LOOPBACK || mode == NDP_MODULE_DPDK_RECEIVE || mode == NDP_MODULE_DPDK_TRANSMIT) {
+		if (mode == DPDK_MODULE_GENERATE || mode == DPDK_MODULE_READ ||
+			mode == DPDK_MODULE_LOOPBACK || mode == DPDK_MODULE_RECEIVE ||
+			mode == DPDK_MODULE_TRANSMIT) {
 #else
 		if (false) {
 #endif // USE_DPDK

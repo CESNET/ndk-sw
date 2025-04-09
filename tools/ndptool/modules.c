@@ -90,6 +90,10 @@ void *ndp_mode_loopback_hw_thread(void *tmp);
 void ndp_mode_generate_destroy(struct ndp_tool_params *p);
 void ndp_mode_loopback_hw_destroy(struct ndp_tool_params *p);
 
+int xdp_mode_read(struct ndp_tool_params *p);
+int xdp_mode_read_check(struct ndp_tool_params *p);
+void *xdp_mode_read_thread(void *tmp);
+
 struct option long_options_speed[] = {
 	{"speed", required_argument, 0, 0},
 	{0, 0, 0, 0},
@@ -159,8 +163,16 @@ struct ndptool_module modules[] = {
 		.destroy = ndp_mode_loopback_hw_destroy,
 		.flags = 0,
 	},
+	[XDP_MODULE_READ] = {
+		.name = "xdp-read",
+		.short_help = "Read packets using XDP",
+		.args = "",
+		.check = xdp_mode_read_check,
+		.run_single = xdp_mode_read,
+		.run_thread = xdp_mode_read_thread,
+	},
 #ifdef USE_DPDK
-	[NDP_MODULE_DPDK_GENERATE] = {
+	[DPDK_MODULE_GENERATE] = {
 		.name = "dpdk-generate",
 		.short_help = "dpdk version of generate app",
 		.print_help = dpdk_generate_print_help,
@@ -172,7 +184,7 @@ struct ndptool_module modules[] = {
 		.run_thread = dpdk_generate_run_thread,
 		.destroy = dpdk_generate_destroy,
 	},
-	[NDP_MODULE_DPDK_READ] = {
+	[DPDK_MODULE_READ] = {
 		.name = "dpdk-read",
 		.short_help = "dpdk version of read app",
 		.print_help = dpdk_read_print_help,
@@ -184,7 +196,7 @@ struct ndptool_module modules[] = {
 		.run_thread = dpdk_read_run_thread,
 		.destroy = dpdk_read_destroy,
 	},
-	[NDP_MODULE_DPDK_LOOPBACK] = {
+	[DPDK_MODULE_LOOPBACK] = {
 		.name = "dpdk-loopback",
 		.short_help = "dpdk version of loopback app",
 		.print_help = dpdk_loopback_print_help,
@@ -196,7 +208,7 @@ struct ndptool_module modules[] = {
 		.run_thread = dpdk_loopback_run_thread,
 		.destroy = dpdk_loopback_destroy,
 	},
-	[NDP_MODULE_DPDK_RECEIVE] = {
+	[DPDK_MODULE_RECEIVE] = {
 		.name = "dpdk-receive",
 		.short_help = "dpdk version of receive app",
 		.print_help = dpdk_receive_print_help,
@@ -208,7 +220,7 @@ struct ndptool_module modules[] = {
 		.run_thread = dpdk_receive_run_thread,
 		.destroy = dpdk_receive_destroy,
 	},
-	[NDP_MODULE_DPDK_TRANSMIT] = {
+	[DPDK_MODULE_TRANSMIT] = {
 		.name = "dpdk-transmit",
 		.short_help = "dpdk version of transmit app",
 		.print_help = dpdk_transmit_print_help,

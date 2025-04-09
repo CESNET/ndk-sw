@@ -23,6 +23,8 @@ find_package(PkgConfig)
 
 pkg_check_modules(NCURSES REQUIRED ncurses)
 pkg_check_modules(ARCHIVE REQUIRED libarchive)
+pkg_check_modules(XDP REQUIRED libxdp)
+pkg_check_modules(BPF REQUIRED libbpf)
 ndk_check_build_dependency(FDT_LIBRARIES fdt FDT_INCLUDE_DIRS libfdt.h libfdt)
 ndk_check_build_dependency(NUMA_LIBRARIES numa NUMA_INCLUDE_DIRS numa.h)
 
@@ -53,6 +55,7 @@ add_executable(ndp-tool
 	ndptool/common.c ndptool/generate.c ndptool/loopback.c
 	ndptool/loopback_hw.c ndptool/main.c ndptool/modules.c ndptool/pcap.c
 	ndptool/read.c ndptool/receive.c ndptool/stats.c ndptool/transmit.c
+	ndptool/xdp/xdp_common.c ndptool/xdp/xdp_read.c
 )
 
 set (PIE_TARGETS nfb-info nfb-boot nfb-bus nfb-dma nfb-eth nfb-tsu nfb-mdio ndp-tool)
@@ -66,10 +69,10 @@ target_link_libraries(nfb-boot
 
 target_compile_options(ndp-tool PRIVATE -O3 -funroll-loops)
 target_link_libraries(ndp-tool
-	PRIVATE ${NUMA_LIBRARIES} ${NCURSES_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}
+	PRIVATE ${NUMA_LIBRARIES} ${NCURSES_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${BPF_LIBRARIES} ${XDP_LIBRARIES}
 )
 
-set(NDP_TARGETS receive read transmit loopback loopback-hw generate)
+set(NDP_TARGETS receive read transmit loopback loopback-hw generate xdp-read)
 foreach(NDP_TARGET IN LISTS NDP_TARGETS)
 	add_custom_target(ndp-${NDP_TARGET}
 		ALL DEPENDS ndp-tool
