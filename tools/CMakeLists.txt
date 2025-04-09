@@ -55,7 +55,7 @@ add_executable(ndp-tool
 	ndptool/common.c ndptool/generate.c ndptool/loopback.c
 	ndptool/loopback_hw.c ndptool/main.c ndptool/modules.c ndptool/pcap.c
 	ndptool/read.c ndptool/receive.c ndptool/stats.c ndptool/transmit.c
-	ndptool/xdp/xdp_common.c ndptool/xdp/xdp_read.c
+	ndptool/xdp/xdp_common.c ndptool/xdp/xdp_read.c ndptool/xdp/xdp_generate.c
 )
 
 set (PIE_TARGETS nfb-info nfb-boot nfb-bus nfb-dma nfb-eth nfb-tsu nfb-mdio ndp-tool)
@@ -72,7 +72,7 @@ target_link_libraries(ndp-tool
 	PRIVATE ${NUMA_LIBRARIES} ${NCURSES_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${BPF_LIBRARIES} ${XDP_LIBRARIES}
 )
 
-set(NDP_TARGETS receive read transmit loopback loopback-hw generate xdp-read)
+set(NDP_TARGETS receive read transmit loopback loopback-hw generate xdp-read xdp-generate)
 foreach(NDP_TARGET IN LISTS NDP_TARGETS)
 	add_custom_target(ndp-${NDP_TARGET}
 		ALL DEPENDS ndp-tool

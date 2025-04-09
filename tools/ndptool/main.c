@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
 		params.mode.dpdk.queue_range = queue_range;
 	}
 #endif // USE_DPDK
-	if (mode == XDP_MODULE_READ)
+	if (mode == XDP_MODULE_READ || mode == XDP_MODULE_GENERATE)
 		params.mode.xdp.queue_range = queue_range;
 
 	if (module->check)
@@ -325,6 +325,7 @@ int main(int argc, char *argv[])
 					break;
 				case NDP_MODULE_GENERATE:
 				case NDP_MODULE_TRANSMIT:
+				case XDP_MODULE_GENERATE:
 #ifdef USE_DPDK
 				case DPDK_MODULE_GENERATE:
 				case DPDK_MODULE_TRANSMIT:
