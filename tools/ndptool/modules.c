@@ -51,6 +51,20 @@ void *dpdk_transmit_run_thread(void *tmp);
 void dpdk_transmit_print_help();
 #endif // USE_DPDK
 
+#ifdef USE_XDP
+int xdp_mode_read(struct ndp_tool_params *p);
+int xdp_mode_read_check(struct ndp_tool_params *p);
+void *xdp_mode_read_thread(void *tmp);
+
+int xdp_mode_generate_init(struct ndp_tool_params *p);
+void xdp_mode_generate_print_help(void);
+int xdp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
+int xdp_mode_generate_check(struct ndp_tool_params *p);
+int xdp_mode_generate(struct ndp_tool_params *p);
+void *xdp_mode_generate_thread(void *tmp);
+void xdp_mode_generate_destroy(struct ndp_tool_params *p);
+#endif // USE_XDP
+
 int ndp_mode_generate_init(struct ndp_tool_params *p);
 int ndp_mode_receive_init(struct ndp_tool_params *p);
 int ndp_mode_transmit_init(struct ndp_tool_params *p);
@@ -89,18 +103,6 @@ void *ndp_mode_loopback_hw_thread(void *tmp);
 
 void ndp_mode_generate_destroy(struct ndp_tool_params *p);
 void ndp_mode_loopback_hw_destroy(struct ndp_tool_params *p);
-
-int xdp_mode_read(struct ndp_tool_params *p);
-int xdp_mode_read_check(struct ndp_tool_params *p);
-void *xdp_mode_read_thread(void *tmp);
-
-int xdp_mode_generate_init(struct ndp_tool_params *p);
-void xdp_mode_generate_print_help(void);
-int xdp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
-int xdp_mode_generate_check(struct ndp_tool_params *p);
-int xdp_mode_generate(struct ndp_tool_params *p);
-void *xdp_mode_generate_thread(void *tmp);
-void xdp_mode_generate_destroy(struct ndp_tool_params *p);
 
 struct option long_options_speed[] = {
 	{"speed", required_argument, 0, 0},
@@ -171,27 +173,6 @@ struct ndptool_module modules[] = {
 		.destroy = ndp_mode_loopback_hw_destroy,
 		.flags = 0,
 	},
-	[XDP_MODULE_READ] = {
-		.name = "xdp-read",
-		.short_help = "Read packets using XDP",
-		.args = "",
-		.check = xdp_mode_read_check,
-		.run_single = xdp_mode_read,
-		.run_thread = xdp_mode_read_thread,
-	},
-	[XDP_MODULE_GENERATE] = {
-		.name = "xdp-generate",
-		.short_help = "Generate packets using XDP",
-		.print_help = xdp_mode_generate_print_help,
-		.init = xdp_mode_generate_init,
-		.args = "s:C",
-		.parse_opt = xdp_mode_generate_parseopt,
-		.check = xdp_mode_generate_check,
-		.run_single = xdp_mode_generate,
-		.run_thread = xdp_mode_generate_thread,
-		.destroy = xdp_mode_generate_destroy,
-		.long_options = long_options_speed,
-	},
 #ifdef USE_DPDK
 	[DPDK_MODULE_GENERATE] = {
 		.name = "dpdk-generate",
@@ -254,6 +235,29 @@ struct ndptool_module modules[] = {
 		.destroy = dpdk_transmit_destroy,
 	},
 #endif // USE_DPDK
+#ifdef USE_XDP
+	[XDP_MODULE_READ] = {
+		.name = "xdp-read",
+		.short_help = "Read packets using XDP",
+		.args = "",
+		.check = xdp_mode_read_check,
+		.run_single = xdp_mode_read,
+		.run_thread = xdp_mode_read_thread,
+	},
+	[XDP_MODULE_GENERATE] = {
+		.name = "xdp-generate",
+		.short_help = "Generate packets using XDP",
+		.print_help = xdp_mode_generate_print_help,
+		.init = xdp_mode_generate_init,
+		.args = "s:C",
+		.parse_opt = xdp_mode_generate_parseopt,
+		.check = xdp_mode_generate_check,
+		.run_single = xdp_mode_generate,
+		.run_thread = xdp_mode_generate_thread,
+		.destroy = xdp_mode_generate_destroy,
+		.long_options = long_options_speed,
+	},
+#endif // USE_XDP
 	[NDP_MODULE_NONE] = {
 		.name = NULL,
 	},

@@ -289,8 +289,10 @@ int main(int argc, char *argv[])
 		params.mode.dpdk.queue_range = queue_range;
 	}
 #endif // USE_DPDK
+#ifdef USE_XDP
 	if (mode == XDP_MODULE_READ || mode == XDP_MODULE_GENERATE)
 		params.mode.xdp.queue_range = queue_range;
+#endif // USE_XDP
 
 	if (module->check)
 		ret = module->check(&params);
@@ -315,21 +317,25 @@ int main(int argc, char *argv[])
 				switch (mode) {
 				case NDP_MODULE_READ:
 				case NDP_MODULE_RECEIVE:
-				case XDP_MODULE_READ:
 #ifdef USE_DPDK
 				case DPDK_MODULE_READ:
 				case DPDK_MODULE_RECEIVE:
 #endif // USE_DPDK
+#ifdef USE_XDP
+				case XDP_MODULE_READ:
+#endif // USE_XDP
 					if (ndp_rx_queue_is_available(dev, i))
 						list_range_add_number(&queue_range, i);
 					break;
 				case NDP_MODULE_GENERATE:
 				case NDP_MODULE_TRANSMIT:
-				case XDP_MODULE_GENERATE:
 #ifdef USE_DPDK
 				case DPDK_MODULE_GENERATE:
 				case DPDK_MODULE_TRANSMIT:
 #endif // USE_DPDK
+#ifdef USE_XDP
+				case XDP_MODULE_GENERATE:
+#endif // USE_XDP
 					if (ndp_tx_queue_is_available(dev, i))
 						list_range_add_number(&queue_range, i);
 					break;
