@@ -12,7 +12,7 @@
 #ifdef USE_DPDK
 int dpdk_generate_init(struct ndp_tool_params *p);
 int dpdk_generate_check(struct ndp_tool_params *p);
-int dpdk_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int dpdk_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 int dpdk_generate_run_single(struct ndp_tool_params *p);
 void dpdk_generate_destroy(struct ndp_tool_params *p);
 void *dpdk_generate_run_thread(void *tmp);
@@ -20,7 +20,7 @@ void dpdk_generate_print_help();
 
 int dpdk_read_init(struct ndp_tool_params *p);
 int dpdk_read_check(struct ndp_tool_params *p);
-int dpdk_read_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int dpdk_read_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 int dpdk_read_run_single(struct ndp_tool_params *p);
 void dpdk_read_destroy(struct ndp_tool_params *p);
 void *dpdk_read_run_thread(void *tmp);
@@ -28,7 +28,7 @@ void dpdk_read_print_help();
 
 int dpdk_loopback_init(struct ndp_tool_params *p);
 int dpdk_loopback_check(struct ndp_tool_params *p);
-int dpdk_loopback_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int dpdk_loopback_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 int dpdk_loopback_run_single(struct ndp_tool_params *p);
 void dpdk_loopback_destroy(struct ndp_tool_params *p);
 void *dpdk_loopback_run_thread(void *tmp);
@@ -36,7 +36,7 @@ void dpdk_loopback_print_help();
 
 int dpdk_receive_init(struct ndp_tool_params *p);
 int dpdk_receive_check(struct ndp_tool_params *p);
-int dpdk_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int dpdk_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 int dpdk_receive_run_single(struct ndp_tool_params *p);
 void dpdk_receive_destroy(struct ndp_tool_params *p);
 void *dpdk_receive_run_thread(void *tmp);
@@ -44,7 +44,7 @@ void dpdk_receive_print_help();
 
 int dpdk_transmit_init(struct ndp_tool_params *p);
 int dpdk_transmit_check(struct ndp_tool_params *p);
-int dpdk_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int dpdk_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 int dpdk_transmit_run_single(struct ndp_tool_params *p);
 void dpdk_transmit_destroy(struct ndp_tool_params *p);
 void *dpdk_transmit_run_thread(void *tmp);
