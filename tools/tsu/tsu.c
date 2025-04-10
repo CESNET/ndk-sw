@@ -37,7 +37,8 @@ int logfile;
 #define CONVERGEIN 10.0
 #define MAX_DIVERGENCE 600 // maximun divegence in sec - will reset card time if reached
 #define SYSTEM_TIME_TIMEOUT 10000
-#define GET_SYSTEM_TIME_REPEAT 10000
+#define GET_SYSTEM_TIME_REPEAT 5
+#define GET_SYSTEM_TIME_SPINUP 40000
 #define INC_MAX 2.980215192E-08
 
 #define PROGNAME "nfb-tsu"
@@ -67,18 +68,6 @@ struct tclock {
 };
 
 struct tclock ptm_clock;
-
-typedef struct {
-	uint32_t l_ui;
-	uint32_t l_uf;
-} l_fp;
-
-#define FP2TX(f, t) \
-	do { \
-		(t).tv_sec = (f).l_ui; \
-		(t).tv_xsec = ((f).l_uf >> 2); \
-	} while (0)
-
 
 static inline double xs2us(int32_t x)
 {
@@ -122,34 +111,34 @@ void print_tsx(const char* prefix, struct timespecx tsx, const char * suffix)
 		printf("%s", suffix);
 }
 
-void sys_get_time(l_fp *fp)
+void sys_get_time(struct timespecx *tsx)
 {
 	struct timespec ts;
-	double tmp;
+	long double tmp;
 
 	clock_gettime(CLOCK_REALTIME, &ts);
 
-	tmp = ts.tv_nsec / 1000000000.;
-	fp->l_uf = (unsigned) (tmp * FRAC);
-	fp->l_ui = ts.tv_sec;
+	tmp = ts.tv_nsec / 1000000000.L;
+	tsx->tv_xsec = (uint32_t) (tmp * XANOSEC);
+	tsx->tv_sec = ts.tv_sec;
 }
 
-static inline void tsu_get_time(l_fp *time)
+static inline void tsu_get_time(struct timespecx *time)
 {
 	struct nc_tsu_time tsu_time;
 
 	tsu_time = nc_tsu_get_rtr(tsu_comp);
-	time->l_ui = tsu_time.sec;
-	time->l_uf = tsu_time.fraction >> 32;
+	time->tv_sec = tsu_time.sec;
+	time->tv_xsec = tsu_time.fraction >> 34;
 }
 
-static inline void tsu_set_time(l_fp *time)
+static inline void tsu_set_time(struct timespecx *time)
 {
 	struct nc_tsu_time tsu_time;
 
-	tsu_time.sec = time->l_ui;
-	tsu_time.fraction = time->l_uf;
-	tsu_time.fraction <<= 32;
+	tsu_time.sec = time->tv_sec;
+	tsu_time.fraction = time->tv_xsec;
+	tsu_time.fraction <<= 34;
 	nc_tsu_set_rtr(tsu_comp, tsu_time);
 }
 
@@ -227,19 +216,19 @@ int get_tsu_sys_timespecx_with_mindiff(struct timespecx *tsu_time, struct timesp
 	long double min, current;
 
 	struct timespecx tsu0_tsx, tsu1_tsx, sys_tsx;
-	l_fp tsu0_fp, tsu1_fp, sys_fp;
 
 	min = SYSTEM_TIME_TIMEOUT;
 
-	// try to get time more times to filter when get_system gets stuck
-	for (j = 0; j < GET_SYSTEM_TIME_REPEAT; j++) {
-		tsu_get_time(&tsu0_fp);
-		sys_get_time(&sys_fp);
-		tsu_get_time(&tsu1_fp);
+	// spin up CPU before trying for real
+	for (j = 0; j < GET_SYSTEM_TIME_SPINUP; j++) {
+		sys_get_time(&sys_tsx);
+	}
 
-		FP2TX(tsu0_fp, tsu0_tsx);
-		FP2TX(tsu1_fp, tsu1_tsx);
-		FP2TX(sys_fp, sys_tsx);
+	// try GET_SYSTEM_TIME_REPEAT times, save the best result
+	for (j = 0; j < GET_SYSTEM_TIME_REPEAT; j++) {
+		tsu_get_time(&tsu0_tsx);
+		sys_get_time(&sys_tsx);
+		tsu_get_time(&tsu1_tsx);
 
 		current = tsx_diff_us(tsu1_tsx, tsu0_tsx);
 		if (current < min) {
@@ -336,11 +325,11 @@ void engine_system(struct tclock *cl)
 		/* comparison: systime - RTR time */
 		diff = tsx_diff(sys_time, tsu_time);
 		if (abs(diff.tv_sec) > MAX_DIVERGENCE) {
-			l_fp fp;
+			struct timespecx tsx;
 
 			printf("Time diverged too much - reseting TSU time to system time\n");
-			sys_get_time(&fp);
-			tsu_set_time(&fp);
+			sys_get_time(&tsx);
+			tsu_set_time(&tsx);
 			usleep(SLEEPTIME);
 			continue;
 		}
@@ -359,7 +348,7 @@ void engine_system(struct tclock *cl)
 
 void tsu_init(struct tclock *cl)
 {
-	l_fp fp;
+	struct timespecx tsx;
 
 	/* syslog init  */
 	openlog(PROGNAME, LOG_PERROR, LOG_DAEMON);
@@ -381,8 +370,8 @@ void tsu_init(struct tclock *cl)
 	nc_tsu_set_inc(tsu_comp, cl->incr);
 
 	/* init TSU time to current system time */
-	sys_get_time(&fp);
-	tsu_set_time(&fp);
+	sys_get_time(&tsx);
+	tsu_set_time(&tsx);
 
 	nc_tsu_enable(tsu_comp);
 	syslog(LOG_INFO, "TSU enabled - start generating valid timestamps");
