@@ -35,7 +35,10 @@ void rxmac_print_status(struct ni_context *ctx, struct nc_rxmac *rxmac, struct e
 
 	ni_item_ctrl_reg(ctx, NI_RXM_ENABLED, s.enabled);
 	ni_item_ctrl_reg(ctx, NI_RXM_LINK, s.link_up);
-	ni_item_ctrl_reg(ctx, NI_RXM_HFIFO_OVF, s.overflow);
+
+	if (p->verbose) {
+		ni_item_ctrl_reg(ctx, NI_RXM_HFIFO_OVF, s.overflow);
+	}
 
 	ni_section(ctx, NI_SEC_MAC_S);
 	ni_item_uint64_t(ctx, NI_MAC_TOTAL_O, c.cnt_total_octets);
