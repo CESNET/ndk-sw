@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>nfb &mdash; NFB Software User Guide 6.16.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
@@ -98,20 +98,20 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;open&quot;</span><span class="p">,</span> <span class="s2">&quot;eth&quot;</span><span class="p">,</span> <span class="s2">&quot;BaseComp&quot;</span><span class="p">,</span> <span class="s2">&quot;default_dev_path&quot;</span><span class="p">]</span>
 
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">libnfb</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">eth</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">libnfb</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">eth</span>
 
-<span class="kn">from</span> <span class="nn">.libnfb</span> <span class="kn">import</span> <span class="nb">open</span><span class="p">,</span> <span class="n">Nfb</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.libnfb</span><span class="w"> </span><span class="kn">import</span> <span class="nb">open</span><span class="p">,</span> <span class="n">Nfb</span>
 
-<span class="kn">import</span> <span class="nn">fdt</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">fdt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="n">default_dev_path</span> <span class="o">=</span> <span class="n">libnfb</span><span class="o">.</span><span class="n">Nfb</span><span class="o">.</span><span class="n">default_dev_path</span>
 
 
 <div class="viewcode-block" id="BaseComp">
 <a class="viewcode-back" href="../python/reference.html#nfb.BaseComp">[docs]</a>
-<span class="k">class</span> <span class="nc">BaseComp</span><span class="p">(</span><span class="n">libnfb</span><span class="o">.</span><span class="n">AbstractBaseComp</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseComp</span><span class="p">(</span><span class="n">libnfb</span><span class="o">.</span><span class="n">AbstractBaseComp</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    BaseComp represents common parent for all classes that manages HW components</span>
 
@@ -121,7 +121,7 @@
 <span class="sd">    :ivar libnfb.Comp _comp: Component object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dev</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Nfb</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nfb</span><span class="o">.</span><span class="n">default_dev_path</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">fdt</span><span class="o">.</span><span class="n">Node</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dev</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Nfb</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nfb</span><span class="o">.</span><span class="n">default_dev_path</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">fdt</span><span class="o">.</span><span class="n">Node</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_comp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dev</span><span class="o">.</span><span class="n">comp_open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_node</span><span class="p">)</span></div>
 

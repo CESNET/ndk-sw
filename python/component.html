@@ -7,7 +7,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Simple component class example &mdash; NFB Software User Guide 6.16.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
@@ -110,10 +110,10 @@ The derived class must specify the DT_COMPATIBLE property,
 which serves the base class to find the right FDT node.</p>
 <p>Afterwards the _comp property can be accessed for configuration access.
 Similarly the _dev can be accesed to handle additional requirements.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nfb</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nfb</span>
 
 
-<span class="k">class</span> <span class="nc">IdComp</span><span class="p">(</span><span class="n">nfb</span><span class="o">.</span><span class="n">BaseComp</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">IdComp</span><span class="p">(</span><span class="n">nfb</span><span class="o">.</span><span class="n">BaseComp</span><span class="p">):</span>
     <span class="n">DT_COMPATIBLE</span> <span class="o">=</span> <span class="s2">&quot;cesnet,ofm,mi_test_space&quot;</span>
 
     <span class="c1"># MI registers addresses</span>
@@ -122,7 +122,7 @@ Similarly the _dev can be accesed to handle additional requirements.</p>
     <span class="c1"># _REG_TEST bits</span>
     <span class="n">_BIT_TEST</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;**kwargs</span>
 <span class="sd">        The keyword arguments are passed to `OfmComp.__init__() (it accepts: dev, node, index)`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -132,7 +132,7 @@ Similarly the _dev can be accesed to handle additional requirements.</p>
         <span class="c1">#   self._dev</span>
         <span class="c1">#   self._comp</span>
 
-    <span class="k">def</span> <span class="nf">print</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">print</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_comp</span><span class="o">.</span><span class="n">read32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_REG_TEST</span><span class="p">))</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_comp</span><span class="o">.</span><span class="n">get_bit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_REG_TEST</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_BIT_TEST</span><span class="p">))</span>
 

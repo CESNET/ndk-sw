@@ -7,7 +7,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NDP API &mdash; NFB Software User Guide 6.16.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
@@ -70,9 +70,27 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#init-and-deinit-functions">Init and deinit functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#transmission-functions">Transmission functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#miscellaneous-functions">Miscellaneous functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#init-and-deinit-functions">Init and deinit functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv417ndp_open_rx_queueP10nfb_devicej"><code class="docutils literal notranslate"><span class="pre">ndp_open_rx_queue()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv417ndp_open_tx_queueP10nfb_devicej"><code class="docutils literal notranslate"><span class="pre">ndp_open_tx_queue()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv418ndp_close_rx_queueP14ndp_rx_queue_t"><code class="docutils literal notranslate"><span class="pre">ndp_close_rx_queue()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv418ndp_close_tx_queueP14ndp_tx_queue_t"><code class="docutils literal notranslate"><span class="pre">ndp_close_tx_queue()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#transmission-functions">Transmission functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv415ndp_queue_startP9ndp_queue"><code class="docutils literal notranslate"><span class="pre">ndp_queue_start()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv414ndp_queue_stopP9ndp_queue"><code class="docutils literal notranslate"><span class="pre">ndp_queue_stop()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv416ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj"><code class="docutils literal notranslate"><span class="pre">ndp_rx_burst_get()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv416ndp_rx_burst_putP14ndp_rx_queue_t"><code class="docutils literal notranslate"><span class="pre">ndp_rx_burst_put()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv416ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj"><code class="docutils literal notranslate"><span class="pre">ndp_tx_burst_get()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv416ndp_tx_burst_putP14ndp_tx_queue_t"><code class="docutils literal notranslate"><span class="pre">ndp_tx_burst_put()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv417ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj"><code class="docutils literal notranslate"><span class="pre">ndp_tx_burst_copy()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#miscellaneous-functions">Miscellaneous functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#_CPPv423ndp_queue_get_numa_nodePK9ndp_queue"><code class="docutils literal notranslate"><span class="pre">ndp_queue_get_numa_node()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -164,60 +182,269 @@
 </section>
 <section id="init-and-deinit-functions">
 <h2>Init and deinit functions<a class="headerlink" href="#init-and-deinit-functions" title="Link to this heading"></a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_open_rx_queue” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_open_tx_queue” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_close_rx_queue” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_close_tx_queue” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
-</div>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv417ndp_open_rx_queueP10nfb_devicej">
+<span id="_CPPv317ndp_open_rx_queueP10nfb_devicej"></span><span id="_CPPv217ndp_open_rx_queueP10nfb_devicej"></span><span id="ndp_open_rx_queue__nfb_deviceP.unsigned"></span><span class="target" id="group__queue__fn_1ga7325e496ac6cc6d71fe6ffaf52e23371"></span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">ndp_open_rx_queue</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">nfb</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">queue_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_open_rx_queueP10nfb_devicej" title="Link to this definition"></a><br /></dt>
+<dd><p>Open (subscribe) NDP RX queue. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nfb</strong> – <strong>[in]</strong> NFB device </p></li>
+<li><p><strong>queue_id</strong> – <strong>[in]</strong> Queue ID </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NDP RX queue datatype on success, NULL on error </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv417ndp_open_tx_queueP10nfb_devicej">
+<span id="_CPPv317ndp_open_tx_queueP10nfb_devicej"></span><span id="_CPPv217ndp_open_tx_queueP10nfb_devicej"></span><span id="ndp_open_tx_queue__nfb_deviceP.unsigned"></span><span class="target" id="group__queue__fn_1gab5c53da19812201db78a21569084959d"></span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">ndp_open_tx_queue</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_device</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">nfb</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">queue_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_open_tx_queueP10nfb_devicej" title="Link to this definition"></a><br /></dt>
+<dd><p>Open (subscribe) NDP TX queue. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nfb</strong> – <strong>[in]</strong> NFB device </p></li>
+<li><p><strong>queue_id</strong> – <strong>[in]</strong> Queue ID </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NDP TX queue datatype on success, NULL on error </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv418ndp_close_rx_queueP14ndp_rx_queue_t">
+<span id="_CPPv318ndp_close_rx_queueP14ndp_rx_queue_t"></span><span id="_CPPv218ndp_close_rx_queueP14ndp_rx_queue_t"></span><span id="ndp_close_rx_queue__ndp_rx_queue_tP"></span><span class="target" id="group__queue__fn_1ga93d39579c5732c2b89c4effae4e1781f"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_close_rx_queue</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv418ndp_close_rx_queueP14ndp_rx_queue_t" title="Link to this definition"></a><br /></dt>
+<dd><p>Close (unsubscribe) NDP RX queue. </p>
+<p>
+The queue must not be used after this function is called and should be set to NULL by the application. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP RX queue</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv418ndp_close_tx_queueP14ndp_tx_queue_t">
+<span id="_CPPv318ndp_close_tx_queueP14ndp_tx_queue_t"></span><span id="_CPPv218ndp_close_tx_queueP14ndp_tx_queue_t"></span><span id="ndp_close_tx_queue__ndp_tx_queue_tP"></span><span class="target" id="group__queue__fn_1ga576fce7c370d70dee01c09f7c3c26e0e"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_close_tx_queue</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv418ndp_close_tx_queueP14ndp_tx_queue_t" title="Link to this definition"></a><br /></dt>
+<dd><p>Close (unsubscribe) NDP TX queue. </p>
+<p>
+The queue must not be used after this function is called and should be set to NULL by the application. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP TX queue</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="transmission-functions">
 <h2>Transmission functions<a class="headerlink" href="#transmission-functions" title="Link to this heading"></a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_queue_start” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv415ndp_queue_startP9ndp_queue">
+<span id="_CPPv315ndp_queue_startP9ndp_queue"></span><span id="_CPPv215ndp_queue_startP9ndp_queue"></span><span id="ndp_queue_start__ndp_queueP"></span><span class="target" id="group__queue__fn_1ga23ce29ef7e099abb6909626b36ecf0f0"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_queue_start</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">ndp_queue</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv415ndp_queue_startP9ndp_queue" title="Link to this definition"></a><br /></dt>
+<dd><p>Start traffic on queue. </p>
+<p>
+When this function is called, RX queue become able to receive packets (don’t mistake this with RXMAC control), or TX queue become able to transmit packets. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP queue </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NDP_OK on success, nonzero error code otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv414ndp_queue_stopP9ndp_queue">
+<span id="_CPPv314ndp_queue_stopP9ndp_queue"></span><span id="_CPPv214ndp_queue_stopP9ndp_queue"></span><span id="ndp_queue_stop__ndp_queueP"></span><span class="target" id="group__queue__fn_1ga930ff782d3ee40a7782f83a1e1dd1a89"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_queue_stop</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">ndp_queue</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414ndp_queue_stopP9ndp_queue" title="Link to this definition"></a><br /></dt>
+<dd><p>Stop traffic on queue. </p>
+<p>
+When this function is called, it stops the delivery of packets to the queue. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP queue </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NDP_OK on success, nonzero error code otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv416ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj">
+<span id="_CPPv316ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj"></span><span id="_CPPv216ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj"></span><span id="ndp_rx_burst_get__ndp_rx_queue_tP.ndp_packetP.unsigned"></span><span class="target" id="group__rx__functions_1gac26d34e8142ad603983c7d15c89fab0f"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_rx_burst_get</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span>, <span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv410ndp_packet" title="ndp_packet"><span class="n"><span class="pre">ndp_packet</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">packets</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">count</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_rx_burst_getP14ndp_rx_queue_tP10ndp_packetj" title="Link to this definition"></a><br /></dt>
+<dd><p>Get (read) burst of NDP packets from NDP RX queue. </p>
+<p>
+When the function returns nonzero, the NDP packet structs in <code class="docutils literal notranslate"><span class="pre">packets</span></code> are filled with pointers to packet data. This data is valid until <a class="reference internal" href="#group__rx__functions_1gace0138339566803fc51e2e331055caa7"><span class="std std-ref">ndp_rx_burst_put</span></a> is called.</p>
+<p>The packet data must eventually be released through <a class="reference internal" href="#group__rx__functions_1gace0138339566803fc51e2e331055caa7"><span class="std std-ref">ndp_rx_burst_put</span></a>. The usage should look like this</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>struct ndp_packet packets[32];
+unsigned count = 32;
+struct ndp_packet more_packets[16];
+unsigned more_count = 16;
+
+while (!STOPPED) {
+  unsigned nb_rx = ndp_rx_burst_get(queue, packets, count);
+  // process packets
+  if (condition) {
+    nb_rx += ndp_rx_burst_get(queue, more_packets, more_count); // this is OK
+    // process more packets
+  }
+  ndp_rx_burst_put(queue); // but this should be called &quot;soon enough&quot;
+}
+</pre></div>
 </div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_queue_stop” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Traffic must be started (see <a class="reference internal" href="#group__queue__fn_1ga23ce29ef7e099abb6909626b36ecf0f0"><span class="std std-ref">ndp_queue_start</span></a>)</p>
 </div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_rx_burst_get” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>queue</strong> – <strong>[in]</strong> NDP RX queue </p></li>
+<li><p><strong>packets</strong> – <strong>[out]</strong> Array of NDP packet structs </p></li>
+<li><p><strong>count</strong> – <strong>[in]</strong> Maximal count of packets to read (length of <code class="docutils literal notranslate"><span class="pre">packets</span></code>) </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Count of actually read packets</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv416ndp_rx_burst_putP14ndp_rx_queue_t">
+<span id="_CPPv316ndp_rx_burst_putP14ndp_rx_queue_t"></span><span id="_CPPv216ndp_rx_burst_putP14ndp_rx_queue_t"></span><span id="ndp_rx_burst_put__ndp_rx_queue_tP"></span><span class="target" id="group__rx__functions_1gace0138339566803fc51e2e331055caa7"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_rx_burst_put</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_rx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_rx_burst_putP14ndp_rx_queue_t" title="Link to this definition"></a><br /></dt>
+<dd><p>Put back (end reading) bursts of NDP packets from NDP queue. </p>
+<p>
+This function should be called when the application has finished processing the packets obtained by previous <a class="reference internal" href="#group__rx__functions_1gac26d34e8142ad603983c7d15c89fab0f"><span class="std std-ref">ndp_rx_burst_get</span></a> on the same queue. The amount of data available for processing is limited, so this function should best be called after <strong>every</strong> <a class="reference internal" href="#group__rx__functions_1gac26d34e8142ad603983c7d15c89fab0f"><span class="std std-ref">ndp_rx_burst_get</span></a>.</p>
+<p><div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#group__rx__functions_1gac26d34e8142ad603983c7d15c89fab0f"><span class="std std-ref">ndp_rx_burst_get</span></a> for an example how to use this API. </p>
 </div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_rx_burst_put” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP RX queue</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv416ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj">
+<span id="_CPPv316ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj"></span><span id="_CPPv216ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj"></span><span id="ndp_tx_burst_get__ndp_tx_queue_tP.ndp_packetP.unsigned"></span><span class="target" id="group__tx__functions_1gaf46ae57fa14f5f082b258b18a6464553"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_tx_burst_get</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span>, <span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv410ndp_packet" title="ndp_packet"><span class="n"><span class="pre">ndp_packet</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">packets</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">count</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_tx_burst_getP14ndp_tx_queue_tP10ndp_packetj" title="Link to this definition"></a><br /></dt>
+<dd><p>Get burst of packet placeholders from NDP TX queue. </p>
+<p>
+This function allocates NDP frame <strong>placeholders</strong> in the TX queue and sets the pointers to them to the structs in <code class="docutils literal notranslate"><span class="pre">packets</span></code> parameter. To do this, the user <strong>MUST</strong> fill the <a class="reference internal" href="#structndp__packet_1a452685061ec9f09000e7120567acdc56"><span class="std std-ref">ndp_packet::data_length</span></a> field of the structs in <code class="docutils literal notranslate"><span class="pre">packets</span></code> and <strong>MUST NOT</strong> fill the <a class="reference internal" href="#structndp__packet_1ad684f905b6e24e8872529a96c8bba0fa"><span class="std std-ref">ndp_packet::data</span></a> field, as the pointer is invalid and will be usable after the function returns successfully.</p>
+<p>The user is expected to fill the required data lengths in the <code class="docutils literal notranslate"><span class="pre">packets</span></code> array, call this function to allocate placeholders, fill placeholders with packet data and finally call <a class="reference internal" href="#group__tx__functions_1ga45a5b38e111c5a1e4e8e7c9acd5928a2"><span class="std std-ref">ndp_tx_burst_put</span></a> to send the burst.</p>
+<p>API example: <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>struct ndp_packet rx_packets[32], tx_packets[32];
+unsigned count = 32;
+
+while (!STOPPED) {
+  unsigned nb_rx = nb_rx_burst_get(rx_queue, rx_packets, count);
+
+  // fill structs with requested packet lengths
+  for(int i = 0; i &lt; nb_rx; i++) {
+    tx_packets[i].data_length = rx_packets[i].data_length;
+  }
+
+  // get placeholders of requested lengths
+  unsigned nb_tx = nb_tx_burst_get(tx_queue, tx_packets, nb_rx);
+
+  // write data to placeholders
+  for(int i = 0; i &lt; nb_tx; i++) {
+    memcpy(tx_packets[i].data, rx_packets[i].data, tx_packets[i].data_len);
+  }
+
+  nb_tx_burst_put(tx_queue);
+  nb_rx_burst_put(rx_queue);
+}
+</pre></div>
 </div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_tx_burst_get” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>queue</strong> – <strong>[in]</strong> NDP TX queue </p></li>
+<li><p><strong>packets</strong> – <strong>[inout]</strong> NDP packet structs with <strong>only sizes filled</strong></p></li>
+<li><p><strong>count</strong> – <strong>[in]</strong> Maximal count of retrieved placeholders (length of <code class="docutils literal notranslate"><span class="pre">packets</span></code>) </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Count of actually retrieved placeholders. Current implemenation returns either requested <code class="docutils literal notranslate"><span class="pre">count</span></code> or zero; no values in between.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv416ndp_tx_burst_putP14ndp_tx_queue_t">
+<span id="_CPPv316ndp_tx_burst_putP14ndp_tx_queue_t"></span><span id="_CPPv216ndp_tx_burst_putP14ndp_tx_queue_t"></span><span id="ndp_tx_burst_put__ndp_tx_queue_tP"></span><span class="target" id="group__tx__functions_1ga45a5b38e111c5a1e4e8e7c9acd5928a2"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_tx_burst_put</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416ndp_tx_burst_putP14ndp_tx_queue_t" title="Link to this definition"></a><br /></dt>
+<dd><p>Put back (write) bursts of NDP packets to NDP TX queue. </p>
+<p>
+This function must be called after (1 or more) call to <a class="reference internal" href="#group__tx__functions_1gaf46ae57fa14f5f082b258b18a6464553"><span class="std std-ref">ndp_tx_burst_get</span></a> to notify the library that the bursts were processed and can be written.</p>
+<p>See <a class="reference internal" href="#group__rx__functions_1gace0138339566803fc51e2e331055caa7"><span class="std std-ref">ndp_rx_burst_put</span></a> for the API usage and caveats.</p>
+<p>Also be aware, that the library tries to hold NDP packets for best performance, thus they doesn’t have to be send immediately. See ndp_tx_burst_flush. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP TX queue</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv417ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj">
+<span id="_CPPv317ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj"></span><span id="_CPPv217ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj"></span><span id="ndp_tx_burst_copy__ndp_tx_queue_tP.ndp_packetP.unsigned"></span><span class="target" id="group__tx__functions_1gae7836241fe13b9354d5787b5a3b5bb25"></span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_tx_burst_copy</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ndp_tx_queue_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span>, <span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv410ndp_packet" title="ndp_packet"><span class="n"><span class="pre">ndp_packet</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">packets</span></span>, <span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">count</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417ndp_tx_burst_copyP14ndp_tx_queue_tP10ndp_packetj" title="Link to this definition"></a><br /></dt>
+<dd><p>Write a burst of NDP packets to NDP TX queue with data copying. </p>
+<p>
+This is the slower but simpler way to transmit data. The structs in <code class="docutils literal notranslate"><span class="pre">packets</span></code> must contain full packet information, the data (and metadata) will be copied from the packets to the NDP buffer.</p>
+<p>API example: <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>struct ndp_packet packets[32];
+unsigned count = 32;
+
+while (!STOPPED) {
+    unsigned nb_rx = ndp_rx_burst_get(rx_queue, packets, count);
+    // process packets
+    unsigned nb_tx = ndp_tx_burst_copy(tx_queue, packets, nb_rx);
+}
+</pre></div>
 </div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_tx_burst_put” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_tx_burst_copy” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
-</div>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>queue</strong> – <strong>[in]</strong> NDP TX queue </p></li>
+<li><p><strong>packets</strong> – <strong>[in]</strong> NDP packet structs filled with packet data </p></li>
+<li><p><strong>count</strong> – <strong>[in]</strong> Count of packets to write </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Count of actually written packets</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="miscellaneous-functions">
 <h2>Miscellaneous functions<a class="headerlink" href="#miscellaneous-functions" title="Link to this heading"></a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenfunction: Cannot find function “ndp_queue_get_numa_node” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
-</div>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv423ndp_queue_get_numa_nodePK9ndp_queue">
+<span id="_CPPv323ndp_queue_get_numa_nodePK9ndp_queue"></span><span id="_CPPv223ndp_queue_get_numa_nodePK9ndp_queue"></span><span id="ndp_queue_get_numa_node__ndp_queueCP"></span><span class="target" id="group__info__functions_1gae089ffa674a01ce0ebb440a1f1bd4de2"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ndp_queue_get_numa_node</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">ndp_queue</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">queue</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv423ndp_queue_get_numa_nodePK9ndp_queue" title="Link to this definition"></a><br /></dt>
+<dd><p>Get number of NDP queue NUMA node. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>queue</strong> – <strong>[in]</strong> NDP queue </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NUMA node number on success, negative error code otherwise </p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 </section>
 

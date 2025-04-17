@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>fdt &mdash; NFB Software User Guide 6.16.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
@@ -108,11 +108,11 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="kn">from</span> <span class="nn">.header</span> <span class="kn">import</span> <span class="n">Header</span><span class="p">,</span> <span class="n">DTB_BEGIN_NODE</span><span class="p">,</span> <span class="n">DTB_END_NODE</span><span class="p">,</span> <span class="n">DTB_PROP</span><span class="p">,</span> <span class="n">DTB_END</span><span class="p">,</span> <span class="n">DTB_NOP</span>
-<span class="kn">from</span> <span class="nn">.items</span> <span class="kn">import</span> <span class="n">new_property</span><span class="p">,</span> <span class="n">Property</span><span class="p">,</span> <span class="n">PropBytes</span><span class="p">,</span> <span class="n">PropWords</span><span class="p">,</span> <span class="n">PropStrings</span><span class="p">,</span> <span class="n">PropIncBin</span><span class="p">,</span> <span class="n">Node</span>
-<span class="kn">from</span> <span class="nn">.misc</span> <span class="kn">import</span> <span class="n">strip_comments</span><span class="p">,</span> <span class="n">split_to_lines</span><span class="p">,</span> <span class="n">get_version_info</span><span class="p">,</span> <span class="n">extract_string</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.header</span><span class="w"> </span><span class="kn">import</span> <span class="n">Header</span><span class="p">,</span> <span class="n">DTB_BEGIN_NODE</span><span class="p">,</span> <span class="n">DTB_END_NODE</span><span class="p">,</span> <span class="n">DTB_PROP</span><span class="p">,</span> <span class="n">DTB_END</span><span class="p">,</span> <span class="n">DTB_NOP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.items</span><span class="w"> </span><span class="kn">import</span> <span class="n">new_property</span><span class="p">,</span> <span class="n">Property</span><span class="p">,</span> <span class="n">PropBytes</span><span class="p">,</span> <span class="n">PropWords</span><span class="p">,</span> <span class="n">PropStrings</span><span class="p">,</span> <span class="n">PropIncBin</span><span class="p">,</span> <span class="n">Node</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">strip_comments</span><span class="p">,</span> <span class="n">split_to_lines</span><span class="p">,</span> <span class="n">get_version_info</span><span class="p">,</span> <span class="n">extract_string</span>
 
 <span class="n">__author__</span>  <span class="o">=</span> <span class="s2">&quot;Martin Olejar&quot;</span>
 <span class="n">__contact__</span> <span class="o">=</span> <span class="s2">&quot;martin.olejar@gmail.com&quot;</span>
@@ -137,7 +137,7 @@
 <span class="p">]</span>
 
 
-<span class="k">class</span> <span class="nc">ItemType</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ItemType</span><span class="p">:</span>
     <span class="n">NODE</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">PROP</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="c1"># Specific property type</span>
@@ -151,14 +151,14 @@
 
 <div class="viewcode-block" id="FDT">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT">[docs]</a>
-<span class="k">class</span> <span class="nc">FDT</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FDT</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Flattened Device Tree Class &quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">empty</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">entries</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">entries</span><span class="o">=</span><span class="p">[]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        FDT class constructor</span>
 
@@ -172,13 +172,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">handle_to_label</span> <span class="o">=</span> <span class="p">{}</span>
 
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; String representation &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
 
 <div class="viewcode-block" id="FDT.info">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.info">[docs]</a>
-    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; Return object info in human readable format &quot;&quot;&quot;</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;FDT Content:</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">props</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">walk</span><span class="p">():</span>
@@ -188,7 +188,7 @@
 
 <div class="viewcode-block" id="FDT.get_node">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.get_node">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">create</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">create</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Get node object from specified path</span>
 <span class="sd">        </span>
@@ -216,7 +216,7 @@
 
 <div class="viewcode-block" id="FDT.get_property">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.get_property">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Property</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Property</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Get property object by name from specified path</span>
 <span class="sd">        </span>
@@ -228,7 +228,7 @@
 
 <div class="viewcode-block" id="FDT.set_property">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.set_property">[docs]</a>
-    <span class="k">def</span> <span class="nf">set_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">create</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">create</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set property object by name</span>
 <span class="sd">        </span>
@@ -242,7 +242,7 @@
 
 <div class="viewcode-block" id="FDT.exist_node">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.exist_node">[docs]</a>
-    <span class="k">def</span> <span class="nf">exist_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exist_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Check if &lt;path&gt;/node exist and return True</span>
 <span class="sd">        </span>
@@ -259,7 +259,7 @@
 
 <div class="viewcode-block" id="FDT.exist_property">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.exist_property">[docs]</a>
-    <span class="k">def</span> <span class="nf">exist_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exist_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Check if property exist</span>
 <span class="sd">        </span>
@@ -271,7 +271,7 @@
 
 <div class="viewcode-block" id="FDT.remove_node">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.remove_node">[docs]</a>
-    <span class="k">def</span> <span class="nf">remove_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Remove node obj by path/name. Raises ValueError if path/name doesn&#39;t exist</span>
 <span class="sd">        </span>
@@ -283,7 +283,7 @@
 
 <div class="viewcode-block" id="FDT.remove_property">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.remove_property">[docs]</a>
-    <span class="k">def</span> <span class="nf">remove_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Remove property obj by name. Raises ValueError if path/name doesn&#39;t exist</span>
 <span class="sd">        </span>
@@ -295,7 +295,7 @@
 
 <div class="viewcode-block" id="FDT.add_item">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.add_item">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">create</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">create</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Add sub-node or property at specified path. Raises ValueError if path doesn&#39;t exist</span>
 <span class="sd">        </span>
@@ -308,7 +308,7 @@
 
 <div class="viewcode-block" id="FDT.add_label">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.add_label">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39; track labels/references to convert to phandles</span>
 <span class="sd">            adds label with incrmenting handle to dictionary if not alread present</span>
 <span class="sd">            returns handle for which can be used to replace the reference&#39;&#39;&#39;</span>
@@ -322,7 +322,7 @@
 
 <div class="viewcode-block" id="FDT.search">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.search">[docs]</a>
-    <span class="k">def</span> <span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">itype</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">ItemType</span><span class="o">.</span><span class="n">ALL</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">itype</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">ItemType</span><span class="o">.</span><span class="n">ALL</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Search properties and/or nodes with specified name. Return list of founded items</span>
 <span class="sd">        </span>
@@ -363,7 +363,7 @@
 
 <div class="viewcode-block" id="FDT.walk">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.walk">[docs]</a>
-    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">relative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">relative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Walk trough nodes and return relative/absolute path with list of sub-nodes and properties</span>
 <span class="sd">        </span>
@@ -388,7 +388,7 @@
 
 <div class="viewcode-block" id="FDT.merge">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.merge">[docs]</a>
-    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdt_obj</span><span class="p">,</span> <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdt_obj</span><span class="p">,</span> <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Merge external FDT object into this object.</span>
 <span class="sd">        </span>
@@ -416,7 +416,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fdt_obj</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span> <span class="n">replace</span><span class="p">)</span></div>
 
 
-    <span class="k">def</span> <span class="nf">update_phandles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_phandles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">all_nodes</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">no_phandle_nodes</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -446,7 +446,7 @@
 
 <div class="viewcode-block" id="FDT.to_dts">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.to_dts">[docs]</a>
-    <span class="k">def</span> <span class="nf">to_dts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tabsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tabsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Store FDT Object into string format (DTS)</span>
 
@@ -472,7 +472,7 @@
 
 <div class="viewcode-block" id="FDT.to_dtb">
 <a class="viewcode-back" href="../python/fdt.html#fdt.FDT.to_dtb">[docs]</a>
-    <span class="k">def</span> <span class="nf">to_dtb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">last_comp_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">boot_cpuid_phys</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">strings</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dtb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">last_comp_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">boot_cpuid_phys</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">strings</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Export FDT Object into Binary Blob format (DTB)</span>
 
@@ -505,7 +505,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
 
-        <span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">pack</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">struct</span><span class="w"> </span><span class="kn">import</span> <span class="n">pack</span>
 
         <span class="k">if</span> <span class="n">version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
@@ -540,7 +540,7 @@
 
 <div class="viewcode-block" id="parse_dts">
 <a class="viewcode-back" href="../python/fdt.html#fdt.parse_dts">[docs]</a>
-<span class="k">def</span> <span class="nf">parse_dts</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">root_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FDT</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_dts</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">root_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FDT</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse DTS text file and create FDT Object</span>
 
@@ -669,7 +669,7 @@
 
 <div class="viewcode-block" id="parse_dtb">
 <a class="viewcode-back" href="../python/fdt.html#fdt.parse_dtb">[docs]</a>
-<span class="k">def</span> <span class="nf">parse_dtb</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FDT</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_dtb</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FDT</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse FDT Binary Blob and create FDT Object</span>
 <span class="sd">    </span>
@@ -678,7 +678,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">)),</span> <span class="s2">&quot;Invalid argument type&quot;</span>
 
-    <span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">unpack_from</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">struct</span><span class="w"> </span><span class="kn">import</span> <span class="n">unpack_from</span>
 
     <span class="n">fdt_obj</span> <span class="o">=</span> <span class="n">FDT</span><span class="p">()</span>
     <span class="c1"># parse header</span>
@@ -735,7 +735,7 @@
 
 <div class="viewcode-block" id="diff">
 <a class="viewcode-back" href="../python/fdt.html#fdt.diff">[docs]</a>
-<span class="k">def</span> <span class="nf">diff</span><span class="p">(</span><span class="n">fdt1</span><span class="p">:</span> <span class="n">FDT</span><span class="p">,</span> <span class="n">fdt2</span><span class="p">:</span> <span class="n">FDT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">diff</span><span class="p">(</span><span class="n">fdt1</span><span class="p">:</span> <span class="n">FDT</span><span class="p">,</span> <span class="n">fdt2</span><span class="p">:</span> <span class="n">FDT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">    Compare two flattened device tree objects and return list of 3 objects (same in 1 and 2, specific for 1, specific for 2)</span>
 <span class="sd">    </span>
