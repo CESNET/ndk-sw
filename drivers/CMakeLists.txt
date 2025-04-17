@@ -66,10 +66,6 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/Makefile.in ${CMAKE_CURRENT_LIST_DIR}/M
 configure_file(${CMAKE_CURRENT_LIST_DIR}/Makefile.in ${CMAKE_CURRENT_BINARY_DIR}/configured/Makefile @ONLY)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/dkms.conf.in ${CMAKE_CURRENT_BINARY_DIR}/configured/dkms.conf @ONLY)
 
-
-message(STATUS "Configuring ${CMAKE_CURRENT_LIST_DIR}")
-execute_process(COMMAND "${CMAKE_CURRENT_LIST_DIR}/configure")
-
 install(
 	DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/kernel/include/linux
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
