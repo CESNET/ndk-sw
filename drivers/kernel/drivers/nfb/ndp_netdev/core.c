@@ -22,6 +22,7 @@
 #include <linux/kthread.h>
 #include <linux/skbuff.h>
 #include <linux/sched/task.h>
+#include <linux/parser.h>
 
 
 static bool ndp_netdev_enable = 0;
@@ -342,12 +343,23 @@ const struct attribute_group *nfb_ndp_netdev_attr_groups[] = {
  * nfb_ndp_netdev_create - creates and registers new network device in the system
  * @index: index of network interface
  */
-static struct nfb_ndp_netdev *nfb_ndp_netdev_create(struct nfb_mod_ndp_netdev *eth, int index)
+static int nfb_ndp_netdev_create(struct nfb_mod_ndp_netdev *eth, int index)
 {
 	struct nfb_device *nfb = eth->nfb;
 	struct nfb_ndp_netdev *ethdev;
 	struct net_device *ndev;
-	int ret;
+	int ret = 0;
+	char name[64];
+
+	snprintf(name, sizeof(name), "nfb%ud%u", nfb->minor, index);
+
+	mutex_lock(&eth->list_ethdev_mutex);
+	list_for_each_entry(ethdev, &eth->list_ethdev, list_item) {
+		if (strcmp(name, dev_name(&ethdev->device)) == 0) {
+			ret = -EEXIST;
+			goto err_exist;
+		}
+	}
 
 	ndev = alloc_etherdev(sizeof(*ethdev));
 	if (!ndev) {
@@ -365,7 +377,7 @@ static struct nfb_ndp_netdev *nfb_ndp_netdev_create(struct nfb_mod_ndp_netdev *e
 	device_initialize(&ethdev->device);
 	ethdev->device.parent = &eth->dev;
 	ethdev->device.groups = nfb_ndp_netdev_attr_groups;
-	dev_set_name(&ethdev->device, "nfb%ud%u", nfb->minor, index);
+	dev_set_name(&ethdev->device, name);
 	dev_set_drvdata(&ethdev->device, ethdev);
 	ret = device_add(&ethdev->device);
 	if (ret)
@@ -375,7 +387,7 @@ static struct nfb_ndp_netdev *nfb_ndp_netdev_create(struct nfb_mod_ndp_netdev *e
 	ndev->netdev_ops = &ndp_netdev_ops;
 	SET_NETDEV_DEV(ndev, &nfb->pci->dev);
 
-	snprintf(ndev->name, IFNAMSIZ-1, "nfb%ud%u", nfb->minor, index);
+	snprintf(ndev->name, IFNAMSIZ-1, name);
 	nfb_net_set_dev_addr(nfb, ndev, index);
 
 	ret = register_netdev(ndev);
@@ -390,7 +402,10 @@ static struct nfb_ndp_netdev *nfb_ndp_netdev_create(struct nfb_mod_ndp_netdev *e
 	if (ndp_netdev_carrier)
 		netif_carrier_on(ndev);
 
-	return ethdev;
+	list_add_tail(&ethdev->list_item, &eth->list_ethdev);
+
+	mutex_unlock(&eth->list_ethdev_mutex);
+	return 0;
 
 	unregister_netdev(ethdev->ndev);
 err_register_netdev:
@@ -398,7 +413,9 @@ err_register_netdev:
 err_device_add:
 	free_netdev(ndev);
 err_alloc:
-	return NULL;
+err_exist:
+	mutex_unlock(&eth->list_ethdev_mutex);
+	return ret;
 }
 
 /**
@@ -406,10 +423,118 @@ err_alloc:
  */
 static void nfb_ndp_netdev_destroy(struct nfb_ndp_netdev *ethdev)
 {
+	list_del(&ethdev->list_item);
+
 	unregister_netdev(ethdev->ndev);
 	device_del(&ethdev->device);
 	free_netdev(ethdev->ndev);
 }
+
+enum {
+	Opt_index,
+	Opt_cmd,
+	Opt_err,
+};
+
+static const match_table_t tokens = {
+	{Opt_index, "index=%d"},
+	{Opt_cmd, "cmd=%s"},
+	{Opt_err, NULL},
+};
+
+static ssize_t ndp_netdev_get_cmd(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return 0;
+}
+
+static ssize_t ndp_netdev_set_cmd(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct nfb_mod_ndp_netdev * eth = dev_get_drvdata(dev);
+	struct nfb_ndp_netdev *ethdev, *tmp;
+
+	char *options, *options_iter;
+	char *p;
+	substring_t args[MAX_OPT_ARGS];
+	int ret;
+
+	int index = -1;
+	char *cmd = NULL;
+	char name[64];
+
+	if (buf[size - 1] != 0)
+		return -EINVAL;
+
+	options = options_iter = kstrdup(buf, GFP_KERNEL);
+	if (!options)
+		return -ENOMEM;
+
+	while ((p = strsep(&options_iter, ",")) != NULL) {
+		int token;
+
+		if (!*p)
+			continue;
+		token = match_token(p, tokens, args);
+		switch (token) {
+		case Opt_index:
+			ret = match_int(&args[0], &index);
+			if (ret)
+				goto err_parser;
+			break;
+		case Opt_cmd:
+			cmd = match_strdup(&args[0]);
+			break;
+		default:
+			continue;
+		}
+	}
+
+	if (cmd == NULL || index == -1) {
+		ret = -EINVAL;
+		goto err_parser;
+	}
+
+	if (strcmp(cmd, "add") == 0 && index != -1) {
+		ret = nfb_ndp_netdev_create(eth, index);
+	} else if (strcmp(cmd, "del") == 0) {
+		ret = -ENODEV;
+		snprintf(name, sizeof(name), "nfb%ud%u", eth->nfb->minor, index);
+
+		mutex_lock(&eth->list_ethdev_mutex);
+		list_for_each_entry_safe(ethdev, tmp, &eth->list_ethdev, list_item) {
+			if (strcmp(name, dev_name(&ethdev->device)) == 0) {
+				nfb_ndp_netdev_destroy(ethdev);
+				ret = 0;
+				break;
+			}
+		}
+		mutex_unlock(&eth->list_ethdev_mutex);
+	} else {
+		ret = -ENXIO;
+	}
+
+err_parser:
+	kfree(cmd);
+	kfree(options);
+	return ret ? ret : size;
+}
+
+/* Attributes for sysfs - declarations */
+static DEVICE_ATTR(cmd, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_netdev_get_cmd, ndp_netdev_set_cmd);
+
+static struct attribute *ndp_netdev_attrs[] = {
+	&dev_attr_cmd.attr,
+	NULL,
+};
+
+static struct attribute_group ndp_netdev_attr_group = {
+	.attrs = ndp_netdev_attrs,
+};
+
+static const struct attribute_group *ndp_netdev_attr_groups[] = {
+	&ndp_netdev_attr_group,
+	NULL,
+};
 
 /**
  * nfb_ndp_netdev_attach - initializes this submodule
@@ -421,17 +546,11 @@ int nfb_ndp_netdev_attach(struct nfb_device *nfb, void **priv)
 	int ret = 0;
 	int index;
 	struct nfb_mod_ndp_netdev * eth;
-	struct nfb_ndp_netdev *ethdev;
 	int rx;
 	int tx;
 
 	int proplen;
 	const fdt64_t *proprx, *proptx;
-
-	if (!ndp_netdev_enable) {
-		*priv = NULL;
-		return 0;
-	}
 
 	eth = kzalloc(sizeof(*eth), GFP_KERNEL);
 	if (!eth) {
@@ -442,11 +561,13 @@ int nfb_ndp_netdev_attach(struct nfb_device *nfb, void **priv)
 	INIT_LIST_HEAD(&eth->list_ethdev);
 	eth->nfb = nfb;
 	*priv = eth;
+	mutex_init(&eth->list_ethdev_mutex);
 
 	device_initialize(&eth->dev);
 	eth->dev.parent = eth->nfb->dev;
 	dev_set_name(&eth->dev, "ndp_netdev");
 	dev_set_drvdata(&eth->dev, eth);
+	eth->dev.groups = ndp_netdev_attr_groups;
 	ret = device_add(&eth->dev);
 	if (ret)
 		goto err_device_add;
@@ -457,14 +578,14 @@ int nfb_ndp_netdev_attach(struct nfb_device *nfb, void **priv)
 	tx = fdt_path_offset(nfb->fdt, "/drivers/ndp/tx_queues");
 	rx = fdt_first_subnode(nfb->fdt, rx),
 	tx = fdt_first_subnode(nfb->fdt, tx);
-	while (rx >= 0 && tx >= 0) {
+	while (rx >= 0 && tx >= 0 && ndp_netdev_enable) {
 		/* Check if queue is available (both rx + tx)*/
 		proprx = fdt_getprop(nfb->fdt, rx, "mmap_size", &proplen);
 		proptx = fdt_getprop(nfb->fdt, tx, "mmap_size", &proplen);
 		if (proprx && proptx && fdt64_to_cpu(*proprx) && fdt64_to_cpu(*proptx)) {
-			ethdev = nfb_ndp_netdev_create(eth, index);
-			if (ethdev)
-				list_add_tail(&ethdev->list_item, &eth->list_ethdev);
+			ret = nfb_ndp_netdev_create(eth, index);
+			if (ret)
+				dev_warn(&nfb->pci->dev, "ndp_netdev: Can't create netdev for index %d, skipping\n", index);
 			index++;
 		}
 		rx = fdt_next_subnode(nfb->fdt, rx);
@@ -473,7 +594,7 @@ int nfb_ndp_netdev_attach(struct nfb_device *nfb, void **priv)
 
 	dev_info(&nfb->pci->dev, "ndp_netdev: Attached successfully (%d NDP based ETH interfaces)\n", index);
 
-	return ret;
+	return 0;
 
 	device_del(&eth->dev);
 err_device_add:
@@ -495,10 +616,11 @@ void nfb_ndp_netdev_detach(struct nfb_device *nfb, void *priv)
 	if (eth == NULL)
 		return;
 
+	mutex_lock(&eth->list_ethdev_mutex);
 	list_for_each_entry_safe(ethdev, tmp, &eth->list_ethdev, list_item) {
-		list_del(&ethdev->list_item);
 		nfb_ndp_netdev_destroy(ethdev);
 	}
+	mutex_unlock(&eth->list_ethdev_mutex);
 
 	device_del(&eth->dev);
 
