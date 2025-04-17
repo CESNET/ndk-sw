@@ -249,7 +249,7 @@ Build()
     mkdir -p "$SCRIPT_PATH/$BUILDDIR"
     cd "$SCRIPT_PATH/$BUILDDIR"
     $cmake -DCMAKE_BUILD_TYPE=$RELTYPE ..
-    make
+    $make_command
 }
 
 Build_dpdk()
@@ -258,13 +258,14 @@ Build_dpdk()
     mkdir -p "$SCRIPT_PATH/$BUILDDIR"
     cd "$SCRIPT_PATH/$BUILDDIR"
     $cmake -DCMAKE_BUILD_TYPE=$RELTYPE -DUSE_DPDK=true ..
-    make
+    $make_command
 }
 
 
 # ----[ MAIN function ]------------------------------------------------------- #
 cmake=cmake
 cpack=cpack
+make_command="make -j"
 os=$(get_os_id)
 
 if item_in_list "$os" "centos scientific fedora"; then
