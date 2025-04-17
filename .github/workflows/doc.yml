@@ -10,13 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Setup and build
         run: |
-          sudo apt-get install python3-pip doxygen git
-          sudo apt-get install autoconf automake libfdt-dev libnuma-dev libncurses-dev libarchive-dev libconfig-dev python3-dev python3-setuptools cython3
+          sudo apt-get update
+          sudo apt-get -y install python3-pip doxygen git cmake rsync graphviz
+          sudo apt-get -y install autoconf automake libfdt-dev libnuma-dev libncurses-dev libarchive-dev libconfig-dev python3-dev python3-setuptools cython3
           pip3 install sphinx sphinx_rtd_theme breathe fdt
           bash build.sh --prepare
           (mkdir cmake-build; cd cmake-build; cmake --install-prefix=/usr/ ..; make; sudo make install)
@@ -24,7 +25,7 @@ jobs:
           sphinx-build -M html doc public
           touch public/html/.nojekyll
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@4.1.4
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
           folder: public/html
