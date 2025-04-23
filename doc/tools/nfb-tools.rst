@@ -49,3 +49,8 @@ NFB tools
 .. include:: nfb-tsu.rst
    :start-line: 5
    :end-line: 6
+
+.. rubric:: :ref:`nfb-busdebugctl<nfb_busdebugctl>`
+.. include:: nfb-busdebugctl.rst
+   :start-line: 5
+   :end-line: 6
