@@ -6,7 +6,7 @@ nfb-busdebugctl
 This tool can be very useful for debugging streaming buses (typically MFB and MVB in the NDK).
 It communicates with the Streaming Debug components in the FW - Streaming Debug Master and Probe.
 The Debug Probes are (need to be) inserted into the pipeline between neighboring components.
-More info can be found in the documentation for STREAMING_DEBUG_MASTER.
+More info can be found in the documentation for `STREAMING_DEBUG_MASTER <https://cesnet.github.io/ndk-fpga/devel/comp/debug/streaming_debug/readme.html>`_.
 
 The Streaming Debug system (Master+Probe) in the FW (must be integrated first) provides counts of:
 
@@ -77,7 +77,7 @@ Both forms of Probe identification ("-i", "-n") are used in the output.
 This FW design contains two (identical) 100G streams (pipelines), and the Master+Probes have been instantiated per each stream.
 Notice how the Probe names are the same for both Masters.
 
-Parameters "-B", "-D", and "-E" are used for advanced features for "Bus Control", see documentation of Streaming Debug.
+Parameters "-B", "-D", and "-E" are used for advanced features for "Bus Control", see documentation of `Streaming Debug <https://cesnet.github.io/ndk-fpga/devel/comp/debug/streaming_debug/readme.html#bus-control>`_.
 TL;DR: if the Master is set accordingly and the Probes are connected appropriately, use:
 
 - `-B XYZA` to block traffic at the selected Probe,
@@ -85,7 +85,7 @@ TL;DR: if the Master is set accordingly and the Probes are connected appropriate
 - `-E XYZA` to return the selected Probe to its flow-through state.
 
 .. warning::
-    Beware that the "Bus Control" feature is often not needed, which is reflected by the connection of Probes in the FW (see documentation of the Streaming Debug components). Hence, these three parameters may not work.
+    Beware that the "Bus Control" feature is often not needed, which is reflected by the connection of Probes in the FW (see documentation of the `Streaming Debug components <https://cesnet.github.io/ndk-fpga/devel/comp/debug/streaming_debug/readme.html>`_). Hence, these three parameters may not work.
 
 How to use
 ~~~~~~~~~~
@@ -105,7 +105,7 @@ This creates a bounded interval, which nullifies idle clock cycles before any da
 How to read the probed data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following diagram is borrowed from the documentation of the Streaming Debug components.
+The following diagram is borrowed from the documentation of the `Streaming Debug components <https://cesnet.github.io/ndk-fpga/devel/comp/debug/streaming_debug/readme.html>`_.
 It shows a simple pipeline of three FW components (modules): A, B, and C.
 
 .. _figure1:
