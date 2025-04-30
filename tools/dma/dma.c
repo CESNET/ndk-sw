@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <libfdt.h>
 #include <nfb/nfb.h>
@@ -23,6 +24,8 @@
 #include <netcope/rxqueue.h>
 #include <netcope/txqueue.h>
 
+#include <netcope/ni.h>
+
 /*! Program version */
 #define VERSION				"1.0: dmactl.c"
 
@@ -30,7 +33,9 @@
 /*! -d path to device file */
 /*! -B buffer size */
 /*! -C buffer count */
+/*! -N netdev command */
 /*! -i RX or TX index */
+/*! -j JSON output */
 /*! -r use only RX; */
 /*! -t use only TX; */
 /*! -R reset counters */
@@ -40,7 +45,8 @@
 /*! -v verbose mode; */
 /*! -V version */
 
-#define ARGUMENTS			"d:i:q:rtRS:B:C:N:O:Tvh"
+
+#define ARGUMENTS			"d:i:q:rtRS:B:C:N:O:Tjvh"
 
 enum commands {
 	CMD_PRINT_STATUS,
@@ -88,6 +94,227 @@ static const char * const queries[] = {
 	"tx_discarded_bytes"
 };
 
+enum NI_ITEMS {
+	NI_SEC_ROOT = 0,
+	NI_LIST_ALL,
+
+	NI_LIST_RXQ,
+	NI_SEC_RXQ,
+	NI_LIST_TXQ,
+	NI_SEC_TXQ,
+
+	NI_CTRL_INDEX,
+	NI_CTRL_NAME,
+	NI_CTRL_REG_CTL,
+	NI_CTRL_REG_CTL_R,
+	NI_CTRL_REG_CTL_RN,
+	NI_CTRL_REG_CTL_D_RX,
+	NI_CTRL_REG_CTL_E,
+	NI_CTRL_REG_CTL_V,
+	NI_CTRL_REG_STA,
+	NI_CTRL_REG_STA_R,
+	NI_CTRL_REG_STA_RN,
+	NI_CTRL_REG_STA_DE,
+	NI_CTRL_REG_STA_DA,
+	NI_CTRL_REG_STA_RI,
+
+	NI_CTRL_REG_SHP,
+	NI_CTRL_REG_HHP,
+	NI_CTRL_REG_MHP,
+	NI_CTRL_REG_SDP,
+	NI_CTRL_REG_HDP,
+	NI_CTRL_REG_MDP,
+	NI_CTRL_REG_SP,
+	NI_CTRL_REG_HP,
+	NI_CTRL_REG_MP,
+	NI_CTRL_HBS,
+	NI_CTRL_FB,
+	NI_CTRL_DBS,
+	NI_CTRL_BS,
+	NI_CTRL_FD,
+
+	NI_CTRL_REG_TO,
+	NI_CTRL_REG_MR,
+	NI_CTRL_MR,
+
+	NI_CTRL_REG_RECV,
+	NI_CTRL_REG_RECV_B,
+	NI_CTRL_REG_DISC,
+	NI_CTRL_REG_DISC_B,
+	NI_CTRL_REG_SENT,
+	NI_CTRL_REG_SENT_B,
+
+	NI_CTRL_REG_DESC_B,
+	NI_CTRL_REG_HDR_B,
+	NI_CTRL_REG_PTR_B,
+
+	NI_SEC_RXSUM,
+	NI_SEC_TXSUM,
+};
+
+#define NUF_N   (NI_USER_ITEM_F_NO_NEWLINE)
+#define NUF_NDA (NI_USER_ITEM_F_NO_NEWLINE | NI_USER_ITEM_F_NO_DELIMITER | NI_USER_ITEM_F_NO_ALIGN)
+#define NUF_DA  (NI_USER_ITEM_F_NO_DELIMITER | NI_USER_ITEM_F_NO_ALIGN)
+#define NUF_DAV (NI_USER_ITEM_F_NO_DELIMITER | NI_USER_ITEM_F_NO_ALIGN | NI_USER_ITEM_F_NO_VALUE)
+#define NUF_SL  (NI_USER_ITEM_F_SEC_LABEL)
+#define NUFW(x) ni_user_f_width(x)
+
+
+struct ni_context_item_default ni_items[] = {
+	[NI_SEC_ROOT]           = {ni_json_e,                           ni_user_n},
+
+	[NI_LIST_ALL]           = {ni_json_n,                           ni_user_v(NULL, 0, "\n", NULL)},
+	[NI_LIST_RXQ]           = {ni_json_k("rxq"),                    ni_user_f(NULL, NI_USER_LIST_F_NO_LABEL)},
+	[NI_SEC_RXQ]            = {ni_json_e,                           ni_user_l("RX")},
+	[NI_CTRL_INDEX]         = {ni_json_k("id"),                     ni_user_f(" ", NUF_NDA | NUF_SL)},
+	[NI_CTRL_NAME]          = {ni_json_k("type"),                   ni_user_v(" ", NUF_NDA | NUF_SL, NULL, " controller")},
+	[NI_CTRL_REG_CTL]       = {ni_json_k("reg_control"),            ni_user_f("Control reg", NUF_N | NUFW(8))},
+	[NI_CTRL_REG_CTL_R]     = {ni_json_k("run"),                    ni_user_v(NULL, NUF_DA | NUFW(-8), " | ", " |")},
+	[NI_CTRL_REG_CTL_RN]    = {ni_json_k("run"),                    ni_user_v(NULL, NUF_NDA | NUFW(-8), " | ", NULL)},
+	[NI_CTRL_REG_CTL_D_RX]  = {ni_json_k("discard"),                ni_user_v(NULL, NUF_NDA | NUFW(-8), " | ", NULL)},
+	[NI_CTRL_REG_CTL_E]     = {ni_json_k("pciep_mask"),             ni_user_v(NULL, NUF_NDA | NUFW(2), " | EpMsk ", NULL)},
+	[NI_CTRL_REG_CTL_V]     = {ni_json_k("vfid"),                   ni_user_v(NULL, NUF_DA | NUFW(2), " | VFID  ", " |")},
+	[NI_CTRL_REG_STA]       = {ni_json_k("reg_status"),             ni_user_f("Status reg", NUF_N | NUFW(8))},
+	[NI_CTRL_REG_STA_R]     = {ni_json_k("running"),                ni_user_v(NULL, NUF_DA | NUFW(-8), " | ", " |")},
+	[NI_CTRL_REG_STA_RN]    = {ni_json_k("running"),                ni_user_v(NULL, NUF_NDA | NUFW(-8), " | ", NULL)},
+	[NI_CTRL_REG_STA_DE]    = {ni_json_k("desc_rdy"),               ni_user_v(NULL, NUF_NDA | NUFW(-8), " | ", NULL)},
+	[NI_CTRL_REG_STA_DA]    = {ni_json_k("data_rdy"),               ni_user_v(NULL, NUF_NDA | NUFW(-8), " | ", NULL)},
+	[NI_CTRL_REG_STA_RI]    = {ni_json_k("ring_rdy"),               ni_user_v(NULL, NUF_DA | NUFW(-8), " | ", " |")},
+
+	[NI_CTRL_REG_SHP]       = {ni_json_k("shp"),                    ni_user_f("SW header pointer", NUFW(8))},
+	[NI_CTRL_REG_HHP]       = {ni_json_k("hhp"),                    ni_user_f("HW header pointer", NUFW(8))},
+	[NI_CTRL_REG_MHP]       = {ni_json_k("mhp"),                    ni_user_f("Header pointer mask", NUFW(8))},
+	[NI_CTRL_HBS]           = {ni_json_k("hdr_buffer_size"),        ni_user_f("* Header buffer size", NUFW(-8))},
+	[NI_CTRL_FB]            = {ni_json_k("hdr_buffer_free"),        ni_user_f("* Fillable headers in HW", NUFW(8))},
+	[NI_CTRL_REG_SDP]       = {ni_json_k("sdp"),                    ni_user_f("SW descriptor pointer", NUFW(8))},
+	[NI_CTRL_REG_HDP]       = {ni_json_k("hdp"),                    ni_user_f("HW descriptor pointer", NUFW(8))},
+	[NI_CTRL_REG_MDP]       = {ni_json_k("mdp"),                    ni_user_f("Descriptor pointer mask", NUFW(8))},
+	[NI_CTRL_DBS]           = {ni_json_k("desc_buffer_size"),       ni_user_f("* Descriptor buffer size", NUFW(8))},
+	[NI_CTRL_FD]            = {ni_json_k("desc_free"),              ni_user_f("* Usable descriptors in HW", NUFW(8))},
+
+	[NI_CTRL_REG_SP]        = {ni_json_k("sw_ptr"),                 ni_user_f("SW pointer", NUFW(8))},
+	[NI_CTRL_REG_HP]        = {ni_json_k("hw_ptr"),                 ni_user_f("HW pointer", NUFW(8))},
+	[NI_CTRL_REG_MP]        = {ni_json_k("ptr_mask"),               ni_user_f("Pointer mask", NUFW(8))},
+	[NI_CTRL_BS]            = {ni_json_k("buffer_size"),            ni_user_l("* Buffer size")},
+	[NI_CTRL_REG_TO]        = {ni_json_k("timeout"),                ni_user_f("Timeout reg", NUFW(8))},
+	[NI_CTRL_REG_MR]        = {ni_json_k("max_request_size"),       ni_user_f("Max request", NUF_N | NUFW(8))},
+	[NI_CTRL_MR]            = {ni_json_n,                           ni_user_v("", NUF_DA | NUFW(-8), " | ", NULL)},
+
+	[NI_CTRL_REG_RECV]      = {ni_json_k("pass"),                   ni_user_l("Received")},
+	[NI_CTRL_REG_RECV_B]    = {ni_json_k("pass_bytes"),             ni_user_l("Received bytes")},
+	[NI_CTRL_REG_DISC]      = {ni_json_k("drop"),                   ni_user_l("Discarded")},
+	[NI_CTRL_REG_DISC_B]    = {ni_json_k("drop_bytes"),             ni_user_l("Discarded bytes")},
+	[NI_CTRL_REG_SENT]      = {ni_json_k("pass"),                   ni_user_l("Sent")},
+	[NI_CTRL_REG_SENT_B]    = {ni_json_k("pass_bytes"),             ni_user_l("Sent bytes")},
+
+	[NI_CTRL_REG_DESC_B]    = {ni_json_k("descriptor_base"),        ni_user_f("Desc base", NUFW(16))},
+	[NI_CTRL_REG_HDR_B]     = {ni_json_k("hdr_base"),               ni_user_f("Header base", NUFW(16))},
+	[NI_CTRL_REG_PTR_B]     = {ni_json_k("ptr_base"),               ni_user_f("Pointer base", NUFW(16))},
+
+	[NI_LIST_TXQ]           = {ni_json_k("txq"),                    ni_user_f(NULL, NI_USER_LIST_F_NO_LABEL)},
+	[NI_SEC_TXQ]            = {ni_json_e,                           ni_user_l("TX")},
+
+	[NI_SEC_RXSUM]          = {ni_json_k("rxq_sum"),                ni_user_l("RX SUM")},
+	[NI_SEC_TXSUM]          = {ni_json_k("txq_sum"),                ni_user_l("TX SUM")},
+};
+
+int fprint_size(FILE * f, unsigned long size);
+
+int fprint_size_user(void *priv, int item, unsigned long size)
+{
+	struct ni_user_cbp *p = priv;
+	(void) item;
+	return fprint_size(p->f, size);
+}
+
+int fprint_size_json(void *priv, int item, unsigned long size)
+{
+	struct ni_json_cbp *p = priv;
+	(void) item;
+	return fprintf(p->f, "%lu", size);
+}
+
+int print_ctrl_reg_user(void *priv, int item, int val)
+{
+	struct ni_user_cbp *p = priv;
+	const char *res = NULL;
+
+	switch (item) {
+	case NI_CTRL_REG_CTL_RN:
+	case NI_CTRL_REG_CTL_R: res = val ? "Run" : "Stop"; break;
+
+	case NI_CTRL_REG_STA_RN:
+	case NI_CTRL_REG_STA_R: res = val ? "Running" : "Stopped"; break;
+
+	case NI_CTRL_REG_STA_DE: res = val ? "Desc RDY" : "Desc  -"; break;
+	case NI_CTRL_REG_STA_DA: res = val ? "Data RDY" : "Data  -"; break;
+	case NI_CTRL_REG_STA_RI: res = val ? "SW RDY"   : "SW full"; break;
+	case NI_CTRL_REG_CTL_D_RX: res = val ? "Discard" : "Block"; break;
+	}
+
+	if (res)
+		return fprintf(p->f, "%*s", p->width, res);
+	return 0;
+}
+
+int print_ctrl_reg_json(void *priv, int item, int val)
+{
+	struct ni_user_cbp *p = priv;
+	(void) item;
+	return fprintf(p->f, val ? "true": "false");
+}
+
+static int print_xreg_user(void *priv, int item, uint64_t val)
+{
+	struct ni_user_cbp *p = priv;
+	int ret = 0;
+	(void) item;
+
+	ret += fprintf(p->f, "%0*" PRIX64, p->width, val);
+
+	if (p->align > ret)
+		ret += fprintf(p->f, "%*s", p->align - ret, "");
+	return ret;
+}
+
+static int print_xreg_json(void *priv, int item, uint64_t val)
+{
+	struct ni_json_cbp *p = priv;
+	(void) item;
+	return fprintf(p->f, "%lu", val);
+}
+
+struct ni_dma_item_f_t {
+	struct ni_common_item_callbacks c;
+	int (*print_size)(void *, int, unsigned long);
+	int (*print_xreg)(void *, int, uint64_t);
+	int (*print_ctrl_reg)(void *, int, int);
+};
+
+struct ni_dma_item_f_t ni_dma_item_f[] = {
+	[NI_DRC_USER] = {
+		.c = ni_common_item_callbacks[NI_DRC_USER],
+		.print_size = fprint_size_user,
+		.print_xreg = print_xreg_user,
+		.print_ctrl_reg = print_ctrl_reg_user,
+	},
+	[NI_DRC_JSON] = {
+		.c = ni_common_item_callbacks[NI_DRC_JSON],
+		.print_size = fprint_size_json,
+		.print_xreg = print_xreg_json,
+		.print_ctrl_reg = print_ctrl_reg_json,
+	},
+};
+
+NI_DEFAULT_ITEMS(ni_dma_item_f_t, c.)
+
+#define NI_DMA_ITEM(name, type, cbcall) NI_ITEM_CB(name, type, ni_dma_item_f_t, cbcall)
+
+NI_DMA_ITEM(str_size, long long, print_size)
+NI_DMA_ITEM(ctrl_reg, int, print_ctrl_reg)
+NI_DMA_ITEM(xreg, uint64_t, print_xreg)
+
+
 /*!
  * \brief Display usage of program
  */
@@ -114,6 +341,7 @@ void usage(const char *me, int verbose)
 		printf(" example of usage: '-q rx_received,tx_sent'\n");
 	}
 	printf("-N netdev_drv   Perform a netdev command (add,del) on the selected indexes\n");
+	printf("-j              Print output in JSON\n");
 	printf("-v              Increase verbosity\n");
 	printf("-h              Show this text\n");
 	printf("\nExamples:\n");
@@ -186,7 +414,7 @@ int cmd_ndp_netdev(struct nfb_device *dev, const char *ndd, const char *cmd, str
  *
  * \param size       size of buffer
  */
-void print_size(unsigned long size)
+int fprint_size(FILE * f, unsigned long size)
 {
 	static const char *units[] = {
 		"B", "KiB", "MiB", "GiB"};
@@ -195,7 +423,12 @@ void print_size(unsigned long size)
 		size >>= 10;
 		i++;
 	}
-	printf("%lu %s", size, units[i]);
+	return fprintf(f, "%lu %s", size, units[i]);
+}
+
+int print_size(unsigned long size)
+{
+	return fprint_size(stdout, size);
 }
 
 /*!
@@ -325,79 +558,78 @@ void rxqueue_get_status(struct nc_rxqueue *q, struct nc_rxqueue_status *s, struc
  *
  * \param *tx_dma    structure from which are data read
  */
-void rxqueue_print_status(struct nc_rxqueue *q, int index, int verbose, struct nc_rxqueue_status *s, struct nc_rxqueue_counters *c)
+void rxqueue_print_status(struct ni_context *ctx, struct nc_rxqueue *q, int index, int verbose, struct nc_rxqueue_status *s, struct nc_rxqueue_counters *c)
 {
-	printf("------------------------------ RX%02d %s controller ----\n", index, q->name);
+	ni_item_int(ctx, NI_CTRL_INDEX, index);
+	ni_item_str(ctx, NI_CTRL_NAME, q->name);
 
 	if (s && verbose > 0) {
-		printf("Control reg                : 0x%.8X", s->_ctrl_raw);
+		ni_item_uint64_tx(ctx, NI_CTRL_REG_CTL, s->_ctrl_raw);
+
 		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
-			printf(" | %s |",
-					s->ctrl_running ? "Run     " : "Stop    ");
+			ni_item_ctrl_reg(ctx, NI_CTRL_REG_CTL_R, s->ctrl_running);
 		} else if (q->type == QUEUE_TYPE_SZE) {
-			printf(" | %s | %s | EpMsk %.2X | VFID  %.2X |",
-					s->ctrl_running ? "Run     " : "Stop    ",
-					s->ctrl_discard ? "Discard " : "Block   ",
-					(s->_ctrl_raw >> 16) & 0xFF,
-					(s->_ctrl_raw >> 24) & 0xFF);
+			ni_item_ctrl_reg(ctx, NI_CTRL_REG_CTL_RN, s->ctrl_running);
+			ni_item_ctrl_reg(ctx, NI_CTRL_REG_CTL_D_RX, s->ctrl_discard);
+			ni_item_xreg(ctx, NI_CTRL_REG_CTL_E, (s->_ctrl_raw >> 16) & 0xFF);
+			ni_item_xreg(ctx, NI_CTRL_REG_CTL_V, (s->_ctrl_raw >> 24) & 0xFF);
 		}
-		printf("\n");
 
-		printf("Status reg                 : 0x%.8X", s->_stat_raw);
+		ni_item_uint64_tx(ctx, NI_CTRL_REG_STA, s->_stat_raw);
+
 		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
-			printf(" | %s |",
-					s->stat_running ? "Running " : "Stopped ");
+			ni_item_ctrl_reg(ctx, NI_CTRL_REG_STA_R, s->stat_running);
 		} else if (q->type == QUEUE_TYPE_SZE) {
-			printf(" | %s | %s | %s | %s |",
-					s->stat_running ? "Running " : "Stopped ",
-					s->stat_desc_rdy ? "Desc RDY" : "Desc  - ",
-					s->stat_data_rdy ? "Data RDY" : "Data  - ",
-					s->stat_ring_rdy ? "SW RDY  " : "SW Full ");
+			ni_item_ctrl_reg(ctx, NI_CTRL_REG_STA_RN, s->stat_running);
+			ni_item_ctrl_reg(ctx, NI_CTRL_REG_STA_DE, s->stat_desc_rdy);
+			ni_item_ctrl_reg(ctx, NI_CTRL_REG_STA_DA, s->stat_data_rdy);
+			ni_item_ctrl_reg(ctx, NI_CTRL_REG_STA_RI, s->stat_ring_rdy);
 		}
-		printf("\n");
 
 		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
-			printf("SW header pointer          : 0x%08lX\n", s->sw_pointer);
-			printf("HW header pointer          : 0x%08lX\n", s->hw_pointer);
-			printf("Header pointer mask        : 0x%08lX\n", s->pointer_mask);
-			printf("* Header buffer size       : "); print_size(s->pointer_mask ? s->pointer_mask + 1 : 0); printf("\n");
-			printf("* Fillable headers in HW   : 0x%08lX\n", (s->sw_pointer - s->hw_pointer - 1) & s->pointer_mask);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_SHP, s->sw_pointer);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_HHP, s->hw_pointer);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_MHP, s->pointer_mask);
 
-			printf("SW descriptor pointer      : 0x%08lX\n", s->sd_pointer);
-			printf("HW descriptor pointer      : 0x%08lX\n", s->hd_pointer);
-			printf("Descriptor pointer mask    : 0x%08lX\n", s->desc_pointer_mask);
-			printf("* Descriptor buffer size   : "); print_size(s->desc_pointer_mask ? s->desc_pointer_mask + 1 : 0); printf("\n");
-			printf("* Usable descriptors in HW : 0x%08lX\n", (s->sd_pointer - s->hd_pointer) & s->desc_pointer_mask);
+			ni_item_str_size(ctx, NI_CTRL_HBS, (s->pointer_mask ? s->pointer_mask + 1 : 0));
+			ni_item_uint64_tx(ctx, NI_CTRL_FB, (s->sw_pointer - s->hw_pointer - 1) & s->pointer_mask);
+
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_SDP, s->sd_pointer);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_HDP, s->hd_pointer);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_MDP, s->desc_pointer_mask);
+
+			ni_item_str_size(ctx, NI_CTRL_DBS, s->desc_pointer_mask ? s->desc_pointer_mask + 1 : 0);
+			ni_item_uint64_tx(ctx, NI_CTRL_FD, (s->sd_pointer - s->hd_pointer) & s->desc_pointer_mask);
 		} else {
-			printf("SW pointer                 : 0x%08lX\n", s->sw_pointer);
-			printf("HW pointer                 : 0x%08lX\n", s->hw_pointer);
-			printf("Pointer mask               : 0x%08lX\n", s->pointer_mask);
-			printf("* Buffer size              : "); print_size(s->pointer_mask ? s->pointer_mask + 1 : 0); printf("\n");
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_SP, s->sw_pointer);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_HP, s->hw_pointer);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_MP, s->pointer_mask);
+			ni_item_str_size(ctx, NI_CTRL_BS, s->pointer_mask ? s->pointer_mask + 1 : 0);
 		}
 
 		if (q->type == QUEUE_TYPE_SZE || q->type == QUEUE_TYPE_NDP)
-			printf("Timeout reg                : 0x%08lX\n", s->timeout);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_TO, s->timeout);
 
 		if (q->type == QUEUE_TYPE_SZE) {
-			printf("Max request                : 0x%04lX     | ", s->max_request);
-			print_size(s->max_request); printf("\n");
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_MR, s->max_request);
+			ni_item_str_size(ctx, NI_CTRL_MR, s->max_request);
 		}
 	}
 
 	if (c) {
-		printf("Received                   : %llu\n", c->received);
+		ni_item_uint64_t(ctx, NI_CTRL_REG_RECV, c->received);
 		if (c->have_bytes)
-			printf("Received bytes             : %llu\n", c->received_bytes);
-		printf("Discarded                  : %llu\n", c->discarded);
+			ni_item_uint64_t(ctx, NI_CTRL_REG_RECV_B, c->received_bytes);
+		ni_item_uint64_t(ctx, NI_CTRL_REG_DISC, c->discarded);
 		if (c->have_bytes)
-			printf("Discarded bytes            : %llu\n", c->discarded_bytes);
+			ni_item_uint64_t(ctx, NI_CTRL_REG_DISC_B, c->discarded_bytes);
 	}
 	if (s && verbose > 1) {
-		printf("Desc base                  : 0x%.16llX\n", s->desc_base);
+		ni_item_uint64_tx(ctx, NI_CTRL_REG_DESC_B, s->desc_base);
 		if (q->type == QUEUE_TYPE_CALYPTE)
-			printf("Header base                : 0x%.16llX\n", s->hdr_base);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_HDR_B, s->hdr_base);
 		else
-			printf("Pointer base               : 0x%.16llX\n", s->pointer_base);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_PTR_B, s->pointer_base);
 	}
 }
 
@@ -420,79 +652,70 @@ void txqueue_get_status(struct nc_txqueue *q, struct nc_txqueue_status *s, struc
 	}
 }
 
-void txqueue_print_status(struct nc_txqueue *q, int index, int verbose, struct nc_txqueue_status *s, struct nc_txqueue_counters *c)
+void txqueue_print_status(struct ni_context *ctx, struct nc_txqueue *q, int index, int verbose, struct nc_txqueue_status *s, struct nc_txqueue_counters *c)
 {
-	printf("------------------------------ TX%02d %s controller ----\n", index, q->name);
+	ni_item_int(ctx, NI_CTRL_INDEX, index);
+	ni_item_str(ctx, NI_CTRL_NAME, q->name);
 
 	if (s && verbose > 0) {
-		printf("Control reg                : 0x%.8X", s->_ctrl_raw);
+		ni_item_uint64_tx(ctx, NI_CTRL_REG_CTL, s->_ctrl_raw);
 
 		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
-			printf(" | %s |",
-					s->ctrl_running ? "Run     " : "Stop    ");
+			ni_item_ctrl_reg(ctx, NI_CTRL_REG_CTL_R, s->ctrl_running);
 		} else if (q->type == QUEUE_TYPE_SZE) {
-			printf(" | %s | EpMsk %.2X | VFID  %.2X |",
-					s->ctrl_running ? "Run     " : "Stop    ",
-					(s->_ctrl_raw >> 16) & 0xFF,
-					(s->_ctrl_raw >> 24) & 0xFF);
+			ni_item_ctrl_reg(ctx, NI_CTRL_REG_CTL_RN, s->ctrl_running);
+			ni_item_xreg(ctx, NI_CTRL_REG_CTL_E, (s->_ctrl_raw >> 16) & 0xFF);
+			ni_item_xreg(ctx, NI_CTRL_REG_CTL_V, (s->_ctrl_raw >> 24) & 0xFF);
 		}
-		printf("\n");
 
-		printf("Status reg                 : 0x%.8X", s->_stat_raw);
-		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
-			printf(" | %s |",
-					s->stat_running ? "Running " : "Stopped ");
-		} else if (q->type == QUEUE_TYPE_SZE) {
-			printf(" | %s |",
-					s->stat_running ? "Running " : "Stopped ");
-		}
-		printf("\n");
+		ni_item_uint64_tx(ctx, NI_CTRL_REG_STA, s->_stat_raw);
+		ni_item_ctrl_reg(ctx, NI_CTRL_REG_STA_R, s->stat_running);
 
 		if (q->type == QUEUE_TYPE_NDP || q->type == QUEUE_TYPE_CALYPTE) {
 			if (q->type == QUEUE_TYPE_CALYPTE) {
-				printf("SW header pointer          : 0x%08lX\n", s->sw_pointer);
-				printf("HW header pointer          : 0x%08lX\n", s->hw_pointer);
-				printf("Header pointer mask        : 0x%08lX\n", s->pointer_mask);
-				printf("* Header buffer size       : "); print_size(s->pointer_mask ? s->pointer_mask + 1 : 0); printf("\n");
-				printf("* Fillable headers in HW   : 0x%08lX\n", (s->sw_pointer - s->hw_pointer - 1) & s->pointer_mask);
+				ni_item_uint64_tx(ctx, NI_CTRL_REG_SHP, s->sw_pointer);
+				ni_item_uint64_tx(ctx, NI_CTRL_REG_HHP, s->hw_pointer);
+				ni_item_uint64_tx(ctx, NI_CTRL_REG_MHP, s->pointer_mask);
+				ni_item_str_size(ctx, NI_CTRL_HBS, (s->pointer_mask ? s->pointer_mask + 1 : 0));
+				ni_item_uint64_tx(ctx, NI_CTRL_FB, (s->sw_pointer - s->hw_pointer - 1) & s->pointer_mask);
 			}
 
-			printf("SW descriptor pointer      : 0x%08lX\n", s->sd_pointer);
-			printf("HW descriptor pointer      : 0x%08lX\n", s->hd_pointer);
-			printf("Descriptor pointer mask    : 0x%08lX\n", s->desc_pointer_mask);
-			printf("* Descriptor buffer size   : "); print_size(s->desc_pointer_mask ? s->desc_pointer_mask + 1 : 0); printf("\n");
-			printf("* Usable descriptors in HW : 0x%08lX\n", (s->sd_pointer - s->hd_pointer) & s->desc_pointer_mask);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_SDP, s->sd_pointer);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_HDP, s->hd_pointer);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_MDP, s->desc_pointer_mask);
+			ni_item_str_size(ctx, NI_CTRL_DBS, s->desc_pointer_mask ? s->desc_pointer_mask + 1 : 0);
+			ni_item_uint64_tx(ctx, NI_CTRL_FD, (s->sd_pointer - s->hd_pointer) & s->desc_pointer_mask);
 		} else {
-			printf("SW pointer                 : 0x%08lX\n", s->sw_pointer);
-			printf("HW pointer                 : 0x%08lX\n", s->hw_pointer);
-			printf("Pointer mask               : 0x%08lX\n", s->pointer_mask);
-			printf("* Buffer size              : "); print_size(s->pointer_mask ? s->pointer_mask + 1 : 0); printf("\n");
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_SP, s->sw_pointer);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_HP, s->hw_pointer);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_MP, s->pointer_mask);
+			ni_item_str_size(ctx, NI_CTRL_BS, s->pointer_mask ? s->pointer_mask + 1 : 0);
 		}
 
 		if (q->type == QUEUE_TYPE_SZE || q->type == QUEUE_TYPE_NDP)
-			printf("Timeout reg                : 0x%08lX\n", s->timeout);
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_TO, s->timeout);
 
 		if (q->type == QUEUE_TYPE_SZE) {
-			printf("Max request                : 0x%04lX     | ", s->max_request);
-			print_size(s->max_request); printf("\n");
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_MR, s->max_request);
+			ni_item_str_size(ctx, NI_CTRL_MR, s->max_request);
 		}
 	}
 
 	if (c) {
-		printf("Sent                       : %llu\n", c->sent);
+		ni_item_uint64_t(ctx, NI_CTRL_REG_SENT, c->sent);
 		if (c->have_bytes)
-			printf("Sent bytes                 : %llu\n", c->sent_bytes);
+			ni_item_uint64_t(ctx, NI_CTRL_REG_SENT_B, c->sent_bytes);
 
 		if (c->have_tx_discard) {
-			printf("Discarded                  : %llu\n", c->discarded);
+			ni_item_uint64_t(ctx, NI_CTRL_REG_DISC, c->discarded);
 			if (c->have_bytes)
-				printf("Discarded bytes            : %llu\n", c->discarded_bytes);
+				ni_item_uint64_t(ctx, NI_CTRL_REG_DISC_B, c->discarded_bytes);
 		}
 	}
 
 	if (s && verbose > 1 && q->type != QUEUE_TYPE_CALYPTE) {
-		printf("Desc base                  : 0x%.16llX\n", s->desc_base);
-		printf("Pointer base               : 0x%.16llX\n", s->pointer_base);
+		ni_item_uint64_tx(ctx, NI_CTRL_REG_DESC_B, s->desc_base);
+		ni_item_uint64_tx(ctx, NI_CTRL_REG_PTR_B, s->pointer_base);
 	}
 }
 
@@ -514,6 +737,7 @@ int main(int argc, char *argv[])
 	enum commands cmd = CMD_PRINT_STATUS;
 	int verbose = 0;
 	int sum = 0;
+	int js = NI_DRC_USER;
 
 	int ret;
 	const char *query = NULL;
@@ -560,6 +784,9 @@ int main(int argc, char *argv[])
 		case 'i':
 			if (list_range_parse(&index_range, optarg) < 0)
 				errx(EXIT_FAILURE, "Cannot parse interface number.");
+			break;
+		case 'j':
+			js = NI_DRC_JSON;
 			break;
 		case 'q':
 			cmd = CMD_QUERY;
@@ -638,14 +865,25 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
+	struct ni_context *ctx = NULL;
+	if (cmd == CMD_COUNTER_READ_AND_RESET || cmd == CMD_PRINT_STATUS) {
+		ctx = ni_init_root_context_default(js, ni_items, &ni_dma_item_f[js]);
+	}
+
+	ni_section(ctx, NI_SEC_ROOT);
+
+	ni_list(ctx, NI_LIST_ALL);
 	if (dir == -1 || dir == 0) {
+		if (sum != 1)
+			ni_list(ctx, NI_LIST_RXQ);
 		for (ctrl = 0; ctrl < NC_ARRAY_SIZE(rx_ctrl_name); ctrl++) {
 			i = 0;
 			fdt_for_each_compatible_node(nfb_get_fdt(dev), fdt_offset, rx_ctrl_name[ctrl]) {
 				if (list_range_empty(&index_range) || list_range_contains(&index_range, i)) {
+					if (sum != 1)
+						ni_section(ctx, NI_SEC_RXQ);
 					rxq = nc_rxqueue_open(dev, fdt_offset);
 					if (rxq) {
-
 						switch (cmd) {
 						case CMD_COUNTER_RESET:
 							nc_rxqueue_reset_counters(rxq);
@@ -654,8 +892,7 @@ int main(int argc, char *argv[])
 						case CMD_PRINT_STATUS:
 							rxqueue_get_status(rxq, verbose ? &stat_rx : NULL, &cntr_rx, cmd);
 							if (sum != 1) {
-								rxqueue_print_status(rxq, i, verbose, verbose ? &stat_rx : NULL, &cntr_rx);
-								printf("\n");
+								rxqueue_print_status(ctx, rxq, i, verbose, verbose ? &stat_rx : NULL, &cntr_rx);
 							}
 							sum_rx.received += cntr_rx.received;
 							sum_rx.received_bytes += cntr_rx.received_bytes;
@@ -681,16 +918,24 @@ int main(int argc, char *argv[])
 						}
 						nc_rxqueue_close(rxq);
 					}
+					if (sum != 1)
+						ni_endsection(ctx, NI_SEC_RXQ);
 				}
 				i++;
 			}
 		}
+		if (sum != 1)
+			ni_endlist(ctx, NI_LIST_RXQ);
 	}
 	if (dir == -1 || dir == 1) {
+		if (sum != 1)
+			ni_list(ctx, NI_LIST_TXQ);
 		for (ctrl = 0; ctrl < NC_ARRAY_SIZE(tx_ctrl_name); ctrl++) {
 			i = 0;
 			fdt_for_each_compatible_node(nfb_get_fdt(dev), fdt_offset, tx_ctrl_name[ctrl]) {
 				if (list_range_empty(&index_range) || list_range_contains(&index_range, i)) {
+					if (sum != 1)
+						ni_section(ctx, NI_SEC_TXQ);
 					txq = nc_txqueue_open(dev, fdt_offset);
 					if (txq) {
 						switch (cmd) {
@@ -701,8 +946,7 @@ int main(int argc, char *argv[])
 						case CMD_PRINT_STATUS:
 							txqueue_get_status(txq, verbose ? &stat_tx : NULL, &cntr_tx, cmd);
 							if (sum != 1) {
-								txqueue_print_status(txq, i, verbose, verbose ? &stat_tx : NULL, &cntr_tx);
-								printf("\n");
+								txqueue_print_status(ctx, txq, i, verbose, verbose ? &stat_tx : NULL, &cntr_tx);
 							}
 							sum_tx.sent += cntr_tx.sent;
 							sum_tx.sent_bytes += cntr_tx.sent_bytes;
@@ -726,36 +970,45 @@ int main(int argc, char *argv[])
 						}
 						nc_txqueue_close(txq);
 					}
+					if (sum != 1)
+						ni_endsection(ctx, NI_SEC_TXQ);
 				}
 				i++;
 			}
 		}
+		if (sum != 1)
+			ni_endlist(ctx, NI_LIST_TXQ);
 	}
 
 	if (sum && (dir == -1 || dir == 0)) {
-		printf("------------------------------ RX SUM -----------------\n");
-		printf("Received                   : %llu\n", sum_rx.received);
+		ni_section(ctx, NI_SEC_RXSUM);
+		ni_item_uint64_t(ctx, NI_CTRL_REG_RECV, sum_rx.received);
 		if (cntr_rx.have_bytes)
-			printf("Received bytes             : %llu\n", sum_rx.received_bytes);
-		printf("Discarded                  : %llu\n", sum_rx.discarded);
+			ni_item_uint64_t(ctx, NI_CTRL_REG_RECV_B, sum_rx.received_bytes);
+		ni_item_uint64_t(ctx, NI_CTRL_REG_DISC, sum_rx.discarded);
 		if (cntr_rx.have_bytes)
-			printf("Discarded bytes            : %llu\n", sum_rx.discarded_bytes);
-		printf("\n");
+			ni_item_uint64_t(ctx, NI_CTRL_REG_DISC_B, sum_rx.discarded_bytes);
+		ni_endsection(ctx, NI_SEC_RXSUM);
 	}
 
 	if (sum && (dir == -1 || dir == 1)) {
-		printf("------------------------------ TX SUM -----------------\n");
-		printf("Sent                       : %llu\n", sum_tx.sent);
+		ni_section(ctx, NI_SEC_TXSUM);
+		ni_item_uint64_t(ctx, NI_CTRL_REG_SENT, sum_tx.sent);
 		if (cntr_tx.have_bytes)
-			printf("Sent bytes                 : %llu\n", sum_tx.sent_bytes);
+			ni_item_uint64_t(ctx, NI_CTRL_REG_SENT_B, sum_tx.sent_bytes);
 
 		if (cntr_tx.have_tx_discard) {
-			printf("Discarded                  : %llu\n", sum_tx.discarded);
-			if (sum_tx.have_bytes)
-				printf("Discarded bytes            : %llu\n", sum_tx.discarded_bytes);
+			ni_item_uint64_t(ctx, NI_CTRL_REG_DISC, sum_tx.discarded);
+			if (cntr_tx.have_bytes)
+				ni_item_uint64_t(ctx, NI_CTRL_REG_DISC_B, sum_tx.discarded_bytes);
 		}
-		printf("\n");
+		ni_endsection(ctx, NI_SEC_TXSUM);
 	}
+
+	ni_endlist(ctx, NI_LIST_ALL);
+
+	ni_endsection(ctx, NI_SEC_ROOT);
+	ni_close_root_context(ctx);
 
 	nfb_close(dev);
 
