@@ -372,9 +372,6 @@ static int nc_ndp_queue_start(void *priv)
 		return ret;
 
 	if (q->channel.type == NDP_CHANNEL_TYPE_RX && q->protocol == 2 && (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) == 0) {
-		if ((ret = _ndp_queue_sync(q, &q->sync)))
-			return ret;
-
 		q->u.v2.rhp = q->sync.hwptr;
 	}
 
