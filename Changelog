@@ -1,3 +1,8 @@
+* Mon May 5 2025 Martin Spinler <spinler@cesnet.cz> - 6.26.4-1
+- [FIX] libnfb/NDP: remove double sync on queue start causing performance loss / blockage
+- [FIX] nfb-eth: wait for QSFP ready when reading monitoring data
+- [FIX] nfb-tsu: use correct lock function
+
 * Thu Mar 13 2025 Martin Spinler <spinler@cesnet.cz> - 6.26.3-1
 - [FIX] libnfb: count queues in no-driver mode - add SZE queues
 - [FIX] libnfb-ext-grpc: use experimental prefix on grpc++ < 1.41
