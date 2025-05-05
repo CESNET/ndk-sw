@@ -295,15 +295,19 @@ const char *cmis_mit(uint8_t reg)
  * @param count Maximal number of characters
  */
 
-void qsfp_i2c_text_print(struct nc_i2c_ctrl *i2c, uint8_t reg, unsigned count)
+int qsfp_i2c_text_print(struct nc_i2c_ctrl *i2c, uint8_t reg, unsigned count)
 {
+	FILE *fout = stdout;
 	/* INFO: Some modules doesn't supports continuous reads, disable burst mode */
 	const unsigned BURST = 1;
 	char text[BURST + 1];
 
 	int ret;
+	int rcnt = 0;
 	unsigned cnt;
 	unsigned i = 0;
+	int j;
+	int spaces = 0;
 
 	while (count) {
 		cnt = count < BURST ? count : BURST;
@@ -313,14 +317,22 @@ void qsfp_i2c_text_print(struct nc_i2c_ctrl *i2c, uint8_t reg, unsigned count)
 			break;
 		text[ret] = 0;
 
-		printf("%s", text);
+		for (j = 0; j < ret; j++) {
+			if (text[j] == ' ') {
+				spaces++;
+			} else {
+				rcnt += fprintf(fout, "%*s%c", spaces, "", text[j]);
+				spaces = 0;
+			}
+		}
+
 		count -= cnt;
 		i += cnt;
 
 		if (strlen(text) < cnt)
 			break;
 	}
-	printf("\n");
+	return rcnt;
 }
 
 #if 0
