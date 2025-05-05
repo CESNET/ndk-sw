@@ -17,10 +17,9 @@
 
 #define CNT_FMT "20llu"
 
-void rxmac_print_status(struct nc_rxmac *rxmac, struct eth_params *p)
+void rxmac_print_status(struct ni_context *ctx, struct nc_rxmac *rxmac, struct eth_params *p)
 {
 	int ret;
-	const char *text = NULL;
 	struct nc_rxmac_status s;
 	struct nc_rxmac_counters c;
 
@@ -32,60 +31,41 @@ void rxmac_print_status(struct nc_rxmac *rxmac, struct eth_params *p)
 	if (ret)
 		return;
 
-	printf("------------------------------------- RXMAC Status ----\n");
-#if 0
-	switch (s.speed) {
-		case MAC_SPEED_10G:   text = "10 Gb/s";  break;
-		case MAC_SPEED_40G:   text = "40 Gb/s";  break;
-		case MAC_SPEED_100G:  text = "100 Gb/s"; break;
-		default:              text = "Unknown";  break;
+	ni_section(ctx, NI_SEC_RXMAC);
+
+	ni_item_ctrl_reg(ctx, NI_RXM_ENABLED, s.enabled);
+	ni_item_ctrl_reg(ctx, NI_RXM_LINK, s.link_up);
+	ni_item_ctrl_reg(ctx, NI_RXM_HFIFO_OVF, s.overflow);
+
+	ni_section(ctx, NI_SEC_RXMAC_S);
+	ni_item_uint64_t(ctx, NI_RXM_RECV_O, c.cnt_octets);
+	ni_item_uint64_t(ctx, NI_RXM_PROCESSED, c.cnt_total);
+	ni_item_uint64_t(ctx, NI_RXM_RECEIVED, c.cnt_received);
+	ni_item_uint64_t(ctx, NI_RXM_ERRONEOUS, c.cnt_erroneous);
+	ni_item_uint64_t(ctx, NI_RXM_OVERFLOWED, c.cnt_overflowed);
+	ni_endsection(ctx, NI_SEC_RXMAC_S);
+
+	if (p->verbose) {
+		ni_section(ctx, NI_SEC_RXMAC_CONF);
+		ni_item_uint64_tx(ctx, NI_RXM_ERR_MASK_REG, s.error_mask);
+		ni_item_ctrl_reg(ctx, NI_RXM_ERR_FRAME, s.error_mask & 0x1);
+		ni_item_ctrl_reg(ctx, NI_RXM_ERR_CRC, s.error_mask & 0x2);
+		ni_item_ctrl_reg(ctx, NI_RXM_ERR_MIN_LEN, s.error_mask & 0x4);
+		ni_item_uint64_t(ctx, NI_RXM_MIN_LEN, s.frame_length_min);
+		ni_item_ctrl_reg(ctx, NI_RXM_ERR_MAX_LEN, s.error_mask & 0x8);
+		ni_item_uint64_t(ctx, NI_RXM_MAX_LEN, s.frame_length_max);
+		if (s.frame_length_max_capable)
+			ni_item_uint64_t(ctx, NI_RXM_MAX_LEN_CAP, s.frame_length_max_capable);
+		ni_item_ctrl_reg(ctx, NI_RXM_ERR_MAC_CHECK, s.error_mask & 0x10);
+		ni_item_ctrl_reg(ctx, NI_RXM_ERR_MAC_MODE, s.mac_filter);
+		ni_item_uint64_t(ctx, NI_RXM_MAC_MAX_COUNT, s.mac_addr_count);
+
+		ni_endsection(ctx, NI_SEC_RXMAC_CONF);
 	}
-	printf("RXMAC speed                : %s\n", text);
-#endif
-	printf("RXMAC status               : %s\n", s.enabled ? "ENABLED" : "DISABLED");
-	printf("Link status                : %s\n", s.link_up ? "UP" : "DOWN");
-	printf("HFIFO overflow occurred    : %s\n", s.overflow ? "True" : "False");
-	printf("Received octets            : %" CNT_FMT "\n", c.cnt_octets);
-	printf("Processed                  : %" CNT_FMT "\n", c.cnt_total);
-	printf("Received                   : %" CNT_FMT "\n", c.cnt_received);
-	printf("Erroneous                  : %" CNT_FMT "\n", c.cnt_erroneous);
-	printf("Overflowed                 : %" CNT_FMT "\n", c.cnt_overflowed);
-
-	if (!p->verbose)
-		return;
-
-	printf("------------------------------ RXMAC Configuration ----\n");
-	printf("Error mask register        : 0x%02x\n", s.error_mask);
-	printf(" * Frame error from MII [0]: %s\n", (s.error_mask & 0x00000001) ? "enabled" : "disabled");
-	printf(" * CRC check            [1]: %s\n", (s.error_mask & 0x00000002) ? "enabled" : "disabled");
-	printf(" * Minimum frame length [2]: %s\n"
-			"   * length                : %d B\n",
-			(s.error_mask & 0x00000004) ? "enabled" : "disabled",
-			s.frame_length_min);
-	printf(" * MTU frame length     [3]: %s\n"
-			"   * length                : %d B",
-			(s.error_mask & 0x00000008) ? "enabled" : "disabled",
-			s.frame_length_max);
-
-	if (s.frame_length_max_capable == 0) {
-		printf(" (max unknown)\n");
-	} else {
-		printf(" (max %d B)\n", s.frame_length_max_capable);
-	}
-
-	switch (s.mac_filter) {
-	case RXMAC_MAC_FILTER_PROMISCUOUS:	text = "Promiscuous mode"; break;
-	case RXMAC_MAC_FILTER_TABLE:		text = "Filter by MAC address table"; break;
-	case RXMAC_MAC_FILTER_TABLE_BCAST:	text = "Filter by MAC address table, allow broadcast"; break;
-	case RXMAC_MAC_FILTER_TABLE_BCAST_MCAST:text = "Filter by MAC address table, allow broadcast + multicast"; break;
-	}
-	printf(" * MAC address check    [4]: %s\n"
-			"   * mode                  : %s\n",
-			(s.error_mask & 0x00000010) ? "enabled" : "disabled", text);
-	printf("MAC address table size     : %d\n", s.mac_addr_count);
+	ni_endsection(ctx, NI_SEC_RXMAC);
 }
 
-void rxmac_print_ether_stats(struct nc_rxmac *rxmac)
+void rxmac_print_ether_stats(struct ni_context *ctx, struct nc_rxmac *rxmac)
 {
 	int ret;
 	struct nc_rxmac_etherstats s;
@@ -96,24 +76,25 @@ void rxmac_print_ether_stats(struct nc_rxmac *rxmac)
 		return;
 	}
 
-	printf("---------------------------- RXMAC etherStatsTable ----\n");
-	printf("etherStatsOctets              : %llu\n", s.octets);
-	printf("etherStatsPkts                : %llu\n", s.pkts);
-	printf("etherStatsBroadcastPkts       : %llu\n", s.broadcastPkts);
-	printf("etherStatsMulticastPkts       : %llu\n", s.multicastPkts);
-	printf("etherStatsCRCAlignErrors      : %llu\n", s.CRCAlignErrors);
-	printf("etherStatsUndersizePkts       : %llu\n", s.undersizePkts);
-	printf("etherStatsOversizePkts        : %llu\n", s.oversizePkts);
-	printf("etherStatsFragments           : %llu\n", s.fragments);
-	printf("etherStatsJabbers             : %llu\n", s.jabbers);
-	printf("etherStatsPkts64Octets        : %llu\n", s.pkts64Octets);
-	printf("etherStatsPkts65to127Octets   : %llu\n", s.pkts65to127Octets);
-	printf("etherStatsPkts128to255Octets  : %llu\n", s.pkts128to255Octets);
-	printf("etherStatsPkts256to511Octets  : %llu\n", s.pkts256to511Octets);
-	printf("etherStatsPkts512to1023Octets : %llu\n", s.pkts512to1023Octets);
-	printf("etherStatsPkts1024to1518Octets: %llu\n", s.pkts1024to1518Octets);
-	printf("underMinPkts                  : %llu\n", s.underMinPkts);
-	printf("overMaxPkts                   : %llu\n", s.overMaxPkts);
+	ni_section(ctx, NI_SEC_RXMAC_ES);
+	ni_item_uint64_t(ctx, NI_RXM_ES_OCTS, s.octets);
+	ni_item_uint64_t(ctx, NI_RXM_ES_PKTS, s.pkts);
+	ni_item_uint64_t(ctx, NI_RXM_ES_BCST, s.broadcastPkts);
+	ni_item_uint64_t(ctx, NI_RXM_ES_MCST, s.multicastPkts);
+	ni_item_uint64_t(ctx, NI_RXM_ES_CRCE, s.CRCAlignErrors);
+	ni_item_uint64_t(ctx, NI_RXM_ES_UNDR, s.undersizePkts);
+	ni_item_uint64_t(ctx, NI_RXM_ES_OVER, s.oversizePkts);
+	ni_item_uint64_t(ctx, NI_RXM_ES_FRAG, s.fragments);
+	ni_item_uint64_t(ctx, NI_RXM_ES_JABB, s.jabbers);
+	ni_item_uint64_t(ctx, NI_RXM_ES_64, s.pkts64Octets);
+	ni_item_uint64_t(ctx, NI_RXM_ES_65_127, s.pkts65to127Octets);
+	ni_item_uint64_t(ctx, NI_RXM_ES_128_255, s.pkts128to255Octets);
+	ni_item_uint64_t(ctx, NI_RXM_ES_256_511, s.pkts256to511Octets);
+	ni_item_uint64_t(ctx, NI_RXM_ES_512_1023, s.pkts512to1023Octets);
+	ni_item_uint64_t(ctx, NI_RXM_ES_1024_1518, s.pkts1024to1518Octets);
+	ni_item_uint64_t(ctx, NI_RXM_ES_UNDR_SET, s.underMinPkts);
+	ni_item_uint64_t(ctx, NI_RXM_ES_OVER_SET, s.overMaxPkts);
+	ni_endsection(ctx, NI_SEC_RXMAC_ES);
 }
 
 int clear_mac_addresses(struct nc_rxmac *rxmac)
@@ -214,15 +195,15 @@ int remove_mac_address(struct nc_rxmac *rxmac, unsigned long long mac_address)
 	return 0;
 }
 
-int rxmac_execute_operation(struct nc_rxmac *rxmac, struct eth_params *p)
+int rxmac_execute_operation(struct ni_context *ctx, struct nc_rxmac *rxmac, struct eth_params *p)
 {
 	int ret = 0;
 
 	switch (p->command) {
 	case CMD_PRINT_STATUS:
-		rxmac_print_status(rxmac, p);
+		rxmac_print_status(ctx, rxmac, p);
 		if (p->ether_stats)
-			rxmac_print_ether_stats(rxmac);
+			rxmac_print_ether_stats(ctx, rxmac);
 		break;
 	case CMD_RESET:
 		nc_rxmac_reset_counters(rxmac);

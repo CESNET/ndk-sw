@@ -25,6 +25,7 @@ const char *ieee802_3_get_pcs_speed_string(struct mdio_if_info *if_info);
 const char *ieee802_3_get_pma_speed_string(struct mdio_if_info *if_info);
 const char *ieee802_3_get_pcs_pma_link_status_string(struct mdio_if_info *if_info, int devad);
 
+int ieee802_3_get_pcs_pma_link_status(struct mdio_if_info *if_info, int devad);
 int ieee802_3_get_pcs_lines(struct mdio_if_info *if_info);
 int ieee802_3_get_fec_lines(const char *type);
 

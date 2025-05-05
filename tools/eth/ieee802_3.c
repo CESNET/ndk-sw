@@ -444,13 +444,18 @@ int ieee802_3_get_pcs_lines(struct mdio_if_info *if_info)
 	}
 }
 
+int ieee802_3_get_pcs_pma_link_status(struct mdio_if_info *if_info, int devad)
+{
+	int reg = if_info->mdio_read(if_info->dev, if_info->prtad, devad, 1);
+	return reg < 0 ? -1 : !!(reg & 0x4);
+}
+
 const char *ieee802_3_get_pcs_pma_link_status_string(struct mdio_if_info *if_info, int devad)
 {
-	int reg;
-	reg = if_info->mdio_read(if_info->dev, if_info->prtad, devad, 1);
+	int reg = ieee802_3_get_pcs_pma_link_status(if_info, devad);
 	if (reg < 0)
 		return "Unknown";
-	return (reg & 0x4) ? "UP" : "DOWN";
+	return reg ? "UP" : "DOWN";
 }
 
 int ieee802_3_get_fec_lines(const char *string)
