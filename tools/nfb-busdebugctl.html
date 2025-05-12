@@ -1,0 +1,250 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>nfb-busdebugctl &mdash; NFB Software User Guide 6.16.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8885e90a"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            NFB Software User Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Common info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ndp-tools.html">NDP tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python module</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../python/quick.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/reference.html">Module Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Linux driver</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../driver/modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/userspace.html">Userspace access</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">NFB Software User Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">nfb-busdebugctl</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/tools/nfb-busdebugctl.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="nfb-busdebugctl">
+<span id="id1"></span><h1>nfb-busdebugctl<a class="headerlink" href="#nfb-busdebugctl" title="Link to this heading"></a></h1>
+<p>This tool can be very useful for debugging streaming buses (typically MFB and MVB in the NDK).
+It communicates with the Streaming Debug components in the FW - Streaming Debug Master and Probe.
+The Debug Probes are (need to be) inserted into the pipeline between neighboring components.
+More info can be found in the documentation for <a class="reference external" href="https://cesnet.github.io/ndk-fpga/devel/comp/debug/streaming_debug/readme.html">STREAMING_DEBUG_MASTER</a>.</p>
+<p>The Streaming Debug system (Master+Probe) in the FW (must be integrated first) provides counts of:</p>
+<ul class="simple">
+<li><p><cite>Data words</cite>: A data word is transferred from one FW component (the Source), which has valid data prepared to send to the neighboring component (the Destination/Sink), which is ready to accept it (SRC_RDY=’1’, DST_RDY=’1’).</p></li>
+<li><p><cite>Wait cycles</cite>: A wait cycle is when the Source does not have valid data prepared to send to the Destination, however, this Destination component is not ready to accept new data anyway (SRC_RDY=’0’, DST_RDY=’0’).</p></li>
+<li><p><cite>Destination hold cycles</cite>: The Source has valid data prepared to send to the Destination, but the Destination is not ready to accept new data (SRC_RDY=’1’, DST_RDY=’0’).</p></li>
+<li><p><cite>Source hold cycles</cite>: The Source does not have valid data prepared to send to the Destination, which is (would be) able to accept them (SRC_RDY=’0’, DST_RDY=’1’).</p></li>
+<li><p><cite>Started transactions</cite>: the number of started transactions (SRC_RDY=’1’, DST_RDY=’1’, SOP=’1’) - should be similar to the number of Ended transactions; both give a rough estimate of the number of processed packets.</p></li>
+<li><p><cite>Ended transactions</cite>: the number of ended transactions (SRC_RDY=’1’, DST_RDY=’1’, EOP=’1’) - should be similar to the number of Started transactions; both give a rough estimate of the number of processed packets.</p></li>
+</ul>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nfb-busdebugctl<span class="w"> </span>-h
+<span class="go">Usage: nfb-busdebugctl [-ABDElhV] [-d path] [-e 0|1] [-i probe] [-n probe]</span>
+
+<span class="go">Only one command may be used at a time.</span>
+<span class="go">-d path        Path to device file to use</span>
+<span class="go">-e 0|1         Start(1)/Stop(0) counters (start also resets their values)</span>
+<span class="go">-i probe       Select probe using &quot;master_index:probe_id&quot; (default &quot;0:0&quot;)</span>
+<span class="go">-n probe       Select probe using &quot;probe_name&quot;</span>
+<span class="go">-A             Print status or affect all probes</span>
+<span class="go">-B             Block data on probed bus</span>
+<span class="go">-D             Drop data on probed bus</span>
+<span class="go">-E             Enable normal functionality on probed bus</span>
+<span class="go">-l             List available probes</span>
+<span class="go">-h             Show this text</span>
+<span class="go">-V             Show version</span>
+</pre></div>
+</div>
+<p>Counters start counting immediately after boot/power up.
+Keep in mind that the counter of <cite>Source hold cycles</cite> will probably never show zero, as there is always some delay before the first data arrives.
+This is the expected behavior.
+To reset the counters, use parameter “-e”: <cite>-e0</cite> to stop the counters, <cite>-e1</cite> to reset their values and enable them.</p>
+<p>Parameters “-i” and “-n” identify one of the Probes</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><cite>-i 0:1</cite>: using two numbers in format <strong>x:y</strong> where <strong>x</strong> is the ID of the Master and <strong>y</strong> is the ID of one of the Master’s Probes.</dt><dd><p>Beware that the behavior of this parameter is not very consistent.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><cite>-n XYZA</cite>: This one uses a four-letter string (name) that has been assigned to the Probe in the FW design (as a generic parameter).</dt><dd><p>These Probe names and their connections can be obtained either from their instantiation in the FW or its documentation - if provided.
+Notice that multiple Probes of different Masters have the same name (common for multi-stream pipelines where one Master is per one stream).
+See the output of <cite>nfb-busdebugctl -l</cite> below.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>All available Probes can be listed using <cite>nfb-busdebugctl -l</cite>.
+Both forms of Probe identification (“-i”, “-n”) are used in the output.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nfb-busdebugctl<span class="w"> </span>-l
+<span class="go">0:0 - RXEH</span>
+<span class="go">0:1 - RXED</span>
+<span class="go">0:2 - HFEO</span>
+<span class="go">0:3 - RSSO</span>
+<span class="go">0:4 - FLTO</span>
+<span class="go">0:5 - PFIO</span>
+<span class="go">0:6 - TXCH</span>
+<span class="go">0:7 - TXCD</span>
+<span class="go">0:8 - RXDH</span>
+<span class="go">0:9 - RXDD</span>
+<span class="go">1:0 - RXEH</span>
+<span class="go">1:1 - RXED</span>
+<span class="go">1:2 - HFEO</span>
+<span class="go">1:3 - RSSO</span>
+<span class="go">...</span>
+</pre></div>
+</div>
+<p>This FW design contains two (identical) 100G streams (pipelines), and the Master+Probes have been instantiated per each stream.
+Notice how the Probe names are the same for both Masters.</p>
+<p>Parameters “-B”, “-D”, and “-E” are used for advanced features for “Bus Control”, see documentation of <a class="reference external" href="https://cesnet.github.io/ndk-fpga/devel/comp/debug/streaming_debug/readme.html#bus-control">Streaming Debug</a>.
+TL;DR: if the Master is set accordingly and the Probes are connected appropriately, use:</p>
+<ul class="simple">
+<li><p><cite>-B XYZA</cite> to block traffic at the selected Probe,</p></li>
+<li><p><cite>-D XYZA</cite> to drop traffic at the selected Probe, and</p></li>
+<li><p><cite>-E XYZA</cite> to return the selected Probe to its flow-through state.</p></li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Beware that the “Bus Control” feature is often not needed, which is reflected by the connection of Probes in the FW (see documentation of the <a class="reference external" href="https://cesnet.github.io/ndk-fpga/devel/comp/debug/streaming_debug/readme.html">Streaming Debug components</a>). Hence, these three parameters may not work.</p>
+</div>
+</section>
+<section id="how-to-use">
+<h2>How to use<a class="headerlink" href="#how-to-use" title="Link to this heading"></a></h2>
+<p>This tool is typically used when locating a place that either decreases throughput (bottleneck) or blocks all traffic (design is stuck).
+The most common way to identify this is to issue the <cite>nfb-busdebugctl -A</cite> command and watch the <cite>Destination hold cycles</cite> counter of all Probes.
+It is recommended to analyze the difference in these counters over a (short) period of time:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nfb-busdebugctl<span class="w"> </span>-A<span class="w"> </span>&gt;<span class="w"> </span>first_sample.txt
+<span class="gp">$ </span>nfb-busdebugctl<span class="w"> </span>-A<span class="w"> </span>&gt;<span class="w"> </span>second_sample.txt
+<span class="gp">$ </span>vimdiff<span class="w"> </span>first_sample.txt<span class="w"> </span>second_sample.txt
+</pre></div>
+</div>
+<p>This creates a bounded interval, which nullifies idle clock cycles before any data are transmitted and other potentially unwanted effects.</p>
+</section>
+<section id="how-to-read-the-probed-data">
+<h2>How to read the probed data<a class="headerlink" href="#how-to-read-the-probed-data" title="Link to this heading"></a></h2>
+<p>The following diagram is borrowed from the documentation of the <a class="reference external" href="https://cesnet.github.io/ndk-fpga/devel/comp/debug/streaming_debug/readme.html">Streaming Debug components</a>.
+It shows a simple pipeline of three FW components (modules): A, B, and C.</p>
+<p id="figure1">When performing analysis, watch for incrementing counters of the <cite>Destination hold cycles</cite>.
+These are the ones that indicate that something is holding back the traffic.
+When viewing the difference between the samples of <cite>nfb-busdebugctl -A</cite>, three scenarios can occur.
+The <cite>Destination hold cycles</cite> counter is incremented on:</p>
+<ol class="arabic simple">
+<li><p>all Probes in the pipeline -&gt; the blocking occurs somewhere further downstream of the probed pipeline.</p></li>
+<li><p>none of the Probes in the pipeline -&gt; the blocking occurs somewhere before the probed pipeline.</p></li>
+<li><p>only some of the Probes in the pipeline -&gt; the blocking is done by a component in the probed pipeline.</p></li>
+</ol>
+<p>The third point indicates an inefficiency in the pipeline.
+How to determine which component is at flaw?
+This is best explained using a picture.
+The following picture builds on the example above, showing the same pipeline with connected Debug Probes.</p>
+<p id="figure2">If the <cite>Destination hold cycles</cite> counters increment on Probes:</p>
+<ol class="arabic simple">
+<li><p>on the input before component A, and</p></li>
+<li><p>between components A and B</p></li>
+</ol>
+<p>then this would indicate that component C is the one blocking the traffic.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
