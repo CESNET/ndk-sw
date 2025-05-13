@@ -109,17 +109,6 @@ static inline int nc_ndp_v2_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	prot = PROT_READ;
 	prot |= q->channel.type == NDP_CHANNEL_TYPE_TX ? PROT_WRITE : 0;
 
-#endif
-	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
-		ops->burst.rx.get = nc_ndp_v2_rx_burst_get;
-		ops->burst.rx.put = nc_ndp_v2_rx_burst_put;
-	} else {
-		ops->burst.tx.get = nc_ndp_v2_tx_burst_get;
-		ops->burst.tx.put = nc_ndp_v2_tx_burst_put;
-		ops->burst.tx.flush = nc_ndp_v2_tx_burst_flush;
-	}
-
-#ifndef __KERNEL__
 	q->u.v2.hdr = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
 	if (q->u.v2.hdr == MAP_FAILED) {
 		goto err_mmap_hdr;
@@ -132,6 +121,16 @@ static inline int nc_ndp_v2_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 
 	q->u.v2.hdr_items = hdr_mmap_size / 2 / sizeof(struct ndp_v2_packethdr);
 #endif
+
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		ops->burst.rx.get = nc_ndp_v2_rx_burst_get;
+		ops->burst.rx.put = nc_ndp_v2_rx_burst_put;
+	} else {
+		ops->burst.tx.get = nc_ndp_v2_tx_burst_get;
+		ops->burst.tx.put = nc_ndp_v2_tx_burst_put;
+		ops->burst.tx.flush = nc_ndp_v2_tx_burst_flush;
+	}
+
 	return 0;
 
 #ifndef __KERNEL__
@@ -145,24 +144,29 @@ err_fdt_getprop:
 
 static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt,  int fdt_offset, int ctrl_offset, int dir)
 {
-	(void)dir;
-#ifndef __KERNEL__
-	int prot;
-	int ret = 0;
 	size_t hdr_mmap_size = 0;
-	off_t hdr_mmap_offset = 0;
-
 	size_t hdr_buff_size = 0;
 	size_t data_buff_size = 0;
 
-	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
+#ifndef __KERNEL__
+	off_t hdr_mmap_offset = 0;
+	int prot;
+	int ret;
 #endif
+	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
+
+	(void)dir;
 
 	q->u.v3.pkts_available = 0;
 	q->u.v3.sdp = 0;
 	q->u.v3.shp = 0;
 
-#ifndef __KERNEL__
+#ifdef __KERNEL__
+	ndp_ctrl_v3_get_vmaps(
+			q->sub->channel, (void**)&q->u.v3.hdrs,
+			&hdr_mmap_size, &hdr_buff_size, &data_buff_size);
+
+#else
 	q->u.v3.uspace_shp = 0;
 	q->u.v3.uspace_hhp = 0;
 	q->u.v3.uspace_hdp = 0;
@@ -170,26 +174,37 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	q->u.v3.uspace_free = 0;
 	q->u.v3.uspace_acc = 0;
 
+	ret = 0;
+	ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_size", &hdr_mmap_size);
+	ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", &hdr_mmap_offset);
+	if (q->channel.type == NDP_CHANNEL_TYPE_TX) {
+		ret |= fdt_getprop32(fdt, fdt_offset, "data_buff_size", &data_buff_size);
+		ret |= fdt_getprop32(fdt, fdt_offset, "hdr_buff_size", &hdr_buff_size);
+	}
+	if (ret)
+		return -EBADFD;
+
+	prot = PROT_READ | PROT_WRITE;
+
+	q->u.v3.hdrs = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
+	if (q->u.v3.hdrs == MAP_FAILED) {
+		return -EBADFD;
+	}
+
 	if (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) {
+		q->u.v3.uspace_hdrs = q->u.v3.hdrs;
+
 		q->u.v3.comp = nfb_comp_open(q->dev, ctrl_offset);
 		if (q->u.v3.comp == NULL)
 			return -ENODEV;
 	}
+#endif
 
 	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
-		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_size", &hdr_mmap_size);
-		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", &hdr_mmap_offset);
-
-		if (ret)
-			return -EBADFD;
+		q->u.v3.hdr_ptr_mask = ((hdr_mmap_size / 2) / sizeof(struct ndp_v3_packethdr)) - 1; // "- 1" to create a mask for AND operations
 	} else {
-		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_size", &hdr_mmap_size);
-		ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", &hdr_mmap_offset);
-		ret |= fdt_getprop32(fdt, fdt_offset, "data_buff_size", &data_buff_size);
-		ret |= fdt_getprop32(fdt, fdt_offset, "hdr_buff_size", &hdr_buff_size);
-
-		if (ret)
-			return -EBADFD;
+		q->u.v3.hdr_ptr_mask = hdr_buff_size / (2 * sizeof(struct ndp_v3_packethdr)) - 1;
+		q->u.v3.data_ptr_mask = data_buff_size / 2 - 1;
 	}
 
 	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
@@ -201,26 +216,6 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 		ops->burst.tx.flush = nc_ndp_v3_tx_burst_flush;
 	}
 
-	prot = PROT_READ | PROT_WRITE;
-
-	q->u.v3.hdrs = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
-	if (q->u.v3.hdrs == MAP_FAILED) {
-		return -EBADFD;
-	}
-
-	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
-		q->u.v3.hdr_ptr_mask = ((hdr_mmap_size / 2) / sizeof(struct ndp_v3_packethdr)) - 1; // "- 1" to create a mask for AND operations
-	} else {
-		q->u.v3.data_ptr_mask = data_buff_size/2 -1;
-		q->u.v3.hdr_ptr_mask = hdr_buff_size/(2*sizeof(struct ndp_v3_packethdr)) -1;
-	}
-#endif
-
-#ifndef __KERNEL__
-	if (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) {
-		q->u.v3.uspace_hdrs = q->u.v3.hdrs;
-	}
-#endif
 	return 0;
 }
 
@@ -366,13 +361,22 @@ static int nc_ndp_queue_start(void *priv)
 	struct nc_ndp_queue *q = priv;
 	int ret;
 
+	int shared_q = 1;
+
+	if (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE)
+		shared_q = 0;
+
 	q->sync.flags = 0;
 
 	if ((ret = _ndp_queue_start(q)))
 		return ret;
 
-	if (q->channel.type == NDP_CHANNEL_TYPE_RX && q->protocol == 2 && (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) == 0) {
-		q->u.v2.rhp = q->sync.hwptr;
+	if (q->channel.type == NDP_CHANNEL_TYPE_RX && shared_q) {
+		if (q->protocol == 2)
+			q->u.v2.rhp = q->sync.hwptr;
+		else if (q->protocol == 3) {
+			q->u.v3.shp = q->sync.hwptr;
+		}
 	}
 
 #ifndef __KERNEL__

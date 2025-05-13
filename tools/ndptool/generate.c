@@ -62,48 +62,21 @@ void *ndp_mode_generate_thread(void *tmp)
 
 static int ndp_mode_generate_prepare(struct ndp_tool_params *p)
 {
-	int ret = -1;
+	int ret;
 
 	p->si.progress_letter = 'G';
 	/* Open device and queues */
-	p->dev = nfb_open(p->nfb_path);
-	if (p->dev == NULL){
-		warnx("nfb_open() for queue %d failed.", p->queue_index);
-		goto err_nfb_open;
-	}
-
-	p->tx = ndp_open_tx_queue_ext(p->dev, p->queue_index, p->use_userspace_flag ? NDP_OPEN_FLAG_USERSPACE : 0);
-	if (p->tx == NULL) {
-		warnx("ndp_open_tx_queue(%d) failed.", p->queue_index);
-		goto err_ndp_open_tx;
-	}
-
-	/* Start queues */
-	ret = ndp_queue_start(p->tx);
-	if (ret != 0) {
-		warnx("ndp_tx_queue_start(%d) failed.", p->queue_index);
-		goto err_ndp_start_tx;
-	}
+	ret = ndp_mode_common_prepare(p, 0, 1);
 
 	gettimeofday(&p->si.startTime, NULL);
 
-	return 0;
-
-	/* Error handling */
-err_ndp_start_tx:
- 	ndp_close_tx_queue(p->tx);
-err_ndp_open_tx:
-	nfb_close(p->dev);
-err_nfb_open:
 	return ret;
 }
 
 static int ndp_mode_generate_exit(struct ndp_tool_params *p)
 {
 	gettimeofday(&p->si.endTime, NULL);
-	ndp_queue_stop(p->tx);
-	ndp_close_tx_queue(p->tx);
-	nfb_close(p->dev);
+	ndp_mode_common_close(p, 0, 1);
 	return 0;
 }
 

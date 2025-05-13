@@ -11,13 +11,15 @@
 // opened using this function.
 static inline int ndp_queue_calypte_open_buffers(struct nfb_device *dev, struct nc_ndp_queue *q, const void *fdt, int fdt_offset)
 {
-#ifndef __KERNEL__
+	int ret = -EBADFD;
 	int ctrl_node_offset = -1;
 	int buffer_offset = -1;
 
 	// Applies only for Calypte TX queue
 	if (!(q->protocol == 3 && q->channel.type == NDP_CHANNEL_TYPE_TX))
 		return 0;
+
+	q->u.v3.tx_pkts_cnt = 256;
 
 	ctrl_node_offset = fdt_node_offset_by_phandle_ref(fdt, fdt_offset, "ctrl");
 	if (ctrl_node_offset < 0)
@@ -41,24 +43,38 @@ static inline int ndp_queue_calypte_open_buffers(struct nfb_device *dev, struct 
 		goto err_hdr_buff_open_tx;
 	}
 
+#ifdef __KERNEL__
+	q->u.v3.tx_pkts = kzalloc(sizeof(void*) * q->u.v3.tx_pkts_cnt, GFP_KERNEL);
+#else
+	q->u.v3.tx_pkts = malloc(sizeof(void*) * q->u.v3.tx_pkts_cnt);
+#endif
+	if (q->u.v3.tx_pkts == NULL) {
+		ret = -ENOMEM;
+		goto err_alloc_tx_pkts;
+	}
+
 	return 0;
+
+err_alloc_tx_pkts:
+	nfb_comp_close(q->u.v3.tx_hdr_buff);
 err_hdr_buff_open_tx:
 err_hdr_buff_find_tx:
 	nfb_comp_close(q->u.v3.tx_data_buff);
-	return -EBADFD;
-#endif
-	return 0;
+	return ret;
 }
 
 static inline void ndp_queue_calypte_close_buffers(struct nc_ndp_queue *q)
 {
-#ifndef __KERNEL__
-	if (q->protocol == 3 && q->channel.type == NDP_CHANNEL_TYPE_TX) {
-		nfb_comp_close(q->u.v3.tx_data_buff);
-		nfb_comp_close(q->u.v3.tx_hdr_buff);
-		q->u.v3.tx_data_buff = NULL;
-		q->u.v3.tx_hdr_buff = NULL;
-	}
+	if (!(q->protocol == 3 && q->channel.type == NDP_CHANNEL_TYPE_TX))
+		return;
+
+	nfb_comp_close(q->u.v3.tx_data_buff);
+	nfb_comp_close(q->u.v3.tx_hdr_buff);
+	q->u.v3.tx_data_buff = NULL;
+	q->u.v3.tx_hdr_buff = NULL;
+#ifdef __KERNEL__
+	kfree(q->u.v3.tx_pkts);
+#else
+	free(q->u.v3.tx_pkts);
 #endif
-	return;
 }

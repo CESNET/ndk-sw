@@ -246,6 +246,7 @@ static inline void _ndp_queue_rx_sync_v3_us(struct nc_ndp_queue *q)
 
 		hdr_base = q->u.v3.hdrs + q->u.v3.uspace_shp;
 		for (i = 0; i < count; i++) {
+			hdr_base[i].valid = 0;
 			count_blks += (hdr_base[i].frame_len + NDP_RX_CALYPTE_BLOCK_SIZE - 1) / NDP_RX_CALYPTE_BLOCK_SIZE;
 		}
 
@@ -351,7 +352,6 @@ static inline unsigned nc_ndp_v3_rx_burst_get(void *priv, struct ndp_packet *pac
 		packets[i].data = data;
 		packets[i].data_length = packet_size;
 
-		hdr->valid = 0;
 		q->u.v3.sdp += (hdr->frame_len + NDP_RX_CALYPTE_BLOCK_SIZE - 1) / NDP_RX_CALYPTE_BLOCK_SIZE;
 	}
 
