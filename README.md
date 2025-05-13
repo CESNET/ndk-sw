@@ -86,6 +86,9 @@ For other operating systems, the installation procedure may be slightly differen
 
     `sudo insmod drivers/kernel/drivers/nfb/nfb.ko`
 
+> Default behavior of the configure script is to run its compatibility checks in parallel.\
+This can be turned off by passing --disable-parallel-config parameter\
+`cd drivers; ./configure --disable-parallel-config; make; cd ..`
 
 ## License
 
