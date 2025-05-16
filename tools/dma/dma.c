@@ -40,7 +40,7 @@
 /*! -v verbose mode; */
 /*! -V version */
 
-#define ARGUMENTS			"d:i:q:rtRS:B:C:O:Tvh"
+#define ARGUMENTS			"d:i:q:rtRS:B:C:N:O:Tvh"
 
 enum commands {
 	CMD_PRINT_STATUS,
@@ -51,6 +51,7 @@ enum commands {
 	CMD_SET_BUFFER_SIZE,
 	CMD_SET_BUFFER_COUNT,
 	CMD_SET_INITIAL_OFFSET,
+	CMD_NETDEV,
 	CMD_QUERY,
 };
 
@@ -112,9 +113,13 @@ void usage(const char *me, int verbose)
 		}
 		printf(" example of usage: '-q rx_received,tx_sent'\n");
 	}
-
+	printf("-N netdev_drv   Perform a netdev command (add,del) on the selected indexes\n");
 	printf("-v              Increase verbosity\n");
 	printf("-h              Show this text\n");
+	printf("\nExamples:\n");
+	printf("nfb-dma -i0 -N ndp_netdev add               Create NDP based netdev\n");
+//	printf("nfb-dma -i0-7 -N xdp add,id=1,eth=0,eth=1   Create XDP based netdev with rxq-txq pairs 0-7 and use also ethernet interface 0+1\n");
+//	printf("nfb-dma -i0-7 -N xdp del,id=1               Delete XDP based netdev with id=1\n");
 }
 
 int set_ring_size(struct nfb_device *dev, int dir, int index, const char* csize, const char *target)
@@ -138,6 +143,43 @@ int set_ring_size(struct nfb_device *dev, int dir, int index, const char* csize,
 	close(fd);
 	return 0;
 }
+
+int cmd_ndp_netdev(struct nfb_device *dev, const char *ndd, const char *cmd, struct list_range *index_range)
+{
+	int fd;
+	char buffer[128];
+	ssize_t ret = 0, sz = 0;
+
+	snprintf(buffer, sizeof(buffer),
+		"/sys/class/nfb/nfb%d/%s/cmd",
+		nfb_get_system_id(dev), ndd);
+
+	fd = open(buffer, O_RDWR);
+	if (fd == -1)
+		err(errno, "Can't perform ndp_netdev %s", cmd);
+
+	if (strcmp(ndd, "ndp_netdev") == 0) {
+		if (index_range->items == 1 && index_range->min[0] == index_range->max[0]) {
+			sz = snprintf(buffer, sizeof(buffer), "cmd=%s,index=%d", cmd, index_range->min[0]);
+		} else {
+			ret = -EINVAL;
+		}
+	}
+
+	if (sz == 0) {
+		ret = -ENXIO;
+	} else {
+		sz++;
+		ret = write(fd, buffer, sz);
+	}
+
+	if (ret != sz) {
+		err(ret, "Can't perform ndp_netdev %s", cmd);
+	}
+	close(fd);
+	return ret < 0 ? ret : 0;
+}
+
 
 /*!
  * \brief Convert and display number of bits in kB or MB
@@ -481,6 +523,7 @@ int main(int argc, char *argv[])
 
 	char c;
 	const char *file = nfb_default_dev_path();
+	const char *netdev_cmd = "";
 
 	struct nfb_device *dev;
 	struct nc_rxqueue *rxq;
@@ -547,6 +590,10 @@ int main(int argc, char *argv[])
 			cmd = CMD_SET_INITIAL_OFFSET;
 			csize = optarg;
 			break;
+		case 'N':
+			cmd = CMD_NETDEV;
+			netdev_cmd = optarg;
+			break;
 		default:
 			err(-EINVAL, "Unknown argument -%c", optopt);
 		}
@@ -561,13 +608,19 @@ int main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (argc) {
-		err(errno, "Stray arguments");
+	if (cmd == CMD_NETDEV && argc < 1) {
+		err(errno, "Missing netdev command argument");
+	} else if ((cmd == CMD_NETDEV && argc > 1) || (cmd != CMD_NETDEV && argc)) {
+		err(errno, "Stray arguments %d", argc);
 	}
 
 	dev = nfb_open(file);
 	if (dev == NULL) {
 		err(errno, "Can't open NFB device");
+	}
+
+	if (cmd == CMD_NETDEV) {
+		return cmd_ndp_netdev(dev, netdev_cmd, argv[0], &index_range);
 	}
 
 	if (query) {

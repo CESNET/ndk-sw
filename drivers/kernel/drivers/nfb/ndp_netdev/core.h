@@ -18,6 +18,7 @@
 
 struct nfb_mod_ndp_netdev {
 	struct nfb_device *nfb;
+	struct mutex list_ethdev_mutex;
 	struct list_head list_ethdev;
 	struct device dev;
 };
