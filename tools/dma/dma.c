@@ -118,8 +118,8 @@ void usage(const char *me, int verbose)
 	printf("-h              Show this text\n");
 	printf("\nExamples:\n");
 	printf("nfb-dma -i0 -N ndp_netdev add               Create NDP based netdev\n");
-//	printf("nfb-dma -i0-7 -N xdp add,id=1,eth=0,eth=1   Create XDP based netdev with rxq-txq pairs 0-7 and use also ethernet interface 0+1\n");
-//	printf("nfb-dma -i0-7 -N xdp del,id=1               Delete XDP based netdev with id=1\n");
+	printf("nfb-dma -i0-7 -N nfb_xdp add,id=1           Create XDP based netdev with rxq-txq pairs 0-7\n");
+	printf("nfb-dma -N nfb_xdp del,id=1                 Delete XDP based netdev with id=1\n");
 }
 
 int set_ring_size(struct nfb_device *dev, int dir, int index, const char* csize, const char *target)
@@ -147,10 +147,15 @@ int set_ring_size(struct nfb_device *dev, int dir, int index, const char* csize,
 int cmd_ndp_netdev(struct nfb_device *dev, const char *ndd, const char *cmd, struct list_range *index_range)
 {
 	int fd;
-	char buffer[128];
+	unsigned buff_len = 256;
+	char *buffer;
 	ssize_t ret = 0, sz = 0;
 
-	snprintf(buffer, sizeof(buffer),
+	if (!(buffer = calloc(buff_len, sizeof(*buffer)))) {
+		return -ENOMEM;
+	}
+
+	snprintf(buffer, buff_len,
 		"/sys/class/nfb/nfb%d/%s/cmd",
 		nfb_get_system_id(dev), ndd);
 
@@ -160,10 +165,45 @@ int cmd_ndp_netdev(struct nfb_device *dev, const char *ndd, const char *cmd, str
 
 	if (strcmp(ndd, "ndp_netdev") == 0) {
 		if (index_range->items == 1 && index_range->min[0] == index_range->max[0]) {
-			sz = snprintf(buffer, sizeof(buffer), "cmd=%s,index=%d", cmd, index_range->min[0]);
+			sz = snprintf(buffer, buff_len, "cmd=%s,index=%d", cmd, index_range->min[0]);
 		} else {
 			ret = -EINVAL;
 		}
+	} else if (strcmp(ndd, "nfb_xdp") == 0) {
+		sz = snprintf(buffer, buff_len, "cmd=%s,qidxs=", cmd);
+		if (sz < 0 || sz >= buff_len) {
+			ret = -EINVAL;
+			goto err;
+		}
+
+		// Get maximum index of the queue
+		int max = -1;
+		for (size_t i = 0; i < index_range->items; i++) {
+			if (max < index_range->max[i]) {
+				max = index_range->max[i];
+			}
+		}
+
+		char idx_buff[16];
+		// Write the queues in format 1:2:5:6: for Qs 1, 2, 5, 6
+		for (int i = 0; i < max + 1; i++) {
+			if (list_range_contains(index_range, i)) {
+				sz = snprintf(idx_buff, sizeof(idx_buff), "%d:", i);
+				if (sz < 0 || sz >= (ssize_t) sizeof(idx_buff)) {
+					ret = -EINVAL;
+					goto err;
+				}
+				if (strlen(buffer) + strlen(idx_buff) >= buff_len) {
+					buff_len *= 2;
+					if(!(buffer = realloc(buffer, buff_len))) {
+						ret = -ENOMEM;
+						goto err;
+					}
+				}
+				strcat(buffer, idx_buff);
+			}
+		}
+		sz = strlen(buffer);
 	}
 
 	if (sz == 0) {
@@ -176,6 +216,8 @@ int cmd_ndp_netdev(struct nfb_device *dev, const char *ndd, const char *cmd, str
 	if (ret != sz) {
 		err(ret, "Can't perform ndp_netdev %s", cmd);
 	}
+err:
+	free(buffer);
 	close(fd);
 	return ret < 0 ? ret : 0;
 }
