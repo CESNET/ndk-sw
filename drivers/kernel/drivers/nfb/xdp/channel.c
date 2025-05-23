@@ -25,12 +25,8 @@ static int nfb_xdp_rx_thread(void *rxqptr)
 	channel = container_of(rxq, struct nfb_xdp_channel, rxq);
 	ethdev = channel->ethdev;
 	netdev = ethdev->netdev;
+	napi = &rxq->napi;
 	ret = 0;
-	if (!test_bit(NFB_STATUS_IS_XSK, &channel->status)) {
-		napi = &rxq->napi_pp;
-	} else {
-		napi = &rxq->napi_xsk;
-	}
 
 	while (!kthread_should_stop()) {
 		local_bh_disable();
@@ -48,12 +44,14 @@ static int nfb_xdp_tx_thread(void *txqptr)
 	struct net_device *netdev;
 	struct nfb_xdp_queue *txq;
 	struct nfb_xdp_channel *channel;
+	struct napi_struct *napi;
 	int ret;
 
 	txq = txqptr;
 	channel = container_of(txq, struct nfb_xdp_channel, txq);
 	ethdev = channel->ethdev;
 	netdev = ethdev->netdev;
+	napi = &txq->napi;
 	ret = 0;
 
 	if (!test_bit(NFB_STATUS_IS_XSK, &channel->status)) // In page pool mode tx exits
@@ -61,9 +59,9 @@ static int nfb_xdp_tx_thread(void *txqptr)
 
 	while (!kthread_should_stop()) {
 		local_bh_disable();
-		napi_schedule(&txq->napi_xsk);
+		napi_schedule(napi);
 		local_bh_enable();
-		while (!kthread_should_stop() && test_bit(NAPI_STATE_SCHED, &txq->napi_xsk.state))
+		while (!kthread_should_stop() && test_bit(NAPI_STATE_SCHED, &napi->state))
 			usleep_range(10, 20);
 	}
 	return ret;
@@ -74,6 +72,7 @@ static int channel_create_threads(struct nfb_xdp_channel *channel)
 	int ret = 0;
 	struct net_device *netdev = channel->ethdev->netdev;
 
+	// Create RX thread for each queue
 	channel->rxq.thread = kthread_create_on_node(nfb_xdp_rx_thread, &channel->rxq, channel->numa, "%s/%u", netdev->name, channel->nfb_index);
 	if (IS_ERR(channel->rxq.thread)) {
 		printk(KERN_ERR "nfb: %s - failed to create rx thread (error: %ld, channel: %d)\n",
@@ -81,15 +80,12 @@ static int channel_create_threads(struct nfb_xdp_channel *channel)
 		ret = PTR_ERR(channel->rxq.thread);
 		goto err_kthread_rx;
 	}
-	// increment reference counter to kthread so the thread can exit on error and kthread_stop() won't crash
+	// Increment reference counter to kthread so the thread can exit on error and kthread_stop() won't crash
 	// put_task_struct() must be called after kthread_stop()
 	get_task_struct(channel->rxq.thread);
+	// Enable napi
+	napi_enable(&channel->rxq.napi);
 	// Wake up thread
-	if (!test_bit(NFB_STATUS_IS_XSK, &channel->status)) {
-		napi_enable(&channel->rxq.napi_pp);
-	} else {
-		napi_enable(&channel->rxq.napi_xsk);
-	}
 	wake_up_process(channel->rxq.thread);
 
 	// Create TX thread for each queue
@@ -103,10 +99,11 @@ static int channel_create_threads(struct nfb_xdp_channel *channel)
 	// increment reference counter to struct_task so the thread can exit on error and kthread_stop() won't crash
 	// put_task_struct() must be called after kthread_stop() on driver detach
 	get_task_struct(channel->txq.thread);
+	// Enable napi
 	if (!test_bit(NFB_STATUS_IS_XSK, &channel->status)) {
 		// pagepool doesn't use tx napi
 	} else {
-		napi_enable(&channel->txq.napi_xsk);
+		napi_enable(&channel->txq.napi);
 	}
 	netif_tx_start_queue(netdev_get_tx_queue(netdev, channel->index));
 	// Wake up thread
@@ -122,6 +119,10 @@ err_kthread_tx:
 		put_task_struct(channel->rxq.thread);
 		channel->rxq.thread = NULL;
 	}
+	napi_disable(&channel->rxq.napi);
+	while (napi_disable_pending(&channel->rxq.napi))
+		;
+
 err_kthread_rx:
 	return ret;
 }
@@ -140,6 +141,13 @@ int channel_start_pp(struct nfb_xdp_channel *channel)
 			ret = -EBUSY;
 			goto err_channel_running;
 		}
+
+#ifdef CONFIG_HAVE_NETIF_NAPI_ADD_WITH_WEIGHT
+		netif_napi_add(netdev, &rxq->napi, nfb_xctrl_napi_poll_pp, NAPI_POLL_WEIGHT);
+#else
+		netif_napi_add_weight(netdev, &rxq->napi, nfb_xctrl_napi_poll_pp, NAPI_POLL_WEIGHT);
+#endif
+		memset(&txq->napi, 0, sizeof(&txq->napi));
 
 		if (!(rxq->ctrl = nfb_xctrl_alloc_pp(netdev, channel->index, NFB_XDP_DESC_CNT, NFB_XCTRL_RX))) {
 			ret = -ENOMEM;
@@ -163,6 +171,7 @@ int channel_start_pp(struct nfb_xdp_channel *channel)
 			goto err_start_tx;
 		}
 
+		clear_bit(NFB_STATUS_IS_XSK, &channel->status);
 		if ((ret = channel_create_threads(channel))) {
 			printk(KERN_ERR "nfb: %s - failed to create queue threads %d (error: %d)\n", netdev->name, channel->nfb_index, ret);
 			goto err_threads;
@@ -179,6 +188,8 @@ err_start_rx:
 err_alloc_tx:
 	nfb_xctrl_destroy_pp(rxq->ctrl);
 err_alloc_rx:
+	netif_napi_del(&rxq->napi);
+	memset(&rxq->napi, 0, sizeof(rxq->napi));
 err_channel_running:
 	mutex_unlock(&channel->state_mutex);
 	return ret;
@@ -198,6 +209,17 @@ int channel_start_xsk(struct nfb_xdp_channel *channel)
 			ret = -EBUSY;
 			goto err_channel_running;
 		}
+
+#ifdef CONFIG_HAVE_NETIF_NAPI_ADD_WITH_WEIGHT
+				netif_napi_add(netdev, &rxq->napi, nfb_xctrl_napi_poll_rx_xsk, NAPI_POLL_WEIGHT);
+#else
+				netif_napi_add_weight(netdev, &rxq->napi, nfb_xctrl_napi_poll_rx_xsk, NAPI_POLL_WEIGHT);
+#endif
+#ifdef CONFIG_HAVE_NETIF_NAPI_ADD_TX_WEIGHT
+				netif_napi_add_tx_weight(netdev, &txq->napi, nfb_xctrl_napi_poll_tx_xsk, NAPI_POLL_WEIGHT);
+#else
+				netif_tx_napi_add(netdev, &txq->napi, nfb_xctrl_napi_poll_tx_xsk, NAPI_POLL_WEIGHT);
+#endif
 
 		if (!(rxq->ctrl = nfb_xctrl_alloc_xsk(netdev, channel->index, channel->pool, NFB_XCTRL_RX))) {
 			ret = -ENOMEM;
@@ -221,10 +243,10 @@ int channel_start_xsk(struct nfb_xdp_channel *channel)
 			goto err_start_tx;
 		}
 
+		set_bit(NFB_STATUS_IS_XSK, &channel->status);
 		if ((ret = channel_create_threads(channel))) {
 			goto err_threads;
 		}
-
 		set_bit(NFB_STATUS_IS_RUNNING, &channel->status);
 	}
 	mutex_unlock(&channel->state_mutex);
@@ -238,6 +260,10 @@ err_start_rx:
 err_alloc_tx:
 	nfb_xctrl_destroy_xsk(rxq->ctrl);
 err_alloc_rx:
+	netif_napi_del(&rxq->napi);
+	memset(&rxq->napi, 0, sizeof(rxq->napi));
+	netif_napi_del(&txq->napi);
+	memset(&txq->napi, 0, sizeof(txq->napi));
 err_channel_running:
 	mutex_unlock(&channel->state_mutex);
 	return ret;
@@ -264,15 +290,10 @@ int channel_stop(struct nfb_xdp_channel *channel)
 			put_task_struct(rxq->thread);
 			rxq->thread = NULL;
 		}
-		if (!test_bit(NFB_STATUS_IS_XSK, &channel->status)) { // base XDP operation
-			napi_disable(&rxq->napi_pp);
-			while (napi_disable_pending(&rxq->napi_pp))
-				;
-		} else { // AF_XDP operation
-			napi_disable(&rxq->napi_xsk);
-			while (napi_disable_pending(&rxq->napi_xsk))
-				;
-		}
+		napi_disable(&rxq->napi);
+		while (napi_disable_pending(&rxq->napi))
+			;
+		netif_napi_del(&rxq->napi);
 
 		// Collect tx thread
 		netif_tx_stop_queue(netdev_get_tx_queue(netdev, channel->index));
@@ -281,12 +302,13 @@ int channel_stop(struct nfb_xdp_channel *channel)
 			put_task_struct(channel->txq.thread);
 			channel->txq.thread = NULL;
 		}
-		if (!test_bit(NFB_STATUS_IS_XSK, &channel->status)) { // base XDP operation
-			// No napi
-		} else { // AF_XDP operation
-			napi_disable(&txq->napi_xsk);
-			while (napi_disable_pending(&txq->napi_xsk))
+		if (!test_bit(NFB_STATUS_IS_XSK, &channel->status)) {
+			// Only xsk uses tx napi
+		} else {
+			napi_disable(&txq->napi);
+			while (napi_disable_pending(&txq->napi))
 				;
+			netif_napi_del(&txq->napi);
 		}
 
 		if (!test_bit(NFB_STATUS_IS_XSK, &channel->status)) {

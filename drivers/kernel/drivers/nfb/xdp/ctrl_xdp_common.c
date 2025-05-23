@@ -242,7 +242,6 @@ static int nfb_setup_xsk_pool(struct net_device *dev, struct xsk_buff_pool *pool
 	}
 
 	channel_stop(channel);
-	set_bit(NFB_STATUS_IS_XSK, &channel->status);
 	channel->pool = pool;
 	if ((ret = channel_start_xsk(channel))) {
 		printk(KERN_WARNING "nfb: Failed to start channel %d, channel unusable\n", nfb_queue_id);
@@ -277,7 +276,6 @@ static int nfb_teardown_xsk_pool(struct net_device *dev, struct xsk_buff_pool *p
 	u32 ret = 0;
 
 	channel_stop(channel);
-	clear_bit(NFB_STATUS_IS_XSK, &channel->status);
 	if ((ret = channel_start_pp(channel))) {
 		printk(KERN_WARNING "nfb: Failed to start channel %d, channel unusable\n", nfb_queue_id);
 		goto unmap;
@@ -333,14 +331,14 @@ int nfb_xsk_wakeup(struct net_device *dev, u32 queue_id, u32 flags)
 
 	if (flags & XDP_WAKEUP_TX) {
 		local_bh_disable();
-		if (!napi_if_scheduled_mark_missed(&txq->napi_xsk))
-			napi_schedule(&txq->napi_xsk);
+		if (!napi_if_scheduled_mark_missed(&txq->napi))
+			napi_schedule(&txq->napi);
 		local_bh_enable();
 	}
 	if (flags & XDP_WAKEUP_RX) {
 		local_bh_disable();
-		if (!napi_if_scheduled_mark_missed(&rxq->napi_xsk))
-			napi_schedule(&rxq->napi_xsk);
+		if (!napi_if_scheduled_mark_missed(&rxq->napi))
+			napi_schedule(&rxq->napi);
 		local_bh_enable();
 	}
 

@@ -258,7 +258,7 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, struct xdp_buff **buffs, 
 
 int nfb_xctrl_napi_poll_rx_xsk(struct napi_struct *napi, int budget)
 {
-	struct nfb_xdp_queue *rxq = container_of(napi, struct nfb_xdp_queue, napi_xsk);
+	struct nfb_xdp_queue *rxq = container_of(napi, struct nfb_xdp_queue, napi);
 	struct xctrl *ctrl = rxq->ctrl;
 	struct net_device *netdev = napi->dev;
 	struct nfb_ethdev *ethdev = netdev_priv(netdev);
@@ -296,7 +296,7 @@ int nfb_xctrl_napi_poll_rx_xsk(struct napi_struct *napi, int budget)
 
 int nfb_xctrl_napi_poll_tx_xsk(struct napi_struct *napi, int budget)
 {
-	struct nfb_xdp_queue *txq = container_of(napi, struct nfb_xdp_queue, napi_xsk);
+	struct nfb_xdp_queue *txq = container_of(napi, struct nfb_xdp_queue, napi);
 	struct nfb_xdp_channel *channel = container_of(txq, struct nfb_xdp_channel, txq);
 	struct xctrl *ctrl = txq->ctrl;
 	struct xsk_buff_pool *pool = channel->pool;

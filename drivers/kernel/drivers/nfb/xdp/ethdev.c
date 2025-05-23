@@ -45,18 +45,6 @@ static int nfb_xdp_channels_init(struct net_device *netdev, unsigned *channel_in
 				ethdev->channels[map_idx].index = map_idx;
 				ethdev->channels[map_idx].nfb_index = nfb_idx;
 				ethdev->channels[map_idx].numa = dev_to_node(&ethdev->nfb->pci->dev);
-#ifdef CONFIG_HAVE_NETIF_NAPI_ADD_WITH_WEIGHT
-				netif_napi_add(netdev, &ethdev->channels[map_idx].rxq.napi_pp, nfb_xctrl_napi_poll_pp, NAPI_POLL_WEIGHT);
-				netif_napi_add(netdev, &ethdev->channels[map_idx].rxq.napi_xsk, nfb_xctrl_napi_poll_rx_xsk, NAPI_POLL_WEIGHT);
-#else
-				netif_napi_add_weight(netdev, &ethdev->channels[map_idx].rxq.napi_pp, nfb_xctrl_napi_poll_pp, NAPI_POLL_WEIGHT);
-				netif_napi_add_weight(netdev, &ethdev->channels[map_idx].rxq.napi_xsk, nfb_xctrl_napi_poll_rx_xsk, NAPI_POLL_WEIGHT);
-#endif
-#ifdef CONFIG_HAVE_NETIF_NAPI_ADD_TX_WEIGHT
-				netif_napi_add_tx_weight(netdev, &ethdev->channels[map_idx].txq.napi_xsk, nfb_xctrl_napi_poll_tx_xsk, NAPI_POLL_WEIGHT);
-#else
-				netif_tx_napi_add(netdev, &ethdev->channels[map_idx].txq.napi_xsk, nfb_xctrl_napi_poll_tx_xsk, NAPI_POLL_WEIGHT);
-#endif
 				map_idx++;
 			}
 		}
@@ -68,14 +56,7 @@ err_channel_alloc:
 
 static void nfb_xdp_channels_deinit(struct net_device *netdev)
 {
-	u32 i;
 	struct nfb_ethdev *ethdev = netdev_priv(netdev);
-
-	for (i = 0; i < ethdev->channel_count; i++) {
-		netif_napi_del(&ethdev->channels[i].rxq.napi_pp);
-		netif_napi_del(&ethdev->channels[i].rxq.napi_xsk);
-		netif_napi_del(&ethdev->channels[i].txq.napi_xsk);
-	}
 	kfree(ethdev->channels);
 }
 
@@ -305,12 +286,11 @@ int create_ethdev(struct nfb_xdp *module, u16 index, unsigned * channel_indexes,
 		ethdev->netdev = netdev;
 
 		// Initialize channels
-		if ((ret = nfb_xdp_channels_init(netdev,channel_indexes, channel_count))) {
+		if ((ret = nfb_xdp_channels_init(netdev, channel_indexes, channel_count))) {
 			dev_warn(&module->dev, "Failed to add XDP device, error initializing channels\n");
 			goto err_channels_init;
 		}
-			
-		// NOTE: nc_mac_enable ~ nfb-eth -e1
+
 		// NOTE: XDP netdevice can have multiple macs, to set link all relevant macs need to be considered.
 		// open rx mac component
 		if(!(ethdev->nc_rxmacs = kzalloc(sizeof(struct nc_rxmac *) * module->ethc, GFP_KERNEL))) {

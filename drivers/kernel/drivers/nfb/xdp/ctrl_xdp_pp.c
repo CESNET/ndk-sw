@@ -290,7 +290,7 @@ static inline u16 nfb_xctrl_rx_pp(struct xctrl *ctrl, struct xdp_buff **buffs, u
 
 int nfb_xctrl_napi_poll_pp(struct napi_struct *napi, int budget)
 {
-	struct nfb_xdp_queue *rxq = container_of(napi, struct nfb_xdp_queue, napi_pp);
+	struct nfb_xdp_queue *rxq = container_of(napi, struct nfb_xdp_queue, napi);
 	struct xctrl *ctrl = rxq->ctrl;
 	struct net_device *netdev = napi->dev;
 	struct nfb_ethdev *ethdev = netdev_priv(netdev);

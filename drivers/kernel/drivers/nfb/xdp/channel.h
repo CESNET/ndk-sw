@@ -22,8 +22,7 @@ struct nfb_xdp_queue {
 	struct task_struct *thread;
 
 	// napi structs - so far only xsk mode uses tx napi
-	struct napi_struct napi_pp;
-	struct napi_struct napi_xsk;
+	struct napi_struct napi;
 };
 
 // structure describing one queue pair
