@@ -29,6 +29,7 @@ struct nc_i2c_ctrl {
 #endif
 
 #include "i2c_controller.h"
+#include "i2c_bw_bmc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,6 +59,17 @@ static inline struct nc_i2c_ctrl *nc_i2c_open(const struct nfb_device *dev, int 
 		i2c->read_reg = nc_i2c_controller_read_reg;
 		i2c->write_reg = nc_i2c_controller_write_reg;
 		i2c->close = nc_i2c_controller_close;
+	} else if (fdt_node_check_compatible(nfb_get_fdt(dev), fdt_offset, "bittware,bmc") == 0) {
+		priv = nc_i2c_bw_bmc_open_ext(dev, fdt_offset, sizeof(*i2c), (void **) &i2c);
+
+		if (priv == NULL)
+			return NULL;
+
+		i2c->priv = priv;
+		i2c->set_addr = nc_i2c_bw_bmc_set_addr;
+		i2c->read_reg = nc_i2c_bw_bmc_read_reg;
+		i2c->write_reg = nc_i2c_bw_bmc_write_reg;
+		i2c->close = nc_i2c_bw_bmc_close;
 	}
 
 	return i2c;
