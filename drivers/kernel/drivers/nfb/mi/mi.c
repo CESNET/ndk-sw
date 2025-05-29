@@ -18,46 +18,29 @@
 #include "../nfb.h"
 #include "mi.h"
 
+#include <netcope/mi.h>
+
+
 static bool mi_debug = 0;
 
 static ssize_t nfb_bus_mi_read(struct nfb_bus *bus, void *buf, size_t nbyte, off_t offset)
 {
 	struct nfb_mi_node *mi_node = bus->priv;
+	bool wc_used = false;
 	if (mi_node->mem_virt == NULL)
 		return -EBADF;
 
-	if (nbyte == sizeof(uint64_t))
-		*((uint64_t*)buf) = readq(mi_node->mem_virt + offset);
-	else if (nbyte == sizeof(uint32_t))
-		*((uint32_t*)buf) = readl(mi_node->mem_virt + offset);
-	else if (nbyte == sizeof(uint16_t))
-		*((uint16_t*)buf) = readw(mi_node->mem_virt + offset);
-	else if (nbyte == sizeof(uint8_t))
-		*((uint8_t*)buf) = readb(mi_node->mem_virt + offset);
-	else
-		memcpy_fromio(buf, mi_node->mem_virt + offset, nbyte);
-
-	return nbyte;
+	return nfb_bus_mi_memcopy_noopt(buf, mi_node->mem_virt + offset, nbyte, offset, &wc_used);
 }
 
 static ssize_t nfb_bus_mi_write(struct nfb_bus *bus, const void *buf, size_t nbyte, off_t offset)
 {
 	struct nfb_mi_node *mi_node = bus->priv;
+	bool wc_used = false;
 	if (mi_node->mem_virt == NULL)
 		return -EBADF;
 
-	if (nbyte == sizeof(uint64_t))
-		 writeq(*((uint64_t*)buf), mi_node->mem_virt + offset);
-	else if (nbyte == sizeof(uint32_t))
-		 writel(*((uint32_t*)buf), mi_node->mem_virt + offset);
-	else if (nbyte == sizeof(uint16_t))
-		 writew(*((uint16_t*)buf), mi_node->mem_virt + offset);
-	else if (nbyte == sizeof(uint8_t))
-		 writeb(*((uint8_t*)buf),  mi_node->mem_virt + offset);
-	else
-		memcpy_toio(mi_node->mem_virt + offset, buf, nbyte);
-
-	return nbyte;
+	return nfb_bus_mi_memcopy_noopt(mi_node->mem_virt + offset, buf, nbyte, offset, &wc_used);
 }
 
 static int nfb_mi_mmap(struct vm_area_struct *vma, unsigned long offset, unsigned long size, void *priv)
