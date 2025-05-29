@@ -27,6 +27,7 @@ struct nc_bw_bmc {
 
 /* ~~~~[ PROTOTYPES ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 static inline struct nc_bw_bmc *nc_bw_bmc_open(const struct nfb_device *dev, int fdt_offset, unsigned char*buffer, unsigned int len);
+static inline struct nc_bw_bmc *nc_bw_bmc_open_ext(const struct nfb_device *dev, int fdt_offset, unsigned char*buffer, unsigned int len, int extra_sz, void **extra);
 static inline void nc_bw_bmc_close(struct nc_bw_bmc *spi);
 static inline int nc_bw_bmc_send_mctp(struct nc_bw_bmc *spi);
 static inline int nc_bw_bmc_send_mctp_ext(struct nc_bw_bmc *spi, const unsigned char *bytes, int len, int last, int wait_for_status);
@@ -43,6 +44,9 @@ static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned cha
 
 #define COMP_NETCOPE_BW_BMC_SPI "bittware,bmc"
 
+#define NC_BW_BMC_LOCK          1
+
+
 static inline void nc_bw_bmc_write32(struct nfb_comp *comp, uint32_t offset, uint32_t val)
 {
 	struct nc_bw_bmc * spi = (struct nc_bw_bmc*) nfb_comp_to_user(comp);
@@ -52,7 +56,7 @@ static inline void nc_bw_bmc_write32(struct nfb_comp *comp, uint32_t offset, uin
 }
 
 /* ~~~~[ IMPLEMENTATION ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-static inline struct nc_bw_bmc *nc_bw_bmc_open(const struct nfb_device *dev, int fdt_offset, unsigned char*buffer, unsigned int len)
+static inline struct nc_bw_bmc *nc_bw_bmc_open_ext(const struct nfb_device *dev, int fdt_offset, unsigned char*buffer, unsigned int len, int extra_sz, void**extra)
 {
 	int size;
 	struct nc_bw_bmc *spi;
@@ -62,6 +66,7 @@ static inline struct nc_bw_bmc *nc_bw_bmc_open(const struct nfb_device *dev, int
 	int retries = 0;
 
 	uint32_t status;
+
 	if (len == 0)
 		return NULL;
 	if (fdt_node_check_compatible(fdt, fdt_offset, COMP_NETCOPE_BW_BMC_SPI))
@@ -71,12 +76,18 @@ static inline struct nc_bw_bmc *nc_bw_bmc_open(const struct nfb_device *dev, int
 	if (buffer == NULL)
 		size += len;
 
+	size += extra_sz;
+
 	comp = nfb_comp_open_ext(dev, fdt_offset, size);
 	if (!comp)
 		return NULL;
 
 	spi = (struct nc_bw_bmc*) nfb_comp_to_user(comp);
-	spi->buffer = buffer ? buffer : (unsigned char*) (spi + 1);
+	if (extra) {
+		*extra = &spi[1];
+	}
+
+	spi->buffer = buffer ? buffer : (unsigned char*) (&spi[1]) + extra_sz;
 	spi->buffer_len = len;
 	spi->pos = 0;
 	spi->recv_len = 0;
@@ -114,13 +125,28 @@ static inline struct nc_bw_bmc *nc_bw_bmc_open(const struct nfb_device *dev, int
 	return spi;
 }
 
+static inline struct nc_bw_bmc *nc_bw_bmc_open(const struct nfb_device *dev, int fdt_offset, unsigned char *buffer, unsigned int len)
+{
+	return nc_bw_bmc_open_ext(dev, fdt_offset, buffer, len, 0, NULL);
+}
+
 static inline void nc_bw_bmc_close(struct nc_bw_bmc *spi)
 {
 	nfb_comp_close(nfb_user_to_comp(spi));
 }
 
+static inline int nc_bw_bmc_lock(struct nc_bw_bmc *spi)
+{
+	return nfb_comp_trylock(nfb_user_to_comp(spi), NC_BW_BMC_LOCK, 100) == 0 ? 1 : 0;
+}
+
+static inline void nc_bw_bmc_unlock(struct nc_bw_bmc *spi)
+{
+	nfb_comp_unlock(nfb_user_to_comp(spi), NC_BW_BMC_LOCK);
+}
+
 /* send raw mctp: header must be in bytes already (hdr, dst, src, flags) */
-static inline int nc_bw_bmc_send_mctp_ext(struct nc_bw_bmc *spi, const unsigned char *bytes, int len, int last, int wait_for_status)
+static inline int _nc_bw_bmc_send_raw_frame(struct nc_bw_bmc *spi, const unsigned char *bytes, int len, int last, int wait_for_status, int cmd, uint32_t expected_status)
 {
 	int retries = 0;
 	struct nfb_comp * comp = nfb_user_to_comp(spi);
@@ -136,7 +162,7 @@ static inline int nc_bw_bmc_send_mctp_ext(struct nc_bw_bmc *spi, const unsigned 
 	if (len == 0)
 		return 0;
 
-	nc_bw_bmc_write32(comp, NC_BW_BMC_SPI_WR_FIFO, 0x11); /* MCTP command */
+	nc_bw_bmc_write32(comp, NC_BW_BMC_SPI_WR_FIFO, cmd); /* MCTP command */
 
 	for (i = 0; i < len - 1; i++) {
 		nc_bw_bmc_write32(comp, NC_BW_BMC_SPI_WR_FIFO, bytes[i]);
@@ -147,6 +173,7 @@ static inline int nc_bw_bmc_send_mctp_ext(struct nc_bw_bmc *spi, const unsigned 
 	nfb_comp_write32(comp, NC_BW_BMC_SPI_WR_FIFO, status);
 	if (!wait_for_status)
 		return 0;
+
 	if (spi->throttle_write)
 		nfb_comp_read32(comp, NC_BW_BMC_SPI_WR_FIFO);
 
@@ -167,17 +194,26 @@ static inline int nc_bw_bmc_send_mctp_ext(struct nc_bw_bmc *spi, const unsigned 
 		return -EPIPE;
 
         status = status >> 24;
-	if (status != 0x20) {
-		/* 0x20: MCTP Success
-		 * 0x21: MCTP Invalid Length
-		 * 0x22: MCTP Invalid Source
-		 * 0x23: MCTP Invalid Message
-		 * 0xF0: Unrecognized Command
-		 */
+	if (status != expected_status) {
 		return -EOPNOTSUPP;
 	}
 
 	return 0;
+}
+
+static inline int nc_bw_bmc_send_mctp_ext(struct nc_bw_bmc *spi, const unsigned char *bytes, int len, int last, int wait_for_status)
+{
+	/* Command:
+	 * 0x11: MCTP
+	 *
+	 * Expected status:
+	 * 0x20: MCTP Success
+	 * 0x21: MCTP Invalid Length
+	 * 0x22: MCTP Invalid Source
+	 * 0x23: MCTP Invalid Message
+	 * 0xF0: Unrecognized Command
+	 */
+	return _nc_bw_bmc_send_raw_frame(spi, bytes, len, last, wait_for_status, 0x11, 0x20);
 }
 
 static inline int nc_bw_bmc_send_mctp(struct nc_bw_bmc *spi)
@@ -185,11 +221,26 @@ static inline int nc_bw_bmc_send_mctp(struct nc_bw_bmc *spi)
 	return nc_bw_bmc_send_mctp_ext(spi, spi->buffer, spi->pos, 1, 1);
 }
 
+static inline int nc_bw_bmc_send_i2c(struct nc_bw_bmc * spi, const unsigned char *bytes, int len)
+{
+	/* Command:
+	 * 0x22: I2C
+	 *
+	 * Expected status:
+	 * 0x10: I2C Success
+	 * 0x11: I2C NACK
+	 * 0x12: I2C Timeout
+	 * 0x13: I2C Invalid Length
+	 * 0xF0: Unrecognized Command
+	 */
+	return _nc_bw_bmc_send_raw_frame(spi, bytes, len, 1, 1, 0x22, 0x10);
+}
+
 static inline int nc_bw_bmc_min(int a, int b) {
     return a < b ? a : b;
 }
 
-static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned char* data, unsigned int len, unsigned int *received)
+static inline int _nc_bw_bmc_receive(struct nc_bw_bmc *spi, unsigned char* data, unsigned int len, unsigned int *received, uint32_t expected_status)
 {
 	struct nfb_comp * comp = nfb_user_to_comp(spi);
 
@@ -221,7 +272,7 @@ static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned cha
 		return bytes;
 
 	status = nfb_comp_read32(comp, NC_BW_BMC_SPI_RD_FIFO);
-	if ((status & 0xFF) != 0x11) {
+	if ((status & 0xFF) != expected_status) {
 		nc_bw_bmc_write32(comp, NC_BW_BMC_SPI_RD_CSR, 1 << 14); /* Read FIFO Reset */
 		nc_bw_bmc_write32(comp, NC_BW_BMC_SPI_RD_CSR, 1 << 1); /* Read Transfer Complete */
 		return -EBADF;
@@ -253,9 +304,29 @@ static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned cha
 	return 0;
 }
 
+static inline int nc_bw_bmc_receive_mctp_ext(struct nc_bw_bmc *spi, unsigned char* data, unsigned int len, unsigned int *received)
+{
+	/* 0x11: MCTP Response */
+	return _nc_bw_bmc_receive(spi, data, len, received, 0x11);
+}
+
 static inline int nc_bw_bmc_receive_mctp(struct nc_bw_bmc *spi)
 {
 	return nc_bw_bmc_receive_mctp_ext(spi, spi->buffer, spi->buffer_len, &spi->recv_len);
+}
+
+static inline int nc_bw_bmc_receive_i2c(struct nc_bw_bmc *spi, unsigned char* data, unsigned int len)
+{
+	int ret;
+	unsigned int received;
+	/* 0x24: I2C Response */
+	ret = _nc_bw_bmc_receive(spi, data, len, &received, 0x24);
+	if (ret < 0)
+		return ret;
+
+	if (received != len)
+		return -EIO;
+	return 0;
 }
 
 static inline int nc_bw_bmc_mctp_header_default(struct nc_bw_bmc *spi)
@@ -572,7 +643,7 @@ static inline int nc_bw_bmc_fpga_load_ext(struct nc_bw_bmc *spi, const void *dat
 	return 0;
 }
 
-int nc_bw_bmc_send_reload(struct nc_bw_bmc * spi, const char *filename)
+static inline int nc_bw_bmc_send_reload(struct nc_bw_bmc * spi, const char *filename)
 {
 	int ret = 0;
 	int offset = 0;
