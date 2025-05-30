@@ -14,10 +14,11 @@ class Eth:
     """
 
     def __init__(self, nfb: libnfb.Nfb, node: fdt.Node) -> None:
-        self.rxmac = libnetcope.RxMac(nfb, nfb.fdt_get_phandle(node.get_property('rxmac').value))
-        self.txmac = libnetcope.TxMac(nfb, nfb.fdt_get_phandle(node.get_property('txmac').value))
-        self.pcspma = PcsPma(nfb, nfb.fdt_get_phandle(node.get_property('pcspma').value))
-        self.pmd = libnetcope.Transceiver(nfb, nfb.fdt_get_phandle(node.get_property('pmd').value))
+        sn = {pn: node.get_property(pn) for pn in ['rxmac', 'txmac', 'pcspma', 'pmd']}
+        self.rxmac = libnetcope.RxMac(nfb, nfb.fdt_get_phandle(sn['rxmac'].value)) if sn['rxmac'] else None
+        self.txmac = libnetcope.TxMac(nfb, nfb.fdt_get_phandle(sn['txmac'].value)) if sn['txmac'] else None
+        self.pcspma = PcsPma(nfb, nfb.fdt_get_phandle(sn['pcspma'].value)) if sn['pcspma'] else None
+        self.pmd = libnetcope.Transceiver(nfb, nfb.fdt_get_phandle(sn['pmd'].value)) if sn['pmd'] else None
 
     def _common_action(self, action: str, *args: Any, **kwargs: Any) -> List[Any]:
         return [
