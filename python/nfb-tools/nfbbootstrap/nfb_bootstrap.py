@@ -51,5 +51,6 @@ def main():
     with open(args.dtb, "wb") as f:
         f.write(dt.to_dtb(version=17))
 
+
 if __name__ == "__main__":
     main()

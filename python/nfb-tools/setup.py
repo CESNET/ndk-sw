@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='nfbtools',
-    version = "0.2.0",
+    version="0.2.0",
     packages=[
         "nfbmeter",
         "nfbbootstrap",
@@ -15,7 +15,7 @@ setup(
     entry_points={
         'console_scripts': [
             'nfb-meter=nfbmeter.nfbmeter:main',
-            'nfb-bootstrap = nfbbootstrap.nfb_bootstrap:main',
+            'nfb-bootstrap=nfbbootstrap.nfb_bootstrap:main',
         ],
     },
     install_requires=[

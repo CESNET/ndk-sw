@@ -106,7 +106,7 @@ class EventCounter(nfb.BaseComp):
     #def read_stats_captured(self, count: int = 0, wait: bool = False):
     def read_stats_captured(self):
         ret = None
-        ret = {"cycles": 0, "events": 0, "wraps": 0} # What's better to return?
+        ret = {"cycles": 0, "events": 0, "wraps": 0}  # What's better to return?
         valid = True
         while valid:
             reg = self._comp.read32(self._REG_CAPTURE_FIFO)

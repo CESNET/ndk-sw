@@ -108,9 +108,8 @@ How to read the probed data
 The following diagram is borrowed from the documentation of the `Streaming Debug components <https://cesnet.github.io/ndk-fpga/devel/comp/debug/streaming_debug/readme.html>`_.
 It shows a simple pipeline of three FW components (modules): A, B, and C.
 
-.. _figure1:
 
-.. image:: img/nfb-busdebugctl_example1.drawio.svg
+.. figure:: img/nfb-busdebugctl_example1.drawio.svg
     :align: center
     :width: 60 %
 
@@ -130,9 +129,8 @@ How to determine which component is at flaw?
 This is best explained using a picture.
 The following picture builds on the example above, showing the same pipeline with connected Debug Probes.
 
-.. _figure2:
 
-.. image:: img/nfb-busdebugctl_example2.drawio.svg
+.. figure:: img/nfb-busdebugctl_example2.drawio.svg
     :align: center
     :width: 60 %
 

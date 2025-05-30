@@ -14,6 +14,7 @@ NFB tools
    nfb-mdio
    nfb-dma
    nfb-tsu
+   nfb-busdebugctl
 
 .. rubric:: :ref:`nfb-info<nfb_info>`
 .. include:: nfb-info.rst

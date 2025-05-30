@@ -23,11 +23,14 @@ NEXT_AFU = 0x18
 def bit(b):
     return (1 << b)
 
+
 def bitmask(b):
     return (1 << b) - 1
 
+
 def bit_get(val, b):
     return (val >> b) & 1
+
 
 def field_get(val, bto, bfrom):
     return (val >> bfrom) & bitmask(bto - bfrom)
@@ -38,11 +41,11 @@ def feature_id(value):
     type = field_get(64, 60, value)
 
     if type == DFH_TYPE_FIU:
-            return FEATURE_ID_FIU_HEADER
+        return FEATURE_ID_FIU_HEADER
     elif type == DFH_TYPE_PRIVATE:
-            return id
+        return id
     elif type == DFH_TYPE_AFU:
-            return FEATURE_ID_AFU
+        return FEATURE_ID_AFU
 
 
 def parse_dfl_from(bar, offset, out_dict, verbose):
