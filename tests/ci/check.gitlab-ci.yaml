@@ -1,0 +1,40 @@
+variables:
+  BASE_COMMIT_SHA: $CI_COMMIT_SHA
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      variables:
+        BASE_COMMIT_SHA: $CI_MERGE_REQUEST_DIFF_BASE_SHA
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        BASE_COMMIT_SHA: $CI_COMMIT_SHA
+
+editorconfig:
+  stage: check
+  needs: []
+  image: mstruebing/editorconfig-checker
+  script: [ec]
+
+pycodestyle:
+  stage: check
+  needs: []
+  image:
+    name: python:3.11-slim
+    entrypoint: [""]
+  before_script:
+     - pip install flake8
+  script:
+    - sh tests/ci/pycodestyle.sh
+
+commitlint:
+  stage: check
+  needs: []
+  image: registry.hub.docker.com/library/node:alpine
+  variables:
+    GIT_DEPTH: 0
+  before_script:
+    - apk add --no-cache git
+    - npm install --save-dev @commitlint/config-conventional @commitlint/cli
+  script:
+    - npx commitlint --extends '@commitlint/config-conventional' --from "${BASE_COMMIT_SHA}" --to "${CI_COMMIT_SHA}"

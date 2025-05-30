@@ -1,11 +1,17 @@
+stages:
+  - check
+  - deploy
+
 variables:
   GIT_STRATEGY: clone
   GIT_SUBMODULE_STRATEGY: recursive
 
-image: python:3.7-alpine
+include:
+  - local: "tests/ci/check.gitlab-ci.yaml"
 
 pages:
   stage: deploy
+  image: python:3.9-alpine
   script:
   - apk add -U make doxygen musl-dev py3-setuptools
   - apk add -U gcc cmake dtc-dev numactl-dev ncurses-dev libarchive-dev libconfig libconfig-dev automake autoconf curl git cython python3-dev dtc-dev linux-headers zlib-dev
