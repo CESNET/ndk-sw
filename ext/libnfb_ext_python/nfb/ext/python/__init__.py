@@ -1,16 +1,18 @@
 "libnfb-ext for use in Python"
 
 from abc import ABC, abstractmethod
-import importlib
 import fdt
 
 from . import shim
 
+
 class AbstractNdpQueue(ABC):
     def start(self):
         pass
+
     def stop(self):
         pass
+
 
 class AbstractNdpQueueRx(AbstractNdpQueue):
     @abstractmethod

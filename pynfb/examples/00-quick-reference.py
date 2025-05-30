@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 #############################################
 # Python NFB API examples - quick reference #

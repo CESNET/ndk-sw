@@ -1,4 +1,3 @@
-import Cython
 from Cython.Build import cythonize
 from setuptools import Extension, setup, find_namespace_packages
 

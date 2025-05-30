@@ -32,7 +32,7 @@ def Server(servicer, addr='127.0.0.1', port=50051):
     server.start()
 
     server.__path = f'libnfb-ext-grpc.so:grpc:{addr}:{port}'
-    server.path = lambda : server.__path
+    server.path = lambda: server.__path
     return server
 
 
@@ -43,3 +43,4 @@ def run_server(servicer=None, **kwargs):
     server = Server(svc, **kwargs)
     # server.shutdown()
     # server.close()
+    return server
