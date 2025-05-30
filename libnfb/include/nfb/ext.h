@@ -12,6 +12,7 @@
 
 #ifndef __KERNEL__
 #include <stdint.h>
+#include <sys/types.h>
 #endif
 
 #ifdef __cplusplus
