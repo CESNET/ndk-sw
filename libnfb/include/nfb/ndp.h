@@ -63,7 +63,7 @@ static inline void ndp_packet_flag_header_id_set(struct ndp_packet *p, uint8_t i
 	p->flags = (p->flags & ~0x3) | (id & 0x3);
 }
 
-static inline uint8_t ndp_packet_flag_header_id_get(struct ndp_packet *p)
+static inline uint8_t ndp_packet_flag_header_id_get(const struct ndp_packet *p)
 {
 	return p->flags & 0x3;
 }
