@@ -18,7 +18,9 @@
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="NDP tools" href="ndp-tools.html" />
+    <link rel="prev" title="nfb-tsu" href="nfb-tsu.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -45,10 +47,25 @@
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Tools</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Common info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="nfb-tools.html">NFB tools</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="nfb-info.html">nfb-info</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nfb-bus.html">nfb-bus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nfb-boot.html">nfb-boot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nfb-eth.html">nfb-eth</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nfb-mdio.html">nfb-mdio</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nfb-dma.html">nfb-dma</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nfb-tsu.html">nfb-tsu</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">nfb-busdebugctl</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-use">How to use</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-read-the-probed-data">How to read the probed data</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="ndp-tools.html">NDP tools</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
@@ -84,6 +101,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="nfb-tools.html">NFB tools</a></li>
       <li class="breadcrumb-item active">nfb-busdebugctl</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/tools/nfb-busdebugctl.rst.txt" rel="nofollow"> View page source</a>
@@ -197,7 +215,14 @@ It is recommended to analyze the difference in these counters over a (short) per
 <h2>How to read the probed data<a class="headerlink" href="#how-to-read-the-probed-data" title="Link to this heading"></a></h2>
 <p>The following diagram is borrowed from the documentation of the <a class="reference external" href="https://cesnet.github.io/ndk-fpga/devel/comp/debug/streaming_debug/readme.html">Streaming Debug components</a>.
 It shows a simple pipeline of three FW components (modules): A, B, and C.</p>
-<p id="figure1">When performing analysis, watch for incrementing counters of the <cite>Destination hold cycles</cite>.
+<figure class="align-center" id="id3">
+<a class="reference internal image-reference" href="../_images/nfb-busdebugctl_example1.drawio.svg"><img alt="../_images/nfb-busdebugctl_example1.drawio.svg" src="../_images/nfb-busdebugctl_example1.drawio.svg" style="width: 60%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">An example of a stream pipeline where component A sends data to comp B and B to C (blue lines) and where C uses backpressure to pause data from B and B to A (red lines).</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>When performing analysis, watch for incrementing counters of the <cite>Destination hold cycles</cite>.
 These are the ones that indicate that something is holding back the traffic.
 When viewing the difference between the samples of <cite>nfb-busdebugctl -A</cite>, three scenarios can occur.
 The <cite>Destination hold cycles</cite> counter is incremented on:</p>
@@ -210,7 +235,14 @@ The <cite>Destination hold cycles</cite> counter is incremented on:</p>
 How to determine which component is at flaw?
 This is best explained using a picture.
 The following picture builds on the example above, showing the same pipeline with connected Debug Probes.</p>
-<p id="figure2">If the <cite>Destination hold cycles</cite> counters increment on Probes:</p>
+<figure class="align-center" id="id4">
+<a class="reference internal image-reference" href="../_images/nfb-busdebugctl_example2.drawio.svg"><img alt="../_images/nfb-busdebugctl_example2.drawio.svg" src="../_images/nfb-busdebugctl_example2.drawio.svg" style="width: 60%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Debug Probes on the input and output of the pipeline and in between the components A, B, and C.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>If the <cite>Destination hold cycles</cite> counters increment on Probes:</p>
 <ol class="arabic simple">
 <li><p>on the input before component A, and</p></li>
 <li><p>between components A and B</p></li>
@@ -222,7 +254,10 @@ The following picture builds on the example above, showing the same pipeline wit
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="nfb-tsu.html" class="btn btn-neutral float-left" title="nfb-tsu" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ndp-tools.html" class="btn btn-neutral float-right" title="NDP tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 
