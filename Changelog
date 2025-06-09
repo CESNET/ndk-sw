@@ -1,3 +1,10 @@
+* Mon Jun 9 2025 Martin Spinler <spinler@cesnet.cz> - 6.27.0-1
+- [FEATURE]: add I2C / QSFP support for BittWare BMC (ia-440i)
+- [FEATURE] nfb-dma/driver: add dynamic netdev management for ndp_netdev
+- [OPT] driver: check kernel configure flags in parallel
+- [FIX] MI driver: use libnfb MI memcpy functionality in kernel driver too (fixes memcpy_*io)
+- [FIX] NDP Calypte: lot of fixes and improvements
+
 * Mon May 5 2025 Martin Spinler <spinler@cesnet.cz> - 6.26.4-1
 - [FIX] libnfb/NDP: remove double sync on queue start causing performance loss / blockage
 - [FIX] nfb-eth: wait for QSFP ready when reading monitoring data
