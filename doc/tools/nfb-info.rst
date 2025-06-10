@@ -45,3 +45,83 @@ different card-name labels.
 
 :ref:`nfb-boot<nfb_boot>` compares card-name labels and ensures and refuses to flash
 firmware with unequal card-name.
+
+
+JSON output
+~~~~~~~~~~~
+
+.. code-block:: python
+
+    {                                   # only present in default mode
+        {
+         "board": {
+            "board_name": "FB1CGG",
+            "serial_number": "317",
+            "network_interfaces": 2,
+            "interfaces": [             # only present in verbose mode
+                {
+                    "id": 0,
+                    "type": "QSFP"
+                },
+                {
+                    "id": 1,
+                    "type": "QSFP"
+                }
+            ],
+            "temperature": 54.2         # only present in verbose mode
+        },
+        "firmware": {
+            "card_name": "FB2CGG3",
+            "project_name": "NDK_HFT",
+            "project_variant": "10G2",
+            "project_version": "0.2.1",
+            "build_time": "2024-04-04 15:38:44",
+            "build_tool": "Vivado v2022.2 (64-bit)",
+            "build_author": "cabal@cesnet.cz",
+            "rx_queues": 16,            # all RX queues in firmware
+            "rx_queues_available": 16,  # only usable RX queues (e.g. corresponding PCI endpoint is connected)
+            "tx_queues": 16,
+            "tx_queues_available": 16,
+            "eth_channels": [           # only present in verbose mode
+                {
+                    "id": 0,
+                    "type": "10G"
+                }
+            ]
+        },
+        "system": {
+            "pci": [                    # list of PCI endpoints
+                {
+                    "id": 0,
+                    "pci_bdf": "0000:03:00.0",
+                    "pci_link_speed_str": "8 GT/s",
+                    "pci_link_width": 8,
+                    "numa": 0,
+                    "bar": [
+                        {
+                            "id": 0,
+                            "size": 67108864
+                        },
+                        {
+                            "id": 2,
+                            "size": 16777216
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+
+    [                                   # only present in card list mode
+        {
+            "id": 2,
+            "path": "/dev/nfb2",
+            "pci_bdf": "0000:81:00.0",
+            "card_name": "FB2CGHH",
+            "serial_number": "144",
+            "project_name": "NDK_MINIMAL",
+            "project_variant": "100G2",
+            "project_version": "0.5.6"
+        },
+        ...
+    ]

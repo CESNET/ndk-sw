@@ -12,8 +12,8 @@
 #include <math.h>
 #include <arpa/inet.h>
 
-#include <nfb/nfb.h>
-#include <netcope/i2c_ctrl.h>
+
+#include "eth.h"
 
 /* I2C registers addresses */
 #define SFF8636_IDENTIFIER        0
@@ -69,24 +69,24 @@ static inline uint16_t qsfp_i2c_read16(struct nc_i2c_ctrl *ctrl, uint8_t reg)
  *
  * @param reg Register
  */
-void qsfpp_print_compliance(uint32_t reg)
+const char *qsfpp_get_compliance(uint32_t reg)
 {
 	if (reg & 0x1) {
-		printf("40G Active Cable (XLPPI)\n");
+		return "40G Active Cable (XLPPI)";
 	} else if (reg & 0x2) {
-		printf("40GBASE-LR4\n");
+		return "40GBASE-LR4";
 	} else if (reg & 0x4) {
-		printf("40GBASE-SR4\n");
+		return "40GBASE-SR4";
 	} else if (reg & 0x8) {
-		printf("40GBASE-CR4\n");
+		return "40GBASE-CR4";
 	} else if (reg & 0x10) {
-		printf("10GBASE-SR\n");
+		return "10GBASE-SR";
 	} else if (reg & 0x20) {
-		printf("10GBASE-LR\n");
+		return "10GBASE-LR";
 	} else if (reg & 0x40) {
-		printf("10GBASE-LRM\n");
+		return "10GBASE-LRM";
 	} else {
-		printf("Reserved\n");
+		return "Reserved";
 	}
 }
 
@@ -295,15 +295,18 @@ const char *cmis_mit(uint8_t reg)
  * @param count Maximal number of characters
  */
 
-void qsfp_i2c_text_print(struct nc_i2c_ctrl *i2c, uint8_t reg, unsigned count)
+int qsfp_i2c_text_print(FILE *fout, struct nc_i2c_ctrl *i2c, uint8_t reg, unsigned count)
 {
 	/* INFO: Some modules doesn't supports continuous reads, disable burst mode */
 	const unsigned BURST = 1;
 	char text[BURST + 1];
 
 	int ret;
+	int rcnt = 0;
 	unsigned cnt;
 	unsigned i = 0;
+	int j;
+	int spaces = 0;
 
 	while (count) {
 		cnt = count < BURST ? count : BURST;
@@ -313,14 +316,56 @@ void qsfp_i2c_text_print(struct nc_i2c_ctrl *i2c, uint8_t reg, unsigned count)
 			break;
 		text[ret] = 0;
 
-		printf("%s", text);
+		for (j = 0; j < ret; j++) {
+			if (text[j] == ' ') {
+				spaces++;
+			} else {
+				rcnt += fprintf(fout, "%*s%c", spaces, "", text[j]);
+				spaces = 0;
+			}
+		}
+
 		count -= cnt;
 		i += cnt;
 
 		if (strlen(text) < cnt)
 			break;
 	}
-	printf("\n");
+	return rcnt;
+}
+
+int _print_qsfp_i2c_text(FILE*out, struct nc_i2c_ctrl*ctrl, int item, int json)
+{
+	int ret = 0;
+	int base = 0;
+	int size = 0;
+	switch (item) {
+	case NI_SFF8636_VNDR_NAME:      size = 16; base = SFF8636_VENDOR_NAME; break;
+	case NI_SFF8636_VNDR_SN:        size = 16; base = SFF8636_VENDOR_SN; break;
+	case NI_SFF8636_VNDR_PN:        size = 16; base = SFF8636_VENDOR_PN; break;
+	case NI_SFF8636_REVISION:       size =  2; base = SFF8636_REVISION; break;
+	case NI_TRN_CMIS_VNDR_NAME:     size = 16; base = CMIS_VENDOR_NAME; break;
+	case NI_TRN_CMIS_VNDR_SN:       size = 16; base = CMIS_VENDOR_SN; break;
+	case NI_TRN_CMIS_VNDR_PN:       size = 16; base = CMIS_VENDOR_PN; break;
+	}
+	if (size == 0)
+		return 0;
+	ret += fprintf(out, json ? "\"": "");
+	ret += qsfp_i2c_text_print(out, ctrl, base, size);
+	ret += fprintf(out, json ? "\"": "");
+	return ret;
+}
+
+int print_json_qsfp_i2c_text(void *priv, int item, struct nc_i2c_ctrl *ctrl)
+{
+	struct ni_json_cbp *p = priv;
+	return _print_qsfp_i2c_text(p->f, ctrl, item, 1);
+}
+
+int print_user_qsfp_i2c_text(void *priv, int item, struct nc_i2c_ctrl *ctrl)
+{
+	struct ni_user_cbp *p = priv;
+	return _print_qsfp_i2c_text(p->f, ctrl, item, 0);
 }
 
 #if 0
@@ -342,8 +387,8 @@ int qsfp_present(struct nc_i2c_ctrl *i2c, int mdev __attribute__((unused)) )
 }
 #endif
 
-void sff8636_print(struct nc_i2c_ctrl *ctrl);
-void cmis_print(struct nc_i2c_ctrl *ctrl);
+void sff8636_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl);
+void cmis_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl);
 
 struct nc_i2c_ctrl *qsfpp_i2c_open(struct nfb_device *dev, int nodeoffset, int node_params)
 {
@@ -380,7 +425,7 @@ struct nc_i2c_ctrl *qsfpp_i2c_open(struct nfb_device *dev, int nodeoffset, int n
  * @param ifc Interface device
  * @param space Interface space
  */
-void qsfpp_print(struct nfb_device *dev, int nodeoffset, int node_params)
+void qsfpp_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int node_params)
 {
 	uint8_t reg = 0xFF;
 	struct nc_i2c_ctrl *ctrl;
@@ -392,19 +437,20 @@ void qsfpp_print(struct nfb_device *dev, int nodeoffset, int node_params)
 	}
 
 	nc_i2c_read_reg(ctrl, SFF8636_IDENTIFIER, &reg, 1);
-	printf("Module identifier          : %s\n", qsfp_get_identifier(reg));
+	ni_item_str(ctx, NI_MOD_IDENT, qsfp_get_identifier(reg));
 
 	if (reg == 0x18) {
-		cmis_print(ctrl);
+		cmis_print(ctx, ctrl);
 	} else {
-		sff8636_print(ctrl);
+		sff8636_print(ctx, ctrl);
 	}
 
 	nc_i2c_close(ctrl);
 }
 
-void sff8636_print(struct nc_i2c_ctrl *ctrl)
+void sff8636_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl)
 {
+	const char *text;
 	const int CHANNELS = 4;
 
 	uint8_t i;
@@ -412,6 +458,7 @@ void sff8636_print(struct nc_i2c_ctrl *ctrl)
 	uint16_t reg16 = 0;
 	int retries = 0;
 	int ret;
+	double pwr;
 
 	/* Wait for Data Ready (max 2 sec according specs) */
 	/* TODO: this should be done in qsfp_i2c_common functions */
@@ -421,100 +468,95 @@ void sff8636_print(struct nc_i2c_ctrl *ctrl)
 	} while (ret == 1 && ((reg & 0x01) == 0x1) && (++retries < 10000));
 
 	reg16 = qsfp_i2c_read16(ctrl, SFF8636_TEMPERATURE);
-	printf("Temperature                : %.2f C\n", ((float) reg16) / 256);
 
-	printf("Vendor name                : ");
-	qsfp_i2c_text_print(ctrl, SFF8636_VENDOR_NAME, 16);
-
-	printf("Vendor serial number       : ");
-	qsfp_i2c_text_print(ctrl, SFF8636_VENDOR_SN, 16);
-
-	printf("Vendor PN                  : ");
-	qsfp_i2c_text_print(ctrl, SFF8636_VENDOR_PN, 16);
+	ni_item_double(ctx, NI_SFF8636_TEMP, ((float) reg16) / 256);
+	ni_item_qsfp_i2c_text(ctx, NI_SFF8636_VNDR_NAME, ctrl);
+	ni_item_qsfp_i2c_text(ctx, NI_SFF8636_VNDR_SN, ctrl);
+	ni_item_qsfp_i2c_text(ctx, NI_SFF8636_VNDR_PN, ctrl);
 
 	nc_i2c_read_reg(ctrl, SFF8636_COMPLIANCE, &reg, 1);
-	printf("Compliance                 : ");
 	if (reg & 0x80) {
 		nc_i2c_read_reg(ctrl, SFF8636_LINK_CODES, &reg, 1);
-		printf("%s\n", sff8024_get_ext_compliance(reg));
+		text = sff8024_get_ext_compliance(reg);
 	} else {
-		qsfpp_print_compliance(reg);
+		text = qsfpp_get_compliance(reg);
 	}
+	ni_item_str(ctx, NI_TRN_COMPLIANCE, text);
 
 	nc_i2c_read_reg(ctrl, SFF8636_CONNECTOR, &reg, 1);
-	printf("Connector                  : %s\n", sff8024_get_connector(reg));
-
-	printf("Revision                   : ");
-	qsfp_i2c_text_print(ctrl, SFF8636_REVISION, 2);
+	ni_item_str(ctx, NI_TRN_CONNECTOR, sff8024_get_connector(reg));
+	ni_item_qsfp_i2c_text(ctx, NI_SFF8636_REVISION, ctrl);
 
 	reg16 = qsfp_i2c_read16(ctrl, SFF8636_WAVELENGTH);
-	printf("Wavelength                 : %.2f nm ", ((float) reg16) / 20);
+	ni_item_double(ctx, NI_SFF8636_WL, ((float) reg16) / 20);
 
 	reg16 = qsfp_i2c_read16(ctrl, SFF8636_WAVELENGTH_TOL);
-	printf("+- %.2f nm\n", ((float) reg16) / 200);
+	ni_item_double(ctx, NI_SFF8636_WL_TOL, ((float) reg16) / 200);
 
-	printf("\nRX input power\n");
+	ni_list(ctx, NI_LIST_TRN_RX_IN_PWR);
 	for (i = 0; i < CHANNELS; i++) {
 		reg16 = qsfp_i2c_read16(ctrl, SFF8636_RX_INPUT_POWER + i * 2);
-		printf(" * Lane %d                  : %.2f %s (%.2f dBm)\n", i + 1,
-			(reg16 < 10000) ? ((float)reg16) / 10 : ((float) reg16) / 10000 ,
-			(reg16 < 10000) ? "uW" : "mW", 10 * log10(((float) reg16) / 10000));
+		pwr = ((float)reg16) / 10000000;
+
+		ni_item_int(ctx, NI_TRANS_RX_IN_PWR_L, i + 1);
+		ni_item_pwr(ctx, NI_TRANS_RX_IN_PWR_V, pwr);
 	}
+	ni_endlist(ctx, NI_LIST_TRN_RX_IN_PWR);
 
 	nc_i2c_read_reg(ctrl, SFF8636_STXDISABLE, &reg, 1);
 
-	printf("\nSoftware TX disable\n");
+	ni_list(ctx, NI_LIST_TRN_STX_DIS);
 	for (i = 0; i < CHANNELS; i++) {
-		printf(" * Lane %d                  : %sactive\n", i + 1, (reg & (1 << i)) ? "" : "in");
+		ni_item_int(ctx, NI_TRANS_STX_DIS_L, i + 1);
+		ni_item_ctrl_reg(ctx, NI_TRANS_STX_DIS_V, (reg & (1 << i)));
 	}
+	ni_endlist(ctx, NI_LIST_TRN_STX_DIS);
 }
 
-void cmis_print(struct nc_i2c_ctrl *ctrl)
+void cmis_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl)
 {
 	int channel_cnt = 8;
 
 	uint8_t i;
 	uint8_t reg = 0;
 	uint16_t reg16 = 0;
+	double pwr;
 
 	nc_i2c_write_reg(ctrl, CMIS_PAGE_SELECT, &reg, 1);
 
 	nc_i2c_read_reg(ctrl, CMIS_REVISION, &reg, 1);
-	printf("CMIS version               : %d.%d\n", reg >> 4, reg & 0xF);
+	ni_item_int(ctx, NI_TRN_CMIS_VER_MAJ, reg >> 4);
+	ni_item_int(ctx, NI_TRN_CMIS_VER_MIN, reg & 0xF);
 
 	nc_i2c_read_reg(ctrl, CMIS_GLOBAL_STATUS, &reg, 1);
-	printf("Module state               : %s\n", cmis_module_state((reg >> 1) & 0x7));
+	ni_item_str(ctx, NI_TRN_CMIS_GLB_STAT, cmis_module_state((reg >> 1) & 0x7));
 
 	reg16 = qsfp_i2c_read16(ctrl, CMIS_TEMPERATURE);
-	printf("Temperature                : %.2f C\n", ((float) reg16) / 256);
+	ni_item_double(ctx, NI_SFF8636_TEMP, ((float) reg16) / 256);
 
-	printf("Vendor name                : ");
-	qsfp_i2c_text_print(ctrl, CMIS_VENDOR_NAME, 16);
-
-	printf("Vendor serial number       : ");
-	qsfp_i2c_text_print(ctrl, CMIS_VENDOR_SN, 16);
-
-	printf("Vendor PN                  : ");
-	qsfp_i2c_text_print(ctrl, CMIS_VENDOR_PN, 16);
+	ni_item_qsfp_i2c_text(ctx, NI_TRN_CMIS_VNDR_NAME, ctrl);
+	ni_item_qsfp_i2c_text(ctx, NI_TRN_CMIS_VNDR_SN, ctrl);
+	ni_item_qsfp_i2c_text(ctx, NI_TRN_CMIS_VNDR_PN, ctrl);
 
 	nc_i2c_read_reg(ctrl, CMIS_MEDIA_TYPE, &reg, 1);
-	printf("Media Type                 : %s\n", cmis_mtf(reg));
+	ni_item_str(ctx, NI_TRN_CMIS_MED_T, cmis_mtf(reg));
 
 	nc_i2c_read_reg(ctrl, CMIS_MEDIA_INTERFACE_T, &reg, 1);
-	printf("Media Interface Technology : %s\n", cmis_mit(reg));
+	ni_item_str(ctx, NI_TRN_CMIS_IFC_T, cmis_mit(reg));
 
 	if (nc_i2c_read_reg(ctrl, CMIS_HOST_LANE_COUNT, &reg, 1) == 1) {
 		channel_cnt = reg & 0x0F;
 	}
 
-	printf("RX input power\n");
+	ni_list(ctx, NI_LIST_TRN_RX_IN_PWR);
 	for (i = 0; i < channel_cnt; i++) {
 		reg = 0x11; nc_i2c_write_reg(ctrl, CMIS_PAGE_SELECT, &reg, 1);
 		reg16 = qsfp_i2c_read16(ctrl, CMIS_OPTICAL_POWER_RX + i * 2);
-		printf(" * Lane %d                  : %.2f %s (%.2f dBm)\n", i + 1,
-			(reg16 < 10000) ? ((float)reg16) / 10 : ((float) reg16) / 10000 ,
-			(reg16 < 10000) ? "uW" : "mW", 10 * log10(((float) reg16) / 10000));
+		pwr = ((float)reg16) / 10000000;
+		ni_item_int(ctx, NI_TRANS_RX_IN_PWR_L, i + 1);
+		ni_item_pwr(ctx, NI_TRANS_RX_IN_PWR_V, pwr);
 	}
+	ni_endlist(ctx, NI_LIST_TRN_RX_IN_PWR);
 }
 
 /**

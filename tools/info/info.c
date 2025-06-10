@@ -27,7 +27,9 @@
 #include <netcope/eth.h>
 #include <netcope/nccommon.h>
 
-#define ARGUMENTS "d:q:hlvV"
+#include <netcope/ni.h>
+
+#define ARGUMENTS "d:q:hjlvV"
 
 #define BUFFER_SIZE 64
 
@@ -99,10 +101,149 @@ void usage(const char *progname, int verbose)
 		printf(" example of usage: '-q project,build,card'\n");
 	}
 	printf("-l              Print list of available devices\n");
+	printf("-j              Print output in JSON\n");
 	printf("-v              Increase verbosity\n");
 	printf("-V              Show version\n");
 	printf("-h              Show this text\n");
 }
+
+NI_DEFAULT_ITEMS(ni_common_item_callbacks, )
+
+
+enum NI_ITEMS {
+	NI_SEC_ROOT = 0,
+	NI_SEC0_BOARD_INFO,
+	NI_BOARD_NAME,
+	NI_SERIAL_NUMBER,
+	NI_FPGA_UNIQUE_ID,
+	NI_NET_IFCS,
+	NI_LIST_NET_IFCS,
+	NI_SEC1_NET_IFCS,
+	NI_IFC_ID,
+	NI_IFC_TYPE,
+	NI_TEMPERATURE,
+	NI_SEC0_FIRMWARE,
+	NI_CARD_NAME,
+	NI_PROJECT_NAME,
+	NI_PROJECT_VARIANT,
+	NI_PROJECT_VERSION,
+	NI_BUILT_TIME,
+	NI_BUILT_TIMESTAMP,
+	NI_BUILD_TOOL,
+	NI_BUILD_AUTHOR,
+	NI_RX_QUEUES_ALL,
+	NI_RX_QUEUES_EQ_AV,
+	NI_RX_QUEUES_NEQ_AV,
+	NI_TX_QUEUES_ALL,
+	NI_TX_QUEUES_EQ_AV,
+	NI_TX_QUEUES_NEQ_AV,
+	NI_ETH_CHANNELS,
+	NI_LIST_ETH_CHANNELS,
+	NI_SEC1_ETH_CHANNELS,
+	NI_ETH_CHANNEL_ID,
+	NI_ETH_CHANNEL_TYPE,
+	NI_SEC0_SYSTEM,
+	NI_SEC1_PCIEP,
+	NI_LIST_PCIEP,
+	NI_PCI_ID,
+	NI_PCI_SLOT,
+	NI_PCI_LINK_SPEED,
+	NI_PCI_LINK_WIDTH,
+	NI_NUMA,
+	NI_LIST_PCI_BAR,
+	NI_SEC2_PCI_BAR,
+	NI_BAR_ID,
+	NI_BAR_SIZE_STR,
+	NI_BAR_SIZE,
+
+	/* Card list */
+	NI_LIST_NFB,
+	NI_SEC_LIST_NFB,
+	NI_L_NFB_ID,
+	NI_L_LPATH,
+	NI_L_BFN,
+	NI_L_CARD_NAME,
+	NI_L_SN,
+	NI_L_PROJECT_NAME,
+	NI_L_PROJECT_VAR,
+	NI_L_PROJECT_VER,
+	NI_L_PROJECT_END,
+};
+
+#define NUF_N   (NI_USER_ITEM_F_NO_NEWLINE)
+#define NUF_NDA (NI_USER_ITEM_F_NO_NEWLINE | NI_USER_ITEM_F_NO_DELIMITER | NI_USER_ITEM_F_NO_ALIGN)
+#define NUF_DA  (NI_USER_ITEM_F_NO_DELIMITER | NI_USER_ITEM_F_NO_ALIGN)
+#define NUF_DAV (NI_USER_ITEM_F_NO_DELIMITER | NI_USER_ITEM_F_NO_ALIGN | NI_USER_ITEM_F_NO_VALUE)
+#define NUFA(x) ni_user_f_align(x)
+#define NUFW(x) ni_user_f_width(x)
+#define NJFD(x) ni_json_f_decim(x)
+
+struct ni_context_item_default ni_items[] = {
+	[NI_SEC_ROOT]           = {ni_json_e,                           ni_user_n},
+
+	[NI_SEC0_BOARD_INFO]    = {ni_json_k("board"),                  ni_user_l("Board info")},
+	[NI_BOARD_NAME]         = {ni_json_k("board_name"),             ni_user_l("Board name")},
+	[NI_SERIAL_NUMBER]      = {ni_json_k("serial_number"),          ni_user_l("Serial number")},
+	[NI_FPGA_UNIQUE_ID]     = {ni_json_k("fpga_unique_id"),         ni_user_l("FPGA unique ID")},
+	[NI_NET_IFCS]           = {ni_json_k("network_interfaces"),     ni_user_l("Network interfaces")},
+
+	[NI_LIST_NET_IFCS]      = {ni_json_k("interfaces"),             ni_user_n},
+	[NI_SEC1_NET_IFCS]      = {ni_json_e,                           ni_user_n},
+	[NI_IFC_ID]             = {ni_json_k("id"),                     ni_user_f(" * Interface ", NUF_NDA)},
+	[NI_IFC_TYPE]           = {ni_json_k("type"),                   ni_user_f("", 0)},
+	[NI_TEMPERATURE]        = {ni_json_f("temperature", NJFD(1)),   ni_user_v("Temperature", ni_user_f_decim(1), NULL, " C")},
+	[NI_SEC0_FIRMWARE]      = {ni_json_k("firmware"),               ni_user_l("Firmware info")},
+	[NI_CARD_NAME]          = {ni_json_k("card_name"),              ni_user_l("Card name")},
+	[NI_PROJECT_NAME]       = {ni_json_k("project_name"),           ni_user_l("Project name")},
+	[NI_PROJECT_VARIANT]    = {ni_json_k("project_variant"),        ni_user_l("Project variant")},
+	[NI_PROJECT_VERSION]    = {ni_json_k("project_version"),        ni_user_l("Project version")},
+	[NI_BUILT_TIME]         = {ni_json_n,                           ni_user_l("Built at")},
+	[NI_BUILT_TIMESTAMP]    = {ni_json_k("build_time"),             ni_user_n},
+	[NI_BUILD_TOOL]         = {ni_json_k("build_tool"),             ni_user_l("Build tool")},
+	[NI_BUILD_AUTHOR]       = {ni_json_k("build_author"),           ni_user_l("Build author")},
+
+	[NI_RX_QUEUES_ALL]      = {ni_json_k("rx_queues"),              ni_user_f("RX queues", NUF_N)},
+	[NI_RX_QUEUES_EQ_AV]    = {ni_json_k("rx_queues_available"),    ni_user_f(NULL, NUF_DAV)},
+	[NI_RX_QUEUES_NEQ_AV]   = {ni_json_k("rx_queues_available"),    ni_user_v(" (only", NUF_DA, NULL, "available)")},
+
+	[NI_TX_QUEUES_ALL]      = {ni_json_k("tx_queues"),              ni_user_f("TX queues", NUF_N)},
+	[NI_TX_QUEUES_EQ_AV]    = {ni_json_k("tx_queues_available"),    ni_user_f(NULL, NUF_DAV)},
+	[NI_TX_QUEUES_NEQ_AV]   = {ni_json_k("tx_queues_available"),    ni_user_v(" (only", NUF_DA, NULL, " available)")},
+
+	[NI_ETH_CHANNELS]       = {ni_json_n,                           ni_user_l("ETH channels")},
+	[NI_LIST_ETH_CHANNELS]  = {ni_json_k("eth_channels"),           ni_user_l(NULL)},
+	[NI_SEC1_ETH_CHANNELS]  = {ni_json_e,                           ni_user_l(NULL)},
+	[NI_ETH_CHANNEL_ID]     = {ni_json_k("id"),                     ni_user_f(" * Channel ", NUF_NDA)},
+	[NI_ETH_CHANNEL_TYPE]   = {ni_json_k("type"),                   ni_user_l("")},
+
+	[NI_SEC0_SYSTEM]        = {ni_json_k("system"),                 ni_user_l("System info")},
+	[NI_SEC1_PCIEP]         = {ni_json_e,                           ni_user_l(NULL)},
+	[NI_LIST_PCIEP]         = {ni_json_k("pci"),                    ni_user_l(NULL)},
+	[NI_PCI_ID]             = {ni_json_k("id"),                     ni_user_v("PCIe Endpoint ", NUF_DA, NULL, ":")},
+	[NI_PCI_SLOT]           = {ni_json_k("pci_bdf"),                ni_user_l(" * PCI slot")},
+	[NI_PCI_LINK_SPEED]     = {ni_json_k("pci_link_speed_str"),     ni_user_l(" * PCI link speed")},
+	[NI_PCI_LINK_WIDTH]     = {ni_json_k("pci_link_width"),         ni_user_v(" * PCI link width", 0, "x", NULL)},
+	[NI_NUMA]               = {ni_json_k("numa"),                   ni_user_l(" * NUMA node")},
+	[NI_LIST_PCI_BAR]       = {ni_json_k("bar"),                    ni_user_l(NULL)},
+	[NI_SEC2_PCI_BAR]       = {ni_json_e,                           ni_user_l(NULL)},
+	[NI_BAR_ID]             = {ni_json_k("id"),                     ni_user_v(" * MI BAR ", NUF_NDA, NULL, " size ")},
+	[NI_BAR_SIZE_STR]       = {ni_json_n,                           ni_user_f("", 0)},
+	[NI_BAR_SIZE]           = {ni_json_k("size"),                   ni_user_n},
+
+	/* Card list */
+	[NI_LIST_NFB]           = {ni_json_k("card_list"),
+		ni_user_v("ID  Base path   PCI address   Card name         Serial number   Firmware info - project", 0, NULL, "\n")},
+	[NI_SEC_LIST_NFB]       = {ni_json_e,                           ni_user_v(NULL, 0, NULL, "  ")},
+	[NI_L_NFB_ID]           = {ni_json_k("id"),                     ni_user_f("", NUF_NDA | NUFW(2))},
+	[NI_L_LPATH]            = {ni_json_k("path"),                   ni_user_v("", NUF_NDA | NUFA(-10), "  ", NULL)},
+	[NI_L_BFN]              = {ni_json_k("pci_bdf"),                ni_user_v("", NUF_NDA | NUFA(-12), "  ", NULL)},
+	[NI_L_CARD_NAME]        = {ni_json_k("card_name"),              ni_user_v("", NUF_NDA | NUFA(-16), "  ", NULL)},
+	[NI_L_SN]               = {ni_json_k("serial_number"),          ni_user_v("", NUF_NDA | NUFA(-14), "  ", NULL)},
+	[NI_L_PROJECT_NAME]     = {ni_json_k("project_name"),           ni_user_v("", NUF_NDA | NUFA(0), "  ", NULL)},
+	[NI_L_PROJECT_VAR]      = {ni_json_k("project_variant"),        ni_user_v("", NUF_NDA | NUFA(0), "  ", NULL)},
+	[NI_L_PROJECT_VER]      = {ni_json_k("project_version"),        ni_user_v("", NUF_NDA | NUFA(0), "  ", NULL)},
+	[NI_L_PROJECT_END]      = {ni_json_n,                           ni_user_f("", NUF_DAV)},
+};
 
 void print_version()
 {
@@ -113,7 +254,7 @@ void print_version()
 #endif
 }
 
-void print_device_list()
+void print_device_list(struct ni_context *ctx)
 {
 	int ret;
 	int len;
@@ -124,7 +265,7 @@ void print_device_list()
 	struct nc_composed_device_info info;
 	struct nfb_device *dev;
 
-	char path[128];
+	char path[NFB_PATH_MAXLEN];
 	char lpath[PATH_MAX];
 
 	const void *fdt;
@@ -132,14 +273,10 @@ void print_device_list()
 	const uint32_t *prop32;
 
 	d = opendir(NFB_BASE_DEV_PATH "by-pci-slot/");
-	if (d == NULL)
-		return;
-
-	printf("ID  Base path   PCI address   Card name         Serial number   Firmware info - project\n");
-
-	while ((dir = readdir(d)) != NULL) {
+	ni_list(ctx, NI_LIST_NFB);
+	while (d && (dir = readdir(d)) != NULL) {
 		ret = snprintf(path, NFB_PATH_MAXLEN, NFB_BASE_DEV_PATH "by-pci-slot/%s", dir->d_name);
-		if (ret <= 0 || ret == NFB_PATH_MAXLEN) {
+		if (ret <= 0 || ret >= NFB_PATH_MAXLEN) {
 			continue;
 		}
 
@@ -147,45 +284,43 @@ void print_device_list()
 
 		dev = nfb_open(path);
 		if (dev) {
+			ni_section(ctx, NI_SEC_LIST_NFB);
+
 			fdt = nfb_get_fdt(dev);
 			fdt_offset = fdt_path_offset(fdt, "/firmware/");
 
 			ret = nc_get_composed_device_info_by_pci(dev, NULL, &info);
 
-			prop = fdt_getprop(fdt, fdt_offset, "card-name", &len);
-			printf("% 2d  %-10s  %s  %-16s",
-					ret == 0 ? info.nfb_id : -1,
-					lpath, dir->d_name, len > 0 ? prop : "");
-
+			ni_item_int(ctx, NI_L_NFB_ID, ret == 0 ? info.nfb_id : -1);
+			ni_item_str(ctx, NI_L_LPATH, lpath);
+			ni_item_str(ctx, NI_L_BFN, dir->d_name);
+			ni_fdt_prop_str(ctx, NI_L_CARD_NAME, fdt, fdt_offset, "card-name", &len);
 
 			fdt_offset = fdt_path_offset(fdt, "/board/");
-			prop = fdt_getprop(fdt, fdt_offset, "serial-number-string", &len);
-			if (len > 0) {
-				printf("  %-16s", prop);
+
+			prop = NULL;
+			prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
+			if (len == sizeof(*prop32)) {
+				snprintf(path, NFB_PATH_MAXLEN, "%d", fdt32_to_cpu(*prop32));
+				prop = path;
 			} else {
-				prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
-				if (len == sizeof(*prop32))
-					printf("  %-16d", fdt32_to_cpu(*prop32));
-				else
-					printf("  %16s", "");
+				prop = fdt_getprop(fdt, fdt_offset, "serial-number-string", &len);
 			}
+			if (prop)
+				ni_item_str(ctx, NI_L_SN, prop);
 
 			fdt_offset = fdt_path_offset(fdt, "/firmware/");
-			prop = fdt_getprop(fdt, fdt_offset, "project-name", &len);
-			if (len > 0)
-				printf("%s", prop);
-			prop = fdt_getprop(fdt, fdt_offset, "project-variant", &len);
-			if (len > 0)
-				printf("  %s", prop);
-			prop = fdt_getprop(fdt, fdt_offset, "project-version", &len);
-			if (len > 0)
-				printf("  %s", prop);
-
-			printf("\n");
-
+			ni_fdt_prop_str(ctx, NI_L_PROJECT_NAME, fdt, fdt_offset, "project-name", &len);
+			ni_fdt_prop_str(ctx, NI_L_PROJECT_VAR, fdt, fdt_offset, "project-variant", &len);
+			ni_fdt_prop_str(ctx, NI_L_PROJECT_VER, fdt, fdt_offset, "project-version", &len);
+			ni_item_int(ctx, NI_L_PROJECT_END, 0);
 			nfb_close(dev);
+
+			ni_endsection(ctx, NI_SEC_LIST_NFB);
 		}
 	}
+
+	ni_endlist(ctx, NI_LIST_NFB);
 }
 
 int print_specific_info(struct nfb_device *dev, int query)
@@ -303,7 +438,7 @@ const char *pci_speed_string(enum pci_bus_speed speed)
 		"Unknown speed";
 }
 
-void print_size(unsigned long size)
+void sprint_size(char *str, unsigned long size)
 {
 	static const char *units[] = {
 		"B", "KiB", "MiB", "GiB"};
@@ -312,16 +447,15 @@ void print_size(unsigned long size)
 		size >>= 10;
 		i++;
 	}
-	printf("%lu %s", size, units[i]);
+	sprintf(str, "%lu %s", size, units[i]);
 }
 
-void print_endpoint_info(struct nfb_device *dev, int fdt_offset)
+void print_endpoint_info(struct nfb_device *dev, int fdt_offset, struct ni_context *ctx)
 {
 	int len;
 	int bar;
 	int dev_id = -1;
 	uint64_t bar_size;
-	const void *prop;
 	const uint32_t *prop32;
 	const uint64_t *prop64;
 	const void *fdt;
@@ -335,41 +469,39 @@ void print_endpoint_info(struct nfb_device *dev, int fdt_offset)
 		dev_id = strtoul(node_name+8, NULL, 10);
 	}
 
-	printf("PCIe Endpoint %d:\n", dev_id);
+	ni_item_int(ctx, NI_PCI_ID, dev_id);
 
-	prop = fdt_getprop(fdt, fdt_offset, "pci-slot", &len);
-	if (prop)
-		printf(" * PCI slot                : %s\n", (const char*)prop);
-
+	ni_fdt_prop_str(ctx, NI_PCI_SLOT, fdt, fdt_offset, "pci-slot", &len);
 	prop32 = fdt_getprop(fdt, fdt_offset, "pci-speed", &len);
 	if (prop32)
-		printf(" * PCI speed               : %s\n", pci_speed_string(fdt32_to_cpu(*prop32)));
+		ni_item_str(ctx, NI_PCI_LINK_SPEED, pci_speed_string(fdt32_to_cpu(*prop32)));
+	ni_fdt_prop_32(ctx, NI_PCI_LINK_WIDTH, fdt, fdt_offset, "pcie-link-width");
+	ni_fdt_prop_32(ctx, NI_NUMA, fdt, fdt_offset, "numa-node");
 
-	prop32 = fdt_getprop(fdt, fdt_offset, "pcie-link-width", &len);
-	if (prop32)
-		printf(" * PCI link width          : x%d\n", fdt32_to_cpu(*prop32));
-
-	prop32 = fdt_getprop(fdt, fdt_offset, "numa-node", &len);
-	if (len == sizeof(*prop32))
-		printf(" * NUMA node               : %i\n", fdt32_to_cpu(*prop32));
-
+	ni_list(ctx, NI_LIST_PCI_BAR);
 	for (bar = 0; bar < 6; bar++) {
 		snprintf(nodename, sizeof(nodename), "/drivers/mi/PCI%d,BAR%d", dev_id, bar);
 		fdt_offset = fdt_path_offset(fdt, nodename);
 		if (fdt_offset >= 0) {
+			ni_section(ctx, NI_SEC2_PCI_BAR);
+
 			prop64 = fdt_getprop(fdt, fdt_offset, "mmap_size", &len);
 			if (len != sizeof(*prop64))
 				continue;
 			bar_size = fdt64_to_cpu(*prop64);
-			printf(" * MI BAR %d size           : %s", bar, bar_size == 0 ? "unmapped!" : "");
+			ni_item_int(ctx, NI_BAR_ID, bar);
 			if (bar_size)
-				print_size(bar_size);
-			printf("\n");
+				sprint_size(nodename, bar_size);
+			ni_item_str(ctx, NI_BAR_SIZE_STR, (bar_size == 0 ? "unmapped!" : nodename));
+			ni_item_int(ctx, NI_BAR_SIZE, bar_size);
+
+			ni_endsection(ctx, NI_SEC2_PCI_BAR);
 		}
 	}
+	ni_endlist(ctx, NI_LIST_PCI_BAR);
 }
 
-void print_common_info(struct nfb_device *dev, int verbose)
+void print_common_info(struct nfb_device *dev, int verbose, struct ni_context *ctx)
 {
 	int i;
 	int len;
@@ -379,121 +511,124 @@ void print_common_info(struct nfb_device *dev, int verbose)
 	int32_t val = 0;
 	const void *prop;
 	const uint32_t *prop32;
-	const uint64_t *prop64;
 	const void *fdt;
 
 	char buffer[BUFFER_SIZE];
 	time_t build_time;
 
 	fdt = nfb_get_fdt(dev);
-	printf("--------------------------------------- Board info ----\n");
+
+	ni_section(ctx, NI_SEC0_BOARD_INFO);
 
 	fdt_offset = fdt_path_offset(fdt, "/board/");
-	prop = fdt_getprop(fdt, fdt_offset, "board-name", &len);
-	if (len > 0)
-		printf("Board name                 : %s\n", (const char *)prop);
 
-	prop = fdt_getprop(fdt, fdt_offset, "serial-number-string", &len);
-	if (len > 0) {
-		printf("Serial number              : %s\n", (const char *)prop);
+	ni_fdt_prop_str(ctx, NI_BOARD_NAME, fdt, fdt_offset, "board-name", &len);
+
+	prop = NULL;
+	prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
+	if (len == sizeof(*prop32)) {
+		snprintf(buffer, BUFFER_SIZE, "%d", fdt32_to_cpu(*prop32));
+		prop = buffer;
 	} else {
-		prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
-		if (len == sizeof(*prop32))
-			printf("Serial number              : %d\n", fdt32_to_cpu(*prop32));
+		prop = fdt_getprop(fdt, fdt_offset, "serial-number-string", &len);
 	}
+	if (prop)
+		ni_item_str(ctx, NI_SERIAL_NUMBER, prop);
 
-	prop64 = fdt_getprop(fdt, fdt_offset, "fpga-uid", &len);
-	if (verbose > 1 && len == sizeof(*prop64))
-		printf("FPGA unique ID             : 0x%" PRIx64 "\n", fdt64_to_cpu(*prop64));
+
+	if (verbose > 1)
+		ni_fdt_prop_uint64_tx(ctx, NI_FPGA_UNIQUE_ID, fdt, fdt_offset, "fpga-uid");
 
 	i = 0;
 	fdt_for_each_compatible_node(fdt, node, "netcope,transceiver") {
 		i++;
 	}
-	printf("Network interfaces         : %d\n", i);
+	ni_item_int(ctx, NI_NET_IFCS, i);
+
 	if (verbose) {
+		ni_list(ctx, NI_LIST_NET_IFCS);
 		i = 0;
 		fdt_for_each_compatible_node(fdt, node, "netcope,transceiver") {
+			ni_section(ctx, NI_SEC1_NET_IFCS);
 			prop = fdt_getprop(fdt, node, "type", &len);
-			printf(" * Interface %d             : %s\n", i,
-					len > 0 ? (const char *) prop : "Unknown");
+			ni_item_int(ctx, NI_IFC_ID, i);
+			ni_item_str(ctx, NI_IFC_TYPE, len > 0 ? (const char *) prop : "Unknown");
 			i++;
+			ni_endsection(ctx, NI_SEC1_NET_IFCS);
 		}
+		ni_endlist(ctx, NI_LIST_NET_IFCS);
 	}
 
 	if (verbose) {
 		nc_adc_sensors_get_temp(dev, &val);
-		printf("Temperature                : %.1f C\n", val / 1000.0f);
+		ni_item_double(ctx, NI_TEMPERATURE, val / 1000.0f);
 	}
 
-	printf("------------------------------------ Firmware info ----\n");
+	ni_endsection(ctx, NI_SEC0_BOARD_INFO);
+
+	ni_section(ctx, NI_SEC0_FIRMWARE);
 
 	fdt_offset = fdt_path_offset(fdt, "/firmware/");
 
-	prop = fdt_getprop(fdt, fdt_offset, "card-name", &len);
-	if (len > 0)
-		printf("Card name                  : %s\n", (const char *)prop);
-
-	prop = fdt_getprop(fdt, fdt_offset, "project-name", &len);
-	if (len > 0)
-		printf("Project name               : %s\n", (const char *)prop);
-
-	prop = fdt_getprop(fdt, fdt_offset, "project-variant", &len);
-	if (len > 0)
-		printf("Project variant            : %s\n", (const char *)prop);
-
-	prop = fdt_getprop(fdt, fdt_offset, "project-version", &len);
-	if (len > 0)
-		printf("Project version            : %s\n", (const char *)prop);
+	ni_fdt_prop_str(ctx, NI_CARD_NAME, fdt, fdt_offset, "card-name", &len);
+	ni_fdt_prop_str(ctx, NI_PROJECT_NAME, fdt, fdt_offset, "project-name", &len);
+	ni_fdt_prop_str(ctx, NI_PROJECT_VARIANT, fdt, fdt_offset, "project-variant", &len);
+	ni_fdt_prop_str(ctx, NI_PROJECT_VERSION, fdt, fdt_offset, "project-version", &len);
 
 	prop32 = fdt_getprop(fdt, fdt_offset, "build-time", &len);
 	if (len == sizeof(*prop32)) {
 		build_time = fdt32_to_cpu(*prop32);
 		strftime(buffer, BUFFER_SIZE, "%Y-%m-%d %H:%M:%S", localtime(&build_time));
-		printf("Built at                   : %s\n", buffer);
+		ni_item_str(ctx, NI_BUILT_TIME, buffer);
+		ni_item_int(ctx, NI_BUILT_TIMESTAMP, build_time);
 	}
 
-	prop = fdt_getprop(fdt, fdt_offset, "build-tool", &len);
-	if (len > 0)
-		printf("Build tool                 : %s\n", (const char *)prop);
-
-	prop = fdt_getprop(fdt, fdt_offset, "build-author", &len);
-	if (len > 0)
-		printf("Build author               : %s\n", (const char *)prop);
+	ni_fdt_prop_str(ctx, NI_BUILD_TOOL, fdt, fdt_offset, "build-tool", &len);
+	ni_fdt_prop_str(ctx, NI_BUILD_AUTHOR, fdt, fdt_offset, "build-author", &len);
 
 	count1 = ndp_get_rx_queue_count(dev);
 	count2 = ndp_get_rx_queue_available_count(dev);
-	if (count1 != count2)
-		printf("RX queues                  : %d (only %d available)\n", count1, count2);
-	else
-		printf("RX queues                  : %d\n", count1);
+
+	ni_item_int(ctx, NI_RX_QUEUES_ALL, count1);
+	ni_item_int(ctx, count1 == count2 ? NI_RX_QUEUES_EQ_AV: NI_RX_QUEUES_NEQ_AV, count2);
 
 	count1 = ndp_get_tx_queue_count(dev);
 	count2 = ndp_get_tx_queue_available_count(dev);
-	if (count1 != count2)
-		printf("TX queues                  : %d (only %d available)\n", count1, count2);
-	else
-		printf("TX queues                  : %d\n", count1);
 
-	printf("ETH channels               : %d\n", nc_eth_get_count(dev));
+	ni_item_int(ctx, NI_TX_QUEUES_ALL, count1);
+	ni_item_int(ctx, count1 == count2 ? NI_TX_QUEUES_EQ_AV: NI_TX_QUEUES_NEQ_AV, count2);
+
+	ni_item_int(ctx, NI_ETH_CHANNELS, nc_eth_get_count(dev));
 
 	if (verbose) {
 		i = 0;
+		ni_list(ctx, NI_LIST_ETH_CHANNELS);
 		fdt_for_each_compatible_node(fdt, node, COMP_NETCOPE_ETH) {
+			ni_section(ctx, NI_SEC1_ETH_CHANNELS);
 			fdt_offset = fdt_node_offset_by_phandle_ref(fdt, node, "pcspma");
 			prop = fdt_getprop(fdt, fdt_offset, "type", &len);
-			printf(" * Channel %d               : %s\n", i,
-					len > 0 ? (const char *) prop : "Unknown");
+			ni_item_int(ctx, NI_ETH_CHANNEL_ID, i);
+			ni_item_str(ctx, NI_ETH_CHANNEL_TYPE, len > 0 ? (const char *) prop : "Unknown");
 			i++;
-		}
-	}
 
-	printf("-------------------------------------- System info ----\n");
+			ni_endsection(ctx, NI_SEC1_ETH_CHANNELS);
+		}
+		ni_endlist(ctx, NI_LIST_ETH_CHANNELS);
+	}
+	ni_endsection(ctx, NI_SEC0_FIRMWARE);
+
+	ni_section(ctx, NI_SEC0_SYSTEM);
 	fdt_offset = fdt_path_offset(fdt, "/system/device/");
 
+	ni_list(ctx, NI_LIST_PCIEP);
 	fdt_for_each_subnode(node, fdt, fdt_offset) {
-		print_endpoint_info(dev, node);
+		ni_section(ctx, NI_SEC1_PCIEP);
+		print_endpoint_info(dev, node, ctx);
+		ni_endsection(ctx, NI_SEC1_PCIEP);
 	}
+	ni_endlist(ctx, NI_LIST_PCIEP);
+
+	ni_endsection(ctx, NI_SEC0_SYSTEM);
 }
 
 int main(int argc, char *argv[])
@@ -506,6 +641,7 @@ int main(int argc, char *argv[])
 	const char *query = NULL;
 	char *index;
 	int size;
+	int js = NI_DRC_USER;
 
 	enum commands command = CMD_PRINT_STATUS;
 	int verbose = 0;
@@ -527,6 +663,9 @@ int main(int argc, char *argv[])
 		case 'q':
 			query = optarg;
 			break;
+		case 'j':
+			js = NI_DRC_JSON;
+			break;
 		case 'V':
 			command = CMD_VERSION;
 			break;
@@ -542,7 +681,10 @@ int main(int argc, char *argv[])
 		print_version();
 		return 0;
 	} else if (command == CMD_LIST) {
-		print_device_list();
+		struct ni_context *ctx;
+		ctx = ni_init_root_context_default(js, ni_items, &ni_common_item_callbacks[js]);
+		print_device_list(ctx);
+		ni_close_root_context(ctx);
 		return 0;
 	}
 
@@ -573,7 +715,13 @@ int main(int argc, char *argv[])
 		}
 		free(index);
 	} else {
-		print_common_info(dev, verbose);
+		struct ni_context *ctx;
+		ctx = ni_init_root_context_default(js, ni_items, &ni_common_item_callbacks[js]);
+
+		ni_section(ctx, NI_SEC_ROOT);
+		print_common_info(dev, verbose, ctx);
+		ni_endsection(ctx, NI_SEC_ROOT);
+		ni_close_root_context(ctx);
 	}
 
 	nfb_close(dev);

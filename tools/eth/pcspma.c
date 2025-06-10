@@ -44,28 +44,38 @@ static const struct phy_feature_t pcs_feature_table [] = {
 	{NULL,                          0,  0,     0, 0},
 };
 
-void pcspma_print_speed(struct nc_mdio *mdio, int portaddr, uint8_t mdev)
+void pcspma_print_speed(struct ni_context *ctx, struct nc_mdio *mdio, int portaddr, uint8_t mdev)
 {
 	struct mdio_if_info mdio_info = nfb_eth_create_mdio_info(mdio, portaddr);
-	printf("Speed                      : %s\n",
-		mdev == 1 ? ieee802_3_get_pma_speed_string(&mdio_info) : ieee802_3_get_pcs_speed_string(&mdio_info));
+
+	if (mdev == 1)
+		ni_item_str(ctx, NI_PMA_SPEED, ieee802_3_get_pma_speed_string(&mdio_info));
+	else
+		ni_item_str(ctx, NI_PCS_SPEED, ieee802_3_get_pcs_speed_string(&mdio_info));
 }
 
-void print_pcspma_common(struct nc_mdio *mdio, int portaddr, uint8_t mdev)
+void print_pcspma_common(struct ni_context *ctx, struct nc_mdio *mdio, int portaddr, uint8_t mdev)
 {
 	uint32_t reg;
 	struct mdio_if_info mdio_info = nfb_eth_create_mdio_info(mdio, portaddr);
 
-	printf("Link status                : %s | %s\n",
-		ieee802_3_get_pcs_pma_link_status_string(&mdio_info, mdev),
-		ieee802_3_get_pcs_pma_link_status_string(&mdio_info, mdev));
-	pcspma_print_speed(mdio, portaddr, mdev);
-
 	reg = nc_mdio_read(mdio, portaddr, mdev, 8);
-	// specification, mask 0x800 or 0x400
-	printf("Transmit Fault             : %s\n", (reg & 0x800) ? "Yes" : "No");
-	// specification, mask 0x400 or 0x200
-	printf("Receive Fault              : %s\n", (reg & 0x400) ? "Yes" : "No");
+
+	if (mdev == 1) {
+		ni_item_ctrl_reg(ctx, NI_PMA_LINK_STA0, ieee802_3_get_pcs_pma_link_status(&mdio_info, mdev));
+		ni_item_ctrl_reg(ctx, NI_PMA_LINK_STA1, ieee802_3_get_pcs_pma_link_status(&mdio_info, mdev));
+		ni_item_str(ctx, NI_PMA_SPEED, ieee802_3_get_pma_speed_string(&mdio_info));
+
+		ni_item_ctrl_reg(ctx, NI_PMA_TFAULT, reg & 0x800);
+		ni_item_ctrl_reg(ctx, NI_PMA_RFAULT, reg & 0x400);
+	} else {
+		ni_item_ctrl_reg(ctx, NI_PCS_LINK_STA0, ieee802_3_get_pcs_pma_link_status(&mdio_info, mdev));
+		ni_item_ctrl_reg(ctx, NI_PCS_LINK_STA1, ieee802_3_get_pcs_pma_link_status(&mdio_info, mdev));
+		ni_item_str(ctx, NI_PCS_SPEED, ieee802_3_get_pcs_speed_string(&mdio_info));
+
+		ni_item_ctrl_reg(ctx, NI_PCS_TFAULT, reg & 0x800);
+		ni_item_ctrl_reg(ctx, NI_PCS_RFAULT, reg & 0x400);
+	}
 }
 
 int pcspma_set_type(struct nc_mdio *mdio, int portaddr, struct eth_params *p)
@@ -110,18 +120,22 @@ static inline uint32_t nc_mdio_read_dword(struct nc_mdio *mdio, int prtad, int d
 }
 
 struct cb_print_pma_pmd_type_priv {
+	struct ni_context *ctx;
 	const char *active;
 };
 
-void print_pma_pmd_type(void *p, const char *str)
+static void print_pma_pmd_type(void *p, const char *str)
 {
 	struct cb_print_pma_pmd_type_priv *priv = p;
-	const char * active = strcmp(str, priv->active) ? str_active[0] : str_active[1];
+	int active = !strcmp(str, priv->active);
 
-	printf(" * %s                : %s\n", active, str);
+	ni_section(priv->ctx, NI_SEC_PMA_TYPES);
+	ni_item_ctrl_reg(priv->ctx, NI_PMA_TYPES_ACTIVE, active);
+	ni_item_str(priv->ctx, NI_PMA_TYPES_NAME, str);
+	ni_endsection(priv->ctx, NI_SEC_PMA_TYPES);
 }
 
-void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *p)
+void pcspma_print_status(struct ni_context *ctx, struct nc_mdio *mdio, int portaddr, struct eth_params *p)
 {
 	uint32_t reg;
 	uint32_t reg2;
@@ -135,92 +149,90 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 	struct mdio_if_info mdio_info = nfb_eth_create_mdio_info(mdio, portaddr);
 	int pma_speed = ieee802_3_get_pma_speed_value(&mdio_info);
 
-	//printf("--------------------------------------- PMA %d regs ----\n", p->index);
-	printf("----------------------------------------- PMA regs ----\n");
-	print_pcspma_common(mdio, portaddr, 1);
+	ni_section(ctx, NI_SEC_PMA);
+	print_pcspma_common(ctx, mdio, portaddr, 1);
 	reg = nc_mdio_read(mdio, portaddr, 1, 7);
 
 	active = ieee802_3_get_pma_pmd_type_string(&mdio_info);
-	printf("PMA type                   : %s\n", active);
+	ni_item_str(ctx, NI_PMA_TYPE, active);
 
 	if (p->verbose) {
 		struct cb_print_pma_pmd_type_priv cb_ppptp;
 		const struct phy_feature_t *item;
 
-		printf("Supported PMA types ->\n");
-
 		cb_ppptp.active = active;
+		cb_ppptp.ctx = ctx;
+
+		ni_list(ctx, NI_LIST_PMA_TYPES_AV);
 		ieee802_3_get_supported_pma_pmd_types_string(&mdio_info, print_pma_pmd_type, &cb_ppptp);
+		ni_endlist(ctx, NI_LIST_PMA_TYPES_AV);
 
-		printf("Supported PMA features ->\n");
-
+		ni_list(ctx, NI_LIST_PMA_FEATS_AV);
 		for (item = pma_feature_table; item->name; item++) {
 			if (item->ability_bit != -1) {
 				reg = nc_mdio_read(mdio, portaddr, 1, item->ability_reg);
 			}
 
 			if (reg & (1 << item->ability_bit) || p->verbose > 1) {
+				ni_section(ctx, NI_SEC_PMA_FEAT);
 				reg = nc_mdio_read(mdio, portaddr, 1, item->control_reg);
-				printf(" * %s                : %s\n", str_active[reg & (1 << item->control_bit) ? 1 : 0], item->name);
+				ni_item_ctrl_reg(ctx, NI_PMA_FEAT_ACTIVE, reg & (1 << item->control_bit));
+				ni_item_str(ctx, NI_PMA_FEAT_NAME, item->name);
+				ni_endsection(ctx, NI_SEC_PMA_FEAT);
 			}
 		}
+		ni_endlist(ctx, NI_LIST_PMA_FEATS_AV);
+	}
 
+	ni_endsection(ctx, NI_SEC_PMA);
+
+	if (pma_speed < 200000) { /* RS-FEC Clause 91, 108 or 134 - RSFEC reg located in 1.200 - 1.300 */
 		/* RS-FEC registers */
 		fec_lines = ieee802_3_get_fec_lines(active);
-		if ((fec_lines > 0) && (pma_speed < 200000)) { /* RS-FEC Clause 91, 108 or 134 - RSFEC reg located in 1.200 - 1.300 */
+		if (fec_lines > 0) {
 			reg = nc_mdio_read_dword(mdio, portaddr, 1, 201);
-			printf("RS-FEC status              : %s%s%s\n",
-//					reg & (1 <<  0) ? "FEC bypass corection ability | " : "",
-//					reg & (1 <<  1) ? "FEC bypass indication ability | " : "",
-					reg & (1 <<  2) ? "RS-FEC high SER | " : "",
-					reg & (1 << 14) ? "RS-FEC lanes aligned | " : "",
-					reg & (1 << 15) ? "PCS lanes aligned | " : "");
-			printf("RS-FEC corrected cws       : %u\n", nc_mdio_read_dword(mdio, portaddr, 1, 202));
-			printf("RS-FEC uncorrected cws     : %u\n", nc_mdio_read_dword(mdio, portaddr, 1, 204));
 
-			printf("RS-FEC symbol errors ->\n");
+			ni_section(ctx, NI_SEC_RSFEC_STATUS);
+//			ni_item_ctrl_reg(ctx, NI_RSFEC_STATUS_BCA, reg & (1 << 0));
+//			ni_item_ctrl_reg(ctx, NI_RSFEC_STATUS_BIA, reg & (1 << 1));
+			ni_item_ctrl_reg(ctx, NI_RSFEC_STATUS_SER, reg & (1 << 2));
+			ni_item_ctrl_reg(ctx, NI_RSFEC_STATUS_FLA, reg & (1 << 14));
+			ni_item_ctrl_reg(ctx, NI_RSFEC_STATUS_PLA, reg & (1 << 15));
+
+			ni_item_int(ctx, NI_RSFEC_CORRECTED, nc_mdio_read_dword(mdio, portaddr, 1, 202));
+			ni_item_int(ctx, NI_RSFEC_UNCORRECTED, nc_mdio_read_dword(mdio, portaddr, 1, 204));
+
+			ni_list(ctx, NI_LIST_RSFEC_SYM_ERR);
 			for (i = 0; i < fec_lines; i++) {
-				printf(" * Lane %d                  : %u\n", i, nc_mdio_read_dword(mdio, portaddr, 1, 210 + i * 2));
+				ni_item_int(ctx, NI_RSFEC_SYM_ERR_L, i);
+				ni_item_int(ctx, NI_RSFEC_SYM_ERR_V, nc_mdio_read_dword(mdio, portaddr, 1, 210 + i * 2));
 			}
-			printf("RS-FEC lane mapping        :");
+			ni_endlist(ctx, NI_LIST_RSFEC_SYM_ERR);
+
+			ni_list(ctx, NI_LIST_RSFEC_LANE_MAP);
 			reg = nc_mdio_read(mdio, portaddr, 1, 206);
 			for (i = 0; i < fec_lines; i++) {
-				printf(" %d", ((reg >> (i*2)) & 0x3));
+				ni_item_int(ctx, NI_RSFEC_LANE_MAP, ((reg >> (i*2)) & 0x3));
 			}
-			printf("\n");
+			ni_endlist(ctx, NI_LIST_RSFEC_LANE_MAP);
 
 			reg = nc_mdio_read(mdio, portaddr, 1, 201);
-			printf("RS-FEC AM lock             :");
+			ni_list(ctx, NI_LIST_RSFEC_AM_LOCK);
 			for (i = 0; i < fec_lines; i++) {
-				printf((reg & (1 << (i + 8))) ? " L" : " X");
+				ni_item_ctrl_reg(ctx, NI_RSFEC_AM_LOCK, (reg & (1 << (i + 8))));
 			}
-			printf("\n");
-		}
-		/* RS-FEC integrated in PCS clause 119 (not bypassable) */
-		if (pma_speed >= 200000) {
-			reg = nc_mdio_read_dword(mdio, portaddr, 3, 801);
-			printf("RS-FEC status              : %s%s%s%s\n",
-					reg & (1 <<  2) ? "RS-FEC high SER | " : "",
-					reg & (1 <<  4) ? "RS-FEC degraded SER | " : "",
-					reg & (1 <<  5) ? "Remote degraded SER | " : "",
-					reg & (1 <<  6) ? "Local degraded SER" : "");
-			printf("RS-FEC corrected cws       : %u\n", nc_mdio_read_dword(mdio, portaddr, 3, 802));
-			printf("RS-FEC uncorrected cws     : %u\n", nc_mdio_read_dword(mdio, portaddr, 3, 804));
+			ni_endlist(ctx, NI_LIST_RSFEC_AM_LOCK);
 
-			printf("RS-FEC symbol errors ->\n");
-			for (i = 0; i < fec_lines; i++) {
-				printf(" * Lane %d                  : %u\n", i, nc_mdio_read_dword(mdio, portaddr, 3, 600 + i * 2));
-			}
+			ni_endsection(ctx, NI_SEC_RSFEC_STATUS);
 		}
 	}
 
-	//printf("--------------------------------------- PCS %d regs ----\n", p->index);
-	printf("----------------------------------------- PCS regs ----\n");
-	print_pcspma_common(mdio, portaddr, 3);
+	ni_section(ctx, NI_SEC_PCS);
+	print_pcspma_common(ctx, mdio, portaddr, 3);
 
 	if (p->verbose) {
 		const struct phy_feature_t *item;
-		printf("Supported PCS features ->\n");
+		ni_list(ctx, NI_LIST_PCS_FEATS_AV);
 
 		for (item = pcs_feature_table; item->name; item++) {
 			if (item->ability_bit != -1) {
@@ -229,51 +241,56 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 
 			if (reg & (1 << item->ability_bit) || p->verbose > 1) {
 				reg = nc_mdio_read(mdio, portaddr, 3, item->control_reg);
-				printf(" * %s                : %s\n", str_active[reg & (1 << item->control_bit) ? 1 : 0], item->name);
+				ni_section(ctx, NI_SEC_PMA_FEAT);
+				ni_item_ctrl_reg(ctx, NI_PMA_FEAT_ACTIVE, reg & (1 << item->control_bit));
+				ni_item_str(ctx, NI_PMA_FEAT_NAME, item->name);
+				ni_endsection(ctx, NI_SEC_PMA_FEAT);
 			}
 		}
+
+		ni_endlist(ctx, NI_LIST_PCS_FEATS_AV);
 
 		// PCS status reg 1 -> 32
 		reg = nc_mdio_read(mdio, portaddr, 3, 32);
 		// PCS status reg 2 -> 33
 		reg2 = nc_mdio_read(mdio, portaddr, 3, 33);
-		if (pma_speed <= 100000) /* Block lock not defined above 100G */
-			printf("Global Block Lock          : %s | %s\n",
-				(reg & 0x0001) ? "Yes" : "No",
-				(reg2 & 0x8000) ? "Yes" : "No");
-		printf("Global High BER            : %s | %s\n",
-			(reg & 0x0002) ? "Yes" : "No",
-			(reg2 & 0x4000) ? "Yes":"No");
+		if (pma_speed <= 100000) { /* Block lock not defined above 100G */
+			ni_item_ctrl_reg(ctx, NI_PCS_GLB_BLK_LCK0, reg & 0x0001);
+			ni_item_ctrl_reg(ctx, NI_PCS_GLB_BLK_LCK1, reg & 0x8000);
+		}
+		ni_item_ctrl_reg(ctx, NI_PCS_GLB_HIGH_BER0, reg & 0x0002);
+		ni_item_ctrl_reg(ctx, NI_PCS_GLB_HIGH_BER1, reg & 0x4000);
+
 		// BER counter register -> 44
 		reg = nc_mdio_read(mdio, portaddr, 3, 44);
 		low_bits = ((reg2 >> 8) & 0x003F);
-		printf("BER counter                : %u\n",
-			((reg & 0xFFFF) << 6) | low_bits);
+		ni_item_int(ctx, NI_PCS_BER_CNT, ((reg & 0xFFFF) << 6) | low_bits);
+
 		low_bits = (reg2 & 0x00FF);
 		// Error blocks register -> 45
 		reg = nc_mdio_read(mdio, portaddr, 3, 45);
-		printf("Errored blocks             : %u\n",
-			((reg & 0x3FFF) << 8) | low_bits);
+		ni_item_int(ctx, NI_PCS_BLK_ERR, ((reg & 0x3FFF) << 8) | low_bits);
 
 		lines = ieee802_3_get_pcs_lines(&mdio_info);
 		if (lines > 1) {
 			reg = nc_mdio_read(mdio, portaddr, 3, 50);
-			printf("PCS lanes aligned          : %s\n",
-				(reg & 0x1000) ? "Yes" : "No");
-			printf("\nBlock status for lines     :");
+			ni_item_ctrl_reg(ctx, NI_PCS_LANES_ALIGNED, reg & 0x1000);
+
+			ni_list(ctx, NI_LIST_PCS_BLK_LCKS);
 			// Block status register first half (8 lines)   -> 50
 			//                       second half (12 lines) -> 51
 			//                       total 20 lines (max for 100G)
-			for (i = 0, j =0; i < lines; i++) {
+			for (i = 0, j = 0; i < lines; i++) {
 				if (i == 8) {
 					reg = nc_mdio_read(mdio, portaddr, 3, 51);
 					j = 0;
 				}
-				printf((reg & (1 << j)) ? " L" : " X");
+				ni_item_ctrl_reg(ctx, NI_PCS_BLK_LCK, (reg & (1 << j)));
 				j++;
 			}
+			ni_endlist(ctx, NI_LIST_PCS_BLK_LCKS);
 
-			printf("\nAM lock                    :");
+			ni_list(ctx, NI_LIST_AM_LCKS);
 			// AM lock register first half (8 lines)   -> 52
 			//                  second half (12 lines) -> 53
 			reg = nc_mdio_read(mdio, portaddr, 3, 52);
@@ -282,39 +299,64 @@ void pcspma_print_status(struct nc_mdio *mdio, int portaddr, struct eth_params *
 					reg = nc_mdio_read(mdio, portaddr, 3, 53);
 					j = 0;
 				}
-				printf((reg & (1 << j)) ? " L" : " X");
+				ni_item_ctrl_reg(ctx, NI_PCS_AM_LCK, (reg & (1 << j)));
 				j++;
 			}
+			ni_endlist(ctx, NI_LIST_AM_LCKS);
 
-			printf("\nLane mapping                \n");
+			ni_list(ctx, NI_LIST_LANE_MAP);
 			if (!nc_mdio_pcs_lane_map_valid(mdio)) {
 				// Intel PCS/PMAs are not reporting PCS lane mapping when the RS-FEC is active
 				for (i = 0; i < lines; i++) {
-					printf("  U");
+					ni_item_ctrl_reg(ctx, NI_PCS_LANE_MAP, -1);
 				}
 			} else {
 				// Lane mapping register for each line starting from -> 400 to 420
 				for (i = 0; i < lines; i++) {
-					printf(" %2d", nc_mdio_read(mdio, portaddr, 3, 400 + i) & 0x3F);
+					ni_item_ctrl_reg(ctx, NI_PCS_LANE_MAP, nc_mdio_read(mdio, portaddr, 3, 400 + i) & 0x3F);
 				}
 			}
+			ni_endlist(ctx, NI_LIST_LANE_MAP);
 
 			// BIP counters not defined for speeds above 100
 			if (pma_speed <= 100000) {
-				printf("\nBIP error counter\n");
+				ni_list(ctx, NI_LIST_BIP_ERR_CNT);
 				// BIP counter register for each line starting from -> 200 to 220
 				for (i = 0; i < lines; i++) {
-					if (i == 10)
-						printf("\n");
-					printf(" %5d", nc_mdio_read(mdio, portaddr, 3, 200 + i));
+					ni_item_int(ctx, NI_BIP_ERR_CNT, nc_mdio_read(mdio, portaddr, 3, 200 + i));
 				}
+				ni_endlist(ctx, NI_LIST_BIP_ERR_CNT);
 			}
-			printf("\n");
+		}
+
+		/* RS-FEC integrated in PCS clause 119 (not bypassable) */
+		if (pma_speed >= 200000) {
+			fec_lines = ieee802_3_get_fec_lines(active);
+			reg = nc_mdio_read_dword(mdio, portaddr, 3, 801);
+
+			ni_section(ctx, NI_SEC_RSFEC119_STATUS);
+			ni_item_ctrl_reg(ctx, NI_RSFEC_STATUS_SER, reg & (1 << 2));
+			ni_item_ctrl_reg(ctx, NI_RSFEC_STATUS_DSER, reg & (1 << 4));
+			ni_item_ctrl_reg(ctx, NI_RSFEC_STATUS_RDSER, reg & (1 << 5));
+			ni_item_ctrl_reg(ctx, NI_RSFEC_STATUS_LDSER, reg & (1 << 6));
+
+			ni_item_int(ctx, NI_RSFEC_CORRECTED, nc_mdio_read_dword(mdio, portaddr, 3, 802));
+			ni_item_int(ctx, NI_RSFEC_UNCORRECTED, nc_mdio_read_dword(mdio, portaddr, 3, 804));
+
+			ni_list(ctx, NI_LIST_RSFEC_SYM_ERR);
+			for (i = 0; i < fec_lines; i++) {
+				ni_item_int(ctx, NI_RSFEC_SYM_ERR_L, i);
+				ni_item_int(ctx, NI_RSFEC_SYM_ERR_V, nc_mdio_read_dword(mdio, portaddr, 3, 600 + i * 2));
+			}
+			ni_endlist(ctx, NI_LIST_RSFEC_SYM_ERR);
+
+			ni_endsection(ctx, NI_SEC_RSFEC119_STATUS);
 		}
 	}
+	ni_endsection(ctx, NI_SEC_PCS);
 }
 
-int pcspma_execute_operation(struct nfb_device *dev, int eth_node, struct eth_params *p)
+int pcspma_execute_operation(struct ni_context *ctx, struct nfb_device *dev, int eth_node, struct eth_params *p)
 {
 	int ret = 0;
 
@@ -345,10 +387,10 @@ int pcspma_execute_operation(struct nfb_device *dev, int eth_node, struct eth_pa
 
 	switch (p->command) {
 	case CMD_PRINT_SPEED:
-		pcspma_print_speed(mdio, portaddr, 1);
+		pcspma_print_speed(ctx, mdio, portaddr, 1);
 		break;
 	case CMD_PRINT_STATUS:
-		pcspma_print_status(mdio, portaddr, p);
+		pcspma_print_status(ctx, mdio, portaddr, p);
 		break;
 	case CMD_SET_PMA_TYPE:
 		ret = pcspma_set_type(mdio, portaddr, p);

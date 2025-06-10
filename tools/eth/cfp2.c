@@ -14,11 +14,15 @@
 #include <nfb/nfb.h>
 #include <netcope/mdio.h>
 
+#include "eth.h"
+
 #define TEMPERATURE     0xA02F
 #define VEN_NAME_FIRST  0x8021
 #define VEN_NAME_LAST   0x8031
 #define VEN_PN_FIRST    0x8034
 #define VEN_PN_LAST     0x8044
+#define VEN_SN_FIRST    0x8044
+#define VEN_SN_LAST     0x8054
 #define CONNECTOR       0x8002
 #define COMPLIANCE      0x8003
 #define HW_REV          0x8068
@@ -74,18 +78,39 @@ const char *cfp2_get_connector(uint8_t reg)
  * @param first First register
  * @param last Last register (not printed)
  */
-void cfp2_print_text(struct nc_mdio *mdio, int first, int last, int mdev)
+int print_mdio_text(FILE *fout, struct mdio_if_mdev *mdio_if, int item)
 {
 	uint8_t c;
+	int cnt = 0;
 	int i;
+	int first = 0, last = 0;
+
+	switch (item) {
+	case NI_MDIO_VNDR_NAME: first = VEN_NAME_FIRST; last = VEN_NAME_LAST; break;
+	case NI_MDIO_SN: first = VEN_SN_FIRST; last = VEN_SN_LAST; break;
+	case NI_MDIO_PN: first = VEN_PN_FIRST; last = VEN_PN_LAST; break;
+	}
+
 	for (i = first; i < last; i++) {
-		c = nc_mdio_read(mdio, mdev, 1, i);
+		c = nc_mdio_read(mdio_if->mdio, mdio_if->mdev, 1, i);
 		if (!c) {
 			break;
 		}
-		printf("%c", c);
+		cnt += fprintf(fout, "%c", c);
 	}
-	printf("\n");
+	return cnt;
+}
+
+int print_mdio_text_user(void *priv, int item, struct mdio_if_mdev *mdio_if)
+{
+	struct ni_user_cbp *p = priv;
+	return print_mdio_text(p->f, mdio_if, item);
+}
+
+int print_mdio_text_json(void *priv, int item, struct mdio_if_mdev *mdio_if)
+{
+	struct ni_json_cbp *p = priv;
+	return print_mdio_text(p->f, mdio_if, item);
 }
 
 /**
@@ -127,7 +152,7 @@ int cfp_present(struct nfb_device *dev __attribute__((unused)), int nodeoffset _
  * @param ifc Interface device
  * @param space Interface space
  */
-void cfp2_print(struct nfb_device *dev, int nodeoffset, int control_params_node)
+void cfp2_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node)
 {
 	(void) control_params_node; /* unused */
 
@@ -136,6 +161,7 @@ void cfp2_print(struct nfb_device *dev, int nodeoffset, int control_params_node)
 	uint16_t reg16;
 
 	const void *fdt = nfb_get_fdt(dev);
+	double pwr;
 
 	int node_ctrl;
 	int node_ctrlparam;
@@ -144,6 +170,7 @@ void cfp2_print(struct nfb_device *dev, int nodeoffset, int control_params_node)
 	int proplen;
 
 	struct nc_mdio *mdio;
+	struct mdio_if_mdev mdio_if;
 	int mdev = 0;
 
 	prop32 = fdt_getprop(fdt, nodeoffset, "control", &proplen);
@@ -162,39 +189,38 @@ void cfp2_print(struct nfb_device *dev, int nodeoffset, int control_params_node)
 		return;
 	}
 
+	mdio_if.mdio = mdio;
+	mdio_if.mdev = mdev;
+
 	reg16 = nc_mdio_read(mdio, mdev, 1, TEMPERATURE);
 
-	printf("Temperature                : %.2f C\n", ((float) reg16) / 256);
+	ni_item_double(ctx, NI_SFF8636_TEMP, ((float) reg16) / 256);
 
-	printf("Vendor name                : ");
-	cfp2_print_text(mdio, VEN_NAME_FIRST, VEN_NAME_LAST, mdev);
-
-	printf("Vendor serial number       : ");
-	cfp2_print_text(mdio, 0x8044, 0x8054, mdev);
-
-	printf("Vendor PN                  : ");
-	cfp2_print_text(mdio, VEN_PN_FIRST, VEN_PN_LAST, mdev);
+	ni_item_mdio_text(ctx, NI_MDIO_VNDR_NAME, &mdio_if);
+	ni_item_mdio_text(ctx, NI_MDIO_SN, &mdio_if);
+	ni_item_mdio_text(ctx, NI_MDIO_PN, &mdio_if);
 
 	reg8 = nc_mdio_read(mdio, mdev, 1, COMPLIANCE);
-	printf("Compliance                 : %s\n", cfp2_get_compliance(reg8, &channels));
+	ni_item_str(ctx, NI_TRN_COMPLIANCE, cfp2_get_compliance(reg8, &channels));
 
 	reg8 = nc_mdio_read(mdio, mdev, 1, CONNECTOR);
-	printf("Connector                  : %s\n", cfp2_get_connector(reg8));
+	ni_item_str(ctx, NI_TRN_CONNECTOR, cfp2_get_connector(reg8));
 
 	reg8 = nc_mdio_read(mdio, mdev, 1, HW_REV);
-	printf("HW spec. rev.              : %.2f\n", ((float) reg8) / 10);
+	ni_item_double(ctx, NI_MDIO_HW_REV, ((float) reg8) / 10);
 
 	reg8 = nc_mdio_read(mdio, mdev, 1, MGMT_REV);
-	printf("Managenent ifc. spec. rev  : %.2f\n", ((float) reg8) / 10);
+	ni_item_double(ctx, NI_MDIO_MGMT_REV, ((float) reg8) / 10);
 
-	printf("\nRX input power\n");
+	ni_list(ctx, NI_LIST_TRN_RX_IN_PWR);
 	for (i = 0; i < channels; i++) {
 		reg16 = nc_mdio_read(mdio, mdev, 1, RX_IN + i);
-		printf(" * Lane %2d                 : %.2f %s (%.2f dBm)\n", i + 1,
-			(reg16 < 10000) ? ((float)reg16) / 10 : ((float) reg16) / 10000 ,
-			(reg16 < 10000) ? "uW" : "mW", 10 * log10(((float) reg16) / 10000));
-	}
+		pwr = ((float)reg16) / 10000000;
 
+		ni_item_int(ctx, NI_TRANS_RX_IN_PWR_L, i + 1);
+		ni_item_pwr(ctx, NI_TRANS_RX_IN_PWR_V, pwr);
+	}
+	ni_endlist(ctx, NI_LIST_TRN_RX_IN_PWR);
 }
 
 /**

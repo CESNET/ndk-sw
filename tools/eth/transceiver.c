@@ -19,12 +19,12 @@
 
 #include "eth.h"
 
-void qsfpp_print(struct nfb_device *dev, int nodeoffset, int control_params_node);
-void cfp2_print(struct nfb_device *dev, int nodeoffset, int control_params_node);
+void qsfpp_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node);
+void cfp2_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node);
 
 int qsfpp_stxdisable(struct nfb_device *dev, int nodeoffset, int node_params, int disable, int channels);
 
-typedef void transc_print_t(struct nfb_device *dev, int nodeoffset, int control_params_node);
+typedef void transc_print_t(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node);
 typedef int transc_plug_t(struct nfb_device *dev, int nodeoffset);
 
 struct transceiver_t {
@@ -58,7 +58,7 @@ int transceiver_is_present(struct nfb_device *dev, int node)
 	return ret;
 }
 
-void transceiver_print_short_info(struct nfb_device *dev, int node, struct eth_params *p)
+void transceiver_print_short_info(struct ni_context *ctx, struct nfb_device *dev, int node, struct eth_params *p)
 {
 	int node_transceiver_by_phandle;
 	int node_transceiver;
@@ -84,24 +84,24 @@ void transceiver_print_short_info(struct nfb_device *dev, int node, struct eth_p
 			if (proplen < 0)
 				prop = "Unknown";
 
-			printf("Transceiver status         : %s\n",
-					(present < 0 ? "Unknown" :
-					(present > 0 ? "OK" : "Not plugged")));
+			if (present < 0)
+				ni_item_str(ctx, NI_TRANS_PRSNT_UNK, "Unknown");
+			else
+				ni_item_ctrl_reg(ctx, NI_TRANS_PRSNT, present);
 
-			printf("Transceiver cage           : %s-%d\n", prop, index);
+			ni_item_str(ctx, NI_TRANS_CAGE_TYPE, prop);
+			ni_item_int(ctx, NI_TRANS_CAGE_ID, index);
 			node_params = fdt_subnode_offset(fdt, node, "pmd-params");
 			if (node_params >= 0 && p->verbose) {
 				prop32 = fdt_getprop(fdt, node_params, "lines", &proplen);
 				if (prop32) {
-					printf("Transceiver lane(s)        : ");
+					ni_list(ctx, NI_LIST_TRN_LANES);
 					while (proplen > 0) {
-						printf("%d", fdt32_to_cpu(*prop32));
+						ni_item_int(ctx, NI_TRANS_LANE, fdt32_to_cpu(*prop32));
 						proplen -= sizeof(*prop32);
 						prop32++;
-						if (proplen)
-							printf("|");
 					}
-					printf("\n");
+					ni_endlist(ctx, NI_LIST_TRN_LANES);
 				}
 			}
 			break;
@@ -110,14 +110,13 @@ void transceiver_print_short_info(struct nfb_device *dev, int node, struct eth_p
 	}
 }
 
-int transceiver_print(struct nfb_device *dev, int node_transceiver, int index)
+int transceiver_print(struct ni_context *ctx, struct nfb_device *dev, int node_transceiver, int index)
 {
 	const struct transceiver_t *transceiver;
 	const char *property;
 	int proplen;
 	int present;
 	const void *fdt;
-	unsigned i;
 
 	fdt = nfb_get_fdt(dev);
 
@@ -132,14 +131,14 @@ int transceiver_print(struct nfb_device *dev, int node_transceiver, int index)
 		transceiver++;
 	}
 
-	for (i = 0; i < 47 - strlen(property); i++)
-	       printf("-");
-	printf(" %s-%d ----\n", property, index++);
+	ni_item_str(ctx, NI_TRN_NAME, property);
+	ni_item_int(ctx, NI_TRN_INDEX, index);
 
 	present = transceiver_is_present(dev, node_transceiver);
-	printf("Transceiver status         : %s\n",
-			(present < 0 ? "Unknown" :
-			(present > 0 ? "OK" : "Not plugged")));
+	if (present < 0)
+		ni_item_str(ctx, NI_TRANS_PRSNT_UNK, "Unknown");
+	else
+		ni_item_ctrl_reg(ctx, NI_TRANS_PRSNT, present);
 
 	if (transceiver->type == NULL || present == 0)
 		return -ENODEV;
@@ -150,7 +149,7 @@ int transceiver_print(struct nfb_device *dev, int node_transceiver, int index)
 		return -EOPNOTSUPP;
 	}
 
-	transceiver->print_status(dev, node_transceiver, fdt_subnode_offset(fdt, node_transceiver, "control-param"));
+	transceiver->print_status(ctx, dev, node_transceiver, fdt_subnode_offset(fdt, node_transceiver, "control-param"));
 	return 0;
 }
 

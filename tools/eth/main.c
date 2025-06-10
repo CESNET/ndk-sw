@@ -10,6 +10,7 @@
 #include <err.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <math.h>
 
 #include <nfb/nfb.h>
 #include <libfdt.h>
@@ -19,12 +20,362 @@
 
 #include "eth.h"
 
-#define ARGUMENTS	":hd:i:q:e:rtRSl:L:p:m:u:a:c:M:ovPT"
+#define ARGUMENTS	":hd:i:q:e:rtRSl:L:p:m:u:a:c:M:ojvPT"
 
 #define RXMAC       1
 #define TXMAC       2
 #define PCSPMA      4
 #define TRANSCEIVER 8
+
+
+#define NUF_N   (NI_USER_ITEM_F_NO_NEWLINE)
+#define NUF_NDA (NI_USER_ITEM_F_NO_NEWLINE | NI_USER_ITEM_F_NO_DELIMITER | NI_USER_ITEM_F_NO_ALIGN)
+#define NUF_DA  (NI_USER_ITEM_F_NO_DELIMITER | NI_USER_ITEM_F_NO_ALIGN)
+#define NUF_VE  (NI_USER_LIST_F_NO_VALUE | NI_USER_LIST_F_ENDLINE)
+#define NUF_SL  (NI_USER_ITEM_F_SEC_LABEL)
+
+#define NUFA(x) ni_user_f_align(x)
+#define NUFW(x) ni_user_f_width(x)
+#define NUFD(x) ni_user_f_decim(x)
+#define NUFC    NUFW(20)
+
+#define NJFD(x) ni_json_f_decim(x)
+
+static struct ni_context_item_default ni_items[] = {
+	[NI_SEC_ROOT]           = {ni_json_e,                           ni_user_n},
+	[NI_LIST_ETH]           = {ni_json_k("eth"),                    ni_user_v(NULL, 0, "\n", NULL)}, /* FIXME: no newline for 128 */
+	[NI_SEC_ETH]            = {ni_json_e,                           ni_user_f("Ethernet interface", NUF_SL | NUFW(-4))},
+	[NI_SEC_ETH_ID]         = {ni_json_k("id"),                     ni_user_v(" ", NUF_NDA | NUF_SL | NUFW(0), NULL, NULL)},
+	[NI_SEC_PMA]            = {ni_json_k("pma"),                    ni_user_l("PMA regs")},
+	[NI_PMA_LINK_STA0]      = {ni_json_k("link_status_latch"),      ni_user_f("Link status", NUF_N | NUFW(-4))},
+	[NI_PMA_LINK_STA1]      = {ni_json_k("link_status"),            ni_user_v(NULL, NUF_DA | NUFW(-4), " | ", NULL)},
+	[NI_PMA_SPEED]          = {ni_json_k("speed_str"),              ni_user_l("Speed")},
+	[NI_SEC_PCS]            = {ni_json_k("pcs"),                    ni_user_l("PCS regs")},
+	[NI_PCS_LINK_STA0]      = {ni_json_k("link_status_latch"),      ni_user_f("Link status", NUF_N | NUFW(-4))},
+	[NI_PCS_LINK_STA1]      = {ni_json_k("link_status"),            ni_user_v(NULL, NUF_DA | NUFW(-4), " | ", NULL)},
+	[NI_PCS_SPEED]          = {ni_json_k("speed_str"),              ni_user_l("Speed")},
+
+	[NI_ETH_REPEATER]       = {ni_json_k("repeater"),               ni_user_l("Repeater status")},
+
+	[NI_PCS_RFAULT]         = {ni_json_k("receive_fault"),          ni_user_l("Receive fault")},
+	[NI_PCS_TFAULT]         = {ni_json_k("transmit_fault"),         ni_user_l("Transmit fault")},
+	[NI_PMA_RFAULT]         = {ni_json_k("receive_fault"),          ni_user_l("Receive fault")},
+	[NI_PMA_TFAULT]         = {ni_json_k("transmit_fault"),         ni_user_l("Transmit fault")},
+	[NI_PMA_TYPE]           = {ni_json_k("type"),                   ni_user_l("PMA type")},
+	[NI_LIST_PMA_FEATS_AV]  = {ni_json_k("available_features"),     ni_user_f("Supported PMA features ->", 0)},
+
+	[NI_LIST_PCS_FEATS_AV]  = {ni_json_k("available_features"),     ni_user_f("Supported PCS features ->", 0)},
+
+
+	[NI_PCS_GLB_BLK_LCK0]   = {ni_json_k("global_block_lock_latch"),ni_user_f("Global block lock", NUF_N | NUFW(-4))},
+	[NI_PCS_GLB_BLK_LCK1]   = {ni_json_k("global_block_lock"),      ni_user_v(NULL, NUF_DA | NUFW(-4), " | ", NULL)},
+
+	[NI_PCS_GLB_HIGH_BER0]  = {ni_json_k("global_high_ber_latch"),  ni_user_f("Global high BER", NUF_N | NUFW(-4))},
+	[NI_PCS_GLB_HIGH_BER1]  = {ni_json_k("global_high_ber"),        ni_user_v(NULL, NUF_DA | NUFW(-4), " | ", NULL)},
+	[NI_PCS_BER_CNT]        = {ni_json_k("ber_counter"),            ni_user_l("BER counter")},
+	[NI_PCS_BLK_ERR]        = {ni_json_k("error_blocks"),           ni_user_l("Errored blocks")},
+	[NI_PCS_LANES_ALIGNED]  = {ni_json_k("lanes_aligned"),          ni_user_l("PCS lanes aligned")},
+
+	[NI_LIST_PCS_BLK_LCKS]  = {ni_json_k("block_lock"),             ni_user_v("Block lock for lanes", NUF_VE | NUFA(10), "", NULL)},
+	[NI_PCS_BLK_LCK]        = {ni_json_e,                           ni_user_f(NULL, NUF_NDA | NUFW(6))},
+
+	[NI_LIST_AM_LCKS]       = {ni_json_k("am_lock"),                ni_user_v("AM lock", NUF_VE | NUFA(10), "", NULL)},
+	[NI_PCS_AM_LCK]         = {ni_json_e,                           ni_user_f(NULL, NUF_NDA | NUFW(6))},
+
+	[NI_LIST_LANE_MAP]      = {ni_json_k("lane_map"),               ni_user_f("Lane mapping", NUF_VE | NUFA(10))},
+	[NI_PCS_LANE_MAP]       = {ni_json_e,                           ni_user_f(NULL, NUF_NDA | NUFW(6))},
+
+	[NI_LIST_BIP_ERR_CNT]   = {ni_json_k("bip_error_counters"),     ni_user_f("BIP error counters", NUF_VE | NUFA(10))},
+	[NI_BIP_ERR_CNT]        = {ni_json_e,                           ni_user_f(NULL, NUF_NDA | NUFW(6))},
+
+	[NI_LIST_PMA_TYPES_AV]  = {ni_json_k("available_types"),        ni_user_f("Supported PMA types ->", 0)},
+	[NI_SEC_PMA_TYPES]      = {ni_json_n,                           ni_user_f(NULL, 256)},
+	[NI_PMA_TYPES_NAME]     = {ni_json_k("name"),                   ni_user_l("")},
+	[NI_PMA_TYPES_ACTIVE]   = {ni_json_n,                           ni_user_f(" * ", NUF_NDA)},
+
+	[NI_SEC_PMA_FEAT]       = {ni_json_e,                           ni_user_n},
+	[NI_PMA_FEAT_NAME]      = {ni_json_k("name"),                   ni_user_l("")},
+	[NI_PMA_FEAT_ACTIVE]    = {ni_json_k("active"),                 ni_user_f(" * ", NUF_NDA)},
+
+	[NI_SEC_RXMAC]          = {ni_json_k("rxmac"),                  ni_user_l("RXMAC Status")},
+	[NI_RXM_ENABLED]        = {ni_json_k("enabled"),                ni_user_l("RXMAC status")},
+	[NI_RXM_LINK]           = {ni_json_k("link"),                   ni_user_l("Link status")},
+	[NI_RXM_HFIFO_OVF]      = {ni_json_k("hfifo_overflow"),         ni_user_l("HFIFO overflow occurred")},
+
+	[NI_SEC_RXMAC_S]        = {ni_json_k("stats"),                  ni_user_n},
+	[NI_RXM_RECV_O]         = {ni_json_k("pass_octets"),            ni_user_f("Received octets", NUFC)},
+	[NI_RXM_PROCESSED]      = {ni_json_k("total"),                  ni_user_f("Processed", NUFC)},
+	[NI_RXM_RECEIVED]       = {ni_json_k("pass"),                   ni_user_f("Received", NUFC)},
+	[NI_RXM_ERRONEOUS]      = {ni_json_k("erroneous"),              ni_user_f("Erroneous", NUFC)},
+	[NI_RXM_OVERFLOWED]     = {ni_json_k("overflowed"),             ni_user_f("Overflowed", NUFC)},
+
+	[NI_SEC_RXMAC_CONF]     = {ni_json_k("config"),                 ni_user_l("RXMAC configuration")},
+	[NI_RXM_ERR_MASK_REG]   = {ni_json_k("err_mask_reg"),           ni_user_l("Error mask register")},
+
+	[NI_RXM_ERR_FRAME]      = {ni_json_k("err_mask_frame_err"),     ni_user_l(" * Frame error from MII [0]")},
+	[NI_RXM_ERR_CRC]        = {ni_json_k("err_mask_crc_check"),     ni_user_l(" * CRC check            [1]")},
+	[NI_RXM_ERR_MIN_LEN]    = {ni_json_k("err_mask_min_length"),    ni_user_l(" * Minimal frame length [2]")},
+	[NI_RXM_MIN_LEN]        = {ni_json_k("pkt_min_length"),         ni_user_l("   * length")},
+	[NI_RXM_ERR_MAX_LEN]    = {ni_json_k("err_mask_max_length"),    ni_user_l(" * Maximal frame length [3]")},
+	[NI_RXM_MAX_LEN]        = {ni_json_k("pkt_max_length"),         ni_user_l("   * length")},
+	[NI_RXM_MAX_LEN_CAP]    = {ni_json_k("pkt_max_length_capable"), ni_user_l("   * capable length")},
+	[NI_RXM_ERR_MAC_CHECK]  = {ni_json_k("err_mask_mac_addr_check"),ni_user_l(" * MAC address check    [4]")},
+	[NI_RXM_ERR_MAC_MODE]   = {ni_json_k("err_mask_mac_addr_mode"), ni_user_l("   * mode")},
+	[NI_RXM_MAC_MAX_COUNT]  = {ni_json_k("mac_addr_count"),         ni_user_l("MAC address table size")},
+
+	[NI_SEC_RXMAC_ES]       = {ni_json_k("etherstats"),             ni_user_l("RXMAC etherStatsTable")},
+	[NI_RXM_ES_OCTS]        = {ni_json_k("octets"),                 ni_user_f("etherStatsOctets", NUFC)},
+	[NI_RXM_ES_PKTS]        = {ni_json_k("pkts"),                   ni_user_f("etherStatsPkts", NUFC)},
+	[NI_RXM_ES_BCST]        = {ni_json_k("broadcast"),              ni_user_f("etherStatsBroadcastPkts", NUFC)},
+	[NI_RXM_ES_MCST]        = {ni_json_k("multicast"),              ni_user_f("etherStatsMulticastPkts", NUFC)},
+	[NI_RXM_ES_CRCE]        = {ni_json_k("crc_align_errors"),       ni_user_f("etherStatsCRCAlignErrors", NUFC)},
+	[NI_RXM_ES_UNDR]        = {ni_json_k("undersize"),              ni_user_f("etherStatsUndersizePkts", NUFC)},
+	[NI_RXM_ES_OVER]        = {ni_json_k("oversize"),               ni_user_f("etherStatsOversizePkts", NUFC)},
+	[NI_RXM_ES_FRAG]        = {ni_json_k("fragments"),              ni_user_f("etherStatsFragments", NUFC)},
+	[NI_RXM_ES_JABB]        = {ni_json_k("jabbers"),                ni_user_f("etherStatsJabbers", NUFC)},
+	[NI_RXM_ES_64]          = {ni_json_k("pkts64"),                 ni_user_f("etherStatsPkts64Octets", NUFC)},
+	[NI_RXM_ES_65_127]      = {ni_json_k("pkts65to127"),            ni_user_f("etherStatsPkts65to127Octets", NUFC)},
+	[NI_RXM_ES_128_255]     = {ni_json_k("pkts128to255"),           ni_user_f("etherStatsPkts128to255Octets", NUFC)},
+	[NI_RXM_ES_256_511]     = {ni_json_k("pkts256to511"),           ni_user_f("etherStatsPkts256to511Octets", NUFC)},
+	[NI_RXM_ES_512_1023]    = {ni_json_k("pkts512to1023"),          ni_user_f("etherStatsPkts512to1023Octets", NUFC)},
+	[NI_RXM_ES_1024_1518]   = {ni_json_k("pkts1024to1518"),         ni_user_f("etherStatsPkts1024to1518Octets", NUFC)},
+	[NI_RXM_ES_UNDR_SET]    = {ni_json_k("conf_undersize"),         ni_user_f("underMinPkts", NUFC)},
+	[NI_RXM_ES_OVER_SET]    = {ni_json_k("conf_oversize"),          ni_user_f("overMaxPkts", NUFC)},
+
+	[NI_SEC_TXMAC]          = {ni_json_k("txmac"),                  ni_user_l("TXMAC status")},
+	[NI_TXM_ENABLED]        = {ni_json_k("enabled"),                ni_user_l("TXMAC status")},
+	[NI_SEC_TXMAC_S]        = {ni_json_k("stats"),                  ni_user_n},
+	[NI_TXM_SENT_O]         = {ni_json_k("sent_octets"),            ni_user_f("Transmitted octets", NUFC)},
+	[NI_TXM_PROCESSED]      = {ni_json_k("processed"),              ni_user_f("Processed", NUFC)},
+	[NI_TXM_SENT]           = {ni_json_k("sent"),                   ni_user_f("Transmitted", NUFC)},
+	[NI_TXM_ERRONEOUS]      = {ni_json_k("erroneous"),              ni_user_f("Erroneous", NUFC)},
+
+	/* Still Eth section */
+	[NI_TRANS_PRSNT]        = {ni_json_k("present"),                ni_user_l("Transceiver status")},
+	[NI_TRANS_PRSNT_UNK]    = {ni_json_n,                           ni_user_l("Transceiver status")},
+	[NI_TRANS_CAGE_TYPE]    = {ni_json_k("cage_type"),              ni_user_f("Transceiver cage", NUF_N)},
+	[NI_TRANS_CAGE_ID]      = {ni_json_k("cage_id"),                ni_user_v(NULL, NUF_DA, "-", NULL)},
+	[NI_LIST_TRN_LANES]     = {ni_json_k("lanes"),                  ni_user_v("Transceiver lane(s)", NUF_VE, "|", "\n")},
+	[NI_TRANS_LANE]         = {ni_json_e,                           ni_user_v(NULL, NUF_NDA, NULL, NULL)},
+
+	/* Trans section */
+	[NI_LIST_TRANS]         = {ni_json_k("transceivers"),           ni_user_v(NULL, 0, "\n", NULL)},
+
+	[NI_SEC_TRN]            = {ni_json_n,                           ni_user_l("")},
+	[NI_TRN_INDEX]          = {ni_json_k("id"),                     ni_user_f("", NUF_NDA | NUF_SL | NUFW(2))},
+	[NI_TRN_NAME]           = {ni_json_k("name"),                   ni_user_v("", NUF_NDA | NUF_SL, NULL, "")},
+	[NI_MOD_IDENT]          = {ni_json_k("identifier"),             ni_user_l("Module identifier")},
+	[NI_TRN_COMPLIANCE]     = {ni_json_k("compliance"),             ni_user_l("Compliance")},
+	[NI_TRN_CONNECTOR]      = {ni_json_k("connector"),              ni_user_l("Connector")},
+	[NI_SFF8636_VNDR_NAME]  = {ni_json_k("vendor_name"),            ni_user_l("Vendor name")},
+	[NI_SFF8636_VNDR_SN]    = {ni_json_k("vendor_serial_number"),   ni_user_l("Vendor serial number")},
+	[NI_SFF8636_VNDR_PN]    = {ni_json_k("vendor_part_number"),     ni_user_l("Vendor part number")},
+	[NI_SFF8636_REVISION]   = {ni_json_k("revision"),               ni_user_l("Revision")},
+	[NI_SFF8636_TEMP]       = {ni_json_f("temperature", NJFD(2)),   ni_user_v("Temperature", NUFD(2), NULL, " C")},
+	[NI_SFF8636_WL]         = {ni_json_f("wavelength", NJFD(2)),    ni_user_v("Wavelength", NUF_N | NUFD(2) , NULL, " nm")},
+	[NI_SFF8636_WL_TOL]     = {ni_json_f("wavelength_tolerance", NJFD(2)), ni_user_v(" ", NUF_DA |NUFD(2), "+-", " nm")},
+
+	[NI_LIST_TRN_RX_IN_PWR] = {ni_json_k("rx_input_power"),         ni_user_l("RX input power")},
+	[NI_TRANS_RX_IN_PWR_L]  = {ni_json_n,                           ni_user_f(" * Lane ", NUF_NDA)},
+	[NI_TRANS_RX_IN_PWR_V]  = {ni_json_e,                           ni_user_f("", NUFD(2) | NUFW(1))},
+
+	[NI_LIST_TRN_STX_DIS]   = {ni_json_k("stx_disable"),            ni_user_l("Software TX disable")},
+	[NI_TRANS_STX_DIS_L]    = {ni_json_n,                           ni_user_f(" * Lane ", NUF_NDA)},
+	[NI_TRANS_STX_DIS_V]    = {ni_json_e,                           ni_user_l("")},
+
+	[NI_TRN_CMIS_VER_MAJ]   = {ni_json_k("cmis_version_major"),     ni_user_f("CMIS version", NUF_N)},
+	[NI_TRN_CMIS_VER_MIN]   = {ni_json_k("cmis_version_minor"),     ni_user_v("", NUF_DA, ".", NULL)},
+	[NI_TRN_CMIS_GLB_STAT]  = {ni_json_k("cmis_module_state"),      ni_user_l("Module state")},
+	[NI_TRN_CMIS_VNDR_NAME] = {ni_json_k("vendor_name"),            ni_user_l("Vendor name")},
+	[NI_TRN_CMIS_VNDR_SN]   = {ni_json_k("vendor_serial_number"),   ni_user_l("Vendor serial number")},
+	[NI_TRN_CMIS_VNDR_PN]   = {ni_json_k("vendor_part_number"),     ni_user_l("Vendor part number")},
+	[NI_TRN_CMIS_MED_T]     = {ni_json_k("media_type"),             ni_user_l("Media type")},
+	[NI_TRN_CMIS_IFC_T]     = {ni_json_k("interface_type"),         ni_user_l("Media interface technology")},
+	[NI_MDIO_VNDR_NAME]     = {ni_json_k("vendor_name"),            ni_user_l("Vendor name")},
+	[NI_MDIO_SN]            = {ni_json_k("vendor_serial_number"),   ni_user_l("Vendor serial number")},
+	[NI_MDIO_PN]            = {ni_json_k("vendor_part_number"),     ni_user_l("Vendor part number")},
+	[NI_MDIO_HW_REV]        = {ni_json_k("hw_spec_rev"),            ni_user_f("HW spec. rev.", NUFD(1))},
+	[NI_MDIO_MGMT_REV]      = {ni_json_k("mgmt_spec_rev"),          ni_user_f("Management ifc. spec. rev.", NUFD(1))},
+
+	[NI_SEC_RSFEC_STATUS]   = {ni_json_k("rsfec"),                  ni_user_l("RS-FEC status")},
+	[NI_SEC_RSFEC119_STATUS]= {ni_json_k("rsfec_cl119"),            ni_user_l("RS-FEC status")},
+	[NI_RSFEC_STATUS_BCA]   = {ni_json_k("bypass_correction"),      ni_user_l("RS-FEC bypass correction ability")},
+	[NI_RSFEC_STATUS_BIA]   = {ni_json_k("bypass_indication"),      ni_user_l("RS-FEC bypass indication ability")},
+	[NI_RSFEC_STATUS_SER]   = {ni_json_k("high_ser"),               ni_user_l("RS-FEC high SER")},
+	[NI_RSFEC_STATUS_FLA]   = {ni_json_k("lanes_aligned"),          ni_user_l("RS-FEC lanes aligned")},
+	[NI_RSFEC_STATUS_PLA]   = {ni_json_k("pcs_lanes_aligned"),      ni_user_l("PCS lanes aligned")},
+	[NI_RSFEC_STATUS_DSER]  = {ni_json_k("degraded_ser"),           ni_user_l("RS-FEC degraded SER")},
+	[NI_RSFEC_STATUS_RDSER] = {ni_json_k("remote_degraded_ser"),    ni_user_l("Remote degraded SER")},
+	[NI_RSFEC_STATUS_LDSER] = {ni_json_k("local_degraded_ser"),     ni_user_l("Local degraded SER")},
+
+	[NI_RSFEC_CORRECTED]    = {ni_json_k("corrected_cws"),          ni_user_l("RS-FEC corrected cws")},
+	[NI_RSFEC_UNCORRECTED]  = {ni_json_k("uncorrected_cws"),        ni_user_l("RS-FEC uncorrected cws")},
+
+	[NI_LIST_RSFEC_SYM_ERR] = {ni_json_k("symbol_errors"),          ni_user_l("RS-FEC symbol errors ->")},
+	[NI_RSFEC_SYM_ERR_L]    = {ni_json_n,                           ni_user_f(" * Lane ", NUF_NDA)},
+	[NI_RSFEC_SYM_ERR_V]    = {ni_json_e,                           ni_user_l("")},
+
+	[NI_LIST_RSFEC_LANE_MAP]= {ni_json_k("lane_map"),               ni_user_v("RS-FEC lane mapping", NUF_VE, " ", NULL)},
+	[NI_RSFEC_LANE_MAP]     = {ni_json_e,                           ni_user_f("", NUF_NDA)},
+
+	[NI_LIST_RSFEC_AM_LOCK] = {ni_json_k("am_lock"),                ni_user_v("RS-FEC AM lock", NUF_VE, " ", NULL)},
+	[NI_RSFEC_AM_LOCK]      = {ni_json_e,                           ni_user_f(NULL, NUF_NDA)},
+};
+
+int print_ctrl_reg_json(void *priv, int item, int val)
+{
+	struct ni_json_cbp *p = priv;
+	const char *res = NULL;
+
+	switch (item) {
+	case NI_PCS_LANE_MAP:
+		if (val == -1)
+			return fprintf(p->f, "null");
+		return fprintf(p->f, "%d", val);
+	case NI_ETH_REPEATER:
+		switch (val) {
+		case IDCOMP_REPEATER_NORMAL: res = "\"normal\""; break;
+		case IDCOMP_REPEATER_REPEAT: res = "\"repeat\""; break;
+		case IDCOMP_REPEATER_IDLE:   res = "\"idle\""; break;
+		default:                     res = "\"unknown\""; break;
+		}
+		break;
+	case NI_RXM_ERR_MAC_MODE:
+		switch(val) {
+		case RXMAC_MAC_FILTER_PROMISCUOUS:      res = "\"promiscuous\""; break;
+		case RXMAC_MAC_FILTER_TABLE:            res = "\"normal\""; break;
+		case RXMAC_MAC_FILTER_TABLE_BCAST:      res = "\"broadcast\""; break;
+		case RXMAC_MAC_FILTER_TABLE_BCAST_MCAST:res = "\"multicast\""; break;
+		}
+		break;
+	default:
+		res = val ? "true": "false";
+		break;
+	}
+	return fprintf(p->f, res);
+}
+
+int print_ctrl_reg_user(void *priv, int item, int val)
+{
+	struct ni_user_cbp *p = priv;
+	const char *res = NULL;
+
+	switch (item) {
+	case NI_PCS_GLB_BLK_LCK0:
+	case NI_PCS_GLB_BLK_LCK1:
+	case NI_PCS_GLB_HIGH_BER0:
+	case NI_PCS_GLB_HIGH_BER1:
+	case NI_PCS_LANES_ALIGNED:
+	case NI_PMA_RFAULT:
+	case NI_PMA_TFAULT:
+	case NI_PCS_RFAULT:
+	case NI_PCS_TFAULT:             res = val ? "Yes" : "No"; break;
+
+	case NI_RXM_ENABLED:
+	case NI_TXM_ENABLED:            res = val ? "ENABLED" : "DISABLED"; break;
+
+	case NI_PMA_LINK_STA0:
+	case NI_PMA_LINK_STA1:
+	case NI_PCS_LINK_STA0:
+	case NI_PCS_LINK_STA1:
+	case NI_RXM_LINK:               res = val ? "UP" : "DOWN"; break;
+
+	case NI_RSFEC_STATUS_BCA:
+	case NI_RSFEC_STATUS_BIA:
+	case NI_RSFEC_STATUS_SER:
+	case NI_RSFEC_STATUS_FLA:
+	case NI_RSFEC_STATUS_PLA:
+	case NI_RSFEC_STATUS_DSER:
+	case NI_RSFEC_STATUS_RDSER:
+	case NI_RSFEC_STATUS_LDSER:
+	case NI_RXM_HFIFO_OVF:          res = val ? "True" : "False"; break;
+
+	case NI_TRANS_PRSNT:            res = val ? "OK" : "Not plugged"; break;
+
+	case NI_TRANS_STX_DIS_V:        res = val ? "active" : "inactive"; break;
+
+	case NI_PMA_TYPES_ACTIVE:
+	case NI_PMA_FEAT_ACTIVE:        res = val ? "[active]" : ""; break;
+
+	case NI_RXM_ERR_FRAME:
+	case NI_RXM_ERR_CRC:
+	case NI_RXM_ERR_MIN_LEN:
+	case NI_RXM_ERR_MAX_LEN:
+	case NI_RXM_ERR_MAC_CHECK:      res = val ? "enabled" : "disabled"; break;
+
+	case NI_PCS_AM_LCK:
+	case NI_RSFEC_AM_LOCK:
+	case NI_PCS_BLK_LCK:            res = val ? "L" : "X"; break;
+
+	case NI_PCS_LANE_MAP:
+		if (val == -1) {
+			res = "U";
+		} else {
+			return fprintf(p->f, "%*d", p->width, val);
+		}
+		break;
+
+	case NI_ETH_REPEATER:
+		switch (val) {
+		case IDCOMP_REPEATER_NORMAL: res = "Normal  (transmit data from application)"; break;
+		case IDCOMP_REPEATER_REPEAT: res = "Repeat  (transmit data from RXMAC)"; break;
+		case IDCOMP_REPEATER_IDLE:   res = "Idle    (transmit disabled)"; break;
+		default:                     res = "Unknown (use the PCS/PMA features)"; break;
+		}
+		break;
+	case NI_RXM_ERR_MAC_MODE:
+		switch(val) {
+		case RXMAC_MAC_FILTER_PROMISCUOUS:	res = "Promiscuous mode"; break;
+		case RXMAC_MAC_FILTER_TABLE:		res = "Filter by MAC address table"; break;
+		case RXMAC_MAC_FILTER_TABLE_BCAST:	res = "Filter by MAC address table, allow broadcast"; break;
+		case RXMAC_MAC_FILTER_TABLE_BCAST_MCAST:res = "Filter by MAC address table, allow broadcast + multicast"; break;
+		}
+		break;
+	}
+	if (res)
+		return fprintf(p->f, "%*s", p->width, res);
+
+	return 0;
+}
+
+int print_pwr_json(void *priv, int item, double val)
+{
+	struct ni_json_cbp *p = priv;
+	(void) item;
+	return fprintf(p->f, "%.8f", val);
+}
+
+int print_pwr_user(void *priv, int item, double val)
+{
+	struct ni_user_cbp *p = priv;
+	int uw;
+	(void) item;
+
+	val *= 1000; /* from W to mW */
+	uw = val < 1;
+	return fprintf(p->f, "%.2f %s (%.2f dBm)",
+			uw ? val * 1000 : val,
+			uw ? "uW" : "mW",
+			10 * log10(val));
+}
+
+struct ni_eth_item_f_t ni_eth_item_f[] = {
+	[NI_DRC_JSON] = {
+		.c = ni_common_item_callbacks[NI_DRC_JSON],
+		.print_ctrl_reg = print_ctrl_reg_json,
+		.print_qsfp_i2c_text = print_json_qsfp_i2c_text,
+		.print_mdio_text = print_mdio_text_json,
+		.print_pwr = print_pwr_json,
+	},
+	[NI_DRC_USER] = {
+		.c = ni_common_item_callbacks[NI_DRC_USER],
+		.print_ctrl_reg = print_ctrl_reg_user,
+		.print_qsfp_i2c_text = print_user_qsfp_i2c_text,
+		.print_mdio_text = print_mdio_text_user,
+		.print_pwr = print_pwr_user,
+	},
+};
+
 
 // TODO add usage for queries
 void usage(const char *progname, int verbose)
@@ -84,6 +435,7 @@ void usage(const char *progname, int verbose)
 		printf(" example of usage: '-q rx_link,tx_octets,pma_speed'\n");
 	}
 
+	printf("-j              Print output in JSON\n");
 	printf("-v              Increase verbosity (including help)\n");
 	printf("-h              Show this text\n");
 	printf("\n");
@@ -119,6 +471,7 @@ int main(int argc, char *argv[])
 	int ret;
 	char cmds = 0;
 	int used = 0;
+	int js = NI_DRC_USER;
 
 	unsigned mv[6];
 	int use = 0;
@@ -130,7 +483,6 @@ int main(int argc, char *argv[])
 	struct list_range index_range;
 
 	enum nc_idcomp_repeater repeater_status = IDCOMP_REPEATER_NORMAL;
-	const char *repeater_str;
 
 	p.command = CMD_PRINT_STATUS;
 	p.verbose = 0;
@@ -145,6 +497,9 @@ int main(int argc, char *argv[])
 		/* Common parameters */
 		case 'v':
 			p.verbose++;
+			break;
+		case 'j':
+			js = NI_DRC_JSON;
 			break;
 		case 'h':
 			p.command = CMD_USAGE;
@@ -315,11 +670,20 @@ int main(int argc, char *argv[])
 			use &= TRANSCEIVER;
 	}
 
-	fdt_for_each_compatible_node(fdt, node, COMP_NETCOPE_ETH) {
-		if (use & TRANSCEIVER)
-			continue;
+	struct ni_context *ctx = NULL;
+	if (p.command == CMD_PRINT_STATUS) {
+		ctx = ni_init_root_context_default(js, ni_items, &ni_eth_item_f[js]);
+	}
 
+	ni_section(ctx, NI_SEC_ROOT);
+
+	if ((use & TRANSCEIVER) == 0) {
+	ni_list(ctx, NI_LIST_ETH);
+	fdt_for_each_compatible_node(fdt, node, COMP_NETCOPE_ETH) {
 		if (list_range_empty(&index_range) || list_range_contains(&index_range, p.index)) {
+			ni_section(ctx, NI_SEC_ETH);
+			ni_item_int(ctx, NI_SEC_ETH_ID, p.index);
+
 			if (p.command == CMD_SET_REPEATER) {
 				used++;
 				if (nc_idcomp_repeater_set(dev, p.index, repeater_status)) {
@@ -327,13 +691,16 @@ int main(int argc, char *argv[])
 				}
 			} else {
 				if (p.command == CMD_PRINT_STATUS) {
-					if (used++)
-						printf("\n");
-					printf("----------------------------- Ethernet interface %d ----\n", p.index);
+					used++;
 					p2 = p;
 					p2.command = CMD_PRINT_SPEED;
-					pcspma_execute_operation(dev, node, &p2);
-					transceiver_print_short_info(dev, node, &p);
+					pcspma_execute_operation(ctx, dev, node, &p2);
+					transceiver_print_short_info(ctx, dev, node, &p);
+
+					if (p.verbose) {
+						repeater_status = nc_idcomp_repeater_get(dev, p.index);
+						ni_item_ctrl_reg(ctx, NI_ETH_REPEATER, repeater_status);
+					}
 				}
 
 				if (p.command == CMD_QUERY) {
@@ -354,7 +721,7 @@ int main(int argc, char *argv[])
 					if (!rxmac) {
 						warnx("Cannot open RXMAC for ETH%d", p.index);
 					} else {
-						if (rxmac_execute_operation(rxmac, &p) != 0)
+						if (rxmac_execute_operation(ctx, rxmac, &p) != 0)
 							warnx("Cannot perform a command on RXMAC%d", p.index);
 						nc_rxmac_close(rxmac);
 					}
@@ -367,57 +734,53 @@ int main(int argc, char *argv[])
 					if (!txmac) {
 						warnx("Cannot open TXMAC for ETH%d", p.index);
 					} else {
-						if (txmac_execute_operation(txmac, &p) != 0)
+						if (txmac_execute_operation(ctx, txmac, &p) != 0)
 							warnx("Cannot perform a command on TXMAC%d", p.index);
 						nc_txmac_close(txmac);
 					}
 				}
 
-				if (p.command == CMD_PRINT_STATUS && (use & RXMAC || use & TXMAC)) {
-					used++;
-					repeater_status = nc_idcomp_repeater_get(dev, p.index);
-					switch (repeater_status) {
-					case IDCOMP_REPEATER_NORMAL: repeater_str = "Normal  (transmit data from application)"; break;
-					case IDCOMP_REPEATER_REPEAT: repeater_str = "Repeat  (transmit data from RXMAC)"; break;
-					case IDCOMP_REPEATER_IDLE:   repeater_str = "Idle    (transmit disabled)"; break;
-					default:                     repeater_str = "Unknown (use the PCS/PMA features)"; break;
-					}
-					printf("Repeater status            : %s\n", repeater_str);
-				}
-
 				if (p.command == CMD_PRINT_STATUS) {
 					used++;
 					if (use & PCSPMA)
-						pcspma_execute_operation(dev, node, &p);
+						pcspma_execute_operation(ctx, dev, node, &p);
 				} else if (use & PCSPMA) {
 					used++;
-					ret = pcspma_execute_operation(dev, node, &p);
+					ret = pcspma_execute_operation(ctx, dev, node, &p);
 					if (ret)
 						warnx("PCS/PMA command failed");
 				}
 			}
-
+			ni_endsection(ctx, NI_SEC_ETH);
 		}
 		p.index++;
 	}
+	ni_endlist(ctx, NI_LIST_ETH);
+	}
 
 	if (use & TRANSCEIVER) {
+		ni_list(ctx, NI_LIST_TRANS);
 		fdt_for_each_compatible_node(fdt, node, "netcope,transceiver") {
 			if (list_range_empty(&index_range) || list_range_contains(&index_range, p.index)) {
+				ni_section(ctx, NI_SEC_TRN);
 				if (p.command == CMD_PRINT_STATUS) {
-					if (used++)
-						printf("\n");
-					transceiver_print(dev, node, p.index);
+					used++;
+					transceiver_print(ctx, dev, node, p.index);
 				} else {
 					used++;
 					ret = transceiver_execute_operation(dev, node, &p);
 					if (ret)
 						warnx("Transceiver command failed");
 				}
+				ni_endsection(ctx, NI_SEC_TRN);
 			}
 			p.index++;
 		}
+		ni_endlist(ctx, NI_LIST_TRANS);
 	}
+
+	ni_endsection(ctx, NI_SEC_ROOT);
+	ni_close_root_context(ctx);
 
 	if (!used) {
 		warnx("No such interface");
