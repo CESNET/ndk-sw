@@ -256,10 +256,10 @@ void pcspma_print_status(struct ni_context *ctx, struct nc_mdio *mdio, int porta
 		reg2 = nc_mdio_read(mdio, portaddr, 3, 33);
 		if (pma_speed <= 100000) { /* Block lock not defined above 100G */
 			ni_item_ctrl_reg(ctx, NI_PCS_GLB_BLK_LCK0, reg & 0x0001);
-			ni_item_ctrl_reg(ctx, NI_PCS_GLB_BLK_LCK1, reg & 0x8000);
+			ni_item_ctrl_reg(ctx, NI_PCS_GLB_BLK_LCK1, reg2 & 0x8000);
 		}
 		ni_item_ctrl_reg(ctx, NI_PCS_GLB_HIGH_BER0, reg & 0x0002);
-		ni_item_ctrl_reg(ctx, NI_PCS_GLB_HIGH_BER1, reg & 0x4000);
+		ni_item_ctrl_reg(ctx, NI_PCS_GLB_HIGH_BER1, reg2 & 0x4000);
 
 		// BER counter register -> 44
 		reg = nc_mdio_read(mdio, portaddr, 3, 44);
