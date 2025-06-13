@@ -31,12 +31,24 @@ void txmac_print_status(struct ni_context *ctx, struct nc_txmac *txmac, struct e
 
 	ni_section(ctx, NI_SEC_TXMAC);
 	ni_item_ctrl_reg(ctx, NI_TXM_ENABLED, s.enabled);
-	ni_section(ctx, NI_SEC_TXMAC_S);
-	ni_item_uint64_t(ctx, NI_TXM_SENT_O, c.cnt_octets);
-	ni_item_uint64_t(ctx, NI_TXM_PROCESSED, c.cnt_total);
-	ni_item_uint64_t(ctx, NI_TXM_SENT, c.cnt_sent);
-	ni_item_uint64_t(ctx, NI_TXM_ERRONEOUS, c.cnt_erroneous);
-	ni_endsection(ctx, NI_SEC_TXMAC_S);
+	ni_section(ctx, NI_SEC_MAC_S);
+	if (txmac->has_ext_drop_counters) {
+		ni_item_uint64_t(ctx, NI_MAC_TOTAL_O, c.cnt_total_octets);
+	}
+	ni_item_uint64_t(ctx, NI_TXM_PASS_O, c.cnt_octets);
+	ni_item_uint64_t(ctx, NI_MAC_TOTAL, c.cnt_total);
+	ni_item_uint64_t(ctx, NI_TXM_PASS, c.cnt_sent);
+	ni_item_uint64_t(ctx, NI_MAC_DROP, c.cnt_drop);
+	if (txmac->has_ext_drop_counters) {
+		ni_item_uint64_t(ctx, NI_MAC_DROP_DISABLED, c.cnt_drop_disabled);
+		ni_item_uint64_t(ctx, NI_MAC_DROP_LINK, c.cnt_drop_link);
+	}
+	ni_item_uint64_t(ctx, NI_MAC_DROP_ERR, c.cnt_erroneous);
+	if (txmac->has_ext_drop_counters) {
+		ni_item_uint64_t(ctx, NI_MAC_DROP_ERR_LEN, c.cnt_err_length);
+	}
+
+	ni_endsection(ctx, NI_SEC_MAC_S);
 	ni_endsection(ctx, NI_SEC_TXMAC);
 }
 

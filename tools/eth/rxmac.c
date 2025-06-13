@@ -35,15 +35,31 @@ void rxmac_print_status(struct ni_context *ctx, struct nc_rxmac *rxmac, struct e
 
 	ni_item_ctrl_reg(ctx, NI_RXM_ENABLED, s.enabled);
 	ni_item_ctrl_reg(ctx, NI_RXM_LINK, s.link_up);
-	ni_item_ctrl_reg(ctx, NI_RXM_HFIFO_OVF, s.overflow);
 
-	ni_section(ctx, NI_SEC_RXMAC_S);
-	ni_item_uint64_t(ctx, NI_RXM_RECV_O, c.cnt_octets);
-	ni_item_uint64_t(ctx, NI_RXM_PROCESSED, c.cnt_total);
-	ni_item_uint64_t(ctx, NI_RXM_RECEIVED, c.cnt_received);
-	ni_item_uint64_t(ctx, NI_RXM_ERRONEOUS, c.cnt_erroneous);
+	if (p->verbose) {
+		ni_item_ctrl_reg(ctx, NI_RXM_HFIFO_OVF, s.overflow);
+	}
+
+	ni_section(ctx, NI_SEC_MAC_S);
+	ni_item_uint64_t(ctx, NI_MAC_TOTAL_O, c.cnt_total_octets);
+	ni_item_uint64_t(ctx, NI_RXM_PASS_O, c.cnt_octets);
+	ni_item_uint64_t(ctx, NI_MAC_TOTAL, c.cnt_total);
+	ni_item_uint64_t(ctx, NI_RXM_PASS, c.cnt_received);
+
+	ni_item_uint64_t(ctx, NI_MAC_DROP, c.cnt_drop);
+	if (rxmac->has_ext_drop_counters) {
+		ni_item_uint64_t(ctx, NI_MAC_DROP_DISABLED, c.cnt_drop_disabled);
+		ni_item_uint64_t(ctx, NI_MAC_DROP_FILTERED, c.cnt_drop_filtered);
+	}
 	ni_item_uint64_t(ctx, NI_RXM_OVERFLOWED, c.cnt_overflowed);
-	ni_endsection(ctx, NI_SEC_RXMAC_S);
+	ni_item_uint64_t(ctx, NI_MAC_DROP_ERR, c.cnt_erroneous);
+	if (rxmac->has_ext_drop_counters) {
+		ni_item_uint64_t(ctx, NI_MAC_DROP_ERR_LEN, c.cnt_err_length);
+		ni_item_uint64_t(ctx, NI_MAC_DROP_ERR_CRC, c.cnt_err_crc);
+		ni_item_uint64_t(ctx, NI_MAC_DROP_ERR_MII, c.cnt_err_mii);
+	}
+
+	ni_endsection(ctx, NI_SEC_MAC_S);
 
 	if (p->verbose) {
 		ni_section(ctx, NI_SEC_RXMAC_CONF);
@@ -92,6 +108,12 @@ void rxmac_print_ether_stats(struct ni_context *ctx, struct nc_rxmac *rxmac)
 	ni_item_uint64_t(ctx, NI_RXM_ES_256_511, s.pkts256to511Octets);
 	ni_item_uint64_t(ctx, NI_RXM_ES_512_1023, s.pkts512to1023Octets);
 	ni_item_uint64_t(ctx, NI_RXM_ES_1024_1518, s.pkts1024to1518Octets);
+	if (rxmac->has_ext_drop_counters) {
+		ni_item_uint64_t(ctx, NI_RXM_ES_1519_2047, s.pkts128to255Octets);
+		ni_item_uint64_t(ctx, NI_RXM_ES_2048_4095, s.pkts256to511Octets);
+		ni_item_uint64_t(ctx, NI_RXM_ES_4096_8191, s.pkts512to1023Octets);
+		ni_item_uint64_t(ctx, NI_RXM_ES_OVER_BINS, s.pktsOverBinsOctets);
+	}
 	ni_item_uint64_t(ctx, NI_RXM_ES_UNDR_SET, s.underMinPkts);
 	ni_item_uint64_t(ctx, NI_RXM_ES_OVER_SET, s.overMaxPkts);
 	ni_endsection(ctx, NI_SEC_RXMAC_ES);
