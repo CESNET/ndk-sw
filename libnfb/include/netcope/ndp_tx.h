@@ -535,10 +535,10 @@ static inline int nc_ndp_v3_tx_burst_put(void *priv)
 
 		frame_len_ceil = (hdr[i].frame_len + (NDP_TX_CALYPTE_BLOCK_SIZE -1)) & (~(NDP_TX_CALYPTE_BLOCK_SIZE -1));
 
-		while (q->u.v3.bytes_available < frame_len_ceil) {
-			if (nc_ndp_v3_tx_request_space(q, shp))
-				return -1;
-		}
+		/* while (q->u.v3.bytes_available < frame_len_ceil) { */
+		if (nc_ndp_v3_tx_request_space(q, shp))
+			return -1;
+		/* } */
 
 		nfb_comp_write(q->u.v3.tx_data_buff, q->u.v3.tx_pkts[i], hdr[i].frame_len, hdr[i].frame_ptr);
 		q->u.v3.bytes_available -= frame_len_ceil;
