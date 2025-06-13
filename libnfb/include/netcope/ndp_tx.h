@@ -459,9 +459,9 @@ static inline unsigned nc_ndp_v3_tx_burst_get(void *priv, struct ndp_packet *pac
 		hdr->flags = packets[i].flags & 0xF;
 
 		/* Set pointers, where user can write packet content */
-		q->u.v3.tx_pkts[i] = data_base + sdp_int;
-		packets[i].header = data_base + sdp_int;
-		packets[i].data = data_base + sdp_int + header_size;
+		q->u.v3.tx_pkts[i] = packets[i].data;
+		/* packets[i].header = data_base + sdp_int; */
+		/* packets[i].data = data_base + sdp_int + header_size; */
 
 		// Ceil SDP to the multiple of NDP_TX_CALYPTE_BLOCK_SIZE
 		sdp_int = ((sdp_int + packet_size + (NDP_TX_CALYPTE_BLOCK_SIZE -1)) & (~(NDP_TX_CALYPTE_BLOCK_SIZE -1)));
