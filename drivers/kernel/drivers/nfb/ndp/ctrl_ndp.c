@@ -531,15 +531,16 @@ static uint64_t ndp_ctrl_rx_get_hwptr(struct ndp_channel *channel)
 	hhp = ctrl->c.hhp;
 
 	if (ctrl->c.type == DMA_TYPE_CALYPTE) {
-		struct nc_calypte_hdr *hdr_base;
-		uint32_t hwptr = ctrl->c.hhp;
-		do {
-			hdr_base = ctrl->ts.calypte.hdr_buffer + hwptr;
-			if (hdr_base->valid == 0)
-				break;
-			hwptr++;
-		} while (hwptr < ctrl->hdr_buffer_size * 2);
-		ctrl->c.hhp = hwptr & channel->ptrmask;
+		/* struct nc_calypte_hdr *hdr_base; */
+		/* uint32_t hwptr = ctrl->c.hhp; */
+		/* do { */
+		/* 	hdr_base = ctrl->ts.calypte.hdr_buffer + hwptr; */
+		/* 	if (hdr_base->valid == 0) */
+		/* 		break; */
+		/* 	hwptr++; */
+		/* } while (hwptr < ctrl->hdr_buffer_size * 2); */
+		/* ctrl->c.hhp = hwptr & channel->ptrmask; */
+		nc_ndp_ctrl_hhp_update(&ctrl->c);
 		return ctrl->c.hhp;
 	}
 	nc_ndp_ctrl_hhp_update(&ctrl->c);

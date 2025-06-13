@@ -263,12 +263,14 @@ static inline void _ndp_queue_rx_sync_v3_us(struct nc_ndp_queue *q)
 #endif
 	}
 
-	do {
-		hdr_base = q->u.v3.hdrs + q->u.v3.uspace_hhp;
-		if (hdr_base->valid == 0)
-			break;
-		q->u.v3.uspace_hhp = (q->u.v3.uspace_hhp + 1) & q->u.v3.uspace_mhp;
-	} while (1);
+	/* do { */
+	/* 	hdr_base = q->u.v3.hdrs + q->u.v3.uspace_hhp; */
+	/* 	if (hdr_base->valid == 0) */
+	/* 		break; */
+	/* 	q->u.v3.uspace_hhp = (q->u.v3.uspace_hhp + 1) & q->u.v3.uspace_mhp; */
+	/* } while (1); */
+
+	q->u.v3.uspace_hhp = nfb_comp_read32(q->u.v3.comp, NDP_CTRL_REG_HHP);
 	q->sync.hwptr = q->u.v3.uspace_hhp;
 #endif
 }
