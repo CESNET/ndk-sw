@@ -85,18 +85,18 @@ static int ndp_mode_loopback_loop(struct ndp_tool_params *p)
 	unsigned cnt_rx, cnt_tx;
 	unsigned burst_size = RX_BURST;
 	struct ndp_packet packets_rx[burst_size];
-	struct ndp_packet packets_tx[burst_size];
+	/* struct ndp_packet packets_tx[burst_size]; */
 	struct ndp_queue *rx = p->rx;
 	struct ndp_queue *tx = p->tx;
 	struct stats_info *si = &p->si;
 
 	update_stats_t update_stats = p->update_stats;
 
-	unsigned i;
-	for (i = 0; i < burst_size; i++) {
-		packets_tx[i].flags = 0;
-		packets_tx[i].header_length = 0;
-	}
+	/* unsigned i; */
+	/* for (i = 0; i < burst_size; i++) { */
+	/* 	packets_tx[i].flags = 0; */
+	/* 	packets_tx[i].header_length = 0; */
+	/* } */
 
 	while (!stop) {
 		/* check limits if there is one (0 means loop forever) */
@@ -125,19 +125,20 @@ static int ndp_mode_loopback_loop(struct ndp_tool_params *p)
 			continue;
 		}
 
-		for (i = 0; i < cnt_rx; i++)
-			packets_tx[i].data_length = packets_rx[i].data_length;
-		cnt_tx = ndp_tx_burst_get(tx, packets_tx, cnt_rx);
+		/* for (i = 0; i < cnt_rx; i++) */
+		/* 	packets_tx[i].data_length = packets_rx[i].data_length; */
+		cnt_tx = ndp_tx_burst_get(tx, packets_rx, cnt_rx);
 		while (cnt_tx != cnt_rx && !stop) {
 			if (p->use_delay_nsec)
 				delay_nsecs(1);
-			cnt_tx = ndp_tx_burst_get(tx, packets_tx, cnt_rx);
+			cnt_tx = ndp_tx_burst_get(tx, packets_rx, cnt_rx);
 		}
-		for (i = 0; i < cnt_tx; i++)
-			memcpy(packets_tx[i].data, packets_rx[i].data, packets_rx[i].data_length);
+		/* for (i = 0; i < cnt_tx; i++) */
+		/* 	packets_tx[i].data = packets_rx[i].data; */
+			/* memcpy(packets_tx[i].data, packets_rx[i].data, packets_rx[i].data_length); */
 
-		ndp_rx_burst_put(rx);
 		ndp_tx_burst_put(tx);
+		ndp_rx_burst_put(rx);
 	}
 	ndp_tx_burst_flush(tx);
 
