@@ -26,10 +26,10 @@ set(CMAKE_REQUIRED_LIBRARIES "numa")
 ndk_check_build_dependency(NUMA_LIBRARIES numa NUMA_INCLUDE_DIRS numa.h)
 ndk_check_build_dependency(FDT_LIBRARIES fdt FDT_INCLUDE_DIRS libfdt.h libfdt)
 
-check_c_compiler_flag("-mavx2" CONFIG_HAVE_MAVX2)
-if (${CONFIG_HAVE_MAVX2})
-	add_compile_definitions(CONFIG_HAVE_MAVX2)
-endif()
+# check_c_compiler_flag("-mavx2" CONFIG_HAVE_MAVX2)
+# if (${CONFIG_HAVE_MAVX2})
+# 	add_compile_definitions(CONFIG_HAVE_MAVX2)
+# endif()
 
 find_path(NFB_DRIVER_INCLUDE_DIRS
 	NAMES nfb.h
@@ -62,9 +62,9 @@ foreach(NFB IN ITEMS nfb nfb_static)
 		VERSION ${GIT_VERSION}
 		SOVERSION ${GIT_VERSION_MAJOR}
 	)
-	if (${CONFIG_HAVE_MAVX2})
-		set_source_files_properties(src/bus/mi.c PROPERTIES COMPILE_FLAGS -mavx2)
-	endif()
+	# if (${CONFIG_HAVE_MAVX2})
+	# 	set_source_files_properties(src/bus/mi.c PROPERTIES COMPILE_FLAGS -mavx2)
+	# endif()
 endforeach()
 
 install(TARGETS nfb nfb_static
