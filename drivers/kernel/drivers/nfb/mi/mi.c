@@ -84,10 +84,10 @@ static int nfb_mi_map(struct nfb_device *nfb, struct nfb_mi_node *mi_node, struc
 		goto err_request_mem_region;
 	}
 
-	if (mi_node->is_wc_mapped)
-		mi_node->mem_virt = ioremap_wc(mi_node->mem_phys, mi_node->mem_len);
-	else
-		mi_node->mem_virt = ioremap(mi_node->mem_phys, mi_node->mem_len);
+	/* if (mi_node->is_wc_mapped) */
+	/* 	mi_node->mem_virt = ioremap_wc(mi_node->mem_phys, mi_node->mem_len); */
+	/* else */
+	mi_node->mem_virt = ioremap(mi_node->mem_phys, mi_node->mem_len);
 
 	if (mi_node->mem_virt == NULL) {
 		dev_err(&nfb->pci->dev, "unable to remap memory region 0x%llx-0x%llx\n",
