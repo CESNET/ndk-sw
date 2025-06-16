@@ -225,10 +225,11 @@ void test(void) {spi_get_chipselect(NULL, 0);}
 [AC_MSG_RESULT([no])])
 
 KERNEL_TRY_COMPILE([[
+#include <linux/spi/spi.h>
 #include <linux/spi/spi_bitbang.h>
 struct spi_bitbang sb;
 void test(void);
-void test(void) {sb.ctrl = NULL;}
+void test(void) {sb.ctlr = NULL;}
 ]],
 [AC_MSG_CHECKING([whether kernel has ctrl in struct spi_bitbang])],
 [AC_DEFINE([CONFIG_HAVE_SPI_BITBANG_CTRL], [1], [Define if kernel has ctrl in struct spi_bitbang]) AC_MSG_RESULT([yes])],
