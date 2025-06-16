@@ -226,7 +226,11 @@ int nfb_spi_attach(struct nfb_boot *boot)
 	m10bmc_spi->m10bmc.type = M10_N5014;
 	m10bmc_spi->m10bmc.flash_ops = NULL;
 
-    host = spi_alloc_master(&m10bmc_spi->pd->dev, sizeof(struct altera_spi));
+#ifdef CONFIG_HAVE_SPI_CONTROLLER
+	host = spi_alloc_host(&m10bmc_spi->pd->dev, sizeof(struct altera_spi));
+#else
+	host = spi_alloc_master(&m10bmc_spi->pd->dev, sizeof(struct altera_spi));
+#endif
 	if (!host) {
 		ret = -ENOMEM;
 		goto err_alloc_master;
