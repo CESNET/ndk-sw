@@ -11,7 +11,7 @@ AUTOINSTALL=true            # whether dependencies should be installed with '-y'
 RELTYPE=Release             # Release type (Debug/Release)
 
 FILENAME_3RDPARTY="3rdparty.tar.gz"
-SRC_3RDPARTY_VERSION="v6.24.0"
+SRC_3RDPARTY_VERSION="v6.26.4"
 URL_3RDPARTY="https://github.com/CESNET/ndk-sw/releases/download/$SRC_3RDPARTY_VERSION/$FILENAME_3RDPARTY"
 
 EPEL8_DPDK_NFB_REPO_REMOTE="https://copr.fedorainfracloud.org/coprs/g/CESNET/dpdk-nfb/repo/epel-8/group_CESNET-dpdk-nfb-epel-8.repo"
