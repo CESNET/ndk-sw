@@ -692,7 +692,11 @@ static int nfb_net_close(struct net_device *netdev)
 	// Disable transmission
 	nfb_net_transmission_off(netdev);
 
+#ifdef CONFIG_HAVE_TIMER_DELETE_SYNC
+	timer_delete_sync(&priv->service_timer);
+#else
 	del_timer_sync(&priv->service_timer);
+#endif
 
 	return 0;
 }

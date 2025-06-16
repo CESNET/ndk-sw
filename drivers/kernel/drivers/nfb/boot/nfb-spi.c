@@ -286,7 +286,11 @@ int nfb_spi_attach(struct nfb_boot *boot)
 		goto err_regmap_register_avmm;
 	}
 
+#ifdef CONFIG_HAVE_DEVM_DEVICE_ADD_GROUPS
 	ret = devm_device_add_groups(&m10bmc_spi->pd->dev, nfb_m10bmc_dev_groups);
+#else
+	ret = device_add_groups(&m10bmc_spi->pd->dev, nfb_m10bmc_dev_groups);
+#endif
 	if (ret)
 		goto err_dev_addgroups;
 
