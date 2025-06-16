@@ -270,7 +270,6 @@ void test(void) {eventfd_signal(NULL);}
 [AC_DEFINE([CONFIG_HAVE_SIMPLIFIED_EVENTFD_SIGNAL], [1], [Define if kernel has simplified eventfd_signal]) AC_MSG_RESULT([yes])],
 [AC_MSG_RESULT([no])])
 
-# XDP
 KERNEL_TRY_COMPILE([[
 #include <net/page_pool/helpers.h>
 ]],
@@ -330,6 +329,50 @@ xdp_features_t val;
 ]],
 [AC_MSG_CHECKING([whether kernel has xdp_features_t])],
 [AC_DEFINE([CONFIG_HAVE_XDP_FEATURES_T], [1], [Define if kernel has xdp_features_t]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+KERNEL_TRY_COMPILE([[
+#include <linux/unaligned.h>
+]],
+[AC_MSG_CHECKING([whether kernel has linux/unaligned.h])],
+[AC_DEFINE([CONFIG_HAVE_LINUX_UNALIGNED], [1], [Define if kernel has linux/unaligned.h]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
+KERNEL_TRY_COMPILE([[
+#include <linux/platform_device.h>
+static void t_remove(struct platform_device *pdev) {}
+struct platform_driver pd = {
+.remove = t_remove,
+};
+]],
+[AC_MSG_CHECKING([whether kernel has platfom_driver remove as void return type])],
+[AC_DEFINE([CONFIG_HAVE_PLATFORM_DRIVER_REMOVE_VOID], [1], [Define if kernel has platform_driver remove as void]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
+KERNEL_TRY_COMPILE([[
+#include <linux/device.h>
+void test(void);
+void test(void) {devm_device_add_groups(NULL, NULL);}
+]],
+[AC_MSG_CHECKING([whether kernel has devm_device_add_groups])],
+[AC_DEFINE([CONFIG_HAVE_DEVM_DEVICE_ADD_GROUPS], [1], [Define if kernel has devm_evice_add_groups]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
+KERNEL_TRY_COMPILE([[
+#include <linux/timer.h>
+void test(void);
+void test(void) {timer_delete_sync(NULL);}
+]],
+[AC_MSG_CHECKING([whether kernel has timer_delete_sync])],
+[AC_DEFINE([CONFIG_HAVE_TIMER_DELETE_SYNC], [1], [Define if kernel has timer_delete_sync]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
+KERNEL_TRY_COMPILE([[
+#include <linux/hrtimer.h>
+void test(void);
+void test(void) {hrtimer_setup(NULL, NULL, 0, 0);}
+]],
+[AC_MSG_CHECKING([whether kernel has hrtimer_setup])],
+[AC_DEFINE([CONFIG_HAVE_HRTIMER_SETUP], [1], [Define if kernel has httimer_setup]) AC_MSG_RESULT([yes])],
 [AC_MSG_RESULT([no])])
 
 # wait for the jobs to finnish, remove file used for locking if it exists
