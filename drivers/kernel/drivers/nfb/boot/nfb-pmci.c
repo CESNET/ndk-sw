@@ -309,6 +309,17 @@ int nfb_pmci_attach(struct nfb_boot *boot)
 	int ret = 0;
 	int sn;
 
+	void *fdt;
+	int node;
+	const char *card_name;
+
+	fdt = nfb_get_fdt(boot->nfb);
+	node = fdt_path_offset(fdt, "/firmware");
+	card_name = fdt_getprop(fdt, node, "card-name", NULL);
+	if (card_name == NULL) {
+		return -ENODEV;
+	}
+
 	pmci = kzalloc(sizeof(*pmci), GFP_KERNEL);
 	if (!pmci) {
 		ret = -ENOMEM;
@@ -333,7 +344,7 @@ int nfb_pmci_attach(struct nfb_boot *boot)
 	mutex_init(&pmci->flash_ops.mux_lock);
 
 	pmci->m10bmc.dev = &pmci->pd->dev;
-	pmci->m10bmc.type = M10_N6000;
+	pmci->m10bmc.type = !strcmp(card_name, "FB2CDG1") ? M10_FB2CDG1 : M10_N6000;
 	pmci->m10bmc.flash_ops = &pmci->flash_ops;
 
 	pmci->m10bmc.regmap = nfb_devm_regmap_init_indirect_register(&pmci->pd->dev,

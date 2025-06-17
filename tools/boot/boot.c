@@ -685,7 +685,7 @@ int card_requires_sleep(const void *fdt) {
 	fdt_offset = fdt_path_offset(fdt, "/firmware/");
 	prop = fdt_getprop(fdt, fdt_offset, "card-name", &len);
 	if (prop != NULL) {
-		if (!strcmp(prop, "N6010")) {
+		if (!strcmp(prop, "N6010") || !strcmp(prop, "FB2CDG1")) {
 			return 1;
 		}
 	}

@@ -354,7 +354,7 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 			nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 0, 0x00210000, 0x02000000-0x210000);
 			nfb_fdt_create_binary_slot(fdt, node, "image0", "application0" , 0, 1, 0, 0x02000000, 0x04000000);
 			//nfb_fdt_create_boot_type(fdt, node, "BPI", 16);
-		} else if (!strcmp(card_name, "N6010")) {
+		} else if (!strcmp(card_name, "N6010") || !strcmp(card_name, "FB2CDG1")) {
 			subnode = nfb_fdt_create_binary_slot(fdt, node, "image2", "fpga_factory", 2, 2, -1, 0, 0);
 			n6010_binary_slot_prepare(fdt, subnode, "\x03\x00\x00\x00", "\xff\xff\xff\xff", 4);
 			subnode = nfb_fdt_create_binary_slot(fdt, node, "image1", "fpga_user2",   1, 4, -1, 0, 0);
