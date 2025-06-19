@@ -131,6 +131,7 @@ enum NI_ITEMS {
 	NI_BUILT_TIMESTAMP,
 	NI_BUILD_TOOL,
 	NI_BUILD_AUTHOR,
+	NI_BUILD_REVISION,
 	NI_RX_QUEUES_ALL,
 	NI_RX_QUEUES_EQ_AV,
 	NI_RX_QUEUES_NEQ_AV,
@@ -201,14 +202,15 @@ struct ni_context_item_default ni_items[] = {
 	[NI_BUILT_TIMESTAMP]    = {ni_json_k("build_time"),             ni_user_n},
 	[NI_BUILD_TOOL]         = {ni_json_k("build_tool"),             ni_user_l("Build tool")},
 	[NI_BUILD_AUTHOR]       = {ni_json_k("build_author"),           ni_user_l("Build author")},
+	[NI_BUILD_REVISION]     = {ni_json_k("build_revision"),         ni_user_l("Build revision")},
 
 	[NI_RX_QUEUES_ALL]      = {ni_json_k("rx_queues"),              ni_user_f("RX queues", NUF_N)},
 	[NI_RX_QUEUES_EQ_AV]    = {ni_json_k("rx_queues_available"),    ni_user_f(NULL, NUF_DAV)},
-	[NI_RX_QUEUES_NEQ_AV]   = {ni_json_k("rx_queues_available"),    ni_user_v(" (only", NUF_DA, NULL, "available)")},
+	[NI_RX_QUEUES_NEQ_AV]   = {ni_json_k("rx_queues_available"),    ni_user_v(" (only ", NUF_DA, NULL, " available)")},
 
 	[NI_TX_QUEUES_ALL]      = {ni_json_k("tx_queues"),              ni_user_f("TX queues", NUF_N)},
 	[NI_TX_QUEUES_EQ_AV]    = {ni_json_k("tx_queues_available"),    ni_user_f(NULL, NUF_DAV)},
-	[NI_TX_QUEUES_NEQ_AV]   = {ni_json_k("tx_queues_available"),    ni_user_v(" (only", NUF_DA, NULL, " available)")},
+	[NI_TX_QUEUES_NEQ_AV]   = {ni_json_k("tx_queues_available"),    ni_user_v(" (only ", NUF_DA, NULL, " available)")},
 
 	[NI_ETH_CHANNELS]       = {ni_json_n,                           ni_user_l("ETH channels")},
 	[NI_LIST_ETH_CHANNELS]  = {ni_json_k("eth_channels"),           ni_user_l(NULL)},
@@ -585,6 +587,7 @@ void print_common_info(struct nfb_device *dev, int verbose, struct ni_context *c
 
 	ni_fdt_prop_str(ctx, NI_BUILD_TOOL, fdt, fdt_offset, "build-tool", &len);
 	ni_fdt_prop_str(ctx, NI_BUILD_AUTHOR, fdt, fdt_offset, "build-author", &len);
+	ni_fdt_prop_str(ctx, NI_BUILD_REVISION, fdt, fdt_offset, "build-revision", &len);
 
 	count1 = ndp_get_rx_queue_count(dev);
 	count2 = ndp_get_rx_queue_available_count(dev);
