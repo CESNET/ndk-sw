@@ -46,7 +46,7 @@ static ssize_t cmd_store(struct device *dev,
 
 	int index = -1;
 	char *cmd = NULL;
-	char *queue_string, *queue_string_iter = NULL;
+	char *queue_string = NULL, *queue_string_iter = NULL;
 	char *q;
 	unsigned queue_index_iter;
 	unsigned queue_count = 0;
