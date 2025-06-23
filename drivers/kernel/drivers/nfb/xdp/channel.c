@@ -147,7 +147,7 @@ int channel_start_pp(struct nfb_xdp_channel *channel)
 #else
 		netif_napi_add_weight(netdev, &rxq->napi, nfb_xctrl_napi_poll_pp, NAPI_POLL_WEIGHT);
 #endif
-		memset(&txq->napi, 0, sizeof(&txq->napi));
+		memset(&txq->napi, 0, sizeof(txq->napi));
 
 		if (!(rxq->ctrl = nfb_xctrl_alloc_pp(netdev, channel->index, NFB_XDP_DESC_CNT, NFB_XCTRL_RX))) {
 			ret = -ENOMEM;
