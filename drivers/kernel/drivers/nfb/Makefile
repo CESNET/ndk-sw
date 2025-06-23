@@ -7,6 +7,8 @@
 # Author(s):
 #   Martin Spinler <spinler@cesnet.cz>
 
+include $(DRIVER_TOPDIR)/Makefile.conf
+
 nfb-objs += ../fdt/fdt.o ../fdt/fdt_ro.o ../fdt/fdt_rw.o ../fdt/fdt_wip.o ../fdt/fdt_sw.o ../fdt/fdt_empty_tree.o
 nfb-objs += ../cfi/cfi_cmdset_0001.o ../cfi/cfi_cmdset_0002.o ../cfi/cfi_cmdset_0020.o ../cfi/cfi_probe.o ../cfi/cfi_util.o ../cfi/chipreg.o ../cfi/gen_probe.o ../cfi/mtdcore.o
 nfb-objs += ../spi-nor/spi-nor.o
@@ -27,5 +29,8 @@ nfb-objs += net/driver.o net/device.o net/ethtool.o net/sysfs.o
 nfb-objs += qdr/qdr.o
 nfb-objs += misc.o lock.o bus.o char.o pci.o core.o
 nfb-objs += hwmon/nfb_hwmon.o
+
+ccflags-$(CONFIG_NFB_XDP) += -DCONFIG_NFB_ENABLE_XDP
+nfb-$(CONFIG_NFB_XDP) += xdp/driver.o xdp/ethdev.o xdp/ctrl_xdp_common.o xdp/ctrl_xdp_pp.o xdp/ctrl_xdp_xsk.o xdp/channel.o xdp/sysfs.o
 
 obj-m += nfb.o

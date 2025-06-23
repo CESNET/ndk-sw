@@ -26,6 +26,7 @@
 #include "boot/boot.h"
 #include "ndp_netdev/core.h"
 #include "hwmon/nfb_hwmon.h"
+#include "xdp/driver.h"
 
 MODULE_VERSION(PACKAGE_VERSION);
 MODULE_AUTHOR("CESNET; Martin Spinler <spinler@cesnet.cz>");
@@ -343,6 +344,12 @@ static struct nfb_driver_ops embedded_driver_ops[] = {
 		.attach = nfb_hwmon_attach,
 		.detach = nfb_hwmon_detach,
 	},
+#ifdef CONFIG_NFB_ENABLE_XDP
+	{
+		.attach = nfb_xdp_attach,
+		.detach = nfb_xdp_detach,
+	},
+#endif
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	{
 		.attach = nfb_fpga_image_load_attach,
