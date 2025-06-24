@@ -52,8 +52,7 @@ add_executable(nfb-mdio mdio/mdio.c)
 add_executable(ndp-tool
 	ndptool/common.c ndptool/generate.c ndptool/loopback.c
 	ndptool/loopback_hw.c ndptool/main.c ndptool/modules.c ndptool/pcap.c
-	ndptool/read.c ndptool/receive.c ndptool/stats.c ndptool/transmit.c
-)
+	ndptool/read.c ndptool/receive.c ndptool/stats.c ndptool/transmit.c)
 
 set (PIE_TARGETS nfb-info nfb-boot nfb-bus nfb-dma nfb-eth nfb-tsu nfb-mdio ndp-tool)
 foreach(PIE_TARGET IN LISTS PIE_TARGETS)
@@ -65,11 +64,12 @@ target_link_libraries(nfb-boot
 )
 
 target_compile_options(ndp-tool PRIVATE -O3 -funroll-loops)
+
 target_link_libraries(ndp-tool
-	PRIVATE ${NUMA_LIBRARIES} ${NCURSES_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}
-)
+	PRIVATE ${NUMA_LIBRARIES} ${NCURSES_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 set(NDP_TARGETS receive read transmit loopback loopback-hw generate)
+
 foreach(NDP_TARGET IN LISTS NDP_TARGETS)
 	add_custom_target(ndp-${NDP_TARGET}
 		ALL DEPENDS ndp-tool
@@ -133,4 +133,50 @@ if(USE_DPDK)
 	endforeach()
 else()
 	message("ndp-tool: DPDK portion of the app not enabled use -DUSE_DPDK=true with cmake if you want to compile with DPDK")
+endif()
+
+if(USE_XDP)
+	message("ndp-tool: XDP portion of the app is enabled use -UUSE_XDP with cmake if you don't want to compile with XDP")
+	pkg_check_modules(XDP REQUIRED libxdp)
+	pkg_check_modules(BPF REQUIRED libbpf)
+
+	add_executable(ndp-tool-xdp
+	ndptool/common.c ndptool/generate.c ndptool/loopback.c
+	ndptool/loopback_hw.c ndptool/main.c ndptool/modules.c ndptool/pcap.c
+	ndptool/read.c ndptool/receive.c ndptool/stats.c ndptool/transmit.c
+	ndptool/xdp/xdp_common.c ndptool/xdp/xdp_read.c ndptool/xdp/xdp_generate.c
+	)
+
+	set_property(TARGET ndp-tool-xdp PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+
+	set(XDP_TARGETS xdp-generate xdp-read)
+
+	target_compile_options(ndp-tool-xdp PRIVATE -O3 -funroll-loops)
+	target_link_libraries(ndp-tool-xdp
+	PRIVATE ${NUMA_LIBRARIES} ${NCURSES_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${BPF_LIBRARIES} ${XDP_LIBRARIES}
+	)
+	target_compile_definitions(ndp-tool-xdp PRIVATE USE_XDP)
+
+	foreach(XDP_TARGET IN LISTS XDP_TARGETS)
+	add_custom_target(ndp-${XDP_TARGET}
+		ALL DEPENDS ndp-tool-xdp
+		COMMAND ${CMAKE_COMMAND} -E create_symlink ndp-tool-xdp ndp-${XDP_TARGET}
+	)
+	endforeach()
+
+	install(
+	TARGETS ndp-tool-xdp
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	COMPONENT ndp-tool-xdp
+	)
+
+	foreach(XDP_TARGET IN LISTS XDP_TARGETS)
+	install(
+		FILES ${CMAKE_CURRENT_BINARY_DIR}/ndp-${XDP_TARGET}
+		DESTINATION ${CMAKE_INSTALL_BINDIR}
+		COMPONENT ndp-tool-xdp
+	)
+	endforeach()
+else()
+	message("ndp-tool: XDP portion of the app not enabled use -DUSE_XDP=true with cmake if you want to compile with XDP")
 endif()

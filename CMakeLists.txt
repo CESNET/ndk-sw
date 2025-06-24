@@ -74,6 +74,8 @@ set(DEB_PYTHON_DEP_LIST
 # Common package settings
 if(USE_DPDK)
 	set(CPACK_PACKAGE_NAME                  "temp-${PROJECT_NAME}+ndp_tools_dpdk")
+elseif(USE_XDP)
+	set(CPACK_PACKAGE_NAME                  "temp-${PROJECT_NAME}+ndp_tools_xdp")
 else()
 	set(CPACK_PACKAGE_NAME                  "${PROJECT_NAME}")
 endif()
@@ -126,6 +128,12 @@ if(USE_DPDK)
 	set (CPACK_RPM_SOURCE_PKG_BUILD_PARAMS "-DUSE_DPDK=true")
 endif()
 
+if(USE_XDP)
+	set(CPACK_RPM_ndp-tool-xdp_PACKAGE_NAME "ndp-tool-xdp")
+	set(CPACK_RPM_ndp-tool-xdp_PACKAGE_REQUIRES "nfb-framework, libxdp, libbpf")
+	set (CPACK_RPM_SOURCE_PKG_BUILD_PARAMS "-DUSE_XDP=true")
+endif()
+
 set(CPACK_RPM_Main_PRE_INSTALL_SCRIPT_FILE    "${CMAKE_CURRENT_BINARY_DIR}/package/preinst")
 set(CPACK_RPM_Main_PRE_UNINSTALL_SCRIPT_FILE  "${CMAKE_CURRENT_BINARY_DIR}/package/prerm")
 set(CPACK_RPM_Main_POST_INSTALL_SCRIPT_FILE   "${CMAKE_CURRENT_BINARY_DIR}/package/postinst")
@@ -149,6 +157,12 @@ set(CPACK_DEBIAN_PYTHON_PACKAGE_NAME "python3-nfb")
 set(CPACK_DEBIAN_PYTHON_FILE_NAME "python3-nfb-${CPACK_DEBIAN_PACKAGE_VERSION}-${CPACK_DEBIAN_PACKAGE_RELEASE}.deb")
 string(JOIN ", " CPACK_DEBIAN_PACKAGE_DEPENDS ${DEB_DEP_LIST})
 string(JOIN ", " CPACK_DEBIAN_PYTHON_PACKAGE_DEPENDS ${DEB_PYTHON_DEP_LIST})
+
+if(USE_XDP)
+	set(CPACK_DEBIAN_NDP-TOOL-XDP_PACKAGE_NAME "ndp-tool-xdp")
+	set(CPACK_DEBIAN_NDP-TOOL-XDP_FILE_NAME "ndp-tool-xdp-${CPACK_DEBIAN_PACKAGE_VERSION}-${CPACK_DEBIAN_PACKAGE_RELEASE}.deb")
+	set(CPACK_DEBIAN_NDP-TOOL-XDP_PACKAGE_DEPENDS "nfb-framework, libxdp1, libbpf1")
+endif()
 
 include(python/nfb-tools/nfb-tools.cmake)
 

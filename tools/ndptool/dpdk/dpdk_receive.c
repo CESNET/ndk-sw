@@ -561,7 +561,8 @@ void dpdk_receive_destroy(struct ndp_tool_params *p)
 	rte_eal_cleanup();
 }
 
-int dpdk_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg)
+int dpdk_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg,
+	int option_index __attribute__((unused)))
 {
 	wordexp_t *args = &p->mode.dpdk.args;
 

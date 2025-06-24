@@ -220,6 +220,22 @@ get_dpdk_dependencies()
     fi
 }
 
+get_xdp_dependencies()
+{
+    os=$(get_os_id)
+    os_version=$(get_os_version)
+    os_number=$(get_os_number)
+	ret=""
+    if item_in_list "$os" "ubuntu"; then
+        ret="$ret libbpf-dev"
+        ret="$ret libxdp-dev"
+    elif item_in_list "$os" "centos scientific fedora ol rocky"; then
+        ret="$ret libbpf-devel"
+        ret="$ret libxdp-devel"
+    fi
+	echo $ret
+}
+
 get_3rdparty_code()
 {
     curl -L $URL_3RDPARTY --output $FILENAME_3RDPARTY
@@ -258,6 +274,15 @@ Build_dpdk()
     mkdir -p "$SCRIPT_PATH/$BUILDDIR"
     cd "$SCRIPT_PATH/$BUILDDIR"
     $cmake -DCMAKE_BUILD_TYPE=$RELTYPE -DUSE_DPDK=true ..
+    $make_command
+}
+
+Build_xdp()
+{
+    try_get_3rdparty_code
+    mkdir -p "$SCRIPT_PATH/$BUILDDIR"
+    cd "$SCRIPT_PATH/$BUILDDIR"
+    $cmake -DCMAKE_BUILD_TYPE=$RELTYPE -DUSE_XDP=true ..
     $make_command
 }
 
@@ -308,6 +333,12 @@ for opt in "$@"; do
             echo ">> Installing package build dependencies ..."
             $install_cmd $deps
             ;;
+        --bootstrap-xdp)
+            install_cmd=$(get_install_command)
+            deps=$(get_xdp_dependencies)
+            echo ">> Installing package build dependencies ..."
+            $install_cmd $deps
+            ;;
         --prepare)
             echo ">> Downloading and extractiong 3rd party code ..."
             get_3rdparty_code
@@ -317,6 +348,9 @@ for opt in "$@"; do
             ;;
         --make-dpdk)
             Build_dpdk
+            ;;
+        --make-xdp)
+            Build_xdp
             ;;
         --clean)
             cd "$SCRIPT_PATH/$BUILDDIR" || continue
@@ -341,12 +375,28 @@ for opt in "$@"; do
             Build_dpdk
             $cpack -G RPM --config ./CPackConfig.cmake
             ;;
+		--rpm-xdp)
+            if ! item_in_list "$os" "centos scientific fedora ol rocky"; then
+                echo >&2 "ERROR: Cannot build RPM package on other OS than CentOS"
+                exit 1
+            fi
+            Build_xdp
+            $cpack -G RPM --config ./CPackConfig.cmake
+            ;;
         --deb)
             if [ "$os" != "ubuntu" ]; then
                 echo >&2 "ERROR: Cannot build DEB package on other OS than Ubuntu"
                 exit 1
             fi
             Build
+            $cpack -G DEB --config ./CPackConfig.cmake
+            ;;
+		--deb-xdp)
+            if [ "$os" != "ubuntu" ]; then
+                echo >&2 "ERROR: Cannot build DEB package on other OS than Ubuntu"
+                exit 1
+            fi
+            Build_xdp
             $cpack -G DEB --config ./CPackConfig.cmake
             ;;
     esac

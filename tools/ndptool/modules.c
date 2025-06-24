@@ -12,7 +12,7 @@
 #ifdef USE_DPDK
 int dpdk_generate_init(struct ndp_tool_params *p);
 int dpdk_generate_check(struct ndp_tool_params *p);
-int dpdk_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int dpdk_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 int dpdk_generate_run_single(struct ndp_tool_params *p);
 void dpdk_generate_destroy(struct ndp_tool_params *p);
 void *dpdk_generate_run_thread(void *tmp);
@@ -20,7 +20,7 @@ void dpdk_generate_print_help();
 
 int dpdk_read_init(struct ndp_tool_params *p);
 int dpdk_read_check(struct ndp_tool_params *p);
-int dpdk_read_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int dpdk_read_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 int dpdk_read_run_single(struct ndp_tool_params *p);
 void dpdk_read_destroy(struct ndp_tool_params *p);
 void *dpdk_read_run_thread(void *tmp);
@@ -28,7 +28,7 @@ void dpdk_read_print_help();
 
 int dpdk_loopback_init(struct ndp_tool_params *p);
 int dpdk_loopback_check(struct ndp_tool_params *p);
-int dpdk_loopback_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int dpdk_loopback_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 int dpdk_loopback_run_single(struct ndp_tool_params *p);
 void dpdk_loopback_destroy(struct ndp_tool_params *p);
 void *dpdk_loopback_run_thread(void *tmp);
@@ -36,7 +36,7 @@ void dpdk_loopback_print_help();
 
 int dpdk_receive_init(struct ndp_tool_params *p);
 int dpdk_receive_check(struct ndp_tool_params *p);
-int dpdk_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int dpdk_receive_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 int dpdk_receive_run_single(struct ndp_tool_params *p);
 void dpdk_receive_destroy(struct ndp_tool_params *p);
 void *dpdk_receive_run_thread(void *tmp);
@@ -44,12 +44,26 @@ void dpdk_receive_print_help();
 
 int dpdk_transmit_init(struct ndp_tool_params *p);
 int dpdk_transmit_check(struct ndp_tool_params *p);
-int dpdk_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg);
+int dpdk_transmit_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
 int dpdk_transmit_run_single(struct ndp_tool_params *p);
 void dpdk_transmit_destroy(struct ndp_tool_params *p);
 void *dpdk_transmit_run_thread(void *tmp);
 void dpdk_transmit_print_help();
 #endif // USE_DPDK
+
+#ifdef USE_XDP
+int xdp_mode_read(struct ndp_tool_params *p);
+int xdp_mode_read_check(struct ndp_tool_params *p);
+void *xdp_mode_read_thread(void *tmp);
+
+int xdp_mode_generate_init(struct ndp_tool_params *p);
+void xdp_mode_generate_print_help(void);
+int xdp_mode_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg, int option_index);
+int xdp_mode_generate_check(struct ndp_tool_params *p);
+int xdp_mode_generate(struct ndp_tool_params *p);
+void *xdp_mode_generate_thread(void *tmp);
+void xdp_mode_generate_destroy(struct ndp_tool_params *p);
+#endif // USE_XDP
 
 int ndp_mode_generate_init(struct ndp_tool_params *p);
 int ndp_mode_receive_init(struct ndp_tool_params *p);
@@ -160,7 +174,7 @@ struct ndptool_module modules[] = {
 		.flags = 0,
 	},
 #ifdef USE_DPDK
-	[NDP_MODULE_DPDK_GENERATE] = {
+	[DPDK_MODULE_GENERATE] = {
 		.name = "dpdk-generate",
 		.short_help = "dpdk version of generate app",
 		.print_help = dpdk_generate_print_help,
@@ -172,7 +186,7 @@ struct ndptool_module modules[] = {
 		.run_thread = dpdk_generate_run_thread,
 		.destroy = dpdk_generate_destroy,
 	},
-	[NDP_MODULE_DPDK_READ] = {
+	[DPDK_MODULE_READ] = {
 		.name = "dpdk-read",
 		.short_help = "dpdk version of read app",
 		.print_help = dpdk_read_print_help,
@@ -184,7 +198,7 @@ struct ndptool_module modules[] = {
 		.run_thread = dpdk_read_run_thread,
 		.destroy = dpdk_read_destroy,
 	},
-	[NDP_MODULE_DPDK_LOOPBACK] = {
+	[DPDK_MODULE_LOOPBACK] = {
 		.name = "dpdk-loopback",
 		.short_help = "dpdk version of loopback app",
 		.print_help = dpdk_loopback_print_help,
@@ -196,7 +210,7 @@ struct ndptool_module modules[] = {
 		.run_thread = dpdk_loopback_run_thread,
 		.destroy = dpdk_loopback_destroy,
 	},
-	[NDP_MODULE_DPDK_RECEIVE] = {
+	[DPDK_MODULE_RECEIVE] = {
 		.name = "dpdk-receive",
 		.short_help = "dpdk version of receive app",
 		.print_help = dpdk_receive_print_help,
@@ -208,7 +222,7 @@ struct ndptool_module modules[] = {
 		.run_thread = dpdk_receive_run_thread,
 		.destroy = dpdk_receive_destroy,
 	},
-	[NDP_MODULE_DPDK_TRANSMIT] = {
+	[DPDK_MODULE_TRANSMIT] = {
 		.name = "dpdk-transmit",
 		.short_help = "dpdk version of transmit app",
 		.print_help = dpdk_transmit_print_help,
@@ -221,6 +235,29 @@ struct ndptool_module modules[] = {
 		.destroy = dpdk_transmit_destroy,
 	},
 #endif // USE_DPDK
+#ifdef USE_XDP
+	[XDP_MODULE_READ] = {
+		.name = "xdp-read",
+		.short_help = "Read packets using XDP",
+		.args = "",
+		.check = xdp_mode_read_check,
+		.run_single = xdp_mode_read,
+		.run_thread = xdp_mode_read_thread,
+	},
+	[XDP_MODULE_GENERATE] = {
+		.name = "xdp-generate",
+		.short_help = "Generate packets using XDP",
+		.print_help = xdp_mode_generate_print_help,
+		.init = xdp_mode_generate_init,
+		.args = "s:C",
+		.parse_opt = xdp_mode_generate_parseopt,
+		.check = xdp_mode_generate_check,
+		.run_single = xdp_mode_generate,
+		.run_thread = xdp_mode_generate_thread,
+		.destroy = xdp_mode_generate_destroy,
+		.long_options = long_options_speed,
+	},
+#endif // USE_XDP
 	[NDP_MODULE_NONE] = {
 		.name = NULL,
 	},

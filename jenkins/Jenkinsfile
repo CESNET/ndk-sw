@@ -3,7 +3,8 @@ def osreleasevers = [
 //		["centos", "centos7", "7.9.2009", "rpm"],
 	["oraclelinux", "oraclelinux8", "8", "rpm"],
 	["oraclelinux", "oraclelinux9", "9", "rpm"],
-	["ubuntu", "ubuntu", "jammy", "deb"]
+	["ubuntu", "ubuntu_jammy", "jammy", "deb"],
+	["ubuntu", "ubuntu_noble", "noble", "deb"]
 ]
 def dockertarget = "default"
 
@@ -61,6 +62,31 @@ node('docker') {
 					dir('cmake-build') {
 						if (pkg == 'rpm') {
 							sh 'sudo yum localinstall -y ndp-tool-dpdk-*.rpm'
+						} else if (pkg == 'deb') {
+							/* Commented out due to missing specific kernel-headers */
+							//sh 'sudo apt-get install -y -f ./*.deb'
+						}
+						sh "mkdir -p ${osname}-${osreleasever}"
+						sh "mv *.${pkg} ${osname}-${osreleasever}/"
+						archiveArtifacts artifacts: "${osname}-${osreleasever}/*.${pkg}"
+						sh 'find . -maxdepth 1 -type f -delete'
+					}
+				}
+			}
+			
+			if (osreleasever == 'jammy') {
+				// ubuntu 22.04 lts doesnt have libxdp in its repositories
+			} else {
+				stage("Build xdp RPMs") {
+					sh './build.sh --purge'
+					sh 'sudo ./build.sh --bootstrap-xdp'
+					sh "./build.sh --${pkg}-xdp"
+				}
+
+				stage("Test to install xdp package") {
+					dir('cmake-build') {
+						if (pkg == 'rpm') {
+							sh 'sudo yum localinstall -y ndp-tool-xdp-*.rpm'
 						} else if (pkg == 'deb') {
 							/* Commented out due to missing specific kernel-headers */
 							//sh 'sudo apt-get install -y -f ./*.deb'

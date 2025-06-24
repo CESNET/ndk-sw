@@ -567,7 +567,8 @@ void dpdk_generate_destroy(struct ndp_tool_params *p)
 }
 
 
-int dpdk_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg)
+int dpdk_generate_parseopt(struct ndp_tool_params *p, int opt, char *optarg,
+	int option_index __attribute__((unused)))
 {
 	wordexp_t *args = &p->mode.dpdk.args;
 
