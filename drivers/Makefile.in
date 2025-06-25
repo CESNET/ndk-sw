@@ -27,11 +27,11 @@ CONFIG += $(shell find kernel -name Makefile)
 KBUILD = $(MAKE) -C $(KDIR) \
 		 M=$(TOPDIR)/kernel/drivers \
 		 DRIVER_TOPDIR=$(TOPDIR) \
-		 EXTRA_CFLAGS="\
+		 $(ccflags-y)="\
 			-I$(TOPDIR) \
 			-I$(TOPDIR)/kernel/include \
 			-I$(TOPDIR)/kernel/drivers/fdt \
-			$(LIBNFB_CFLAGS) $(EXTRA_CFLAGS) \
+			$(LIBNFB_CFLAGS) $(ccflags-y) \
 		"
 
 INSTALL_HEADERS = nfb.h ndp.h boot.h

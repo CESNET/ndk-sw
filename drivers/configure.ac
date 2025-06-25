@@ -30,7 +30,7 @@ cd .test${test_cnt}
 echo KDIR=$KDIR >Makefile
 cat >>Makefile <<EOF
 KBUILD=\$(MAKE) -C \$(KDIR) M=\$(PWD)
-EXTRA_CFLAGS+=-Werror
+ccflags-y+=-Werror
 
 obj-m := test.o
 
@@ -73,7 +73,7 @@ cd .test
 echo KDIR=$KDIR >Makefile
 cat >>Makefile <<EOF
 KBUILD=\$(MAKE) -C \$(KDIR) M=\$(PWD)
-EXTRA_CFLAGS+=-Werror
+ccflags-y+=-Werror
 
 obj-m := test.o
 
