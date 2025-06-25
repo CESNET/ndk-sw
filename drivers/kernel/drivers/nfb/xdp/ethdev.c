@@ -174,7 +174,11 @@ int destroy_ethdev(struct nfb_xdp *module, int index)
 				ret = 0;
 				netdev = ethdev->netdev;
 				list_del(&ethdev->list);
+#ifdef CONFIG_HAVE_TIMER_DELETE_SYNC
+				timer_delete_sync(&ethdev->link_timer);
+#else
 				del_timer_sync(&ethdev->link_timer);
+#endif
 				cancel_work_sync(&ethdev->link_work);
 				netif_carrier_off(netdev);
 				// close mac components
@@ -349,7 +353,11 @@ int create_ethdev(struct nfb_xdp *module, u16 index, unsigned * channel_indexes,
 	return ret;
 
 err_register_netdev:
+#ifdef CONFIG_HAVE_TIMER_DELETE_SYNC
+	timer_delete_sync(&ethdev->link_timer);
+#else
 	del_timer_sync(&ethdev->link_timer);
+#endif
 	cancel_work_sync(&ethdev->link_work);
 macs_open_error:
 macs_alloc_error:

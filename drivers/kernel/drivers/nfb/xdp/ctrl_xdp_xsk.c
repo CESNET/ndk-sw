@@ -246,7 +246,11 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, struct xdp_buff **buffs, 
 		buff = ctrl->rx.xsk.xdp_ring[shp];
 		hdr = &hdrs[shp];
 		xsk_buff_set_size(buff, hdr->frame_len); // sets the actual data size after receive
+#ifdef CONFIG_HAVE_ONE_ARG_XSK_BUFF_DMA_SYNC
+		xsk_buff_dma_sync_for_cpu(buff);	
+#else
 		xsk_buff_dma_sync_for_cpu(buff, ctrl->rx.xsk.pool);
+#endif
 		buffs[i] = buff;
 		shp = (shp + 1) & mhp;
 	}
