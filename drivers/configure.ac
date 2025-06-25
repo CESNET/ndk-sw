@@ -375,6 +375,15 @@ void test(void) {hrtimer_setup(NULL, NULL, 0, 0);}
 [AC_DEFINE([CONFIG_HAVE_HRTIMER_SETUP], [1], [Define if kernel has httimer_setup]) AC_MSG_RESULT([yes])],
 [AC_MSG_RESULT([no])])
 
+KERNEL_TRY_COMPILE([[
+#include <net/xdp_sock_drv.h>
+void test(void);
+void test(void) {xsk_buff_dma_sync_for_cpu(NULL);}
+]],
+[AC_MSG_CHECKING([whether kernel has one argument xsk_buff_dma_sync_for_cpu])],
+[AC_DEFINE([CONFIG_HAVE_ONE_ARG_XSK_BUFF_DMA_SYNC], [1], [Define if kernel has httimer_setup]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
 # wait for the jobs to finnish, remove file used for locking if it exists
 wait
 rm -rf flock_lockfile >/dev/null 2>/dev/null
