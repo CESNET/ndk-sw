@@ -9,6 +9,8 @@
 
 include $(DRIVER_TOPDIR)/Makefile.conf
 
+ccflags-y := $(CUSTOM_CFLAGS)
+
 nfb-objs += ../fdt/fdt.o ../fdt/fdt_ro.o ../fdt/fdt_rw.o ../fdt/fdt_wip.o ../fdt/fdt_sw.o ../fdt/fdt_empty_tree.o
 nfb-objs += ../cfi/cfi_cmdset_0001.o ../cfi/cfi_cmdset_0002.o ../cfi/cfi_cmdset_0020.o ../cfi/cfi_probe.o ../cfi/cfi_util.o ../cfi/chipreg.o ../cfi/gen_probe.o ../cfi/mtdcore.o
 nfb-objs += ../spi-nor/spi-nor.o
