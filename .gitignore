@@ -7,6 +7,11 @@ cmake-build/
 # Ignore `foo' files produced by Autoconf from their `foo.in' templates
 drivers/Makefile
 drivers/dkms.conf
+drivers/config.h
+drivers/config.h.in
+drivers/config.log
+drivers/config.status
+drivers/configure
 mk/common.mk
 spec/netcope-common.spec
 utils/netcope-common.pc
@@ -42,15 +47,43 @@ nfb-xvc
 *.o.d
 *.o.cmd
 *.ko.cmd
+*.mod
 *.mod.o
 *.mod.c
+*.mod.cmd
 *.ko
 modules.order
+.modules.order.cmd
 Module.symvers
+.Module.symvers.cmd
 .tmp_versions
+drivers/src/
+drivers/tmp
 
 # Ignore any build/ directory
 build/
 
 # Ignore files with Git version information
 .gitversion
+
+# Ignore python generated files
+pynfb/nfb/libnetcope.c
+pynfb/nfb/libnfb.c
+
+# Ignore 3rd party code
+drivers/kernel/drivers/base/
+drivers/kernel/drivers/cfi/
+drivers/kernel/drivers/fdt/
+drivers/kernel/drivers/fpga/
+drivers/kernel/drivers/hwmon/
+drivers/kernel/drivers/mfd/
+drivers/kernel/drivers/spi/
+drivers/kernel/drivers/spi-nor/
+drivers/kernel/drivers/xvc/
+drivers/kernel/include/linux/fpga/
+drivers/kernel/include/linux/mfd/
+drivers/kernel/include/uapi/linux/nfb-fpga-image-load.h
+drivers/kernel/include/nfb-compat.h
+
+# Ignore other common stuff
+.vscode/
