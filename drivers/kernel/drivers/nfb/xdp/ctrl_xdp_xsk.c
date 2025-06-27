@@ -11,41 +11,91 @@
 #include "ctrl_xdp_common.h"
 #include <linux/pci.h>
 
-// NOTE: This is not zero copy operation, the correct way to rexmit a frame
-//		 in XSK mode is through the userspace from RX ring to TX ring.
 /**
- * @brief Tries to rexmit xsk buffer. Frees buffer on fail via xdp_return_frame();
+ * @brief Tries to rexmit xsk buffer.
  * 
  * @param ctrl 
  * @param xdp 
  * @return 0 on success
  */
-static inline int nfb_xctrl_rexmit_xsk(struct xctrl *ctrl, struct xdp_buff *xdp)
+static inline int nfb_xctrl_rexmit_xsk(struct xctrl *ctrl, struct xsk_buff_pool *pool, struct xdp_buff *xdp)
 {
 	int ret = 0;
-	struct xdp_frame *frame;
-	// xdp_convert_buff_to_frame frees the xsk on success and doesn't free on failure
-	// this is af_xdp slow fallback
-	if (unlikely(!(frame = xdp_convert_buff_to_frame(xdp)))) {
-		xdp_return_frame(frame);
-		ret = -ENOMEM;
-		goto exit;
-	}
+	u32 free_desc;
+	dma_addr_t dma;
+	void *data;
+	u32 len;
+
+	u64 last_upper_addr;
+	u32 sdp;
+	u32 mdp;
+	u32 n_frags, i;
+
+	struct nc_ndp_desc *descs = ctrl->desc_buffer_virt;
+	struct xdp_buff *frags[NFB_MAX_AF_XDP_FRAGS];
+
+	// Prepare frags
+	n_frags = 0; 
+	frags[0] = xdp; // First frag
+	do {
+		len = frags[n_frags]->data_end - frags[n_frags]->data;
+		if (unlikely(len < ETH_ZLEN)) { // Pad the frag to min len
+			memset(data + len, 0, ETH_ZLEN - len);
+			len = ETH_ZLEN;
+			frags[n_frags]->data_end = frags[n_frags]->data + len;
+		}
+		++n_frags;
+	} while((frags[n_frags] = xsk_buff_get_frag(xdp)));
+
 	spin_lock(&ctrl->tx.tx_lock);
 	{
-		// reclaim tx buffers
-		nc_ndp_ctrl_hdp_update(&ctrl->c);
-		nfb_xctrl_tx_free_buffers(ctrl);
-		// process tx
-		ret = nfb_xctrl_tx_submit_frame_needs_lock(ctrl, frame);
-		if (unlikely(ret)) {
-			xdp_return_frame(frame);
+		sdp = ctrl->c.sdp;
+		mdp = ctrl->c.mdp;
+		free_desc = (ctrl->c.hdp - sdp - 1) & mdp;
+
+		// Max 2 descriptors per frag will be used
+		// One to update the addr and second with data
+		if(free_desc < n_frags * 2) {
+			printk(KERN_ERR "nfb: XDP_TX busy warning, packet dropped\n");
+			for (i = 0; i < n_frags; i++)
+				xsk_buff_free(frags[i]);
+
+			ret = -EBUSY;
+			goto out;
 		}
-		// flush
-		nc_ndp_ctrl_sdp_flush(&ctrl->c);
+
+		for (i = 0; i < n_frags; i++) {
+			data = frags[i]->data;
+			dma = xsk_buff_xdp_get_dma(frags[i]);
+			len = frags[i]->data_end - frags[i]->data;
+
+			last_upper_addr = ctrl->c.last_upper_addr;
+			if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(dma) != last_upper_addr)) {
+				last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(dma);
+				ctrl->c.last_upper_addr = last_upper_addr;
+				descs[sdp] = nc_ndp_tx_desc0(dma);
+				ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_DESC_TYPE0;
+				sdp = (sdp + 1) & mdp;
+			}
+
+			ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_XSK_REXMIT;
+			ctrl->tx.buffers[sdp].xsk = frags[i];
+			ctrl->tx.buffers[sdp].dma = dma;
+			ctrl->tx.buffers[sdp].len = len;
+			if(i == n_frags - 1) { // Last part of the packet
+				descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
+			} else { // Another fragment incomming
+				descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 1);
+			}
+			xsk_buff_raw_dma_sync_for_device(pool, dma, len);
+			sdp = (sdp + 1) & mdp;
+		}
+
+		// Update ctrl
+		ctrl->c.sdp = sdp;
+out:
 	}
 	spin_unlock(&ctrl->tx.tx_lock);
-exit:
 	return ret;
 }
 
@@ -71,35 +121,37 @@ static inline int nfb_xctrl_rx_fill_xsk(struct xctrl *ctrl)
 {
 	const u32 batch_size = NFB_XDP_CTRL_PACKET_BURST;
 
-	// ctrl vars
+	// Ctrl vars
 	u64 last_upper_addr = ctrl->c.last_upper_addr;
-	u32 mdp = ctrl->c.mdp;
+	const u32 mdp = ctrl->c.mdp;
 	u32 sdp = ctrl->c.sdp;
-	u32 mhp = ctrl->c.mhp;
-	u32 php = ctrl->rx.php;
+	const u32 mbp = ctrl->rx.mbp;
+	u32 fbp = ctrl->rx.fbp;
 
-	// helper vars
 	u32 frame_len;
 	struct xsk_buff_pool *pool = ctrl->rx.xsk.pool;
 	struct xdp_buff *buffs[NFB_XDP_CTRL_PACKET_BURST];
 	dma_addr_t dma;
 	struct nc_ndp_desc *descs = ctrl->desc_buffer_virt;
-	u32 free_desc, free_hdrs;
-	u32 real_count, i;
+	u32 free_desc, free_buffs;
+	u32 real_count, filled;
+
+	// TODO: check if there is a better way to know if SG was enabled in the userspace AF_XDP
+	bool sg_enabled	= pool->umem->flags & XDP_UMEM_SG_FLAG;
 
 	// Check if refill needed
 	nc_ndp_ctrl_hdp_update(&ctrl->c);
-	free_hdrs = (ctrl->c.shp - php - 1) & mhp;
+	free_buffs = (ctrl->rx.pbp - fbp - 1) & mbp;
 	free_desc = (ctrl->c.hdp - sdp - 1) & mdp;
-	if (free_hdrs < batch_size || free_desc < batch_size)
+	if (free_buffs < batch_size || free_desc < batch_size)
 		return 0;
 
 	// Alloc xsk buffers
-	frame_len = xsk_pool_get_rx_frame_size(pool); // internaly calculates with XDP_PACKET_HEADROOM
+	// Internaly calculates with XDP_PACKET_HEADROOM, shared info is not used
+	frame_len = xsk_pool_get_rx_frame_size(pool);
 	real_count = xsk_buff_alloc_batch(pool, buffs, batch_size);
-	for (i = 0; i < real_count; i++) {
-		dma = xsk_buff_xdp_get_dma(buffs[i]); // Takes XDP_PACKET_HEADROOM into account
-
+	for (filled = 0; filled < real_count; filled++) {
+		dma = xsk_buff_xdp_get_dma(buffs[filled]); // Takes XDP_PACKET_HEADROOM into account
 		if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(dma) != last_upper_addr)) {
 			if (unlikely(free_desc == 0)) {
 				break;
@@ -113,23 +165,54 @@ static inline int nfb_xctrl_rx_fill_xsk(struct xctrl *ctrl)
 		if (unlikely(free_desc == 0)) {
 			break;
 		}
-		ctrl->rx.xsk.xdp_ring[php] = buffs[i];
-		descs[sdp] = nc_ndp_rx_desc2(dma, frame_len, 0);
+		ctrl->rx.xsk.xdp_ring[fbp] = buffs[filled];
+		descs[sdp] = nc_ndp_rx_desc2(dma, frame_len, sg_enabled);
 		sdp = (sdp + 1) & mdp;
-		php = (php + 1) & mhp;
+		fbp = (fbp + 1) & mbp;
 		free_desc--;
 	}
 
-	// if the loop quits because there was too little free descriptors
+	// If the loop quits because there was too little free descriptors
 	// the remaining buffers have to be freed
-	for (; i < real_count; i++) {
-		xsk_buff_free(buffs[i]);
+	for (; filled < real_count; filled++) {
+		xsk_buff_free(buffs[filled]);
 	}
 
-	// update ctrl state
-	ctrl->rx.php = php;
+	// Update ctrl state
+	ctrl->rx.fbp = fbp;
 	ctrl->c.sdp = sdp;
-	return i;
+	return filled;
+}
+
+static inline struct sk_buff *nfb_napi_build_skb_from_xsk(struct xdp_buff *xdp, struct napi_struct *napi) {
+	struct sk_buff *skb;
+	u32 n_frags, i;
+	u32 len;
+	struct xdp_buff *frags[NFB_MAX_AF_XDP_FRAGS];
+
+	frags[0] = xdp; // First frag
+	len = xdp->data_end - xdp->data;
+	for (n_frags = 1; (frags[n_frags] = xsk_buff_get_frag(xdp)); n_frags++) {
+		len += frags[n_frags]->data_end - frags[n_frags]->data;
+	}
+
+	// Alloc skb
+	skb = napi_alloc_skb(napi, len);
+	if (unlikely(!skb)) {
+		printk(KERN_ERR "%s: Failed to allocate SKB of len %u\n", __func__, len);
+		for (i = 0; i < n_frags; i++)
+			xsk_buff_free(frags[i]);
+
+		goto out;
+	}
+
+	// Memcpy data
+	for (i = 0; i < n_frags; i++) {
+		skb_put_data(skb, frags[i]->data, frags[i]->data_end - frags[i]->data);
+		xsk_buff_free(frags[i]); // Free the copied buffer
+	}
+out:			
+	return skb;
 }
 
 /**
@@ -144,11 +227,15 @@ static inline void nfb_xctrl_handle_xsk(struct bpf_prog *prog, struct xdp_buff *
 {
 	unsigned act;
 	int ret;
-	struct xdp_frame *frame;
 	struct sk_buff *skb;
 	struct bpf_prog *xdp_prog;
 	struct nfb_xdp_channel *channel = container_of(rxq, struct nfb_xdp_channel, rxq);
 	struct nfb_ethdev *ethdev = channel->ethdev;
+
+	// Non zero copy redirect not supported with AF_XDP_SG as of (6.15)
+	// xdp_do_redirect calls xdp_convert_zc_to_xdp_frame which can only copy one page of data
+	struct bpf_redirect_info *ri = bpf_net_ctx_get_ri();
+	enum bpf_map_type map_type = ri->map_type;
 
 	rcu_read_lock();
 	xdp_prog = rcu_dereference(prog);
@@ -160,20 +247,15 @@ static inline void nfb_xctrl_handle_xsk(struct bpf_prog *prog, struct xdp_buff *
 	switch (act) {
 	case XDP_PASS:
 		// This allocates memory => AF_XDP slow fallback for normal operation
-		frame = xdp_convert_buff_to_frame(xdp);
-		if (unlikely(!frame)) {
-			printk(KERN_DEBUG "SKB build failed\n");
-			goto aborted;
-		}
-		// NOTE: This function does a lot of things internally, check it's implementation
-		// if you ever want to add support for fragmented packets
-		skb = xdp_build_skb_from_frame(frame, ethdev->netdev);
+		// All frags are freed on success and fail
+		skb = nfb_napi_build_skb_from_xsk(xdp, &rxq->napi);
 		if (unlikely(IS_ERR_OR_NULL(skb))) {
 			printk(KERN_DEBUG "SKB build failed\n");
-			goto aborted;
+			break;
 		}
-		// receive packet onto queue it arriverd on
+		// Receive packet onto queue it arriverd on
 		skb_record_rx_queue(skb, channel->index);
+		skb->protocol = eth_type_trans(skb, channel->pool->netdev);
 		// TODO gro_receive is supposed to be a free
 		// 		performance boost but it is quite bad for
 		//		debugging because you cannot check if all packet
@@ -188,14 +270,22 @@ static inline void nfb_xctrl_handle_xsk(struct bpf_prog *prog, struct xdp_buff *
 		// }
 		break;
 	case XDP_TX:
-		// returned on tx reclaim;
-		nfb_xctrl_rexmit_xsk(channel->txq.ctrl, xdp);
+		// Returned on tx reclaim or freed on error;
+		nfb_xctrl_rexmit_xsk(channel->txq.ctrl, channel->pool, xdp);
 		break;
 	case XDP_REDIRECT:
-		// either redirected to userspace or returned internally
-		ret = xdp_do_redirect(ethdev->netdev, xdp, xdp_prog);
-		if (unlikely(ret)) {
-			printk(KERN_ERR "nfb: xdp_do_redirect error ret: %d\n", ret);
+		// Non zero copy redirect not supported with AF_XDP_SG as of (6.15)
+		// xdp_do_redirect calls xdp_convert_zc_to_xdp_frame which can only copy one page of data
+		ri = bpf_net_ctx_get_ri();
+		map_type = ri->map_type;
+		if (unlikely(map_type != BPF_MAP_TYPE_XSKMAP)) {
+			printk(KERN_ERR "nfb: Only redirect to userspace supported in AF_XDP mode, dropping packet.\n");
+			goto aborted;
+		} else {
+			if(unlikely((ret = xdp_do_redirect(ethdev->netdev, xdp, xdp_prog)))) {
+				printk(KERN_ERR "nfb: xdp_do_redirect error ret: %d\n", ret);
+				goto aborted;
+			}
 		}
 		break;
 	default:
@@ -220,70 +310,113 @@ static inline void xsk_buff_set_size(struct xdp_buff *xdp, u32 size)
 }
 #endif
 
-static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, struct xdp_buff **buffs, u16 nb_pkts)
+static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_ethdev *ethdev, struct nfb_xdp_queue *rxq, struct napi_struct *napi)
 {
-	struct xdp_buff *buff;
+	u32 len_remain;
+	struct xdp_buff *head;
+	struct xdp_buff *frag;
 	struct nc_ndp_hdr *hdrs = ctrl->rx.hdr_buffer_cpu;
 	struct nc_ndp_hdr *hdr;
 	u32 i;
 	u16 nb_rx;
 	u32 shp = ctrl->c.shp;
-	u32 mhp = ctrl->c.mhp;
+	const u32 mhp = ctrl->c.mhp;
+	u32 pbp = ctrl->rx.pbp;
+	const u32 mbp = ctrl->rx.mbp;
+	const u32 frame_size = xsk_pool_get_rx_frame_size(ctrl->rx.xsk.pool);
 
-	// fill the card with empty buffers
+	// Fill the card with empty buffers
 	while (nfb_xctrl_rx_fill_xsk(ctrl))
 		;
 	nc_ndp_ctrl_sdp_flush(&ctrl->c);
 
-	// get the amount of packets ready to be processed
+	// Get the amount of packets ready to be processed
 	nc_ndp_ctrl_hhp_update(&ctrl->c);
 	nb_rx = (ctrl->c.hhp - shp) & mhp;
 	if (nb_pkts < nb_rx)
 		nb_rx = nb_pkts;
 
-	// ready packets for receive
+	// Ready packets for receive
 	for (i = 0; i < nb_rx; ++i) {
-		buff = ctrl->rx.xsk.xdp_ring[shp];
+		// Get one packet (can be fragmented)
 		hdr = &hdrs[shp];
-		xsk_buff_set_size(buff, hdr->frame_len); // sets the actual data size after receive
-#ifdef CONFIG_HAVE_ONE_ARG_XSK_BUFF_DMA_SYNC
-		xsk_buff_dma_sync_for_cpu(buff);	
-#else
-		xsk_buff_dma_sync_for_cpu(buff, ctrl->rx.xsk.pool);
-#endif
-		buffs[i] = buff;
 		shp = (shp + 1) & mhp;
+		len_remain = hdr->frame_len;
+
+		// Get the first fragment (head)
+		head = ctrl->rx.xsk.xdp_ring[pbp];
+		pbp = (pbp + 1) & mbp;
+#ifdef CONFIG_HAVE_ONE_ARG_XSK_BUFF_DMA_SYNC
+		xsk_buff_dma_sync_for_cpu(head);	
+#else
+		xsk_buff_dma_sync_for_cpu(head, ctrl->rx.xsk.pool);
+#endif
+		// Process head
+		if (len_remain > frame_size) { // Is fragmented
+			xsk_buff_set_size(head, frame_size);
+			len_remain -= frame_size;
+			xdp_buff_set_frags_flag(head);
+		} else { // Not fragmented
+			xsk_buff_set_size(head, len_remain);
+			len_remain -= len_remain;
+		}
+	
+		// Process frags
+		while(len_remain) {
+			frag = ctrl->rx.xsk.xdp_ring[pbp];
+			pbp = (pbp + 1) & mbp;
+#ifdef CONFIG_HAVE_ONE_ARG_XSK_BUFF_DMA_SYNC
+			xsk_buff_dma_sync_for_cpu(frag);	
+#else
+			xsk_buff_dma_sync_for_cpu(buff_curr, ctrl->rx.xsk.pool);
+#endif
+			if (len_remain > frame_size) { // Not last fragment
+				xsk_buff_set_size(frag, frame_size);
+				len_remain -= frame_size;
+			} else { // Last fragment
+				xsk_buff_set_size(frag, len_remain);
+				len_remain -= len_remain;
+			}
+			xsk_buff_add_frag(frag);
+		}
+
+		nfb_xctrl_handle_xsk(ethdev->prog, head, rxq);
 	}
 
 	// update ctrl state
 	ctrl->c.shp = shp;
+	ctrl->rx.pbp = pbp;
+
 	return nb_rx;
 }
 
 int nfb_xctrl_napi_poll_rx_xsk(struct napi_struct *napi, int budget)
 {
 	struct nfb_xdp_queue *rxq = container_of(napi, struct nfb_xdp_queue, napi);
+	struct nfb_xdp_channel *channel = container_of(rxq, struct nfb_xdp_channel, rxq);
+	struct xsk_buff_pool *pool = channel->pool;
 	struct xctrl *ctrl = rxq->ctrl;
+	
 	struct net_device *netdev = napi->dev;
 	struct nfb_ethdev *ethdev = netdev_priv(netdev);
-	unsigned received, i = 0;
-	struct xdp_buff *xdp[NAPI_POLL_WEIGHT];
+	unsigned received;
 
-	if (unlikely(budget > NAPI_POLL_WEIGHT)) {
-		printk(KERN_ERR "nfb: NAPI budget is bigger than weight. This is a driver bug.\n");
-		BUG();
+	// TODO: maybe look at splitting the reclaim for the XDP_TX action to move to rx napi and rest move to tx
+	// The issue is that calling the xsk_buff_free from TX reclaim
+	// while calling it from for an example XDP_PASS skb build corrupts the xsk_buff list
+	// vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+	// The tx reclaim needs to be in rx napi because rx napi calls xsk_buff_free
+	struct xctrl *txctrl = channel->txq.ctrl;
+	if(spin_trylock(&txctrl->tx.tx_lock)) {
+		// Free the completed tx buffers
+		nfb_xctrl_tx_free_buffers(txctrl, false);
+		xsk_tx_completed(pool, txctrl->tx.completed_xsk_tx);
+		txctrl->tx.completed_xsk_tx = 0;
+		spin_unlock(&txctrl->tx.tx_lock);
 	}
 
-	received = nfb_xctrl_rx_xsk(ctrl, xdp, budget);
-	for (i = 0; i < received; i++) {
-		if (unlikely(PAGE_SIZE < xdp[i]->data_end - xdp[i]->data_hard_start)) {
-			printk(KERN_ERR "nfb: XSK got packet too large, current max size: %lu\n", PAGE_SIZE - (xdp[i]->data - xdp[i]->data_hard_start));
-			xsk_buff_free(xdp[i]);
-			continue;
-		}
-		nfb_xctrl_handle_xsk(ethdev->prog, xdp[i], rxq);
-	}
-	// flush sdp and shp after software processing is done
+	received = nfb_xctrl_rx_xsk(ctrl, budget, ethdev, rxq, napi);
+	// Flush sdp and shp after software processing is done
 	nc_ndp_ctrl_sp_flush(&ctrl->c);
 
 	// Flushes redirect maps
@@ -310,22 +443,24 @@ int nfb_xctrl_napi_poll_tx_xsk(struct napi_struct *napi, int budget)
 	dma_addr_t dma;
 	void *data;
 	u32 len;
-	u32 min_len = ETH_ZLEN;
 
-	u64 last_upper_addr = ctrl->c.last_upper_addr;
-	u32 sdp = ctrl->c.sdp;
-	u32 mdp = ctrl->c.mdp;
+	u64 last_upper_addr;
+	u32 sdp;
+	u32 mdp;
 	struct nc_ndp_desc *descs = ctrl->desc_buffer_virt;
 
 	spin_lock(&ctrl->tx.tx_lock);
 	{
-		// free the completed buffers
-		nc_ndp_ctrl_hdp_update(&ctrl->c);
-		nfb_xctrl_tx_free_buffers(ctrl);
-		xsk_tx_completed(pool, ctrl->tx.completed_xsk_tx);
-		ctrl->tx.completed_xsk_tx = 0;
+		sdp = ctrl->c.sdp;
+		mdp = ctrl->c.mdp;
 
-		free_desc = (ctrl->tx.fdp - sdp - 1) & mdp;
+		// Max 2 descriptors per frag will be used
+		// One to update the addr and second with data
+		free_desc = (ctrl->c.hdp - sdp - 1) & mdp;
+		if(free_desc < budget * 2) {
+			printk(KERN_WARNING "nfb: AF_XDP TX busy warning, skipped one poll\n");
+			goto out;
+		}
 
 		ready = xsk_tx_peek_release_desc_batch(pool, budget);
 		if (!ready) {
@@ -338,47 +473,33 @@ int nfb_xctrl_napi_poll_tx_xsk(struct napi_struct *napi, int budget)
 			dma = xsk_buff_raw_get_dma(pool, buffs[i].addr);
 			len = buffs[i].len;
 
-			// TODO: There should be a len check. using pool.frame_len somewhere when setting up the xsk queue
-			if (len < min_len) { // Usable frame space is smaller than min_len.
-				// printk(KERN_DEBUG "TX: %s memsetting len: %d to %d\n", __func__, len, min_len);
-				memset(data + len, 0, min_len - len);
-				len = min_len;
+			if (len < ETH_ZLEN) { // Packet is too small
+				memset(data + len, 0, ETH_ZLEN - len);
+				len = ETH_ZLEN;
 			}
 
+			last_upper_addr = ctrl->c.last_upper_addr;
 			if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(dma) != last_upper_addr)) {
-				if (unlikely(free_desc < 2)) {
-					printk(KERN_ERR "nfb: %s busy warning\n", __func__);
-					goto out;
-				}
-
 				last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(dma);
 				ctrl->c.last_upper_addr = last_upper_addr;
 				descs[sdp] = nc_ndp_tx_desc0(dma);
 				ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_DESC_TYPE0;
-				free_desc--;
 				sdp = (sdp + 1) & mdp;
 			}
 
-			if (unlikely(free_desc == 0)) {
-				printk(KERN_ERR "nfb: nfb_xctrl_xmit busy warning\n");
-				goto out;
-			}
 			ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_XSK;
-			ctrl->tx.buffers[sdp].num_of_xsk_completions = 1 + ctrl->tx.last_napi_xsk_drops;
-			ctrl->tx.last_napi_xsk_drops = 0;
-			ctrl->tx.buffers[sdp].dma = dma;
-			ctrl->tx.buffers[sdp].len = len;
-			descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
+			if(xsk_is_eop_desc(&buffs[i])) { // Last part of the packet
+				descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
+			} else { // Another fragment incomming
+				descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 1);
+			}
 			xsk_buff_raw_dma_sync_for_device(pool, dma, len);
-			free_desc--;
 			sdp = (sdp + 1) & mdp;
 		}
-out:
-		// update ctrl
-		ctrl->tx.last_napi_xsk_drops += ready - i;
+		// Update ctrl
 		ctrl->c.sdp = sdp;
-
-		// flush counters when done
+out:
+		// Flush counters when done (Maybe frames were enqueued by XDP_TX)
 		nc_ndp_ctrl_sdp_flush(&ctrl->c);
 	}
 	spin_unlock(&ctrl->tx.tx_lock);
@@ -470,6 +591,7 @@ struct xctrl *nfb_xctrl_alloc_xsk(struct net_device *netdev, u32 queue_id, struc
 	// Allocating control buffers
 	switch (type) {
 	case NFB_XCTRL_RX:
+		ctrl->rx.mbp = ctrl->nb_desc - 1;
 		if (!(ctrl->rx.xsk.xdp_ring = kzalloc_node(sizeof(struct xdp_buff *) * ctrl->nb_desc, GFP_KERNEL, channel->numa))) {
 			err = -ENOMEM;
 			goto buff_alloc_fail;
@@ -581,7 +703,7 @@ void nfb_xctrl_destroy_xsk(struct xctrl *ctrl)
 	case NFB_XCTRL_TX:
 		// free all enqueued tx buffers
 		ctrl->c.hdp = ctrl->c.sdp;
-		nfb_xctrl_tx_free_buffers(ctrl);
+		nfb_xctrl_tx_free_buffers(ctrl, true);
 		kfree(ctrl->tx.buffers);
 		break;
 	default:

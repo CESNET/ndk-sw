@@ -45,7 +45,6 @@ netdev_tx_t nfb_xctrl_start_xmit(struct sk_buff *skb, struct net_device *netdev)
 
 	dma_addr_t dma;
 	u32 len;
-	u32 min_len = ETH_ZLEN;
 	u32 sdp;
 	u32 mdp;
 
@@ -54,26 +53,30 @@ netdev_tx_t nfb_xctrl_start_xmit(struct sk_buff *skb, struct net_device *netdev)
 	u32 free_desc;
 	u32 ret;
 
+	skb_frag_t *frag;
+	u32 nr_frags = skb_shinfo(skb)->nr_frags;
+	u32 i, j;
+	struct xctrl_tx_buffer *tx_buff;
+
 	spin_lock(&ctrl->tx.tx_lock);
 	{
-		nc_ndp_ctrl_hdp_update(&ctrl->c);
-		nfb_xctrl_tx_free_buffers(ctrl);
-
 		sdp = ctrl->c.sdp;
 		mdp = ctrl->c.mdp;
-		free_desc = (ctrl->c.hdp - sdp - 1) & mdp;
 		descs = ctrl->desc_buffer_virt;
 
-		if (skb_linearize(skb)) {
-			printk(KERN_ERR "nfb: %s failed to linearize skb. queue: %u\n", __func__, channel->nfb_index);
+		// Max 2 descriptors per frag and head will be used
+		// One to update the addr and second with data
+		free_desc = (ctrl->c.hdp - sdp - 1) & mdp;
+		if(free_desc < (nr_frags + 1) * 2) {
+			printk(KERN_WARNING "nfb: %s TX busy warning, packet dropped\n", __func__);
 			goto free_locked;
 		}
 
-		len = max(min_len, skb->len);
-		if (skb_padto(skb, min_len)) {
-			// skb is freed on error
-			printk(KERN_ERR "nfb: %s skb too small and zero padding failed. queue: %u\n", __func__, channel->nfb_index);
-			goto freed_locked;
+		if (skb->len < ETH_ZLEN) {
+			skb_padto(skb, ETH_ZLEN);
+			len = ETH_ZLEN;
+		} else {
+			len = skb_headlen(skb);
 		}
 
 		dma = dma_map_single(ctrl->dma_dev, skb->data, len, DMA_TO_DEVICE);
@@ -84,62 +87,82 @@ netdev_tx_t nfb_xctrl_start_xmit(struct sk_buff *skb, struct net_device *netdev)
 
 		last_upper_addr = ctrl->c.last_upper_addr;
 		if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(dma) != last_upper_addr)) {
-			if (unlikely(free_desc < 2)) {
-				dev_warn(ethdev->nfb->dev, "nfb: %s busy warning. Packets are dropped. queue: %u\n", __func__, channel->nfb_index);
-				goto free_locked_unmap;
-			}
-
 			last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(dma);
 			ctrl->c.last_upper_addr = last_upper_addr;
-
 			descs[sdp] = nc_ndp_tx_desc0(dma);
-
 			ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_DESC_TYPE0;
-			free_desc--;
 			sdp = (sdp + 1) & mdp;
 		}
-
-		if (unlikely(free_desc == 0)) {
-			dev_warn(ethdev->nfb->dev, "nfb: %s busy warning. Packets are dropped. queue: %u\n", __func__, channel->nfb_index);
-			goto free_locked_unmap;
-		}
-
-		free_desc--;
-
-		// TODO:
-		// If socket uses up all it's allocated skbs before first skb is freed
-		// then socket can no longer send another packet
-		// and tx completition is not called causing socket to deadlock
-		// skb_orphan releases skb from socket pool so it is a working temporary solution
-		// tx timeout should still be introduced
-		skb_orphan(skb);
 
 		ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_SKB;
 		ctrl->tx.buffers[sdp].skb = skb;
 		ctrl->tx.buffers[sdp].dma = dma;
 		ctrl->tx.buffers[sdp].len = len;
-
-		descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
+	
+		if (!nr_frags) { // Single buffer
+			descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
+		} else { // Multi buffer
+			descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 1);
+		} 
 		sdp = (sdp + 1) & mdp;
+
+		// FRAG PROCESSING
+		for (i = 0; i < nr_frags; ++i) {
+			frag = &skb_shinfo(skb)->frags[i];
+			len = skb_frag_size(frag);
+			dma = skb_frag_dma_map(ctrl->dma_dev, frag, 0, len, DMA_TO_DEVICE);
+			if ((ret = dma_mapping_error(ctrl->dma_dev, dma))) {
+				printk(KERN_ERR "nfb: %s failed to dma map skb. queue: %u err: %d\n", __func__, channel->nfb_index, ret);
+				goto free_locked_unmap;
+			}
+
+			last_upper_addr = ctrl->c.last_upper_addr;
+			if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(dma) != last_upper_addr)) {
+				last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(dma);
+				ctrl->c.last_upper_addr = last_upper_addr;
+				descs[sdp] = nc_ndp_tx_desc0(dma);
+				ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_DESC_TYPE0;
+				sdp = (sdp + 1) & mdp;
+			}
+
+			ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_SKB;
+			ctrl->tx.buffers[sdp].skb = NULL;
+			ctrl->tx.buffers[sdp].dma = dma;
+			ctrl->tx.buffers[sdp].len = len;
+
+			if (i == nr_frags - 1) { // Last frag
+				descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
+			} else { // Middle frag
+				descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 1);
+			}
+			sdp = (sdp + 1) & mdp;
+		}
+
+		// Update counters
 		ctrl->c.sdp = sdp;
 
-		// NOTE: Calling dma_map_single with DMA_TO_DEVICE should do the sync for dev
-		//		 Calling unmap should do the sync for cpu
-		//		 Therefore the sync functions are only really needed when using DMA_BIDIRECTINAL
-		// dma_sync_single_for_device(ctrl->dma_dev, dma, len, DMA_TO_DEVICE);
-		nc_ndp_ctrl_sdp_flush(&ctrl->c);
+		// Only flush when finnished
+		if(!netdev_xmit_more()) {
+			nc_ndp_ctrl_sdp_flush(&ctrl->c);
+		}
 	}
 	spin_unlock(&ctrl->tx.tx_lock);
 
 	return NETDEV_TX_OK;
 
 free_locked_unmap:
-	dma_unmap_single(ctrl->dma_dev, dma, len, DMA_TO_DEVICE);
+	// Reset sdp and unmap everything that was mapped (i frags + 1 head)
+	sdp = ctrl->c.sdp;
+	for (j = 0; j < i + 1; j++) {
+		tx_buff = &ctrl->tx.buffers[sdp];
+		if (tx_buff->type == NFB_XCTRL_BUFF_SKB)
+			dma_unmap_single(ctrl->dma_dev, tx_buff->dma, tx_buff->len, DMA_TO_DEVICE);
+
+		sdp = (sdp + 1) & mdp;
+	}
 free_locked:
 	dev_kfree_skb(skb);
-freed_locked:
 	spin_unlock(&ctrl->tx.tx_lock);
-
 	// NOTE: It is possible to return NETDEV_TX_BUSY
 	// Kernel then tries to xmit packet again
 	// It is slow and it is possible to completely
@@ -157,34 +180,29 @@ int nfb_xctrl_xdp_xmit(struct net_device *dev, int n, struct xdp_frame **xdp, u3
 	struct xdp_frame *frame;
 	int cnt = 0;
 
-	if (n == 0) {
-		return 0;
-	}
-
 	// There doesn't seem to be a good way to decide which queue to use for tx other than semi random
+	// NOTE: If the interrupts are implemented use the affinity logic. 
 	qid = smp_processor_id() % ethdev->channel_count;
 	channel = &ethdev->channels[qid];
 	txq = &channel->txq;
 	ctrl = txq->ctrl;
 	spin_lock(&ctrl->tx.tx_lock);
 	{
-		// reclaim tx buffers
-		nc_ndp_ctrl_hdp_update(&ctrl->c);
-		nfb_xctrl_tx_free_buffers(ctrl);
-		// process tx
+		// Process tx
 		for (cnt = 0; cnt < n; cnt++) {
 			frame = xdp[cnt];
-			if (unlikely(nfb_xctrl_tx_submit_frame_needs_lock(ctrl, frame))) {
-				// on error caller frees the frames (see ndo_xdp_xmit docs)
+			if (unlikely(nfb_xctrl_tx_submit_frame_needs_lock(ctrl, frame, false))) {
+				// On error caller frees the frames (see ndo_xdp_xmit docs)
 				break;
 			}
 		}
-		// flush
-		nc_ndp_ctrl_sdp_flush(&ctrl->c);
+		// Flush
+		if (flags & XDP_XMIT_FLUSH)
+			nc_ndp_ctrl_sdp_flush(&ctrl->c);
 	}
 	spin_unlock(&ctrl->tx.tx_lock);
 	if (cnt != n) {
-		printk(KERN_WARNING "%s didn't manage to tx all packets; %d packets dropped\n", __func__, n - cnt);
+		printk(KERN_ERR "%s Didn't manage to tx all packets; %d packets dropped, busy warning.\n", __func__, n - cnt);
 	}
 	return cnt;
 }
@@ -235,7 +253,6 @@ static int nfb_setup_xsk_pool(struct net_device *dev, struct xsk_buff_pool *pool
 	u32 nfb_queue_id = channel->nfb_index;
 	int ret = 0;
 
-	// printk(KERN_DEBUG "LOG: inside %s\n", __func__);
 	if ((ret = xsk_pool_dma_map(pool, &ethdev->nfb->pci->dev, DMA_ATTR_SKIP_CPU_SYNC))) {
 		printk(KERN_ERR "nfb: Failed to switch queue %d pool could't be mapped err: %d\n", nfb_queue_id, ret);
 		goto exit;

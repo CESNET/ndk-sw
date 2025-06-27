@@ -25,79 +25,24 @@
  */
 static inline int nfb_xctrl_rexmit_pp(struct xctrl *ctrl, struct xdp_buff *xdp)
 {
-	dma_addr_t dma;
-	u32 free_desc;
-	u32 len;
-	u32 min_len = ETH_ZLEN;
 	int ret = 0;
-
-	// ctrl vars
-	struct nc_ndp_desc *descs = ctrl->desc_buffer_virt;
-	u32 sdp = ctrl->c.sdp;
-	u32 mdp = ctrl->c.mdp;
-	u64 last_upper_addr = ctrl->c.last_upper_addr;
-
-	// handle small packets
-	len = max((u32)(xdp->data_end - xdp->data), min_len);
-	// it is assumed here that we have whole page and that the headroom is XDP_PACKET_HEADROOM
-	if (xdp->data_end - xdp->data < min_len) {
-		memset(xdp->data_end, 0, ETH_ZLEN);
+	struct xdp_frame *frame;
+	// xdp_convert_buff_to_frame doesn't free on failure
+	if (unlikely(!(frame = xdp_convert_buff_to_frame(xdp)))) {
+		xdp_return_frame(frame);
+		ret = -ENOMEM;
+		goto exit;
 	}
-
 	spin_lock(&ctrl->tx.tx_lock);
 	{
-		// Reclaim tx buffers
-		nc_ndp_ctrl_hdp_update(&ctrl->c);
-		nfb_xctrl_tx_free_buffers(ctrl);
-
-		free_desc = (ctrl->tx.fdp - sdp - 1) & mdp;
-
-		dma = page_pool_get_dma_addr(virt_to_page(xdp->data_hard_start)) + XDP_PACKET_HEADROOM;
-
-		if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(dma) != last_upper_addr)) {
-			if (unlikely(free_desc < 2)) {
-				printk(KERN_ERR "nfb: %s busy warning\n", __func__);
-				ret = -EBUSY;
-				goto exit_free;
-			}
-
-			last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(dma);
-			ctrl->c.last_upper_addr = last_upper_addr;
-			descs[sdp] = nc_ndp_tx_desc0(dma);
-			ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_DESC_TYPE0;
-			free_desc--;
-			sdp = (sdp + 1) & mdp;
-		}
-
-		if (unlikely(free_desc == 0)) {
-			printk(KERN_ERR "nfb: %s busy warning\n", __func__);
-			ret = -EBUSY;
-			goto exit_free;
-		}
-
-		ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_FRAME_PP;
-		// Here the xdp buffer is located on the ctrl.rx.xdp_ring
-		// converting buff to frame writes the metadata into XDP_PACKET_HEADROOM
-		// this frees the ctrl.rx.xdp_ring buffer to be reused
-		ctrl->tx.buffers[sdp].frame = xdp_convert_buff_to_frame(xdp);
-		descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
-		dma_sync_single_for_device(ctrl->dma_dev, dma, len, DMA_BIDIRECTIONAL);
-		sdp = (sdp + 1) & mdp;
-
-		// update ctrl
-		ctrl->c.sdp = sdp;
-
-exit_free:
+		// Process tx
+		ret = nfb_xctrl_tx_submit_frame_needs_lock(ctrl, frame, true);
 		if (unlikely(ret)) {
-			// xdp_return_buff definition is missing in 4.18.0-477.10.1.el8_8.x86_64
-			// xdp_return_buff(xdp);
-			xdp_return_frame(xdp_convert_buff_to_frame(xdp));
+			xdp_return_frame(frame);
 		}
-
-		// Flush counters when done
-		nc_ndp_ctrl_sdp_flush(&ctrl->c);
 	}
 	spin_unlock(&ctrl->tx.tx_lock);
+exit:
 	return ret;
 }
 
@@ -112,31 +57,29 @@ static inline int nfb_xctrl_rx_fill_pp(struct xctrl *ctrl)
 {
 	const u32 batch_size = NFB_XDP_CTRL_PACKET_BURST;
 
-	// ctrl vars
+	// Ctrl vars
 	u64 last_upper_addr = ctrl->c.last_upper_addr;
-	u32 mdp = ctrl->c.mdp;
+	const u32 mdp = ctrl->c.mdp;
 	u32 sdp = ctrl->c.sdp;
-	u32 mhp = ctrl->c.mhp;
-	u32 php = ctrl->rx.php;
+	const u32 mbp = ctrl->rx.mbp;
+	u32 fbp = ctrl->rx.fbp;
 
-	// NOTE: XDP should have reserved tailroom for passing the page to the network stack
-	const u32 frame_len = PAGE_SIZE - SKB_DATA_ALIGN(XDP_PACKET_HEADROOM + sizeof(struct skb_shared_info));
 	struct page_pool *pool = ctrl->rx.pp.pool;
 	struct page *page;
 	dma_addr_t dma;
 	struct nc_ndp_desc *descs = ctrl->desc_buffer_virt;
-	u32 free_desc, free_hdrs;
-	u32 i;
+	u32 free_desc, free_buffs;
+	u32 filled;
 
 	// Check if refill needed
 	nc_ndp_ctrl_hdp_update(&ctrl->c);
-	free_hdrs = (ctrl->c.shp - php - 1) & mhp;
+	free_buffs = (ctrl->rx.pbp - fbp - 1) & mbp;
 	free_desc = (ctrl->c.hdp - sdp - 1) & mdp;
-	if (free_hdrs < batch_size || free_desc < batch_size)
+	if (free_buffs < batch_size || free_desc < batch_size)
 		return 0;
 
 	// Alloc buffers and send them to card
-	for (i = 0; i < batch_size; i++) {
+	for (filled = 0; filled < batch_size; filled++) {
 		if (!(page = page_pool_dev_alloc_pages(pool))) {
 			printk(KERN_WARNING "nfb: failed to allocate page from page pool\n");
 			break;
@@ -144,7 +87,7 @@ static inline int nfb_xctrl_rx_fill_pp(struct xctrl *ctrl)
 		dma = page_pool_get_dma_addr(page) + XDP_PACKET_HEADROOM;
 		if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(dma) != last_upper_addr)) {
 			if (unlikely(free_desc == 0)) {
-				page_pool_put_full_page(pool, page, false);
+				page_pool_put_full_page(pool, page, true);
 				break;
 			}
 			last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(dma);
@@ -154,22 +97,26 @@ static inline int nfb_xctrl_rx_fill_pp(struct xctrl *ctrl)
 			free_desc--;
 		}
 		if (unlikely(free_desc == 0)) {
-			page_pool_put_full_page(pool, page, false);
+			page_pool_put_full_page(pool, page, true);
 			break;
 		}
-		xdp_init_buff(ctrl->rx.pp.xdp_ring[php], PAGE_SIZE, &ctrl->rx.rxq_info);
-		xdp_prepare_buff(ctrl->rx.pp.xdp_ring[php], page_to_virt(page), XDP_PACKET_HEADROOM, 0, false);
-		descs[sdp] = nc_ndp_rx_desc2(dma, frame_len, 0);
+
+		// Init the buffer
+		xdp_init_buff(ctrl->rx.pp.xdp_ring[fbp], PAGE_SIZE, &ctrl->rx.rxq_info);
+		xdp_prepare_buff(ctrl->rx.pp.xdp_ring[fbp], page_to_virt(page), XDP_PACKET_HEADROOM, 0, false);
+		xdp_buff_clear_frags_flag(ctrl->rx.pp.xdp_ring[fbp]);
+		xdp_get_shared_info_from_buff(ctrl->rx.pp.xdp_ring[fbp])->nr_frags = 0;
+
+		descs[sdp] = nc_ndp_rx_desc2(dma, NFB_PP_MAX_FRAME_LEN, 1);
 		sdp = (sdp + 1) & mdp;
-		php = (php + 1) & mhp;
+		fbp = (fbp + 1) & mbp;
 		free_desc--;
 	}
 
-	// update ctrl state
-	ctrl->rx.php = php;
+	// Update ctrl state
+	ctrl->rx.fbp = fbp;
 	ctrl->c.sdp = sdp;
-
-	return i;
+	return filled;
 }
 
 /**
@@ -180,7 +127,7 @@ static inline int nfb_xctrl_rx_fill_pp(struct xctrl *ctrl)
  * @param rxq 
  * @return result
  */
-static inline void nfb_xctrl_handle_pp(struct bpf_prog *prog, struct xdp_buff *xdp, struct nfb_xdp_queue *rxq)
+static inline void nfb_xctrl_handle_pp(struct bpf_prog *prog, struct xdp_buff *xdp, struct nfb_xdp_queue *rxq, struct napi_struct *napi)
 {
 	unsigned act;
 	int ret;
@@ -199,14 +146,13 @@ static inline void nfb_xctrl_handle_pp(struct bpf_prog *prog, struct xdp_buff *x
 
 	switch (act) {
 	case XDP_PASS:
-		// NOTE: This function does a lot of things internally, check it's implementation
-		// if you ever want to add support for fragmented packets
+		// TODO: This function does a lot of steps some of which might not be entirely necessary.  
 		skb = xdp_build_skb_from_frame(xdp_convert_buff_to_frame(xdp), ethdev->netdev);
 		if (IS_ERR_OR_NULL(skb)) {
 			printk(KERN_DEBUG "SKB build failed\n");
 			goto aborted;
 		}
-		// receive packet onto queue it arriverd on
+		// Receive packet onto queue it arriverd on
 		skb_record_rx_queue(skb, channel->index);
 		// TODO: gro_receive is supposed to be a free
 		// 		performance boost but it is quite bad for
@@ -223,11 +169,11 @@ static inline void nfb_xctrl_handle_pp(struct bpf_prog *prog, struct xdp_buff *x
 		// }
 		break;
 	case XDP_TX:
-		// returned via xdp_return_frame on tx reclaim;
+		// Returned via xdp_return_frame on tx reclaim;
 		nfb_xctrl_rexmit_pp(channel->txq.ctrl, xdp);
 		break;
 	case XDP_REDIRECT:
-		// redirected packet is internally returned via xdp_return_frame
+		// Redirected packet is internally returned via xdp_return_frame
 		ret = xdp_do_redirect(ethdev->netdev, xdp, xdp_prog);
 		if (unlikely(ret)) {
 			printk(KERN_ERR "nfb: xdp_do_redirect error ret: %d\n", ret);
@@ -250,16 +196,23 @@ aborted:
 	rcu_read_unlock();
 }
 
-static inline u16 nfb_xctrl_rx_pp(struct xctrl *ctrl, struct xdp_buff **buffs, u16 nb_pkts)
+static inline u16 nfb_xctrl_rx_pp(struct xctrl *ctrl, u16 nb_pkts, struct nfb_ethdev *ethdev, struct nfb_xdp_queue *rxq, struct napi_struct *napi)
 {
+	u32 len_remain;
 	struct nc_ndp_hdr *hdrs = ctrl->rx.hdr_buffer_cpu;
 	struct nc_ndp_hdr *hdr;
 	u32 i;
 	u16 nb_rx;
 	u32 shp = ctrl->c.shp;
-	u32 mhp = ctrl->c.mhp;
+	const u32 mhp = ctrl->c.mhp;
+	u32 pbp = ctrl->rx.pbp;
+	const u32 mbp = ctrl->rx.mbp;
 
-	// fill the card with empty buffers
+	struct xdp_buff *head;
+	struct xdp_buff *frag;
+	struct skb_shared_info *sinfo;
+
+	// Fill the card with empty buffers
 	while (nfb_xctrl_rx_fill_pp(ctrl))
 		;
 	nc_ndp_ctrl_sdp_flush(&ctrl->c);
@@ -270,20 +223,50 @@ static inline u16 nfb_xctrl_rx_pp(struct xctrl *ctrl, struct xdp_buff **buffs, u
 	if (nb_pkts < nb_rx)
 		nb_rx = nb_pkts;
 
-	// ready packets for receive
+	// Ready packets for receive
 	for (i = 0; i < nb_rx; ++i) {
+		// Get one packet (can be fragmented)
 		hdr = &hdrs[shp];
-		buffs[i] = ctrl->rx.pp.xdp_ring[shp];
-		dma_sync_single_for_cpu(ctrl->dma_dev, page_pool_get_dma_addr(virt_to_page(buffs[i]->data_hard_start)), PAGE_SIZE, DMA_BIDIRECTIONAL);
-		buffs[i]->data_end = buffs[i]->data + hdr->frame_len;
-		// NOTE: Right now fragmented buffers are not supported
-		// Setting this is important if SKB is to be built from pagepool page without copying
-		// xdp_get_shared_info_from_buff(buffs[i])->nr_frags = 0;
 		shp = (shp + 1) & mhp;
+		len_remain = hdr->frame_len;
+
+		// Get the first fragment (head)
+		head = ctrl->rx.pp.xdp_ring[pbp];
+		pbp = (pbp + 1) & mbp;
+		dma_sync_single_for_cpu(ctrl->dma_dev, page_pool_get_dma_addr(virt_to_page(head->data_hard_start)), PAGE_SIZE, DMA_BIDIRECTIONAL);
+
+		// Process head
+		if (len_remain > NFB_PP_MAX_FRAME_LEN) { // Is fragmented
+			head->data_end = head->data + NFB_PP_MAX_FRAME_LEN;
+			len_remain -= NFB_PP_MAX_FRAME_LEN;
+			xdp_buff_set_frags_flag(head);
+			sinfo = xdp_get_shared_info_from_buff(head);
+			sinfo->xdp_frags_size = len_remain;
+		} else { // Not fragmented
+			head->data_end = head->data + len_remain;
+			len_remain -= len_remain;
+		}
+
+		// Process frags
+		while (len_remain) {
+			frag = ctrl->rx.pp.xdp_ring[pbp];
+			pbp = (pbp + 1) & mbp;
+			dma_sync_single_for_cpu(ctrl->dma_dev, page_pool_get_dma_addr(virt_to_page(frag->data_hard_start)), PAGE_SIZE, DMA_BIDIRECTIONAL);
+			if (len_remain > NFB_PP_MAX_FRAME_LEN) { // Not last fragment
+				skb_frag_fill_page_desc(&sinfo->frags[sinfo->nr_frags++], virt_to_page(frag->data_hard_start), XDP_PACKET_HEADROOM, NFB_PP_MAX_FRAME_LEN);
+				len_remain -= NFB_PP_MAX_FRAME_LEN;
+			} else { // Last fragment
+				skb_frag_fill_page_desc(&sinfo->frags[sinfo->nr_frags++], virt_to_page(frag->data_hard_start), XDP_PACKET_HEADROOM, len_remain);
+				len_remain -= len_remain;
+			}
+		}
+
+		nfb_xctrl_handle_pp(ethdev->prog, head, rxq, napi);
 	}
 
-	// update ctrl state
+	// Update ctrl state
 	ctrl->c.shp = shp;
+	ctrl->rx.pbp = pbp;
 
 	return nb_rx;
 }
@@ -291,22 +274,22 @@ static inline u16 nfb_xctrl_rx_pp(struct xctrl *ctrl, struct xdp_buff **buffs, u
 int nfb_xctrl_napi_poll_pp(struct napi_struct *napi, int budget)
 {
 	struct nfb_xdp_queue *rxq = container_of(napi, struct nfb_xdp_queue, napi);
+	struct nfb_xdp_channel *channel = container_of(rxq, struct nfb_xdp_channel, rxq);
 	struct xctrl *ctrl = rxq->ctrl;
 	struct net_device *netdev = napi->dev;
 	struct nfb_ethdev *ethdev = netdev_priv(netdev);
-	unsigned received, i = 0;
-	struct xdp_buff *xdp[NAPI_POLL_WEIGHT];
+	unsigned received;
 
-	if (unlikely(budget > NAPI_POLL_WEIGHT)) {
-		printk(KERN_ERR "nfb: NAPI budget is bigger than weight. This is a driver bug.\n");
-		BUG();
+	struct xctrl *txctrl = channel->txq.ctrl;
+	if(spin_trylock(&txctrl->tx.tx_lock)) {
+		// Flush the sdp since the XDP_TX could have enqueued some packets
+		nc_ndp_ctrl_sdp_flush(&txctrl->c);
+		nfb_xctrl_tx_free_buffers(txctrl, false);
+		spin_unlock(&txctrl->tx.tx_lock);
 	}
 
-	received = nfb_xctrl_rx_pp(ctrl, xdp, budget);
-	for (i = 0; i < received; i++) {
-		nfb_xctrl_handle_pp(ethdev->prog, xdp[i], rxq);
-	}
-	// flush sdp and shp after software processing is done
+	received = nfb_xctrl_rx_pp(ctrl, budget, ethdev, rxq, napi);
+	// Flush rx sdp and shp after software processing is done
 	nc_ndp_ctrl_sp_flush(&ctrl->c);
 
 	// Flushes redirect maps
@@ -428,6 +411,7 @@ struct xctrl *nfb_xctrl_alloc_pp(struct net_device *netdev, u32 queue_id, u32 de
 			err = -ENOMEM;
 			goto buff_alloc_fail;
 		}
+		ctrl->rx.mbp = ctrl->nb_desc - 1;
 		if (!(buffs = kzalloc_node(sizeof(struct xdp_buff) * desc_cnt, GFP_KERNEL, channel->numa))) {
 			err = -ENOMEM;
 			goto buffs_alloc_fail;
@@ -554,7 +538,7 @@ void nfb_xctrl_destroy_pp(struct xctrl *ctrl)
 	case NFB_XCTRL_TX:
 		// free all enqueued tx buffers
 		ctrl->c.hdp = ctrl->c.sdp;
-		nfb_xctrl_tx_free_buffers(ctrl);
+		nfb_xctrl_tx_free_buffers(ctrl, true);
 		kfree(ctrl->tx.buffers);
 		break;
 	default:

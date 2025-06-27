@@ -27,14 +27,19 @@
  * 
  * @param ctrl 
  */
-static inline void nfb_xctrl_tx_free_buffers(struct xctrl *ctrl)
+static inline void nfb_xctrl_tx_free_buffers(struct xctrl *ctrl, bool cleanup)
 {
 	u32 i;
-	u32 hdp = ctrl->c.hdp;
 	u32 mdp = ctrl->c.mdp;
-	u32 fdp = ctrl->tx.fdp;
+	u32 hdp_old = ctrl->c.hdp;
+	u32 hdp_new;
 
-	for (i = fdp; i != hdp; i++, i &= mdp) {
+	if(!cleanup) // When cleaning up the queues we no longer have the underliing controller running
+		nc_ndp_ctrl_hdp_update(&ctrl->c);
+
+	hdp_new = ctrl->c.hdp;
+
+	for (i = hdp_old; i != hdp_new; i++, i &= mdp) {
 		switch (ctrl->tx.buffers[i].type) {
 		case NFB_XCTRL_BUFF_FRAME_PP: // xdp buff to be recycled to page pool
 			// xdp_return_buff definition is missing in 4.18.0-477.10.1.el8_8.x86_64
@@ -42,16 +47,23 @@ static inline void nfb_xctrl_tx_free_buffers(struct xctrl *ctrl)
 			xdp_return_frame(ctrl->tx.buffers[i].frame);
 			break;
 		case NFB_XCTRL_BUFF_XSK:
-			ctrl->tx.completed_xsk_tx += ctrl->tx.buffers[i].num_of_xsk_completions;
+			ctrl->tx.completed_xsk_tx += 1;
+			break;
+		case NFB_XCTRL_BUFF_XSK_REXMIT:
+			xsk_buff_free(ctrl->tx.buffers[i].xsk);
 			break;
 		case NFB_XCTRL_BUFF_SKB:
 			dma_unmap_single(ctrl->dma_dev, ctrl->tx.buffers[i].dma, ctrl->tx.buffers[i].len, DMA_TO_DEVICE);
-			dev_kfree_skb(ctrl->tx.buffers[i].skb);
+			if(ctrl->tx.buffers[i].skb)
+				dev_kfree_skb(ctrl->tx.buffers[i].skb);
+			
 			break;
-		case NFB_XCTRL_BUFF_FRAME: // redirectedd frame - can be from another device all together
+		case NFB_XCTRL_BUFF_FRAME: // Redirected frame - can be from another device all together
 			// TODO check out xdp_return_frame_bulk()
 			dma_unmap_single(ctrl->dma_dev, ctrl->tx.buffers[i].dma, ctrl->tx.buffers[i].len, DMA_TO_DEVICE);
-			xdp_return_frame(ctrl->tx.buffers[i].frame);
+			if(ctrl->tx.buffers[i].frame)
+				xdp_return_frame(ctrl->tx.buffers[i].frame);
+			
 			break;
 		case NFB_XCTRL_BUFF_DESC_TYPE0:
 			break;
@@ -60,17 +72,14 @@ static inline void nfb_xctrl_tx_free_buffers(struct xctrl *ctrl)
 			BUG();
 			break;
 		}
-		ctrl->tx.buffers[i].type = NFB_XCTRL_BUFF_DESC_TYPE0;
+		ctrl->tx.buffers[i].type = NFB_XCTRL_BUFF_BUG;
 	}
-	ctrl->tx.fdp = hdp;
 }
 
 /**
  * @brief Submits and maps frame onto tx. Not as straight forward as i would have liked -> check note
  * @note 
  * spin_lock(&lock)
- * 	  nc_ndp_ctrl_hdp_update(&ctrl->c);
- * 	  nfb_xctrl_tx_free_buffers(ctrl);
  * 	  for (;;)
  * 	     nfb_xctrl_tx_submit_frame_needs_lock()
  *	  nc_ndp_ctrl_sdp_flush()
@@ -79,75 +88,152 @@ static inline void nfb_xctrl_tx_free_buffers(struct xctrl *ctrl)
  * @param frame 
  * @return 0 on success
  */
-static inline int nfb_xctrl_tx_submit_frame_needs_lock(struct xctrl *ctrl, struct xdp_frame *frame)
+static inline int nfb_xctrl_tx_submit_frame_needs_lock(struct xctrl *ctrl, struct xdp_frame *frame, bool pp)
 {
 	dma_addr_t dma;
-	u32 free_desc;
 	u32 len;
-	u16 min_len = ETH_ZLEN;
+	u32 sdp;
+	u32 mdp;
+
+	struct nc_ndp_desc *descs;
+	u64 last_upper_addr;
+	u32 free_desc;
 	int ret = 0;
 
-	// ctrl vars
-	u64 last_upper_addr = ctrl->c.last_upper_addr;
-	u32 sdp = ctrl->c.sdp;
-	u32 mdp = ctrl->c.mdp;
-	struct nc_ndp_desc *descs = ctrl->desc_buffer_virt;
+	skb_frag_t *frag;
+	
+	u32 nr_frags = xdp_get_shared_info_from_frame(frame)->nr_frags;
+	u32 i, j;
+	struct xctrl_tx_buffer *tx_buff;
 
+	sdp = ctrl->c.sdp;
+	mdp = ctrl->c.mdp;
+	descs = ctrl->desc_buffer_virt;
+
+	// Max 2 descriptors per frag and head will be used
+	// One to update the addr and second with data
 	free_desc = (ctrl->c.hdp - sdp - 1) & mdp;
-
-	// Handle small frames
-	len = max(frame->len, min_len);
-	// Here we don't know where the frames came from. (Could be different driver all together)
-	// Therefore if we cannot make the frame bigger we would have to alloc a new one. -ENOTSUPP
-	if (frame->len < min_len) { // Usable frame space is smaller than min_len.
-		if (unlikely(frame->frame_sz - frame->headroom < min_len)) {
-			ret = -ENOTSUPP;
-			goto exit;
-		}
-		memset(frame->data + frame->len, 0, min_len - frame->len);
-	}
-
-	dma = dma_map_single(ctrl->dma_dev, frame->data, len, DMA_TO_DEVICE);
-	if (unlikely(ret = dma_mapping_error(ctrl->dma_dev, dma))) {
-		printk(KERN_ERR "nfb: %s failed to map frame\n", __func__);
-		goto exit;
-	}
-
-	if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(dma) != last_upper_addr)) {
-		if (unlikely(free_desc < 2)) {
-			printk(KERN_ERR "nfb: %s busy warning\n", __func__);
-			dma_unmap_single(ctrl->dma_dev, dma, len, DMA_TO_DEVICE);
-			ret = -EBUSY;
-			goto exit;
-		}
-
-		last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(dma);
-		ctrl->c.last_upper_addr = last_upper_addr;
-
-		descs[sdp] = nc_ndp_tx_desc0(dma);
-
-		ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_DESC_TYPE0;
-		free_desc--;
-		sdp = (sdp + 1) & mdp;
-	}
-
-	if (unlikely(free_desc == 0)) {
-		printk(KERN_ERR "nfb: nfb_xctrl_xmit busy warning\n");
-		dma_unmap_single(ctrl->dma_dev, dma, len, DMA_TO_DEVICE);
+	if(free_desc < (nr_frags + 1) * 2) {
+		printk(KERN_WARNING "nfb: submit_frame TX busy warning, packet dropped\n");
 		ret = -EBUSY;
 		goto exit;
 	}
 
-	ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_FRAME;
+	// Handle small frames
+	// Here we don't know where the frames came from. (Could be different driver all together)
+	// Therefore if we cannot make the frame bigger we would have to alloc a new one. -ENOTSUPP
+	if (frame->len < ETH_ZLEN) {
+		// Usable frame space is smaller than min_len.
+		if (unlikely(frame->frame_sz - frame->headroom < ETH_ZLEN)) {
+			printk(KERN_WARNING "nfb: submit_frame TX got frame too small, packet dropped\n");
+			ret = -ENOTSUPP;
+			goto exit;
+		}
+		memset(frame->data + frame->len, 0, ETH_ZLEN - frame->len);
+		len = ETH_ZLEN;
+	} else {
+		len = frame->len;
+	}
+
+	// If page_pool, then the page is already mapped
+	if (!pp) {
+		dma = dma_map_single(ctrl->dma_dev, frame->data, len, DMA_TO_DEVICE);
+		if (unlikely(ret = dma_mapping_error(ctrl->dma_dev, dma))) {
+			printk(KERN_ERR "nfb: %s failed to map frame\n", __func__);
+			goto exit;
+		}
+	} else {
+		dma = page_pool_get_dma_addr(virt_to_page(frame->data)) + XDP_PACKET_HEADROOM;
+	}
+
+	last_upper_addr = ctrl->c.last_upper_addr;
+	if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(dma) != last_upper_addr)) {
+		last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(dma);
+		ctrl->c.last_upper_addr = last_upper_addr;
+		descs[sdp] = nc_ndp_tx_desc0(dma);
+		ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_DESC_TYPE0;
+		sdp = (sdp + 1) & mdp;
+	}
+
+	if (!pp) { // Unmapped at reclaim
+		ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_FRAME;
+	} else { // Returned to page_pool
+		ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_FRAME_PP;
+	}
 	ctrl->tx.buffers[sdp].frame = frame;
 	ctrl->tx.buffers[sdp].dma = dma;
 	ctrl->tx.buffers[sdp].len = len;
 	descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
+
+	if (!xdp_frame_has_frags(frame)) { // Single buffer
+		descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
+	} else { // Multi buffer
+		descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 1);
+	} 
 	sdp = (sdp + 1) & mdp;
 
-	// update ctrl state
+	// FRAG PROCESSING
+	for(i = 0; i < nr_frags; ++i) {
+		frag = &xdp_get_shared_info_from_frame(frame)->frags[i];
+		len = skb_frag_size(frag);
+
+		// If page_pool, then the page is already mapped
+		if (!pp) {
+			dma = skb_frag_dma_map(ctrl->dma_dev, frag, 0, len, DMA_TO_DEVICE);
+			if (unlikely(ret = dma_mapping_error(ctrl->dma_dev, dma))) {
+				printk(KERN_ERR "nfb: %s failed to map frame\n", __func__);
+				if(!pp) {
+					goto unmap_exit;
+				} else {
+					goto exit;
+				}
+			}
+		} else {
+			dma = page_pool_get_dma_addr(skb_frag_page(frag)) + skb_frag_off(frag);
+		}
+
+		last_upper_addr = ctrl->c.last_upper_addr;
+		if (unlikely(NDP_CTRL_DESC_UPPER_ADDR(dma) != last_upper_addr)) {
+			last_upper_addr = NDP_CTRL_DESC_UPPER_ADDR(dma);
+			ctrl->c.last_upper_addr = last_upper_addr;
+			descs[sdp] = nc_ndp_tx_desc0(dma);
+			ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_DESC_TYPE0;
+			sdp = (sdp + 1) & mdp;
+		}
+
+		if (!pp) {
+			ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_FRAME;
+			ctrl->tx.buffers[sdp].frame = NULL;
+		} else {
+			// Already completed by calling xdp_return_frame on the first fragment
+			ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_DESC_TYPE0;
+		}
+		ctrl->tx.buffers[sdp].dma = dma;
+		ctrl->tx.buffers[sdp].len = len;
+
+		if (i == nr_frags - 1) { // Last frag
+			descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
+		} else { // Middle frag
+			descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 1);
+		}
+		sdp = (sdp + 1) & mdp;
+	}
+
+	// Update ctrl state
 	ctrl->c.sdp = sdp;
 exit:
+	return ret;
+
+unmap_exit:
+	// Reset sdp and unmap everything that was mapped (i frags + 1 head)
+	sdp = ctrl->c.sdp;
+	for (j = 0; j < i + 1; j++) {
+		tx_buff = &ctrl->tx.buffers[sdp];
+		if (tx_buff->type == NFB_XCTRL_BUFF_FRAME)
+			dma_unmap_single(ctrl->dma_dev, tx_buff->dma, tx_buff->len, DMA_TO_DEVICE);
+		
+		sdp = (sdp + 1) & mdp;
+	}
 	return ret;
 }
 
