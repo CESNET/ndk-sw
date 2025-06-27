@@ -43,7 +43,7 @@ static int bw_file_entry_sort_by_offset(const void *lhs, const void *rhs)
 	return 0;
 }
 
-int nfb_boot_bw_bmc_parse_partition(struct bw_file_entry *p, char **buffer)
+static int nfb_boot_bw_bmc_parse_partition(struct bw_file_entry *p, char **buffer)
 {
 	const char *bbeg;
 	char *bend;
@@ -149,7 +149,7 @@ static inline void nfb_boot_bw_bmc_add_partition(void *fdt, int node, int *id, s
 	}
 }
 
-int nfb_boot_bw_bmc_load_partition_table(struct nfb_boot *boot)
+static int nfb_boot_bw_bmc_load_partition_table(struct nfb_boot *boot)
 {
 	static const int buffer_size = 16384;
 
@@ -258,7 +258,7 @@ err_dl_file:
 	return ret;
 }
 
-int nfb_boot_bw_bmc_update_binary_slots(struct nfb_boot *boot)
+static int nfb_boot_bw_bmc_update_binary_slots(struct nfb_boot *boot)
 {
 	void *fdt;
 	int node;
@@ -300,7 +300,7 @@ void nfb_boot_bw_bmc_detach(struct nfb_boot* boot)
 	}
 }
 
-void nfb_boot_bw_bmc_load_cb(void *priv, unsigned offset)
+static void nfb_boot_bw_bmc_load_cb(void *priv, unsigned offset)
 {
 	struct nfb_boot* boot = priv;
 	boot->load.current_op_progress = offset;
@@ -309,7 +309,7 @@ void nfb_boot_bw_bmc_load_cb(void *priv, unsigned offset)
 		cond_resched();
 }
 
-int nfb_boot_bw_bmc_set_priority(struct nfb_boot *boot, struct nfb_boot_ioc_load *load)
+static int nfb_boot_bw_bmc_set_priority(struct nfb_boot *boot, struct nfb_boot_ioc_load *load)
 {
 	int ret = 0;
 	int i;

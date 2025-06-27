@@ -38,7 +38,7 @@ function(kernel_try_compile C_CONTENT RES CHECK_TEXT)
 	file(WRITE "${TEST_DIR}/Makefile"
 "KDIR=${KDIR}
 KBUILD=$(MAKE) -C $(KDIR) M=${TEST_DIR}
-EXTRA_CFLAGS+=-Werror
+ccflags-y+=-Werror
 obj-m := test.o
 all:
 	$(KBUILD) test.s

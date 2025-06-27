@@ -22,6 +22,8 @@
 #include <linux/delay.h>
 #include <linux/hrtimer.h>
 
+#include <config.h>
+
 #include "ndp.h"
 
 static size_t ndp_subscriber_new_data(struct ndp_subscriber *subscriber)
@@ -85,8 +87,12 @@ struct ndp_subscriber *ndp_subscriber_create(struct ndp *ndp)
 	INIT_LIST_HEAD(&subscriber->list_head);
 	INIT_LIST_HEAD(&subscriber->list_head_subscriptions);
 	init_waitqueue_head(&subscriber->poll_wait);
+#ifdef CONFIG_HAVE_HRTIMER_SETUP
+	hrtimer_setup(&subscriber->poll_timer, ndp_subscriber_poll_timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
+#else
 	hrtimer_init(&subscriber->poll_timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
 	subscriber->poll_timer.function = ndp_subscriber_poll_timer;
+#endif
 	clear_bit(NDP_WAKE_RX, &subscriber->wake_reason);
 
 	mutex_lock(&ndp->lock);

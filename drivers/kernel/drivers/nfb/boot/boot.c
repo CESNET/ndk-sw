@@ -217,7 +217,7 @@ ssize_t nfb_boot_load_get_status(struct nfb_boot *boot, char *buf)
 		boot->load.current_op, boot->load.current_op_progress_max, boot->load.current_op_progress);
 }
 
-int nfb_boot_load(struct nfb_boot *boot,
+static int nfb_boot_load(struct nfb_boot *boot,
 		struct nfb_boot_ioc_load __user *_load,
 		void *app_priv)
 {

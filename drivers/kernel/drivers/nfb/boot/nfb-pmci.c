@@ -344,7 +344,11 @@ int nfb_pmci_attach(struct nfb_boot *boot)
 		goto err_regmap_register;
 	}
 
+#ifdef CONFIG_HAVE_DEVM_DEVICE_ADD_GROUPS
 	ret = devm_device_add_groups(&pmci->pd->dev, nfb_m10bmc_dev_groups);
+#else
+	ret = device_add_groups(&pmci->pd->dev, nfb_m10bmc_dev_groups);
+#endif
 	if (ret)
 		goto err_dev_addgroups;
 

@@ -167,11 +167,6 @@ void nfb_xdp_sysfs_init_module_attributes(struct nfb_xdp *module)
 	dev->groups = nfb_module_groups;
 }
 
-void nfb_xdp_sysfs_deinit_module(struct nfb_ethdev *ethdev)
-{
-	return;
-}
-
 // --------------------------- SYSFS files for each channel -------------------------------- 
 struct channel_sysfs_drvdata {
 	struct nfb_xdp *module;

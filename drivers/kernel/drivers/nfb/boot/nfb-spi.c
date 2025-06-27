@@ -226,7 +226,11 @@ int nfb_spi_attach(struct nfb_boot *boot)
 	m10bmc_spi->m10bmc.type = M10_N5014;
 	m10bmc_spi->m10bmc.flash_ops = NULL;
 
-    host = spi_alloc_master(&m10bmc_spi->pd->dev, sizeof(struct altera_spi));
+#ifdef CONFIG_HAVE_SPI_CONTROLLER
+	host = spi_alloc_host(&m10bmc_spi->pd->dev, sizeof(struct altera_spi));
+#else
+	host = spi_alloc_master(&m10bmc_spi->pd->dev, sizeof(struct altera_spi));
+#endif
 	if (!host) {
 		ret = -ENOMEM;
 		goto err_alloc_master;
@@ -282,7 +286,11 @@ int nfb_spi_attach(struct nfb_boot *boot)
 		goto err_regmap_register_avmm;
 	}
 
+#ifdef CONFIG_HAVE_DEVM_DEVICE_ADD_GROUPS
 	ret = devm_device_add_groups(&m10bmc_spi->pd->dev, nfb_m10bmc_dev_groups);
+#else
+	ret = device_add_groups(&m10bmc_spi->pd->dev, nfb_m10bmc_dev_groups);
+#endif
 	if (ret)
 		goto err_dev_addgroups;
 
