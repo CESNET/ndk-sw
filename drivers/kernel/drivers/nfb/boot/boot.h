@@ -78,6 +78,8 @@ int nfb_boot_ioctl_mtd_info(struct nfb_boot *nfb_boot,
 		struct nfb_boot_ioc_mtd_info __user *_ioc_mtd_info);
 
 int nfb_mtd_read(struct nfb_device *dev, int index, size_t addr, void *data, size_t size);
+void nfb_boot_flash_fb_switch_flash(struct nfb_boot *boot, int flash);
+
 
 int nfb_boot_init(void);
 void nfb_boot_exit(void);

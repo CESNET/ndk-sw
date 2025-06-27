@@ -53,7 +53,7 @@ inline uint16_t nfb_boot_flash_read16(struct nfb_boot *boot)
 	return ret;
 }
 
-static inline void nfb_boot_flash_fb_switch_flash(struct nfb_boot *boot, int flash)
+void nfb_boot_flash_fb_switch_flash(struct nfb_boot *boot, int flash)
 {
 	if (boot->fb_active_flash != flash) {
 		boot->fb_active_flash = flash;

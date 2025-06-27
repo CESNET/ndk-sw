@@ -272,6 +272,11 @@ int nfb_boot_reload(void *arg)
 	} else if (boot->comp) {
 		if (boot->controller_type == 3) {
 			uint64_t cmd = (0x7l << 60) | (7l << 48) | boot->num_image;
+
+			/* HOTFIX: force switch flash */
+			nfb_boot_flash_fb_switch_flash(boot, 1);
+			nfb_boot_flash_fb_switch_flash(boot, 0);
+
 			nfb_comp_write64(boot->comp, 0, cmd);
 		} else {
 			nfb_comp_write32(boot->comp, 0, boot->num_image);
