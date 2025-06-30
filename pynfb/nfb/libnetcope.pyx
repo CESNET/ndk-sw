@@ -267,6 +267,8 @@ cdef class I2c:
         self._handle.check_handle()
         self._ctrl = NULL
         self._ctrl = nc_i2c_open(self._handle._dev, nfb._fdt_path_offset(node))
+        if self._ctrl == NULL:
+            PyErr_SetFromErrno(OSError)
         nc_i2c_set_addr(self._ctrl, addr)
 
         self._handle.add_close_cb(self._close_handle)
