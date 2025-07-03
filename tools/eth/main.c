@@ -184,7 +184,7 @@ static struct ni_context_item_default ni_items[] = {
 	/* Trans section */
 	[NI_LIST_TRANS]         = {ni_json_k("transceivers"),           ni_user_v(NULL, 0, "\n", NULL)},
 
-	[NI_SEC_TRN]            = {ni_json_n,                           ni_user_l("")},
+	[NI_SEC_TRN]            = {ni_json_e,                           ni_user_l("")},
 	[NI_TRN_INDEX]          = {ni_json_k("id"),                     ni_user_f("", NUF_NDA | NUF_SL | NUFW(2))},
 	[NI_TRN_NAME]           = {ni_json_k("name"),                   ni_user_v("", NUF_NDA | NUF_SL, NULL, "")},
 	[NI_MOD_IDENT]          = {ni_json_k("identifier"),             ni_user_l("Module identifier")},
