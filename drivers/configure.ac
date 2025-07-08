@@ -409,12 +409,23 @@ KERNEL_TRY_COMPILE([[
 #include <net/xdp_sock_drv.h>
 void test(void);
 void test(void) { 
-		struct bpf_redirect_info *ri;
-		ri = bpf_net_ctx_get_ri();
-	}
+	struct bpf_redirect_info *ri;
+	ri = bpf_net_ctx_get_ri();
+}
 ]],
 [AC_MSG_CHECKING([whether kernel has bpf_net_ctx_get_ri])],
 [AC_DEFINE([CONFIG_HAVE_BPF_NET_CTX_GET_RI], [1], [Define if kernel has bpf_net_ctx_get_ri]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
+KERNEL_TRY_COMPILE([[
+#include <net/xdp_sock_drv.h>
+void test(void);
+void test(void) { 
+	xsk_buff_add_frag(NULL);
+}
+]],
+[AC_MSG_CHECKING([whether kernel has one arg xsk_buff_add_frag])],
+[AC_DEFINE([CONFIG_HAVE_ONE_ARG_XSK_BUFF_ADD_FRAG], [1], [Define if kernel has one arg xsk_buff_add_frag]) AC_MSG_RESULT([yes])],
 [AC_MSG_RESULT([no])])
 
 # wait for the jobs to finnish, remove file used for locking if it exists

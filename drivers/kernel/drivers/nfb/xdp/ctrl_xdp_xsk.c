@@ -343,6 +343,9 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 	struct xdp_buff *frag;
 	const u32 frame_size = xsk_pool_get_rx_frame_size(ctrl->rx.xsk.pool);
 #endif
+#ifndef CONFIG_HAVE_ONE_ARG_XSK_BUFF_ADD_FRAG
+	struct xdp_buff_xsk *xsk_struct;
+#endif
 
 	// Fill the card with empty buffers
 	while (nfb_xctrl_rx_fill_xsk(ctrl))
@@ -394,7 +397,7 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 			xsk_buff_dma_sync_for_cpu(frag);	
 #else
 			xsk_buff_dma_sync_for_cpu(frag, ctrl->rx.xsk.pool);
-#endif
+#endif // CONFIG_HAVE_ONE_ARG_XSK_BUFF_DMA_SYNC
 			if (len_remain > frame_size) { // Not last fragment
 				xsk_buff_set_size(frag, frame_size);
 				len_remain -= frame_size;
@@ -402,9 +405,17 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 				xsk_buff_set_size(frag, len_remain);
 				len_remain -= len_remain;
 			}
+#ifdef CONFIG_HAVE_ONE_ARG_XSK_BUFF_ADD_FRAG
 			xsk_buff_add_frag(frag);
+#else
+			// Revert the behavior of xsk_buff_add_frag to not touch the shared info struct (pre 6.14)
+			// This saves 384 bytes in each AF_XDP frame for AFAIK no sideeffects
+			// This also allows to defer setup needed for the creation of skb to the last moment
+			xsk_struct = container_of(frag, struct xdp_buff_xsk, xdp);
+			list_add_tail(&xsk_struct->list_node, &xsk_struct->pool->xskb_list);
+#endif // CONFIG_HAVE_ONE_ARG_XSK_BUFF_ADD_FRAG
 		}
-#endif
+#endif // CONFIG_HAVE_XDP_SG
 
 		nfb_xctrl_handle_xsk(ethdev->prog, head, rxq);
 	}
