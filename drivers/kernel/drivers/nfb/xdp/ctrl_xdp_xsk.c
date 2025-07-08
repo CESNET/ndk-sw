@@ -45,7 +45,11 @@ static inline int nfb_xctrl_rexmit_xsk(struct xctrl *ctrl, struct xsk_buff_pool 
 			frags[n_frags]->data_end = frags[n_frags]->data + len;
 		}
 		++n_frags;
+#ifdef CONFIG_HAVE_AF_XDP_SG
 	} while((frags[n_frags] = xsk_buff_get_frag(xdp)));
+#else 
+	} while(false);
+#endif
 
 	spin_lock(&ctrl->tx.tx_lock);
 	{
@@ -93,8 +97,8 @@ static inline int nfb_xctrl_rexmit_xsk(struct xctrl *ctrl, struct xsk_buff_pool 
 
 		// Update ctrl
 		ctrl->c.sdp = sdp;
-out:
 	}
+out:
 	spin_unlock(&ctrl->tx.tx_lock);
 	return ret;
 }
@@ -136,8 +140,12 @@ static inline int nfb_xctrl_rx_fill_xsk(struct xctrl *ctrl)
 	u32 free_desc, free_buffs;
 	u32 real_count, filled;
 
+#ifdef CONFIG_HAVE_AF_XDP_SG
 	// TODO: check if there is a better way to know if SG was enabled in the userspace AF_XDP
 	bool sg_enabled	= pool->umem->flags & XDP_UMEM_SG_FLAG;
+#else
+	const bool sg_enabled = false;
+#endif
 
 	// Check if refill needed
 	nc_ndp_ctrl_hdp_update(&ctrl->c);
@@ -192,9 +200,13 @@ static inline struct sk_buff *nfb_napi_build_skb_from_xsk(struct xdp_buff *xdp, 
 
 	frags[0] = xdp; // First frag
 	len = xdp->data_end - xdp->data;
+#ifdef CONFIG_HAVE_AF_XDP_SG
 	for (n_frags = 1; (frags[n_frags] = xsk_buff_get_frag(xdp)); n_frags++) {
 		len += frags[n_frags]->data_end - frags[n_frags]->data;
 	}
+#else
+	n_frags = 1;
+#endif
 
 	// Alloc skb
 	skb = napi_alloc_skb(napi, len);
@@ -234,8 +246,8 @@ static inline void nfb_xctrl_handle_xsk(struct bpf_prog *prog, struct xdp_buff *
 
 	// Non zero copy redirect not supported with AF_XDP_SG as of (6.15)
 	// xdp_do_redirect calls xdp_convert_zc_to_xdp_frame which can only copy one page of data
-	struct bpf_redirect_info *ri = bpf_net_ctx_get_ri();
-	enum bpf_map_type map_type = ri->map_type;
+	struct bpf_redirect_info *ri;
+	enum bpf_map_type map_type;
 
 	rcu_read_lock();
 	xdp_prog = rcu_dereference(prog);
@@ -276,7 +288,11 @@ static inline void nfb_xctrl_handle_xsk(struct bpf_prog *prog, struct xdp_buff *
 	case XDP_REDIRECT:
 		// Non zero copy redirect not supported with AF_XDP_SG as of (6.15)
 		// xdp_do_redirect calls xdp_convert_zc_to_xdp_frame which can only copy one page of data
+#ifdef CONFIG_HAVE_BPF_NET_CTX_GET_RI
 		ri = bpf_net_ctx_get_ri();
+#else
+		ri = this_cpu_ptr(&bpf_redirect_info);
+#endif
 		map_type = ri->map_type;
 		if (unlikely(map_type != BPF_MAP_TYPE_XSKMAP)) {
 			printk(KERN_ERR "nfb: Only redirect to userspace supported in AF_XDP mode, dropping packet.\n");
@@ -313,8 +329,6 @@ static inline void xsk_buff_set_size(struct xdp_buff *xdp, u32 size)
 static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_ethdev *ethdev, struct nfb_xdp_queue *rxq, struct napi_struct *napi)
 {
 	u32 len_remain;
-	struct xdp_buff *head;
-	struct xdp_buff *frag;
 	struct nc_ndp_hdr *hdrs = ctrl->rx.hdr_buffer_cpu;
 	struct nc_ndp_hdr *hdr;
 	u32 i;
@@ -323,7 +337,12 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 	const u32 mhp = ctrl->c.mhp;
 	u32 pbp = ctrl->rx.pbp;
 	const u32 mbp = ctrl->rx.mbp;
+
+	struct xdp_buff *head;
+#ifdef CONFIG_HAVE_XDP_SG
+	struct xdp_buff *frag;
 	const u32 frame_size = xsk_pool_get_rx_frame_size(ctrl->rx.xsk.pool);
+#endif
 
 	// Fill the card with empty buffers
 	while (nfb_xctrl_rx_fill_xsk(ctrl))
@@ -351,16 +370,22 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 #else
 		xsk_buff_dma_sync_for_cpu(head, ctrl->rx.xsk.pool);
 #endif
+
+#ifndef CONFIG_HAVE_XDP_SG
+		if (false) {
+#else
 		// Process head
 		if (len_remain > frame_size) { // Is fragmented
 			xsk_buff_set_size(head, frame_size);
 			len_remain -= frame_size;
 			xdp_buff_set_frags_flag(head);
+#endif
 		} else { // Not fragmented
 			xsk_buff_set_size(head, len_remain);
 			len_remain -= len_remain;
 		}
-	
+
+#ifdef CONFIG_HAVE_XDP_SG
 		// Process frags
 		while(len_remain) {
 			frag = ctrl->rx.xsk.xdp_ring[pbp];
@@ -368,7 +393,7 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 #ifdef CONFIG_HAVE_ONE_ARG_XSK_BUFF_DMA_SYNC
 			xsk_buff_dma_sync_for_cpu(frag);	
 #else
-			xsk_buff_dma_sync_for_cpu(buff_curr, ctrl->rx.xsk.pool);
+			xsk_buff_dma_sync_for_cpu(frag, ctrl->rx.xsk.pool);
 #endif
 			if (len_remain > frame_size) { // Not last fragment
 				xsk_buff_set_size(frag, frame_size);
@@ -379,6 +404,7 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 			}
 			xsk_buff_add_frag(frag);
 		}
+#endif
 
 		nfb_xctrl_handle_xsk(ethdev->prog, head, rxq);
 	}
@@ -488,7 +514,11 @@ int nfb_xctrl_napi_poll_tx_xsk(struct napi_struct *napi, int budget)
 			}
 
 			ctrl->tx.buffers[sdp].type = NFB_XCTRL_BUFF_XSK;
+#ifndef CONFIG_HAVE_AF_XDP_SG
+			if(true) {
+#else
 			if(xsk_is_eop_desc(&buffs[i])) { // Last part of the packet
+#endif
 				descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
 			} else { // Another fragment incomming
 				descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 1);

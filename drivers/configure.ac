@@ -384,6 +384,39 @@ void test(void) {xsk_buff_dma_sync_for_cpu(NULL);}
 [AC_DEFINE([CONFIG_HAVE_ONE_ARG_XSK_BUFF_DMA_SYNC], [1], [Define if kernel has httimer_setup]) AC_MSG_RESULT([yes])],
 [AC_MSG_RESULT([no])])
 
+KERNEL_TRY_COMPILE([[
+#include <net/xdp_sock_drv.h>
+void test(void);
+void test(void) {u32 flag = NETDEV_XDP_ACT_RX_SG;
+printk("%u", flag);}
+]],
+[AC_MSG_CHECKING([whether kernel supports basic XDP SG])],
+[AC_DEFINE([CONFIG_HAVE_XDP_SG], [1], [Define if kernel supports basic XDP SG]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
+KERNEL_TRY_COMPILE([[
+#include <net/xdp_sock_drv.h>
+void test(void);
+void test(void) {
+	struct net_device netdev;
+	netdev.xdp_zc_max_segs = 42;}
+]],
+[AC_MSG_CHECKING([whether kernel supports AF_XDP SG])],
+[AC_DEFINE([CONFIG_HAVE_AF_XDP_SG], [1], [Define if kernel supports AF_XDP SG]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
+KERNEL_TRY_COMPILE([[
+#include <net/xdp_sock_drv.h>
+void test(void);
+void test(void) { 
+		struct bpf_redirect_info *ri;
+		ri = bpf_net_ctx_get_ri();
+	}
+]],
+[AC_MSG_CHECKING([whether kernel has bpf_net_ctx_get_ri])],
+[AC_DEFINE([CONFIG_HAVE_BPF_NET_CTX_GET_RI], [1], [Define if kernel has bpf_net_ctx_get_ri]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
 # wait for the jobs to finnish, remove file used for locking if it exists
 wait
 rm -rf flock_lockfile >/dev/null 2>/dev/null

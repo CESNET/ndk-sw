@@ -165,7 +165,11 @@ static inline int nfb_xctrl_tx_submit_frame_needs_lock(struct xctrl *ctrl, struc
 	ctrl->tx.buffers[sdp].len = len;
 	descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
 
+#ifndef CONFIG_HAVE_XDP_SG
+	if (true) { // Single buffer
+#else 
 	if (!xdp_frame_has_frags(frame)) { // Single buffer
+#endif
 		descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 0);
 	} else { // Multi buffer
 		descs[sdp] = nc_ndp_tx_desc2(dma, len, 0, 1);

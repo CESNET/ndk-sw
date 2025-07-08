@@ -104,10 +104,13 @@ static inline int nfb_xctrl_rx_fill_pp(struct xctrl *ctrl)
 		// Init the buffer
 		xdp_init_buff(ctrl->rx.pp.xdp_ring[fbp], PAGE_SIZE, &ctrl->rx.rxq_info);
 		xdp_prepare_buff(ctrl->rx.pp.xdp_ring[fbp], page_to_virt(page), XDP_PACKET_HEADROOM, 0, false);
-		xdp_buff_clear_frags_flag(ctrl->rx.pp.xdp_ring[fbp]);
 		xdp_get_shared_info_from_buff(ctrl->rx.pp.xdp_ring[fbp])->nr_frags = 0;
-
+#ifdef CONFIG_HAVE_XDP_SG
+		xdp_buff_clear_frags_flag(ctrl->rx.pp.xdp_ring[fbp]);
 		descs[sdp] = nc_ndp_rx_desc2(dma, NFB_PP_MAX_FRAME_LEN, 1);
+#else
+		descs[sdp] = nc_ndp_rx_desc2(dma, NFB_PP_MAX_FRAME_LEN, 0);
+#endif
 		sdp = (sdp + 1) & mdp;
 		fbp = (fbp + 1) & mbp;
 		free_desc--;
@@ -209,8 +212,10 @@ static inline u16 nfb_xctrl_rx_pp(struct xctrl *ctrl, u16 nb_pkts, struct nfb_et
 	const u32 mbp = ctrl->rx.mbp;
 
 	struct xdp_buff *head;
+#ifdef CONFIG_HAVE_XDP_SG
 	struct xdp_buff *frag;
 	struct skb_shared_info *sinfo;
+#endif
 
 	// Fill the card with empty buffers
 	while (nfb_xctrl_rx_fill_pp(ctrl))
@@ -236,17 +241,22 @@ static inline u16 nfb_xctrl_rx_pp(struct xctrl *ctrl, u16 nb_pkts, struct nfb_et
 		dma_sync_single_for_cpu(ctrl->dma_dev, page_pool_get_dma_addr(virt_to_page(head->data_hard_start)), PAGE_SIZE, DMA_BIDIRECTIONAL);
 
 		// Process head
+#ifndef CONFIG_HAVE_XDP_SG
+		if (false) {
+#else
 		if (len_remain > NFB_PP_MAX_FRAME_LEN) { // Is fragmented
 			head->data_end = head->data + NFB_PP_MAX_FRAME_LEN;
 			len_remain -= NFB_PP_MAX_FRAME_LEN;
 			xdp_buff_set_frags_flag(head);
 			sinfo = xdp_get_shared_info_from_buff(head);
 			sinfo->xdp_frags_size = len_remain;
+#endif
 		} else { // Not fragmented
 			head->data_end = head->data + len_remain;
 			len_remain -= len_remain;
 		}
 
+#ifdef CONFIG_HAVE_XDP_SG
 		// Process frags
 		while (len_remain) {
 			frag = ctrl->rx.pp.xdp_ring[pbp];
@@ -260,6 +270,7 @@ static inline u16 nfb_xctrl_rx_pp(struct xctrl *ctrl, u16 nb_pkts, struct nfb_et
 				len_remain -= len_remain;
 			}
 		}
+#endif
 
 		nfb_xctrl_handle_pp(ethdev->prog, head, rxq, napi);
 	}

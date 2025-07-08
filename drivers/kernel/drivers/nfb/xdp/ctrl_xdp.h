@@ -19,7 +19,7 @@
 #define NFB_XDP_MTU_MIN 64
 #define NFB_XDP_MTU_MAX 16383
 // Default AF_XDP value, can be made larger or smaller
-#define NFB_MAX_AF_XDP_FRAGS CONFIG_MAX_SKB_FRAGS + 1
+#define NFB_MAX_AF_XDP_FRAGS MAX_SKB_FRAGS + 1
 
 #define NFB_XDP_CTRL_PACKET_BURST 64
 #define NFB_PP_MAX_FRAME_LEN  PAGE_SIZE - XDP_PACKET_HEADROOM - SKB_DATA_ALIGN(sizeof(struct skb_shared_info))

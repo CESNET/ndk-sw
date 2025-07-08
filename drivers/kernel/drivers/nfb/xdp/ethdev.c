@@ -122,7 +122,9 @@ static int nfb_start_channels(struct net_device *netdev)
 	xdp_set_features_flag(netdev, val);
 #endif
 	// Default value
+#ifdef CONFIG_HAVE_AF_XDP_SG
 	netdev->xdp_zc_max_segs = NFB_MAX_AF_XDP_FRAGS;
+#endif
 	netdev->min_mtu = NFB_XDP_MTU_MIN;
 	netdev->max_mtu = NFB_XDP_MTU_MAX;
 	netdev->mtu = NFB_XDP_MTU_MAX;
