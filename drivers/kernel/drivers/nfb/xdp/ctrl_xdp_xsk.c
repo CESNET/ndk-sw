@@ -339,13 +339,13 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 	const u32 mbp = ctrl->rx.mbp;
 
 	struct xdp_buff *head;
-#ifdef CONFIG_HAVE_XDP_SG
+#ifdef CONFIG_HAVE_AF_XDP_SG
 	struct xdp_buff *frag;
 	const u32 frame_size = xsk_pool_get_rx_frame_size(ctrl->rx.xsk.pool);
-#endif
 #ifndef CONFIG_HAVE_ONE_ARG_XSK_BUFF_ADD_FRAG
 	struct xdp_buff_xsk *xsk_struct;
-#endif
+#endif // CONFIG_HAVE_ONE_ARG_XSK_BUFF_ADD_FRAG
+#endif // CONFIG_HAVE_AF_XDP_SG
 
 	// Fill the card with empty buffers
 	while (nfb_xctrl_rx_fill_xsk(ctrl))
@@ -374,7 +374,7 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 		xsk_buff_dma_sync_for_cpu(head, ctrl->rx.xsk.pool);
 #endif
 
-#ifndef CONFIG_HAVE_XDP_SG
+#ifndef CONFIG_HAVE_AF_XDP_SG
 		if (false) {
 #else
 		// Process head
@@ -388,7 +388,7 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 			len_remain -= len_remain;
 		}
 
-#ifdef CONFIG_HAVE_XDP_SG
+#ifdef CONFIG_HAVE_AF_XDP_SG
 		// Process frags
 		while(len_remain) {
 			frag = ctrl->rx.xsk.xdp_ring[pbp];
@@ -415,7 +415,7 @@ static inline u16 nfb_xctrl_rx_xsk(struct xctrl *ctrl, u16 nb_pkts, struct nfb_e
 			list_add_tail(&xsk_struct->list_node, &xsk_struct->pool->xskb_list);
 #endif // CONFIG_HAVE_ONE_ARG_XSK_BUFF_ADD_FRAG
 		}
-#endif // CONFIG_HAVE_XDP_SG
+#endif // CONFIG_HAVE_AF_XDP_SG
 
 		nfb_xctrl_handle_xsk(ethdev->prog, head, rxq);
 	}
