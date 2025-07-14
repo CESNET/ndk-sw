@@ -1,3 +1,11 @@
+* Mon Jul 14 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.0-1
+- [FEATURE] drivers: add XDP driver (needs to be enabled in configure)
+- [FEATURE] tools: add XDP example tools (xdp-read, xdp-generate)
+- [FEATURE] tools: add JSON output to nfb-info, nfb-dma, nfb-eth
+- [FEATURE] nfb-eth: add items for RxMAC-v3 statistic counters
+- [FIX] card FB2CGHH (Tivoli): - force switch flash before FPGA reload
+- [MAINTENANCE] nfb-eth: rename and unify labels for statistic counters in nfb-eth
+
 * Mon Jun 9 2025 Martin Spinler <spinler@cesnet.cz> - 6.27.0-1
 - [FEATURE]: add I2C / QSFP support for BittWare BMC (ia-440i)
 - [FEATURE] nfb-dma/driver: add dynamic netdev management for ndp_netdev
