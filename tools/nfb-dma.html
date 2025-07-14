@@ -81,6 +81,15 @@
 <li class="toctree-l1"><a class="reference internal" href="../driver/modules.html">Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../driver/userspace.html">Userspace access</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">XDP submodule</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html">XDP submodule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#how-to-enable">How to enable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#how-to-test">How to test</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#basic-xdp-vs-af-xdp-xdp-zero-copy-mode-overview">Basic XDP vs AF_XDP / XDP zero-copy mode overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#xdp-quickstart">XDP quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#af-xdp-quickstart">AF_XDP quickstart</a></li>
+</ul>
 
         </div>
       </div>
@@ -113,6 +122,91 @@
 <p>For the RX direction (C2H transfers) it is typically number of received and discarded packets and bytes.
 For the TX direction (H2C transfers) it is typically only number of transmitted packets and bytes.</p>
 <p>Verbose mode shows the extended info that includes SW/HW pointers and status information about queue.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;rxq&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;CALYPTE&quot;</span><span class="p">,</span>          <span class="c1"># DMA controller type (CALYPTE, NDP, SZE)</span>
+            <span class="s2">&quot;pass&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;pass_bytes&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>            <span class="c1"># not present for type SZE</span>
+            <span class="s2">&quot;drop&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;drop_bytes&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>            <span class="c1"># not present for type SZE</span>
+
+            <span class="c1"># items below present only in verbose mode</span>
+            <span class="s2">&quot;reg_control&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>               <span class="c1"># controller is commanded to work</span>
+            <span class="s2">&quot;reg_status&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;running&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>           <span class="c1"># controler is working</span>
+
+            <span class="c1"># items below present only in verbose mode for type CALYPTE or NDP</span>
+            <span class="s2">&quot;sdp&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>                   <span class="c1"># software descriptor pointer</span>
+            <span class="s2">&quot;hdp&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>                   <span class="c1"># hardware descriptor pointer</span>
+            <span class="s2">&quot;mdp&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>                   <span class="c1"># mask for descriptor pointer</span>
+            <span class="s2">&quot;desc_buffer_size&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>      <span class="c1"># descriptor buffer size (in items)</span>
+            <span class="s2">&quot;desc_free&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>             <span class="c1"># free items in descriptor buffer</span>
+            <span class="s2">&quot;shp&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>                   <span class="c1"># software header pointer</span>
+            <span class="s2">&quot;hhp&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>                   <span class="c1"># hardware header pointer</span>
+            <span class="s2">&quot;mhp&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>                   <span class="c1"># mask for header pointer</span>
+            <span class="s2">&quot;hdr_buffer_size&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>       <span class="c1"># header buffer size (in items)</span>
+            <span class="s2">&quot;hdr_buffer_free&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>       <span class="c1"># free items in header buffer</span>
+
+            <span class="c1"># items below present only in verbose mode for type NDP</span>
+            <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="mi">16384</span>
+
+            <span class="c1"># items below present only in verbose mode for type SZE</span>
+            <span class="s2">&quot;pciep_mask&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;vfid&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;sw_ptr&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;hw_ptr&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;ptr_mask&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;buffer_size&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;max_request_size&quot;</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;txq&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;CALYPTE&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pass&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;pass_bytes&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>            <span class="c1"># not present for type SZE</span>
+            <span class="s2">&quot;drop&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>                  <span class="c1"># present only for type CALYPTE</span>
+            <span class="s2">&quot;drop_bytes&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>            <span class="c1"># present only for type CALYPTE</span>
+
+            <span class="c1"># items below present only in verbose mode</span>
+            <span class="s2">&quot;reg_control&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;reg_status&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;running&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+
+            <span class="c1"># items below present only in verbose mode for type CALYPTE or NDP</span>
+            <span class="s2">&quot;sdp&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;hdp&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;mdp&quot;</span><span class="p">:</span> <span class="mi">8191</span><span class="p">,</span>
+            <span class="s2">&quot;desc_buffer_size&quot;</span><span class="p">:</span> <span class="mi">8192</span><span class="p">,</span>
+            <span class="s2">&quot;desc_free&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+
+            <span class="c1"># items below present only in verbose mode for type CALYPTE</span>
+            <span class="s2">&quot;shp&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;hhp&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;mhp&quot;</span><span class="p">:</span> <span class="mi">1023</span><span class="p">,</span>
+            <span class="s2">&quot;hdr_buffer_size&quot;</span><span class="p">:</span> <span class="mi">1024</span><span class="p">,</span>
+            <span class="s2">&quot;hdr_buffer_free&quot;</span><span class="p">:</span> <span class="mi">1023</span><span class="p">,</span>
+
+            <span class="c1"># items below present only in verbose mode for type SZE</span>
+            <span class="s2">&quot;pciep_mask&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;vfid&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;sw_ptr&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;hw_ptr&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;ptr_mask&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;buffer_size&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;max_request_size&quot;</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 </section>
 
 

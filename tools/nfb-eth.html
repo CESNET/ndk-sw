@@ -58,6 +58,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#mac-section">MAC section</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pma-pcs-section">PMA/PCS section</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#transceiver-section">Transceiver section</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#json-output">JSON output</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="nfb-mdio.html">nfb-mdio</a></li>
@@ -85,6 +86,15 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../driver/modules.html">Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../driver/userspace.html">Userspace access</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">XDP submodule</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html">XDP submodule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#how-to-enable">How to enable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#how-to-test">How to test</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#basic-xdp-vs-af-xdp-xdp-zero-copy-mode-overview">Basic XDP vs AF_XDP / XDP zero-copy mode overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#xdp-quickstart">XDP quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#af-xdp-quickstart">AF_XDP quickstart</a></li>
 </ul>
 
         </div>
@@ -146,6 +156,178 @@ However the feature can be activated and deactivated with <em>+</em> or <em>-</e
 <h2>Transceiver section<a class="headerlink" href="#transceiver-section" title="Link to this heading"></a></h2>
 <p>Prints transceiver information (if plugged) obtained from port management interface (MDIO or I2C),
 including vendor, compliance, temperature, signal strength and more.</p>
+</section>
+<section id="json-output">
+<h2>JSON output<a class="headerlink" href="#json-output" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;eth&quot;</span><span class="p">:</span> <span class="p">{</span>                                <span class="c1"># list of selected/all Ethernet channels</span>
+        <span class="p">[</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>                        <span class="c1"># ID of this ethernet channel in firmware</span>
+           <span class="c1">#&quot;speed&quot;: 100000,                # speed (in Mbps)</span>
+            <span class="s2">&quot;speed_str&quot;</span><span class="p">:</span> <span class="s2">&quot;100 Gb/s&quot;</span><span class="p">,</span>        <span class="c1"># speed (string)</span>
+            <span class="s2">&quot;transceiver_id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>            <span class="c1"># ID of used transceiver (cage)</span>
+            <span class="s2">&quot;transceiver_lanes&quot;</span><span class="p">:</span> <span class="p">[</span>          <span class="c1"># list of electrical lane numbers used in transceiver for this Ethernet channel</span>
+                <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span>
+            <span class="p">],</span>
+
+            <span class="s2">&quot;rxmac&quot;</span><span class="p">:</span> <span class="p">{</span>                      <span class="c1"># processing unit for incoming frames; only present for nfb-eth tool in RxMAC or MAC mode</span>
+                <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>           <span class="c1"># receive enablement</span>
+                <span class="s2">&quot;link_up&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>           <span class="c1"># link is estabilished for receive</span>
+                <span class="s2">&quot;stats&quot;</span><span class="p">:</span> <span class="p">{</span>                  <span class="c1"># base statistics</span>
+                    <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>             <span class="c1"># total number of frames received from Ethernet (including bad frames)</span>
+                    <span class="s2">&quot;total_octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>      <span class="c1"># total number of octets received from Ethernet (including bad frames)</span>
+                    <span class="s2">&quot;pass&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>              <span class="c1"># number of frames passed to firmware application</span>
+                    <span class="s2">&quot;pass_octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>       <span class="c1"># number of octets passed to firmware application</span>
+                    <span class="s2">&quot;drop&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>              <span class="c1"># number of dropped frames (drop == total - pass)</span>
+                    <span class="s2">&quot;drop_disabled&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>     <span class="c1"># number of frames dropped due to disabled RxMAC state</span>
+                    <span class="s2">&quot;drop_filtered&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>     <span class="c1"># ... due to MAC address filter</span>
+                    <span class="s2">&quot;drop_overflow&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>     <span class="c1"># ... due to backpressure from firmwarove application (incl. backpressure from DMA)</span>
+                    <span class="s2">&quot;drop_err&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>          <span class="c1"># ... due to one or more errors (drop_err &lt;= drop_err_len + drop_err_crc + drop_err_mii)</span>
+                    <span class="s2">&quot;drop_err_len&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>      <span class="c1"># ... due to frame length out of configured range</span>
+                    <span class="s2">&quot;drop_err_crc&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>      <span class="c1"># ... due to cyclic redundancy check error</span>
+                    <span class="s2">&quot;drop_err_mii&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>      <span class="c1"># ... due to bad framing on MII</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;etherstats&quot;</span><span class="p">:</span> <span class="p">{</span>             <span class="c1"># extended stats based on RFC 1271; only present for nfb-eth tool in etherStats mode</span>
+                    <span class="s2">&quot;octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>            <span class="c1"># = rxmac.stats.total_octets</span>
+                    <span class="s2">&quot;pkts&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>              <span class="c1"># = rxmac.stats.total</span>
+                    <span class="s2">&quot;broadcast&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;multicast&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;crc_align_errors&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;under64&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>           <span class="c1"># RFC 1271 name: &quot;etherStatsUndersize&quot;</span>
+                    <span class="s2">&quot;over1518&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>          <span class="c1"># RFC 1271 name: &quot;etherStatsOversize&quot;</span>
+                    <span class="s2">&quot;fragments&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;jabbers&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;pkts64octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;pkts65to127octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;pkts128to255octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;pkts256to511octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;pkts512to1023octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;pkts1024to1518octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;pkts1519to2047octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;pkts2048to4095octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;pkts4096to8191octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;oversize&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>          <span class="c1"># number of frames with length over last bin resolution (not RFC 1271 name &quot;oversize&quot;)</span>
+                    <span class="s2">&quot;conf_undersize&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>    <span class="c1"># number of frames shorter than minimal configured length (rxmac.config.min_length)</span>
+                    <span class="s2">&quot;conf_oversize&quot;</span><span class="p">:</span> <span class="mi">0</span>      <span class="c1"># number of frames longer than maximal configured length (rxmac.config.max_length)</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;err_mask_frame_err&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>     <span class="c1"># enable drop due to framing error</span>
+                    <span class="s2">&quot;err_mask_crc_check&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>     <span class="c1"># enable drop due to cyclic redundancy check error</span>
+                    <span class="s2">&quot;err_mask_min_length&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>    <span class="c1"># enable drop due to frame length shorter than minimal configured length</span>
+                    <span class="s2">&quot;err_mask_max_length&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>    <span class="c1"># enable drop due to frame length shorter than maximal configured length</span>
+                    <span class="s2">&quot;err_mask_mac_addr_check&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span><span class="c1"># enable drop due to MAC address filter</span>
+                    <span class="s2">&quot;err_mask_mac_addr_mode&quot;</span><span class="p">:</span> <span class="s2">&quot;promiscuous&quot;</span><span class="p">,</span> <span class="c1"># MAC address filter mode (promiscuous, normal, broadcast, multicast)</span>
+                    <span class="s2">&quot;cfg_min_length&quot;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span>           <span class="c1"># configured minimal frame length</span>
+                    <span class="s2">&quot;cfg_max_length&quot;</span><span class="p">:</span> <span class="mi">1526</span><span class="p">,</span>         <span class="c1"># configured maximal frame length</span>
+                    <span class="s2">&quot;max_length_capable&quot;</span><span class="p">:</span> <span class="mi">4096</span><span class="p">,</span>     <span class="c1"># maximal frame length handled by this RxMAC (max_length_capable &gt;= max_length)</span>
+                    <span class="s2">&quot;mac_addr_count&quot;</span><span class="p">:</span> <span class="mi">16</span>            <span class="c1"># maximal number of configurable MAC addresses</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;txmac&quot;</span><span class="p">:</span> <span class="p">{</span>                      <span class="c1"># processing unit for outgoing frames; only present for nfb-eth tool in TxMAC or MAC mode</span>
+                <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>           <span class="c1"># transmit enablement</span>
+                <span class="s2">&quot;stats&quot;</span><span class="p">:</span> <span class="p">{</span>                  <span class="c1"># base statistics</span>
+                    <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>             <span class="c1"># total number of frames received from firmware application</span>
+                   <span class="c1">#&quot;total_octets&quot;: 0,      # total number of octets received from firmware application</span>
+                    <span class="s2">&quot;pass&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>              <span class="c1"># total number of sent frames on Ethernet</span>
+                    <span class="s2">&quot;pass_octets&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>       <span class="c1"># total number of sent octets on Ethernet</span>
+                    <span class="s2">&quot;drop&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>              <span class="c1"># total number of dropped frames</span>
+                    <span class="s2">&quot;drop_disabled&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>     <span class="c1"># total number of frames dropped due to disabled TxMAC state (txmac.disabled == True)</span>
+                    <span class="s2">&quot;drop_link_down&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>    <span class="c1"># ... due to not estabilished link</span>
+                   <span class="c1">#&quot;drop_err&quot;: 0,          # ... due to an error (currently: drop_err == drop_err_len)</span>
+                    <span class="s2">&quot;drop_err_len&quot;</span><span class="p">:</span> <span class="mi">0</span>       <span class="c1"># ... due to frame lenght out of range</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;pma&quot;</span><span class="p">:</span> <span class="p">{</span>                        <span class="c1"># physical medium attachment; only present for nfb-eth tool in PCS/PMA mode</span>
+                <span class="s2">&quot;link_status_latch&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># PMA link is estabilished all the time from previous status read</span>
+                <span class="s2">&quot;link_status&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>        <span class="c1"># PMA link is estabilished</span>
+                <span class="s2">&quot;speed_str&quot;</span><span class="p">:</span> <span class="s2">&quot;100 Gb/s&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;transmit_fault&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;receive_fault&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;100GBASE-LR4&quot;</span><span class="p">,</span>     <span class="c1"># current link mode</span>
+                <span class="s2">&quot;available_types&quot;</span><span class="p">:</span> <span class="p">[</span>        <span class="c1"># list of all link modes supported in firmware</span>
+                    <span class="s2">&quot;100GBASE-SR4&quot;</span><span class="p">,</span>
+                    <span class="o">...</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;available_features&quot;</span><span class="p">:</span> <span class="p">[</span>     <span class="c1"># list of all features supported in firmware</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;PMA local loopback&quot;</span>
+                    <span class="p">},</span>
+                    <span class="o">...</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;rsfec&quot;</span><span class="p">:</span> <span class="p">{</span>                      <span class="c1"># Reed-Solomon Forward Error Correction; only present for nfb-eth tool in PCS/PMA mode and for PMA type 100GBASE-SR4 or similar (clause 91 and 108)</span>
+                <span class="s2">&quot;high_ser&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;lanes_aligned&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;pcs_lanes_aligned&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;corrected_cws&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;uncorrected_cws&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;symbol_errors&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="mi">0</span><span class="p">,</span>
+                    <span class="o">...</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;lane_map&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="mi">0</span><span class="p">,</span>
+                    <span class="o">...</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;am_lock&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="kc">False</span><span class="p">,</span>
+                    <span class="o">...</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;pcs&quot;</span><span class="p">:</span> <span class="p">{</span>                        <span class="c1"># physical coding sublayer; only present for nfb-eth tool in PCS/PMA mode</span>
+                <span class="s2">&quot;link_status_latch&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;link_status&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;speed_str&quot;</span><span class="p">:</span> <span class="s2">&quot;100 Gb/s&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;transmit_fault&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;receive_fault&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;available_features&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;PCS reverse loopback&quot;</span>
+                    <span class="p">}</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;global_block_lock_latch&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;global_block_lock&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;global_high_ber_latch&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;global_high_ber&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;ber_counter&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;error_blocks&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;lanes_aligned&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;block_lock&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="kc">False</span><span class="p">,</span>
+                    <span class="o">...</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;am_lock&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="kc">False</span><span class="p">,</span>
+                    <span class="o">...</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;lane_map&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="mi">0</span><span class="p">,</span>
+                    <span class="o">...</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;bip_error_counters&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="mi">0</span><span class="p">,</span>
+                    <span class="o">...</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;rsfec_cl119&quot;</span><span class="p">:</span> <span class="p">{</span>                  <span class="c1"># Reed-Solomon Forward Error Correction; only present for nfb-eth tool in PCS/PMA mode and for PMA type 200/400G or similar (clause 119)</span>
+                    <span class="s2">&quot;high_ser&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;degraded_ser&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;remote_degraded_ser&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;local_degraded_ser&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;corrected_cws&quot;</span><span class="p">:</span> <span class="mi">19063599</span><span class="p">,</span>
+                    <span class="s2">&quot;uncorrected_cws&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;symbol_errors&quot;</span><span class="p">:</span> <span class="p">[</span>
+                        <span class="mi">121928</span><span class="p">,</span>
+                        <span class="o">...</span>
+                    <span class="p">]</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 </section>
 </section>
 

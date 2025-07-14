@@ -1,0 +1,613 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XDP submodule &mdash; NFB Software User Guide 6.16.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8885e90a"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Userspace access to NFB Driver" href="userspace.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            NFB Software User Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/quickstart.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Common info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/nfb-tools.html">NFB tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/ndp-tools.html">NDP tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">libnfb reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-base.html">Base API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libnfb-api-ndp.html">NDP API reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python module</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../python/quick.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../python/reference.html">Module Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Linux driver</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="userspace.html">Userspace access</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">XDP submodule</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">XDP submodule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#how-to-enable">How to enable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#how-to-test">How to test</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#basic-xdp-vs-af-xdp-xdp-zero-copy-mode-overview">Basic XDP vs AF_XDP / XDP zero-copy mode overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#basic-xdp">Basic XDP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#af-xdp-xdp-zero-copy">AF_XDP / XDP zero-copy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#xdp-quickstart">XDP quickstart</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#xdp-return-actions">XDP return actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#xdp-attach-modes">XDP attach modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-most-simple-xdp-program">The most simple XDP program</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compiling-the-xdp-program">Compiling the XDP program</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#loading-the-xdp-program">Loading the XDP program</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#listing-the-interfaces-and-loaded-programs">Listing the interfaces and loaded programs:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loading-the-program-in-native-mode">Loading the program in native mode:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loading-the-program-in-generic-mode">Loading the program in generic mode:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unloading-the-program">Unloading the program:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#af-xdp-quickstart">AF_XDP quickstart</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-xdp-program">The XDP program</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-userspace-application">The userspace application</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#loading-the-program-putting-the-socket-reference-to-the-bpf-map-type-xskmap">Loading the program, putting the socket reference to the <code class="docutils literal notranslate"><span class="pre">BPF_MAP_TYPE_XSKMAP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-umem">Creating UMEM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#address-stack">Address stack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ndk-fpga-sysfs-interface">NDK FPGA sysfs interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-socket">Creating socket</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-main-loop">The main loop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#common-issues">Common issues</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#useful-links">Useful links</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#useful-af-xdp-enabled-apps">Useful AF_XDP enabled apps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#libxdp-readme">Libxdp README</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">NFB Software User Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">XDP submodule</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/driver/xdp.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="xdp-submodule">
+<h1>XDP submodule<a class="headerlink" href="#xdp-submodule" title="Link to this heading"></a></h1>
+<p>The NFB driver supports XDP as an alternative to NDP API and DPDK. The XDP submodule is under development, and the NFB driver doesn’t compile with it by default.</p>
+</section>
+<section id="how-to-enable">
+<h1>How to enable<a class="headerlink" href="#how-to-enable" title="Link to this heading"></a></h1>
+<p>In order to compile with the XDP submodule, the variable  <code class="docutils literal notranslate"><span class="pre">CONFIG_NFB_XDP</span> <span class="pre">=</span> <span class="pre">y</span></code> has to be set in <code class="docutils literal notranslate"><span class="pre">drivers/Makefile.conf</span></code>.</p>
+<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="c"># drivers/Makefile.conf</span>
+<span class="nv">CONFIG_MODULES</span><span class="w">      </span><span class="o">=</span><span class="w"> </span>y
+<span class="nv">CONFIG_NFB</span><span class="w">          </span><span class="o">=</span><span class="w"> </span>m
+<span class="nv">CONFIG_NFB_XVC</span><span class="w">      </span><span class="o">=</span><span class="w"> </span>m
+<span class="c"># uncomment to enable XDP functionality</span>
+<span class="hll"><span class="nv">CONFIG_NFB_XDP</span><span class="w">      </span><span class="o">=</span><span class="w"> </span>y
+</span></pre></div>
+</div>
+<p>Next, the driver needs to be configure-d and make-d</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>drivers<span class="p">;</span><span class="w"> </span>./configure<span class="p">;</span><span class="w"> </span>make<span class="p">;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>..
+</pre></div>
+</div>
+<p>Then, you enable the driver by setting the module parametr <code class="docutils literal notranslate"><span class="pre">xdp_enable=yes</span></code> when inserting the module.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>rmmod<span class="w"> </span>nfb
+$<span class="w"> </span>sudo<span class="w"> </span>insmod<span class="w"> </span>drivers/kernel/drivers/nfb/nfb.ko<span class="w"> </span><span class="nv">xdp_enable</span><span class="o">=</span>yes
+</pre></div>
+</div>
+<p>In order to see if the driver successfully initialized, check the system log.
+The <code class="docutils literal notranslate"><span class="pre">nfb_xdp:</span> <span class="pre">Successfully</span> <span class="pre">attached</span></code> message should be present. In case of errors, you can try rebooting the desing, by running <code class="docutils literal notranslate"><span class="pre">nfb-boot</span> <span class="pre">-F&lt;design</span> <span class="pre">slot</span> <span class="pre">number&gt;</span></code>.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>dmesg
+...
+<span class="o">[</span><span class="w"> </span><span class="m">4933</span>.960744<span class="o">]</span><span class="w"> </span>nfb<span class="w"> </span><span class="m">0000</span>:03:00.0:<span class="w"> </span>FDT<span class="w"> </span>loaded,<span class="w"> </span>size:<span class="w"> </span><span class="m">16384</span>,<span class="w"> </span>allocated<span class="w"> </span>buffer<span class="w"> </span>size:<span class="w"> </span><span class="m">65536</span>
+<span class="o">[</span><span class="w"> </span><span class="m">4933</span>.961000<span class="o">]</span><span class="w"> </span>nfb<span class="w"> </span><span class="m">0000</span>:03:00.0:<span class="w"> </span>unable<span class="w"> </span>to<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>MSI
+<span class="o">[</span><span class="w"> </span><span class="m">4933</span>.961311<span class="o">]</span><span class="w"> </span>nfb<span class="w"> </span><span class="m">0000</span>:03:00.0:<span class="w"> </span>nfb_mi:<span class="w"> </span>MI0<span class="w"> </span>on<span class="w"> </span>PCI0<span class="w"> </span>map:<span class="w"> </span>successfull
+<span class="o">[</span><span class="w"> </span><span class="m">4933</span>.964620<span class="o">]</span><span class="w"> </span>nfb<span class="w"> </span><span class="m">0000</span>:03:00.0:<span class="w"> </span>nfb_boot:<span class="w"> </span>Attached<span class="w"> </span>successfully
+<span class="o">[</span><span class="w"> </span><span class="m">4934</span>.024800<span class="o">]</span><span class="w"> </span>nfb<span class="w"> </span><span class="m">0000</span>:03:00.0:<span class="w"> </span>nfb_ndp:<span class="w"> </span>attached<span class="w"> </span>successfully
+<span class="o">[</span><span class="w"> </span><span class="m">4934</span>.024884<span class="o">]</span><span class="w"> </span>nfb<span class="w"> </span><span class="m">0000</span>:03:00.0:<span class="w"> </span>nfb_qdr:<span class="w"> </span>Attached<span class="w"> </span>successfully<span class="w"> </span><span class="o">(</span><span class="m">0</span><span class="w"> </span>QDR<span class="w"> </span>controllers<span class="o">)</span>
+<span class="hll"><span class="o">[</span><span class="w"> </span><span class="m">4934</span>.028473<span class="o">]</span><span class="w"> </span>nfb<span class="w"> </span><span class="m">0000</span>:03:00.0:<span class="w"> </span>nfb_xdp:<span class="w"> </span>Successfully<span class="w"> </span>attached
+</span><span class="o">[</span><span class="w"> </span><span class="m">4934</span>.028478<span class="o">]</span><span class="w"> </span>nfb<span class="w"> </span><span class="m">0000</span>:03:00.0:<span class="w"> </span>successfully<span class="w"> </span>initialized
+<span class="o">[</span><span class="w"> </span><span class="m">4934</span>.028685<span class="o">]</span><span class="w"> </span>pcieport<span class="w"> </span><span class="m">0000</span>:00:02.0:<span class="w"> </span>restoring<span class="w"> </span>errors<span class="w"> </span>on<span class="w"> </span>PCI<span class="w"> </span>bridge
+<span class="o">[</span><span class="w"> </span><span class="m">4934</span>.028688<span class="o">]</span><span class="w"> </span>pcieport<span class="w"> </span><span class="m">0000</span>:00:02.0:<span class="w"> </span>firmware<span class="w"> </span>reload<span class="w"> </span><span class="k">done</span>
+...
+</pre></div>
+</div>
+<p>Lastly, you add the add the XDP netdev with the help of <code class="docutils literal notranslate"><span class="pre">nfb-dma</span></code> tool.</p>
+<p>To add a single XDP netdevice with all queues open</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>nfb-dma<span class="w"> </span>-N<span class="w"> </span>nfb_xdp<span class="w"> </span>add,id<span class="o">=</span><span class="m">1</span>
+</pre></div>
+</div>
+</section>
+<section id="how-to-test">
+<h1>How to test<a class="headerlink" href="#how-to-test" title="Link to this heading"></a></h1>
+</section>
+<section id="basic-xdp-vs-af-xdp-xdp-zero-copy-mode-overview">
+<h1>Basic XDP vs AF_XDP / XDP zero-copy mode overview<a class="headerlink" href="#basic-xdp-vs-af-xdp-xdp-zero-copy-mode-overview" title="Link to this heading"></a></h1>
+<section id="basic-xdp">
+<h2>Basic XDP<a class="headerlink" href="#basic-xdp" title="Link to this heading"></a></h2>
+<p>When the XDP driver is inserted, and the XDP network interfaces are created via <code class="docutils literal notranslate"><span class="pre">nfb-dma</span></code>, this starts up the queues on those network interfaces.</p>
+<p>In this mode, the driver acts as a usual network driver. When the XDP program is loaded onto the interface, the driver executes it on each received packet and handles the result accordingly.</p>
+<p>The driver in this mode allocates its own memory for the packet buffers using Page Pool API.</p>
+<p><strong>This mode only expands the basic network driver functionality by running the XDP program.</strong></p>
+</section>
+<section id="af-xdp-xdp-zero-copy">
+<h2>AF_XDP / XDP zero-copy<a class="headerlink" href="#af-xdp-xdp-zero-copy" title="Link to this heading"></a></h2>
+<p>AF_XDP mode requires a specialized userspace app. This app allocates the memory block used for XDP buffers called UMEM and four XDP descriptor rings to go with it.
+The app then registers those objects with the system through system calls. The app opens the AF_XDP socket.</p>
+<p>For an AF_XDP application to work, the XDP program has to be loaded into the kernel. This is usually done from the C code as a part of the app initialization process. The XDP program will work in tandem with the app in the userspace.
+The main purpose of this XDP program is to return an XDP_REDIRECT action onto the AF_XDP socket opened by the userspace application.
+The reference to the socket is passed to the XDP program from the userspace by using an eBPF map of type BPF_MAP_TYPE_XSKMAP.</p>
+<p>For a more complete explanation, please refer to the docs: <a class="reference external" href="https://docs.kernel.org/networking/af_xdp.html">https://docs.kernel.org/networking/af_xdp.html</a></p>
+<ul class="simple">
+<li><p>These steps are usually done indirectly by using some helper library like <code class="docutils literal notranslate"><span class="pre">libxdp</span></code>.</p></li>
+</ul>
+<p>The driver then has to switch the network channel (AF_XDP works with RX/TX queue pairs) chosen by the userspace application to AF_XDP mode.
+This is done on the fly, and it basically means stopping the DMA channel, mapping the memory from the userspace, and starting the DMA channel again.</p>
+<p>In this mode, the driver works with memory allocated by userspace, and the userspace app has exclusive control over the network channel it works with.</p>
+<p>When the AF_XDP socket is closed, the channel is switched back to the normal XDP mode.</p>
+<p><strong>While running in this mode, the true zero-copy operation is achieved as long as the XDP program passes the packets to the userspace through AF_XDP socket.
+XDP actions other than XDP_REDIRECT to userspace will be handled by copying.</strong></p>
+</section>
+</section>
+<section id="xdp-quickstart">
+<h1>XDP quickstart<a class="headerlink" href="#xdp-quickstart" title="Link to this heading"></a></h1>
+<p>This section tells the bare minimum someone needs to know to compile and load an XDP program onto the interface.</p>
+<section id="xdp-return-actions">
+<h2>XDP return actions<a class="headerlink" href="#xdp-return-actions" title="Link to this heading"></a></h2>
+<p>The XDP program returns an XDP action for each received packet. Those actions are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>XDP_PASS - passes the packet to the network stack</dt><dd><ul>
+<li><p>Copy for XDP and AF_XDP</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>XDP_TX - transmits the packet from the same interface it was received on</dt><dd><ul>
+<li><p>zero-copy with XDP</p></li>
+<li><p>Copy for AF_XDP (the correct way to do this is through redirect to the userspace app)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>XDP_DROP - drops the packet</dt><dd><ul>
+<li><p>Recycles the buffer for XDP and AF_XDP</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>XDP_REDIRECT - redirects the packet</dt><dd><ul>
+<li><p>Onto network interface - copy</p></li>
+<li><p>To a different CPU - for load balancing purposes</p></li>
+<li><p><strong>To userspace - this is AF_XDP zero-copy operation</strong></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="xdp-attach-modes">
+<h2>XDP attach modes<a class="headerlink" href="#xdp-attach-modes" title="Link to this heading"></a></h2>
+<p>XDP program can be attached in different ways, <strong>this has performance implications</strong>.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Generic XDP (Generic mode, SKB mode) - The XDP program is run <strong>after</strong> driver passes the packet into the network stack.</dt><dd><p>This makes the XDP execution indifferent to driver support, but it means there will be little to no benefit to performance.
+- This mode should be used only for testing purposes</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Native XDP (Native mode) - The XDP program is run as a first thing on the receive path, and the driver handles the XDP actions.</dt><dd><ul>
+<li><p>This is what should be used and is the main goal of this XDP kernel module</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Offloaded XDP - The XDP program is loaded and executed on the network card.</dt><dd><ul>
+<li><p>This is not supported by the NDK</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>clang<span class="w"> </span>libbpf<span class="w"> </span>libbpf-devel<span class="w"> </span>libxdp<span class="w"> </span>libxdp-devel<span class="w"> </span>xdp-tools
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">clang</span></code> eBPF compiler is implemented as LLVM backend - clang is used on the front</p>
+<p><code class="docutils literal notranslate"><span class="pre">libbpf</span></code> Library for writing eBPF (XDP is a subset of eBPF) programs in C; <a class="reference external" href="https://github.com/libbpf/libbpf">https://github.com/libbpf/libbpf</a></p>
+<p><code class="docutils literal notranslate"><span class="pre">libxdp</span></code> Library that simplifies writing AF_XDP programs and contains helpers for attaching XDP programs to the interface; <a class="reference external" href="https://github.com/xdp-project/xdp-tools/blob/main/lib/libxdp/README.org">https://github.com/xdp-project/xdp-tools/blob/main/lib/libxdp/README.org</a></p>
+<p><code class="docutils literal notranslate"><span class="pre">xdp-tools</span></code> Collection of tools for loading and testing XDP programs</p>
+</section>
+<section id="the-most-simple-xdp-program">
+<h2>The most simple XDP program<a class="headerlink" href="#the-most-simple-xdp-program" title="Link to this heading"></a></h2>
+<p>A program that drops all packets</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/bpf.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;bpf/bpf_helpers.h&gt;</span>
+
+<span class="n">SEC</span><span class="p">(</span><span class="s">&quot;xdp_drop&quot;</span><span class="p">)</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">xdp_drop_prog</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">xdp_md</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">XDP_DROP</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="compiling-the-xdp-program">
+<h2>Compiling the XDP program<a class="headerlink" href="#compiling-the-xdp-program" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>clang<span class="w"> </span>-O2<span class="w"> </span>-g<span class="w"> </span>-Wall<span class="w"> </span>-target<span class="w"> </span>bpf<span class="w"> </span>-c<span class="w"> </span>xdp_drop.c<span class="w"> </span>-o<span class="w"> </span>xdp_drop.o
+</pre></div>
+</div>
+</section>
+<section id="loading-the-xdp-program">
+<h2>Loading the XDP program<a class="headerlink" href="#loading-the-xdp-program" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Easiest way is to use <code class="docutils literal notranslate"><span class="pre">xdp-loader</span></code> program, which comes as a part of <code class="docutils literal notranslate"><span class="pre">xdp-tools</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">libxdp</span></code> contains helper functions for loading XDP programs from C code and interacting with eBPF maps.</p></li>
+</ul>
+<section id="listing-the-interfaces-and-loaded-programs">
+<h3>Listing the interfaces and loaded programs:<a class="headerlink" href="#listing-the-interfaces-and-loaded-programs" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>xdp-loader<span class="w"> </span>status
+</pre></div>
+</div>
+</section>
+<section id="loading-the-program-in-native-mode">
+<h3>Loading the program in native mode:<a class="headerlink" href="#loading-the-program-in-native-mode" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>xdp-loader<span class="w"> </span>load<span class="w"> </span>IFNAME<span class="w"> </span>xdp_drop.o
+</pre></div>
+</div>
+</section>
+<section id="loading-the-program-in-generic-mode">
+<h3>Loading the program in generic mode:<a class="headerlink" href="#loading-the-program-in-generic-mode" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>xdp-loader<span class="w"> </span>load<span class="w"> </span>-m<span class="w"> </span>skb<span class="w"> </span>IFNAME<span class="w"> </span>xdp_drop.o
+</pre></div>
+</div>
+</section>
+<section id="unloading-the-program">
+<h3>Unloading the program:<a class="headerlink" href="#unloading-the-program" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>xdp-loader<span class="w"> </span>unload<span class="w"> </span>IFNAME<span class="w"> </span>--all
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="af-xdp-quickstart">
+<h1>AF_XDP quickstart<a class="headerlink" href="#af-xdp-quickstart" title="Link to this heading"></a></h1>
+<p>This section explains the basics of writing AF_XDP program using <code class="docutils literal notranslate"><span class="pre">libxdp</span></code> in a form of short code snippets.</p>
+<p>For an example how to work with the NDK look at the <code class="docutils literal notranslate"><span class="pre">ndp-tool</span></code> application located in the swbase repository:</p>
+<p><a class="reference external" href="https://github.com/CESNET/ndk-sw/tree/main/tools/ndptool">https://github.com/CESNET/ndk-sw/tree/main/tools/ndptool</a></p>
+<p>The interensting files are <code class="docutils literal notranslate"><span class="pre">xdp_read.c</span></code> for RX - this is the simplest example of <code class="docutils literal notranslate"><span class="pre">libxdp</span></code> application.
+And <code class="docutils literal notranslate"><span class="pre">xdp_common.c</span></code> for the NDK FPGA <code class="docutils literal notranslate"><span class="pre">sysfs</span></code> API, that can be used to easily map the firmware queue indexes to netdev channel indexes.</p>
+<section id="the-xdp-program">
+<h2>The XDP program<a class="headerlink" href="#the-xdp-program" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">libxdp</span></code> library ships default XDP program for AF_XDP operation,
+this program is loaded and the reference to the AF_XDP socket is placed to the <code class="docutils literal notranslate"><span class="pre">BPF_MAP_TYPE_XSKMAP</span></code> automatically,
+unless <code class="docutils literal notranslate"><span class="pre">XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD</span></code> flag is set.
+This simplifies the setup. If you would like to create your own XDP program for AF_XDP operation,
+for an example to preprocess packets before redirecting them to userspace, please follow the <code class="docutils literal notranslate"><span class="pre">libxdp</span></code> README.</p>
+<p>You can check the default program here: <a class="reference external" href="https://github.com/xdp-project/xdp-tools/blob/main/lib/libxdp/xsk_def_xdp_prog.c">https://github.com/xdp-project/xdp-tools/blob/main/lib/libxdp/xsk_def_xdp_prog.c</a></p>
+</section>
+<section id="the-userspace-application">
+<h2>The userspace application<a class="headerlink" href="#the-userspace-application" title="Link to this heading"></a></h2>
+<section id="loading-the-program-putting-the-socket-reference-to-the-bpf-map-type-xskmap">
+<h3>Loading the program, putting the socket reference to the <code class="docutils literal notranslate"><span class="pre">BPF_MAP_TYPE_XSKMAP</span></code><a class="headerlink" href="#loading-the-program-putting-the-socket-reference-to-the-bpf-map-type-xskmap" title="Link to this heading"></a></h3>
+<p>This is taken care of by <code class="docutils literal notranslate"><span class="pre">libxdp</span></code>, if you want to use custom XDP program, please follow the <code class="docutils literal notranslate"><span class="pre">libxdp</span></code> README.</p>
+</section>
+<section id="creating-umem">
+<h3>Creating UMEM<a class="headerlink" href="#creating-umem" title="Link to this heading"></a></h3>
+<p>The userspace has to allocate a large block of memory called UMEM.</p>
+<p>It is standard that one frame (here corresponding to one packet) is of the size PAGE_SIZE.</p>
+<p>Function posix_memalign() assures that each frame is located on its own page.</p>
+<p>It is possible to allocate DPDK style hugepages via <code class="docutils literal notranslate"><span class="pre">mmap</span></code> and flag <code class="docutils literal notranslate"><span class="pre">MAP_HUGETLB</span></code>,
+but this is not used in the example and requires to reserve the hugepages beforehand.</p>
+<p>The UMEM configuration can be skipped by passing <code class="docutils literal notranslate"><span class="pre">NULL</span></code> as the last argument of the <code class="docutils literal notranslate"><span class="pre">xsk_umem__create()</span></code> function,
+but the default ring size is 2048 descriptors, which can lead to performance issues,
+from testing it is good to have as much descriptors as there are UMEM frames.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// UMEM configuration</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">umem_info</span><span class="w"> </span><span class="o">*</span><span class="n">uinfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">params</span><span class="o">-&gt;</span><span class="n">queue_data_arr</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">umem_info</span><span class="p">;</span>
+<span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NUM_FRAMES</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">pagesize</span><span class="p">;</span>
+<span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">umem_cfg</span><span class="p">.</span><span class="n">comp_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NUM_FRAMES</span><span class="p">;</span>
+<span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">umem_cfg</span><span class="p">.</span><span class="n">fill_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NUM_FRAMES</span><span class="p">;</span>
+<span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">umem_cfg</span><span class="p">.</span><span class="n">flags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">umem_cfg</span><span class="p">.</span><span class="n">frame_headroom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">umem_cfg</span><span class="p">.</span><span class="n">frame_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pagesize</span><span class="p">;</span>
+<span class="c1">// UMEM memory area</span>
+<span class="k">if</span><span class="p">(</span><span class="n">posix_memalign</span><span class="p">(</span><span class="o">&amp;</span><span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">umem_area</span><span class="p">,</span><span class="w"> </span><span class="n">pagesize</span><span class="p">,</span><span class="w"> </span><span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Failed to get allocate umem buff for queue %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">params</span><span class="o">-&gt;</span><span class="n">queue_data_arr</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">eth_qid</span><span class="p">);</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="p">}</span>
+<span class="c1">// Registering UMEM</span>
+<span class="k">if</span><span class="p">((</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xsk_umem__create</span><span class="p">(</span><span class="o">&amp;</span><span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">umem</span><span class="p">,</span><span class="w"> </span><span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">umem_area</span><span class="p">,</span><span class="w"> </span><span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">fill_ring</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">comp_ring</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">umem_cfg</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Failed to create umem for queue %d; ret: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">params</span><span class="o">-&gt;</span><span class="n">queue_data_arr</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">eth_qid</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="address-stack">
+<h3>Address stack<a class="headerlink" href="#address-stack" title="Link to this heading"></a></h3>
+<p>The userspace app needs to keep track of which frames are in its possession.
+The address in this contex means <strong>offset into the UMEM</strong>.</p>
+<p>In this example, keeping track of free frames is done through a stack of addresses.</p>
+<p>The full code is located in <code class="docutils literal notranslate"><span class="pre">xdp_common.h</span></code>.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">addr_stack</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">addresses</span><span class="p">[</span><span class="n">NUM_FRAMES</span><span class="p">];</span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">addr_cnt</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="c1">// Get address from stack</span>
+<span class="k">static</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">uint64_t</span><span class="w"> </span><span class="nf">alloc_addr</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">addr_stack</span><span class="w"> </span><span class="o">*</span><span class="n">stack</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">stack</span><span class="o">-&gt;</span><span class="n">addr_cnt</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BUG out of adresses</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stack</span><span class="o">-&gt;</span><span class="n">addresses</span><span class="p">[</span><span class="o">--</span><span class="n">stack</span><span class="o">-&gt;</span><span class="n">addr_cnt</span><span class="p">];</span>
+<span class="w">        </span><span class="n">stack</span><span class="o">-&gt;</span><span class="n">addresses</span><span class="p">[</span><span class="n">stack</span><span class="o">-&gt;</span><span class="n">addr_cnt</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">addr</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// Put adress to stack</span>
+<span class="k">static</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">free_addr</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">addr_stack</span><span class="w"> </span><span class="o">*</span><span class="n">stack</span><span class="p">,</span><span class="w"> </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">address</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">stack</span><span class="o">-&gt;</span><span class="n">addr_cnt</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">NUM_FRAMES</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BUG counting adresses</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">stack</span><span class="o">-&gt;</span><span class="n">addresses</span><span class="p">[</span><span class="n">stack</span><span class="o">-&gt;</span><span class="n">addr_cnt</span><span class="o">++</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">address</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// Fill the stack with addresses into the umem</span>
+<span class="k">static</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">init_addr</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">addr_stack</span><span class="w"> </span><span class="o">*</span><span class="n">stack</span><span class="p">,</span><span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">frame_size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">for</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NUM_FRAMES</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">stack</span><span class="o">-&gt;</span><span class="n">addresses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">frame_size</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">stack</span><span class="o">-&gt;</span><span class="n">addr_cnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NUM_FRAMES</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="ndk-fpga-sysfs-interface">
+<h3>NDK FPGA sysfs interface<a class="headerlink" href="#ndk-fpga-sysfs-interface" title="Link to this heading"></a></h3>
+<p>To use XDP driver you first need to add the XDP interface via <code class="docutils literal notranslate"><span class="pre">nfb-dma</span></code> tool.
+This creates an issue when writing applications, because the firmware DMA queues can be mapped to any number of XDP interfaces.
+The AF_XDP socket needs to know the name of the interface and the index of the queue in the context of the interface.
+For this purpose the XDP driver makes this information available via the <code class="docutils literal notranslate"><span class="pre">sysfs</span></code> interface.
+When the XDP driver is loaded the <code class="docutils literal notranslate"><span class="pre">/sys/class/nfb/nfb#/nfb_xdp/</span></code> directory is made available.
+Inside this directory:</p>
+<p><code class="docutils literal notranslate"><span class="pre">channel_total</span></code> - tells you how many XDP channels there are, this information is parsed from the device tree at driver startup.</p>
+<p><code class="docutils literal notranslate"><span class="pre">eth_count</span></code> - tells you how many physical interfaces there are, this information is parsed from the device tree at driver startup.</p>
+<p><code class="docutils literal notranslate"><span class="pre">channel#</span></code> - directories corespond to the XDP channels - These contain files corresponding to the state of the channel.</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">├──</span> <span class="pre">status</span></code> - 1 if the queue was assigned to interface via <code class="docutils literal notranslate"><span class="pre">nfb-dma</span></code> else 0</p>
+<p><code class="docutils literal notranslate"><span class="pre">├──</span> <span class="pre">ifname</span></code> - Name of the interface the channel was mapped to via <code class="docutils literal notranslate"><span class="pre">nfb-dma</span></code>, else ‘NOT_OPEN’</p>
+<p><code class="docutils literal notranslate"><span class="pre">└──</span> <span class="pre">index</span></code>  - Index in the context of the interface the channel was mapped to via <code class="docutils literal notranslate"><span class="pre">nfb-dma</span></code>, else -1</p>
+</div></blockquote>
+<p>Example:</p>
+<p>We have <code class="docutils literal notranslate"><span class="pre">NDK-MINIMAL</span></code> firmware with 16 DMA queue pairs. We add one XDP interface which uses firmware DMA queue pairs 5, 6.
+The <code class="docutils literal notranslate"><span class="pre">dmesg</span></code> command says <code class="docutils literal notranslate"><span class="pre">nfb</span> <span class="pre">0000:21:00.0</span> <span class="pre">enp33s0:</span> <span class="pre">renamed</span> <span class="pre">from</span> <span class="pre">nfb0x1</span></code> because system predictible interface naming is enabled:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>nfb-dma<span class="w"> </span>-N<span class="w"> </span>nfb_xdp<span class="w"> </span>add,id<span class="o">=</span><span class="m">1</span><span class="w"> </span>-i5-6
+</pre></div>
+</div>
+<p>Then the simplified structure looks like this:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>tree
+.
+├──<span class="w"> </span>channel0
+│<span class="w">   </span>├──<span class="w"> </span>ifname<span class="w">          </span>NOT_OPEN
+│<span class="w">   </span>├──<span class="w"> </span>index<span class="w">           </span>-1
+│<span class="w">   </span>└──<span class="w"> </span>status<span class="w">          </span><span class="m">0</span>
+...
+├──<span class="w"> </span>channel5
+│<span class="w">   </span>├──<span class="w"> </span>ifname<span class="w">          </span>enp33s0
+│<span class="w">   </span>├──<span class="w"> </span>index<span class="w">           </span><span class="m">0</span>
+│<span class="w">   </span>└──<span class="w"> </span>status<span class="w">          </span><span class="m">1</span>
+├──<span class="w"> </span>channel6
+│<span class="w">   </span>├──<span class="w"> </span>ifname<span class="w">          </span>enp33s0
+│<span class="w">   </span>├──<span class="w"> </span>index<span class="w">           </span><span class="m">1</span>
+│<span class="w">   </span>└──<span class="w"> </span>status<span class="w">          </span><span class="m">1</span>
+├──<span class="w"> </span>channel7
+│<span class="w">   </span>├──<span class="w"> </span>ifname<span class="w">          </span>NOT_OPEN
+│<span class="w">   </span>├──<span class="w"> </span>index<span class="w">           </span>-1
+│<span class="w">   </span>└──<span class="w"> </span>status<span class="w">          </span><span class="m">0</span>
+...
+├──<span class="w"> </span>channel_total<span class="w">       </span><span class="m">16</span>
+├──<span class="w"> </span>cmd
+└──<span class="w"> </span>eth_count<span class="w">           </span><span class="m">2</span>
+</pre></div>
+</div>
+<p>By reading the files we can get the correct values for opening the AF_XDP socket.</p>
+<p>The DMA queue pair 5 is mapped to enp33s0 as the first channel (index 0).</p>
+<p><code class="docutils literal notranslate"><span class="pre">xsk_socket__create(...,</span> <span class="pre">&quot;enp33s0&quot;,</span> <span class="pre">0,</span> <span class="pre">...,</span> <span class="pre">...,</span> <span class="pre">...,</span> <span class="pre">...)</span></code></p>
+<p>To delete the XDP interface:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>nfb-dma<span class="w"> </span>-N<span class="w"> </span>nfb_xdp<span class="w"> </span>del,id<span class="o">=</span><span class="m">1</span>
+</pre></div>
+</div>
+</section>
+<section id="creating-socket">
+<h3>Creating socket<a class="headerlink" href="#creating-socket" title="Link to this heading"></a></h3>
+<p>The ifname and queue_id in the context of the XDP interface can be acquired via sysfs.
+The XSK configuration can be skipped by passing <code class="docutils literal notranslate"><span class="pre">NULL</span></code> as the last argument of the <code class="docutils literal notranslate"><span class="pre">xsk_socket__create()</span></code> function,
+but the default ring size is 2048 descriptors, which can lead to performance issues,
+from testing it is good to have as much descriptors as there are UMEM frames.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// XSK configuration</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">xsk_info</span><span class="w"> </span><span class="o">*</span><span class="n">xinfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">params</span><span class="o">-&gt;</span><span class="n">queue_data_arr</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">xsk_info</span><span class="p">;</span>
+<span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">xsk_cfg</span><span class="p">.</span><span class="n">rx_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NUM_FRAMES</span><span class="p">;</span>
+<span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">xsk_cfg</span><span class="p">.</span><span class="n">tx_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NUM_FRAMES</span><span class="p">;</span>
+<span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">xsk_cfg</span><span class="p">.</span><span class="n">bind_flags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">XDP_ZEROCOPY</span><span class="p">;</span>
+<span class="c1">// The name of the interface together with the queue_id (in context of the interface)</span>
+<span class="c1">// Can be best acquired via the sysfs interface of NDK platform</span>
+<span class="n">strcpy</span><span class="p">(</span><span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">ifname</span><span class="p">,</span><span class="w"> </span><span class="n">params</span><span class="o">-&gt;</span><span class="n">queue_data_arr</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">ifname</span><span class="p">);</span>
+<span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">queue_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">params</span><span class="o">-&gt;</span><span class="n">queue_data_arr</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">eth_qid</span><span class="p">;</span>
+<span class="k">if</span><span class="p">((</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xsk_socket__create</span><span class="p">(</span><span class="o">&amp;</span><span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">xsk</span><span class="p">,</span><span class="w"> </span><span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">ifname</span><span class="p">,</span><span class="w"> </span><span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">queue_id</span><span class="p">,</span><span class="w"> </span><span class="n">uinfo</span><span class="o">-&gt;</span><span class="n">umem</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">rx_ring</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">tx_ring</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">xinfo</span><span class="o">-&gt;</span><span class="n">xsk_cfg</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Failed to create xsocket for queue %d; ret: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">params</span><span class="o">-&gt;</span><span class="n">queue_data_arr</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">eth_qid</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="the-main-loop">
+<h3>The main loop<a class="headerlink" href="#the-main-loop" title="Link to this heading"></a></h3>
+<p>The fill part (from userspace to kernel):</p>
+<p><code class="docutils literal notranslate"><span class="pre">xsk_ring_prod__reserve()</span></code> reserves slots on the fill ring</p>
+<p><code class="docutils literal notranslate"><span class="pre">xsk_ring_prod__fill_addr()</span></code> is used to place the frames into the ring</p>
+<p><code class="docutils literal notranslate"><span class="pre">xsk_ring_prod__submit()</span></code> signals, that the filling is done, and kernel now owns the frames</p>
+<p>The recieve part (from kernel to userspace):</p>
+<p><code class="docutils literal notranslate"><span class="pre">xsk_ring_cons__peek()</span></code> returns the number of packets ready to be processed and gives ownership to userspace</p>
+<p><code class="docutils literal notranslate"><span class="pre">xsk_ring_cons__rx_desc()</span></code> holds the information about packet (its length and adress of data start)</p>
+<p><code class="docutils literal notranslate"><span class="pre">xsk_ring_cons__release()</span></code> returns the RX ring slots back to the kernel so they can be filled with new packets</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// The receive loop</span>
+<span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">run</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="w">        </span><span class="c1">// Fill rx</span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">rx_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">fill_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">reservable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xsk_prod_nb_free</span><span class="p">(</span><span class="n">fill_ring</span><span class="p">,</span><span class="w"> </span><span class="n">stack</span><span class="p">.</span><span class="n">addr_cnt</span><span class="p">);</span>
+<span class="w">        </span><span class="n">reservable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reservable</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">stack</span><span class="p">.</span><span class="n">addr_cnt</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">reservable</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">stack</span><span class="p">.</span><span class="n">addr_cnt</span><span class="p">;</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">reservable</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">burst_size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">reserved</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xsk_ring_prod__reserve</span><span class="p">(</span><span class="n">fill_ring</span><span class="p">,</span><span class="w"> </span><span class="n">reservable</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">fill_idx</span><span class="p">);</span>
+<span class="w">                </span><span class="k">for</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">reserved</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="o">*</span><span class="n">xsk_ring_prod__fill_addr</span><span class="p">(</span><span class="n">fill_ring</span><span class="p">,</span><span class="w"> </span><span class="n">fill_idx</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alloc_addr</span><span class="p">(</span><span class="o">&amp;</span><span class="n">stack</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">                </span><span class="n">xsk_ring_prod__submit</span><span class="p">(</span><span class="n">fill_ring</span><span class="p">,</span><span class="w"> </span><span class="n">reserved</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="w">        </span><span class="c1">// Receive packets</span>
+<span class="w">        </span><span class="n">cnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xsk_ring_cons__peek</span><span class="p">(</span><span class="n">rx_ring</span><span class="p">,</span><span class="w"> </span><span class="n">burst_size</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">rx_idx</span><span class="p">);</span>
+<span class="w">        </span><span class="c1">// Process packets</span>
+<span class="w">        </span><span class="k">for</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">cnt</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="k">struct</span><span class="w"> </span><span class="nc">xdp_desc</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">*</span><span class="n">desc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xsk_ring_cons__rx_desc</span><span class="p">(</span><span class="n">rx_ring</span><span class="p">,</span><span class="w"> </span><span class="n">rx_idx</span><span class="o">++</span><span class="p">);</span>
+<span class="w">                </span><span class="n">packets</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xsk_umem__get_data</span><span class="p">(</span><span class="n">xsk_data</span><span class="o">-&gt;</span><span class="n">umem_info</span><span class="p">.</span><span class="n">umem_area</span><span class="p">,</span><span class="w"> </span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">addr</span><span class="p">);</span>
+<span class="w">                </span><span class="n">packets</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">data_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">len</span><span class="p">;</span>
+<span class="w">                </span><span class="n">free_addr</span><span class="p">(</span><span class="o">&amp;</span><span class="n">stack</span><span class="p">,</span><span class="w"> </span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">addr</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="c1">// Mark done</span>
+<span class="w">        </span><span class="n">xsk_ring_cons__release</span><span class="p">(</span><span class="n">rx_ring</span><span class="p">,</span><span class="w"> </span><span class="n">cnt</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="common-issues">
+<h3>Common issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<p>No traffic:</p>
+<p>Make sure the firmware interfaces are enabled: <code class="docutils literal notranslate"><span class="pre">nfb-eth</span> <span class="pre">-e1</span></code></p>
+</section>
+</section>
+<section id="useful-links">
+<h2>Useful links<a class="headerlink" href="#useful-links" title="Link to this heading"></a></h2>
+<section id="useful-af-xdp-enabled-apps">
+<h3>Useful AF_XDP enabled apps<a class="headerlink" href="#useful-af-xdp-enabled-apps" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>tcpreplay - since release v4.5.1; <a class="reference external" href="https://github.com/appneta/tcpreplay">https://github.com/appneta/tcpreplay</a></p></li>
+</ul>
+</section>
+<section id="libxdp-readme">
+<h3>Libxdp README<a class="headerlink" href="#libxdp-readme" title="Link to this heading"></a></h3>
+<p>For <code class="docutils literal notranslate"><span class="pre">libxdp</span></code> API refer to: <a class="reference external" href="https://github.com/xdp-project/xdp-tools/tree/main/lib/libxdp">https://github.com/xdp-project/xdp-tools/tree/main/lib/libxdp</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="userspace.html" class="btn btn-neutral float-left" title="Userspace access to NFB Driver" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, CESNET z.s.p.o..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

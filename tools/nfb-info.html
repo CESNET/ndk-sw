@@ -53,6 +53,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="nfb-tools.html">NFB tools</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">nfb-info</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#board-name-card-name">Board name / card name</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#json-output">JSON output</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="nfb-bus.html">nfb-bus</a></li>
@@ -83,6 +84,15 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../driver/modules.html">Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../driver/userspace.html">Userspace access</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">XDP submodule</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html">XDP submodule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#how-to-enable">How to enable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#how-to-test">How to test</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#basic-xdp-vs-af-xdp-xdp-zero-copy-mode-overview">Basic XDP vs AF_XDP / XDP zero-copy mode overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#xdp-quickstart">XDP quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver/xdp.html#af-xdp-quickstart">AF_XDP quickstart</a></li>
 </ul>
 
         </div>
@@ -150,6 +160,84 @@ incompatible between them. Therefore it is necessary to have two
 different card-name labels.</p>
 <p><a class="reference internal" href="nfb-boot.html#nfb-boot"><span class="std std-ref">nfb-boot</span></a> compares card-name labels and ensures and refuses to flash
 firmware with unequal card-name.</p>
+</section>
+<section id="json-output">
+<h2>JSON output<a class="headerlink" href="#json-output" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>                                   <span class="c1"># only present in default mode</span>
+    <span class="p">{</span>
+     <span class="s2">&quot;board&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;board_name&quot;</span><span class="p">:</span> <span class="s2">&quot;FB1CGG&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;serial_number&quot;</span><span class="p">:</span> <span class="s2">&quot;317&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;network_interfaces&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;interfaces&quot;</span><span class="p">:</span> <span class="p">[</span>             <span class="c1"># only present in verbose mode</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;QSFP&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;QSFP&quot;</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="mf">54.2</span>         <span class="c1"># only present in verbose mode</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;firmware&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;card_name&quot;</span><span class="p">:</span> <span class="s2">&quot;FB2CGG3&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;project_name&quot;</span><span class="p">:</span> <span class="s2">&quot;NDK_HFT&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;project_variant&quot;</span><span class="p">:</span> <span class="s2">&quot;10G2&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;project_version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.2.1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;build_time&quot;</span><span class="p">:</span> <span class="s2">&quot;2024-04-04 15:38:44&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;build_tool&quot;</span><span class="p">:</span> <span class="s2">&quot;Vivado v2022.2 (64-bit)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;build_author&quot;</span><span class="p">:</span> <span class="s2">&quot;cabal@cesnet.cz&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;rx_queues&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>            <span class="c1"># all RX queues in firmware</span>
+        <span class="s2">&quot;rx_queues_available&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>  <span class="c1"># only usable RX queues (e.g. corresponding PCI endpoint is connected)</span>
+        <span class="s2">&quot;tx_queues&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
+        <span class="s2">&quot;tx_queues_available&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
+        <span class="s2">&quot;eth_channels&quot;</span><span class="p">:</span> <span class="p">[</span>           <span class="c1"># only present in verbose mode</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;10G&quot;</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;pci&quot;</span><span class="p">:</span> <span class="p">[</span>                    <span class="c1"># list of PCI endpoints</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;pci_bdf&quot;</span><span class="p">:</span> <span class="s2">&quot;0000:03:00.0&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;pci_link_speed_str&quot;</span><span class="p">:</span> <span class="s2">&quot;8 GT/s&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;pci_link_width&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+                <span class="s2">&quot;numa&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;bar&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                        <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="mi">67108864</span>
+                    <span class="p">},</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                        <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="mi">16777216</span>
+                    <span class="p">}</span>
+                <span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="p">[</span>                                   <span class="c1"># only present in card list mode</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;/dev/nfb2&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;pci_bdf&quot;</span><span class="p">:</span> <span class="s2">&quot;0000:81:00.0&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;card_name&quot;</span><span class="p">:</span> <span class="s2">&quot;FB2CGHH&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;serial_number&quot;</span><span class="p">:</span> <span class="s2">&quot;144&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;project_name&quot;</span><span class="p">:</span> <span class="s2">&quot;NDK_MINIMAL&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;project_variant&quot;</span><span class="p">:</span> <span class="s2">&quot;100G2&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;project_version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.5.6&quot;</span>
+    <span class="p">},</span>
+    <span class="o">...</span>
+<span class="p">]</span>
+</pre></div>
+</div>
 </section>
 </section>
 
