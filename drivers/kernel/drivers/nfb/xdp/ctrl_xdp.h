@@ -15,7 +15,14 @@
 #include "../nfb.h"
 #include "../../../../../libnfb/include/netcope/dma_ctrl_ndp.h"
 
+// Values taken from the ndk-app-minimal fw
+#define NFB_XDP_MTU_MIN 64
+#define NFB_XDP_MTU_MAX 16383
+// Default AF_XDP value, can be made larger or smaller
+#define NFB_MAX_AF_XDP_FRAGS MAX_SKB_FRAGS + 1
+
 #define NFB_XDP_CTRL_PACKET_BURST 64
+#define NFB_PP_MAX_FRAME_LEN  PAGE_SIZE - XDP_PACKET_HEADROOM - SKB_DATA_ALIGN(sizeof(struct skb_shared_info))
 
 enum xdp_ctrl_type {
 	NFB_XCTRL_RX,
@@ -28,6 +35,8 @@ enum xdp_ctrl_tx_buff_type {
 	NFB_XCTRL_BUFF_FRAME,		// used with frames which needs to be unmapped
 	NFB_XCTRL_BUFF_SKB,			// used for linux netdev tx ndo
 	NFB_XCTRL_BUFF_XSK,			// used for counting the xsk frames
+	NFB_XCTRL_BUFF_XSK_REXMIT,	// used for RX xsks which were retransmited 
+	NFB_XCTRL_BUFF_BUG,			// used for debugging
 };
 
 // Used for freeing tx buffers after tx completes
@@ -36,9 +45,7 @@ struct xctrl_tx_buffer {
 	union {
 		struct sk_buff *skb;
 		struct xdp_frame *frame;
-		// for counting xsk completions
-		// when we drop packet on tx this is more than 1
-		u32 num_of_xsk_completions;
+		struct xdp_buff *xsk;
 	};
 	dma_addr_t dma;
 	u32 len;
@@ -47,7 +54,6 @@ struct xctrl_tx_buffer {
 // TODO: clean up
 #define XCTRL_STATUS_IS_RUNNING BIT(0)
 struct xctrl {
-	enum xdp_ctrl_type type;
 	union {
 		struct {
 			/** RX - Driver handles allocation of pages for rx through page_pool
@@ -67,8 +73,11 @@ struct xctrl {
 					struct xsk_buff_pool *pool;
 				} xsk;
 			};
-			u32 php; // RX - processed header pointers
+			// u32 php; // RX - processed header pointers
 			// hdr_buff is only used on rx
+			u32 mbp; // Mask buffer pointer
+			u32 pbp; // Processed buffer pointer
+			u32 fbp; // Filled buffer pointer 
 			u32 nb_hdr;
 			void *hdr_buffer_cpu;
 			dma_addr_t hdr_buffer_dma;
@@ -87,17 +96,15 @@ struct xctrl {
 			 * 		TODO: checkout xdp_return_frame_bulk()
 			 */
 			struct xctrl_tx_buffer *buffers;
-			u32 fdp; // TX - freed descriptor pointers
 			spinlock_t tx_lock; // TODO: checkout __netif_tx_lock()
 			// used for counting completed tx frames
 			// in XSK mode driver needs to return the frames
 			// in the same order as it got them
 			// So we count num of frames we can return from tx_buffer
 			u32 completed_xsk_tx; // num of frames ready to be returned to userspace on tx_buffer_free
-			u32 last_napi_xsk_drops; // if we drop packets on tx we add them for completion with the next packet
 		} tx;
 	};
-
+	enum xdp_ctrl_type type;
 	// common control buffers
 	void *update_buffer_virt;
 	dma_addr_t update_buffer_dma;

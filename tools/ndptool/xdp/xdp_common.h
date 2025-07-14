@@ -1,5 +1,5 @@
 #ifndef XDP_COMMON_H
-#define XDP_COMOD_H
+#define XDP_COMMON_H
 
 // libxdp
 #include <xdp/libxdp.h>

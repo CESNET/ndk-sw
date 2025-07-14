@@ -115,12 +115,20 @@ static int nfb_start_channels(struct net_device *netdev)
 	val = NETDEV_XDP_ACT_BASIC
 		| NETDEV_XDP_ACT_REDIRECT
 		| NETDEV_XDP_ACT_XSK_ZEROCOPY
-		// | NETDEV_XDP_ACT_RX_SG
+		| NETDEV_XDP_ACT_RX_SG
 		| NETDEV_XDP_ACT_NDO_XMIT
-		// | NETDEV_XDP_ACT_NDO_XMIT_SG
+		| NETDEV_XDP_ACT_NDO_XMIT_SG
 		;
 	xdp_set_features_flag(netdev, val);
 #endif
+	// Default value
+#ifdef CONFIG_HAVE_AF_XDP_SG
+	netdev->xdp_zc_max_segs = NFB_MAX_AF_XDP_FRAGS;
+#endif
+	netdev->min_mtu = NFB_XDP_MTU_MIN;
+	netdev->max_mtu = NFB_XDP_MTU_MAX;
+	netdev->mtu = NFB_XDP_MTU_MAX;
+	netdev->features |= NETIF_F_SG;
 
 	// Threads take care of setting up and tearing down the queues as XDP demands the abillity to do that on the fly
 	for (i = 0; i < ethdev->channel_count; i++) {
