@@ -1,3 +1,6 @@
+* Tue Jul 15 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.1-1
+- [FIX] nfb-eth: really rename and unify labels for statistic counters in nfb-eth
+
 * Mon Jul 14 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.0-1
 - [FEATURE] drivers: add XDP driver (needs to be enabled in configure)
 - [FEATURE] tools: add XDP example tools (xdp-read, xdp-generate)
