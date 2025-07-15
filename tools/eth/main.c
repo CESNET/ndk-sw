@@ -41,7 +41,7 @@
 
 #define NJFD(x) ni_json_f_decim(x)
 
-#define COMPAT_NAMES 1
+#define COMPAT_NAMES 0
 
 static struct ni_context_item_default ni_items[] = {
 	[NI_SEC_ROOT]           = {ni_json_e,                           ni_user_n},
