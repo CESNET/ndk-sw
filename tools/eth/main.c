@@ -154,6 +154,10 @@ static struct ni_context_item_default ni_items[] = {
 	[NI_RXM_ES_256_511]     = {ni_json_k("pkts256to511"),           ni_user_f("etherStatsPkts256to511Octets", NUFC)},
 	[NI_RXM_ES_512_1023]    = {ni_json_k("pkts512to1023"),          ni_user_f("etherStatsPkts512to1023Octets", NUFC)},
 	[NI_RXM_ES_1024_1518]   = {ni_json_k("pkts1024to1518"),         ni_user_f("etherStatsPkts1024to1518Octets", NUFC)},
+	[NI_RXM_ES_1519_2047]   = {ni_json_k("pkts1519to2047"),         ni_user_f("etherStatsPkts1519to2047Octets", NUFC)},
+	[NI_RXM_ES_2048_4095]   = {ni_json_k("pkts2048to4095"),         ni_user_f("etherStatsPkts2048to4095Octets", NUFC)},
+	[NI_RXM_ES_4096_8191]   = {ni_json_k("pkts4096to8191"),         ni_user_f("etherStatsPkts4096to8191Octets", NUFC)},
+	[NI_RXM_ES_OVER_BINS]   = {ni_json_k("pktsOverBins"),           ni_user_f("etherStatsPktsOverBins", NUFC)},
 	[NI_RXM_ES_UNDR_SET]    = {ni_json_k("conf_undersize"),         ni_user_f("underMinPkts", NUFC)},
 	[NI_RXM_ES_OVER_SET]    = {ni_json_k("conf_oversize"),          ni_user_f("overMaxPkts", NUFC)},
 
