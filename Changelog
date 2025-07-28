@@ -1,3 +1,6 @@
+* Mon Jul 28 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.2-1
+- [FIX] nfb-eth: show new etherStats items
+
 * Tue Jul 15 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.1-1
 - [FIX] nfb-eth: really rename and unify labels for statistic counters in nfb-eth
 
