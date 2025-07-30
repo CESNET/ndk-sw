@@ -109,9 +109,9 @@ void rxmac_print_ether_stats(struct ni_context *ctx, struct nc_rxmac *rxmac)
 	ni_item_uint64_t(ctx, NI_RXM_ES_512_1023, s.pkts512to1023Octets);
 	ni_item_uint64_t(ctx, NI_RXM_ES_1024_1518, s.pkts1024to1518Octets);
 	if (rxmac->has_ext_drop_counters) {
-		ni_item_uint64_t(ctx, NI_RXM_ES_1519_2047, s.pkts128to255Octets);
-		ni_item_uint64_t(ctx, NI_RXM_ES_2048_4095, s.pkts256to511Octets);
-		ni_item_uint64_t(ctx, NI_RXM_ES_4096_8191, s.pkts512to1023Octets);
+		ni_item_uint64_t(ctx, NI_RXM_ES_1519_2047, s.pkts1519to2047Octets);
+		ni_item_uint64_t(ctx, NI_RXM_ES_2048_4095, s.pkts2048to4095Octets);
+		ni_item_uint64_t(ctx, NI_RXM_ES_4096_8191, s.pkts4096to8191Octets);
 		ni_item_uint64_t(ctx, NI_RXM_ES_OVER_BINS, s.pktsOverBinsOctets);
 	}
 	ni_item_uint64_t(ctx, NI_RXM_ES_UNDR_SET, s.underMinPkts);
