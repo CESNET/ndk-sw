@@ -178,7 +178,9 @@ static int nfb_boot_bw_bmc_load_partition_table(struct nfb_boot *boot)
 
 	if (card_name == NULL) {
 		return -ENODEV;
-	} else if (strcmp(card_name, "IA-440I") == 0) {
+	} else if (strncmp(card_name, "IA-440I", 7) == 0) {
+		/* TODO: check Flash Configuration from VPD (I2C EEPROM @ 0x57, offset 50):
+		 * 0 means "Default" */
 		max_size = 0x10000000;
 	} else {
 		return -ENODEV;
