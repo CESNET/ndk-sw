@@ -1,6 +1,6 @@
 # Maintainer: Martin Spinler <spinler@cesnet.cz>
-pkgname=('nfb-framework' 'python-nfb' 'nfb-ext-grpc')
-pkgver=6.22.6
+pkgname=('nfb-framework' 'python-nfb' 'nfb-framework-debug' 'nfb-ext-grpc' 'python-nfb-tools')
+pkgver=6.28.3
 pkgrel=1
 pkgdesc="Software bundle for CESNET NDK firmware platform"
 url='https://github.com/CESNET/ndk-sw'
@@ -38,6 +38,9 @@ package_nfb-framework-debug() {
 
 package_python-nfb() {
 	DESTDIR="$pkgdir" cmake --install build  --component python
+}
+package_python-nfb-tools() {
+	DESTDIR="$pkgdir" cmake --install build  --component pythontools
 }
 
 package_nfb-ext-grpc() {
