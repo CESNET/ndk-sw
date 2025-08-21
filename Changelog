@@ -1,3 +1,6 @@
+* Thu Aug 21 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.4-1
+- [FEATURE]: add support for different varians of ia-440i card
+
 * Wed Jul 30 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.3-1
 - [FIX] nfb-eth: show correct values in new etherStats items
 
