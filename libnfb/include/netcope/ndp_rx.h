@@ -236,10 +236,6 @@ static inline void _ndp_queue_rx_sync_v3_us(struct nc_ndp_queue *q)
 	struct ndp_v3_packethdr *hdr_base;
 
 	if (q->sync.swptr != q->u.v3.uspace_shp) {
-#if 0
-		q->u.v3.uspace_shp = q->sync.swptr & q->u.v3.hdr_ptr_mask;
-		nfb_comp_write64(q->u.v3.comp, NDP_CTRL_REG_SDP, q->u.v3.sdp | (((uint64_t) q->u.v3.uspace_shp) << 32));
-#else
 		unsigned i;
 		unsigned count_blks = 0;
 		unsigned count = (q->sync.swptr - q->u.v3.uspace_shp) & q->u.v3.uspace_mhp;
@@ -260,7 +256,6 @@ static inline void _ndp_queue_rx_sync_v3_us(struct nc_ndp_queue *q)
 			////nc_ndp_ctrl_sp_flush(q->u.v3.comp);
 			nfb_comp_write64(q->u.v3.comp, NDP_CTRL_REG_SDP, q->u.v3.uspace_sdp | (((uint64_t) q->u.v3.uspace_shp) << 32));
 		}
-#endif
 	}
 
 	do {
