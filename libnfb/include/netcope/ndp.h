@@ -184,7 +184,8 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	if (ret)
 		return -EBADFD;
 
-	prot = PROT_READ | PROT_WRITE;
+	prot = PROT_READ;
+	prot |= q->channel.type == NDP_CHANNEL_TYPE_TX ? PROT_WRITE : 0;
 
 	q->u.v3.hdrs = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
 	if (q->u.v3.hdrs == MAP_FAILED) {
@@ -201,6 +202,7 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 #endif
 
 	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		q->u.v3.valid_flag = 1;
 		q->u.v3.hdr_ptr_mask = ((hdr_mmap_size / 2) / sizeof(struct ndp_v3_packethdr)) - 1; // "- 1" to create a mask for AND operations
 	} else {
 		q->u.v3.hdr_ptr_mask = hdr_buff_size / (2 * sizeof(struct ndp_v3_packethdr)) - 1;
