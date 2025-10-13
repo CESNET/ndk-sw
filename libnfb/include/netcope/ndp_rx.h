@@ -234,6 +234,7 @@ static inline void _ndp_queue_rx_sync_v3_us(struct nc_ndp_queue *q)
 {
 #ifndef __KERNEL__
 	struct ndp_v3_packethdr *hdr_base;
+	uint8_t vld_flag = q->u.v3.valid_flag;
 
 	if (q->sync.swptr != q->u.v3.uspace_shp) {
 		unsigned i;
@@ -242,7 +243,7 @@ static inline void _ndp_queue_rx_sync_v3_us(struct nc_ndp_queue *q)
 
 		hdr_base = q->u.v3.hdrs + q->u.v3.uspace_shp;
 		for (i = 0; i < count; i++) {
-			hdr_base[i].valid = 0;
+			/* hdr_base[i].valid = 0; */
 			count_blks += (hdr_base[i].frame_len + NDP_RX_CALYPTE_BLOCK_SIZE - 1) / NDP_RX_CALYPTE_BLOCK_SIZE;
 		}
 
@@ -253,17 +254,22 @@ static inline void _ndp_queue_rx_sync_v3_us(struct nc_ndp_queue *q)
 		/* TODO: magic number */
 		if (q->u.v3.uspace_acc >= 32) {
 			q->u.v3.uspace_acc = 0;
-			////nc_ndp_ctrl_sp_flush(q->u.v3.comp);
 			nfb_comp_write64(q->u.v3.comp, NDP_CTRL_REG_SDP, q->u.v3.uspace_sdp | (((uint64_t) q->u.v3.uspace_shp) << 32));
 		}
 	}
 
 	do {
 		hdr_base = q->u.v3.hdrs + q->u.v3.uspace_hhp;
-		if (hdr_base->valid == 0)
+		if ((hdr_base->valid & 0x01) == (vld_flag ^ 1))
 			break;
 		q->u.v3.uspace_hhp = (q->u.v3.uspace_hhp + 1) & q->u.v3.uspace_mhp;
+
+		if (q->u.v3.uspace_hhp == 0) {
+			/* printf("Flipping internal header 1...\n"); */
+			vld_flag ^= 1;
+		}
 	} while (1);
+
 	q->sync.hwptr = q->u.v3.uspace_hhp;
 #endif
 }
@@ -291,11 +297,19 @@ static inline int nc_ndp_v3_rx_unlock(void *priv)
 	int ret = 0;
 	struct nc_ndp_queue *q = (struct nc_ndp_queue*) priv;
 
+	uint64_t old_swptr = q->sync.swptr;
+
 	q->sync.swptr = q->u.v3.shp & (q->u.v3.hdr_ptr_mask);
 	if (q->flags & NDP_CHANNEL_FLAG_USERSPACE) {
 		_ndp_queue_rx_sync_v3_us(q);
 	} else {
 		ret = _ndp_queue_sync(q, &q->sync);
+	}
+
+	// When pointer wraps around, flip the valid flag.
+	if (q->sync.swptr < old_swptr) {
+		/* printf("Flipping global header...\n"); */
+		q->u.v3.valid_flag ^= 1;
 	}
 	return ret;
 }
@@ -307,6 +321,7 @@ static inline unsigned nc_ndp_v3_rx_burst_get(void *priv, struct ndp_packet *pac
 
 	struct ndp_v3_packethdr *hdr_base;
 	unsigned char *data_base;
+	uint8_t vld_flag = q->u.v3.valid_flag;
 
 	if (unlikely(q->u.v3.pkts_available < count)) {
 		nc_ndp_v3_rx_lock(q);
@@ -328,9 +343,14 @@ static inline unsigned nc_ndp_v3_rx_burst_get(void *priv, struct ndp_packet *pac
 
 		hdr = hdr_base + i;
 
-		if (!hdr->valid) {
-			break;
+		if ((q->u.v3.shp + i) > q->u.v3.hdr_ptr_mask) {
+			/* printf("Flipping internal header 2...\n"); */
+			vld_flag ^= 1;
+
 		}
+
+		if ((hdr->valid & 0x01) == (vld_flag ^ 1))
+			break;
 
 		header_size = le16_to_cpu(hdr->header_size) & NDP_CALYPTE_METADATA_HDR_SIZE_MASK;
 		packet_size = le16_to_cpu(hdr->frame_len) - header_size;

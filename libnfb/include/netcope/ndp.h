@@ -186,6 +186,8 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 
 	prot = PROT_READ | PROT_WRITE;
 
+	// TODO: Attempt to zero this buffer and then remap it with protection information of only
+	// PROT_READ
 	q->u.v3.hdrs = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
 	if (q->u.v3.hdrs == MAP_FAILED) {
 		return -EBADFD;
@@ -201,7 +203,13 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 #endif
 
 	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		q->u.v3.valid_flag = 1;
 		q->u.v3.hdr_ptr_mask = ((hdr_mmap_size / 2) / sizeof(struct ndp_v3_packethdr)) - 1; // "- 1" to create a mask for AND operations
+
+		/* for (unsigned it = 0; it < q->u.v3.hdr_ptr_mask+1; it++) { */
+		/* 	struct ndp_v3_packethdr *hdr_base = q->u.v3.hdrs + it; */
+		/* 	hdr_base->valid = 0; */
+		/* } */
 	} else {
 		q->u.v3.hdr_ptr_mask = hdr_buff_size / (2 * sizeof(struct ndp_v3_packethdr)) - 1;
 		q->u.v3.data_ptr_mask = data_buff_size / 2 - 1;
