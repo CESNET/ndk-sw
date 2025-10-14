@@ -89,6 +89,7 @@ struct nc_ndp_queue {
 #ifndef __KERNEL__
 			struct ndp_v3_packethdr *uspace_hdrs;
 			struct nfb_comp *comp;
+			uint32_t *update_buff;
 			uint32_t uspace_shp;
 			uint32_t uspace_hhp;
 			uint32_t uspace_sdp;
