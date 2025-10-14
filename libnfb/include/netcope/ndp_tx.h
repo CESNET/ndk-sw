@@ -285,7 +285,6 @@ static inline int nc_ndp_v2_tx_burst_flush(void *priv)
 static inline void _ndp_queue_tx_sync_v3_us(struct nc_ndp_queue *q)
 {
 #ifndef __KERNEL__
-	uint64_t hwpointers;
 	uint32_t hdp;
 	uint32_t hhp;
 
@@ -327,9 +326,9 @@ static inline void _ndp_queue_tx_sync_v3_us(struct nc_ndp_queue *q)
 		uint32_t chlen = (q->u.v3.uspace_hhp - q->u.v3.uspace_shp - 1) & q->u.v3.uspace_mhp;
 		/* TODO: magic number */
 		if (chlen < 512 || q->u.v3.uspace_free <= 4096) {
-			hwpointers = nfb_comp_read64(q->u.v3.comp, NDP_CTRL_REG_HDP);
-			hdp = ((uint32_t)hwpointers);
-			hhp = ((uint32_t)(hwpointers >> 32));
+			__builtin_prefetch(q->u.v3.update_buff);
+			hdp = ((uint32_t*) q->u.v3.update_buff)[0];
+			hhp = ((uint32_t*) q->u.v3.update_buff)[1];
 
 			count = (hdp - hdp_prev) & q->u.v3.uspace_mdp;
 			q->u.v3.uspace_hdp = hdp;
