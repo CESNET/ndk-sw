@@ -91,6 +91,7 @@ struct ndp_ctrl {
 		struct {
 			struct nc_calypte_hdr *hdr_buffer;
 			uint64_t free_bytes;
+			uint8_t valid_flag;
 		} calypte;
 	} ts;
 
@@ -509,7 +510,6 @@ static void ndp_ctrl_calypte_rx_set_swptr(struct ndp_channel *channel, uint64_t 
 	unsigned i;
 
 	for (i = 0; i < count; i++) {
-		hdr[i].valid = 0;
 		new_sdp += (hdr[i].frame_len + NDP_RX_CALYPTE_BLOCK_SIZE - 1) / NDP_RX_CALYPTE_BLOCK_SIZE;
 	}
 
@@ -535,9 +535,14 @@ static uint64_t ndp_ctrl_rx_get_hwptr(struct ndp_channel *channel)
 		uint32_t hwptr = ctrl->c.hhp;
 		do {
 			hdr_base = ctrl->ts.calypte.hdr_buffer + hwptr;
-			if (hdr_base->valid == 0)
+			if ((hdr_base->valid & 0x01) == (ctrl->ts.calypte.valid_flag ^ 1))
 				break;
-			hwptr++;
+			hwptr += 1;
+
+			if ((hwptr & channel->ptrmask) == 0) {
+				ctrl->ts.calypte.valid_flag ^= 1;
+			}
+
 		} while (hwptr < ctrl->hdr_buffer_size * 2);
 		ctrl->c.hhp = hwptr & channel->ptrmask;
 		return ctrl->c.hhp;
@@ -850,6 +855,7 @@ static int ndp_ctrl_calypte_start(struct ndp_channel *channel, uint64_t *hwptr)
 		return ret;
 
 	ctrl->ts.calypte.free_bytes = ctrl->c.mdp;
+	ctrl->ts.calypte.valid_flag = 1;
 
 	*hwptr = 0;
 	return 0;
