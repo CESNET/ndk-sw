@@ -191,8 +191,6 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	prot = PROT_READ;
 	prot |= q->channel.type == NDP_CHANNEL_TYPE_TX ? PROT_WRITE : 0;
 
-	// TODO: Attempt to zero this buffer and then remap it with protection information of only
-	// PROT_READ
 	q->u.v3.hdrs = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
 	if (q->u.v3.hdrs == MAP_FAILED) {
 		return -EBADFD;
