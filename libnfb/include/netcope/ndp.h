@@ -188,7 +188,8 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	if (ret)
 		return -EBADFD;
 
-	prot = PROT_READ | PROT_WRITE;
+	prot = PROT_READ;
+	prot |= q->channel.type == NDP_CHANNEL_TYPE_TX ? PROT_WRITE : 0;
 
 	// TODO: Attempt to zero this buffer and then remap it with protection information of only
 	// PROT_READ
