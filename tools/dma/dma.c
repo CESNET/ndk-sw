@@ -649,8 +649,7 @@ void rxqueue_print_status(struct ni_context *ctx, struct nc_rxqueue *q, int inde
 			ni_item_str_size(ctx, NI_CTRL_BS, s->pointer_mask ? s->pointer_mask + 1 : 0);
 		}
 
-		if (q->type == QUEUE_TYPE_SZE || q->type == QUEUE_TYPE_NDP)
-			ni_item_uint64_tx(ctx, NI_CTRL_REG_TO, s->timeout);
+		ni_item_uint64_tx(ctx, NI_CTRL_REG_TO, s->timeout);
 
 		if (q->type == QUEUE_TYPE_SZE) {
 			ni_item_uint64_tx(ctx, NI_CTRL_REG_MR, s->max_request);
@@ -670,8 +669,7 @@ void rxqueue_print_status(struct ni_context *ctx, struct nc_rxqueue *q, int inde
 		ni_item_uint64_tx(ctx, NI_CTRL_REG_DESC_B, s->desc_base);
 		if (q->type == QUEUE_TYPE_CALYPTE)
 			ni_item_uint64_tx(ctx, NI_CTRL_REG_HDR_B, s->hdr_base);
-		else
-			ni_item_uint64_tx(ctx, NI_CTRL_REG_PTR_B, s->pointer_base);
+		ni_item_uint64_tx(ctx, NI_CTRL_REG_PTR_B, s->pointer_base);
 	}
 }
 
@@ -734,8 +732,7 @@ void txqueue_print_status(struct ni_context *ctx, struct nc_txqueue *q, int inde
 			ni_item_str_size(ctx, NI_CTRL_BS, s->pointer_mask ? s->pointer_mask + 1 : 0);
 		}
 
-		if (q->type == QUEUE_TYPE_SZE || q->type == QUEUE_TYPE_NDP)
-			ni_item_uint64_tx(ctx, NI_CTRL_REG_TO, s->timeout);
+		ni_item_uint64_tx(ctx, NI_CTRL_REG_TO, s->timeout);
 
 		if (q->type == QUEUE_TYPE_SZE) {
 			ni_item_uint64_tx(ctx, NI_CTRL_REG_MR, s->max_request);
@@ -755,8 +752,9 @@ void txqueue_print_status(struct ni_context *ctx, struct nc_txqueue *q, int inde
 		}
 	}
 
-	if (s && verbose > 1 && q->type != QUEUE_TYPE_CALYPTE) {
-		ni_item_uint64_tx(ctx, NI_CTRL_REG_DESC_B, s->desc_base);
+	if (s && verbose > 1) {
+		if (q->type != QUEUE_TYPE_CALYPTE)
+			ni_item_uint64_tx(ctx, NI_CTRL_REG_DESC_B, s->desc_base);
 		ni_item_uint64_tx(ctx, NI_CTRL_REG_PTR_B, s->pointer_base);
 	}
 }

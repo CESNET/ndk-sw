@@ -202,11 +202,11 @@ static inline void nc_rxqueue_read_status(struct nc_rxqueue *rxqueue, struct nc_
 		s->sd_pointer        = nfb_comp_read32(comp, NDP_CTRL_REG_SDP);
 		s->hd_pointer        = nfb_comp_read32(comp, NDP_CTRL_REG_HDP);
 		s->desc_pointer_mask = nfb_comp_read32(comp, NDP_CTRL_REG_MDP);
-		s->timeout           = 0;
+		s->timeout           = nfb_comp_read32(comp, NDP_CTRL_REG_TIMEOUT);
 		s->max_request       = 0;
 		s->desc_base         = nfb_comp_read64(comp, NDP_CTRL_REG_DESC_BASE);
 		s->hdr_base          = nfb_comp_read64(comp, NDP_CTRL_REG_HDR_BASE);
-		s->pointer_base      = 0;
+		s->pointer_base      = nfb_comp_read64(comp, NDP_CTRL_REG_UPDATE_BASE);
 		s->ctrl_running      = (s->_ctrl_raw & 1) ? 1 : 0;
 		s->stat_running      = (s->_stat_raw & 1) ? 1 : 0;
 	} else {
