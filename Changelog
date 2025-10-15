@@ -1,3 +1,6 @@
+* Wed Oct 15 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.5-1
+- [FEATURE]: add support for fb2cdg1
+
 * Thu Aug 21 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.4-1
 - [FEATURE]: add support for different varians of ia-440i card
 
