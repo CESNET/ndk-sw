@@ -412,6 +412,10 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 	/* Zero both buffer ptrs */
 	nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_SDP, 0);
 
+	// Since this is a software initializing the queue, the Peer-to-Peer mode has to be disabled
+	if (ctrl->type == DMA_TYPE_CALYPTE)
+		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_EXPER, 0);
+
 	/* Timeout */
 	/* TODO: let user to configure tihs value */
 	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_TIMEOUT, 0x4000);
