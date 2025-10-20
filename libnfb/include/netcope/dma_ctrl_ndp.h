@@ -39,6 +39,8 @@
 #define NDP_CTRL_REG_MDP                0x58
 #define NDP_CTRL_REG_MHP                0x5C
 
+// ---------------- Calypte specific registers -------
+#define NDP_CTRL_REG_EXPER              0x08
 
 // -------------- NDP/Calypte Counters -----------------
 // Processed packets on TX
