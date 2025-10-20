@@ -109,6 +109,8 @@ static int nfb_mi_map(struct nfb_device *nfb, struct nfb_mi_node *mi_node, struc
 	snprintf(nodename, sizeof(nodename), "/drivers/mi/PCI%d,BAR%d", mi_node->pci_index, mi_node->bar);
 	node_offset = fdt_path_offset(nfb->fdt, nodename);
 
+	fdt_setprop_u64(nfb->fdt, node_offset, "phys_base", mi_node->mem_phys);
+	fdt_setprop_u64(nfb->fdt, node_offset, "phys_size", mi_node->mem_len);
 	fdt_setprop_u64(nfb->fdt, node_offset, "mmap_base", mi_node->mmap_offset);
 	fdt_setprop_u64(nfb->fdt, node_offset, "mmap_size", mi_node->mem_len);
 
@@ -138,6 +140,8 @@ static void nfb_mi_unmap(struct nfb_device *nfb, struct nfb_mi_node *mi)
 		snprintf(nodename, sizeof(nodename), "/drivers/mi/PCI%d,BAR%d", mi->pci_index, mi->bar);
 		node_offset = fdt_path_offset(nfb->fdt, nodename);
 
+		fdt_setprop_u64(nfb->fdt, node_offset, "phys_base", 0);
+		fdt_setprop_u64(nfb->fdt, node_offset, "phys_size", 0);
 		fdt_setprop_u64(nfb->fdt, node_offset, "mmap_base", 0);
 		fdt_setprop_u64(nfb->fdt, node_offset, "mmap_size", 0);
 	}
