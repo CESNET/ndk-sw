@@ -37,7 +37,7 @@ endforeach()
 
 add_executable(nfb-spi-max nfb-spi-max/max-spi.c)
 
-set (PIE_TARGETS nfb-flash-ident nfb-flash-read nfb-spi-max)
+set (PIE_TARGETS ndp-ptp nfb-flash-ident nfb-flash-read nfb-spi-max)
 foreach(PIE_TARGET IN LISTS PIE_TARGETS)
 	set_property(TARGET ${PIE_TARGET} PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endforeach()
