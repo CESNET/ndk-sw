@@ -39,6 +39,8 @@ add_executable(nfb-bus bus/bus.c)
 
 add_executable(nfb-dma dma/dma.c)
 
+add_executable(ndp-ptp ptp/ptp.c)
+
 add_executable(nfb-eth
 	eth/cfp2.c eth/ieee802_3.c eth/main.c eth/pcspma.c eth/qsfpp.c
 	eth/query.c eth/rxmac.c eth/transceiver.c eth/txmac.c
@@ -54,7 +56,7 @@ add_executable(ndp-tool
 	ndptool/loopback_hw.c ndptool/main.c ndptool/modules.c ndptool/pcap.c
 	ndptool/read.c ndptool/receive.c ndptool/stats.c ndptool/transmit.c)
 
-set (PIE_TARGETS nfb-info nfb-boot nfb-bus nfb-dma nfb-eth nfb-tsu nfb-mdio ndp-tool)
+set (PIE_TARGETS ndp-ptp nfb-info nfb-boot nfb-bus nfb-dma nfb-eth nfb-tsu nfb-mdio ndp-tool)
 foreach(PIE_TARGET IN LISTS PIE_TARGETS)
 	set_property(TARGET ${PIE_TARGET} PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endforeach()
@@ -78,7 +80,7 @@ foreach(NDP_TARGET IN LISTS NDP_TARGETS)
 endforeach()
 
 install(
-	TARGETS nfb-boot nfb-bus nfb-dma nfb-eth nfb-info nfb-mdio nfb-tsu ndp-tool
+	TARGETS ndp-ptp nfb-boot nfb-bus nfb-dma nfb-eth nfb-info nfb-mdio nfb-tsu ndp-tool
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 

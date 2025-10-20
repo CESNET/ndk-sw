@@ -51,6 +51,20 @@ static inline uint32_t fdt_getprop_u32(const void *fdt, int nodeoffset, const ch
         return 0;
 }
 
+static inline uint64_t fdt_getprop_u64(const void *fdt, int nodeoffset, const char *name, int *lenp)
+{
+        const fdt64_t *fdt_prop;
+	int proplen;
+
+        fdt_prop = (const fdt64_t*) fdt_getprop(fdt, nodeoffset, name, &proplen);
+	if (lenp)
+		*lenp = proplen;
+        if (proplen == sizeof(*fdt_prop)) {
+                return fdt64_to_cpu(*fdt_prop);
+        }
+        return 0;
+}
+
 static inline int ndp_header_fdt_node_offset(const void *fdt, int dir, int id)
 {
 	int ret;
