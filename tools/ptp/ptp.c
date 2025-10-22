@@ -67,7 +67,7 @@ void usage(const char *me)
 	printf("-i indexes      List of communicating channels\n");
 	printf("-r path         Path to a transmitting device [default: %s]\n", nfb_default_dev_path());
 	printf("-t path         Path to a receiving device [default: %s]\n", nfb_default_dev_path());
-	printf("-p packets      Stop tranfering after <packets> packets");
+	printf("-p packets      Stop tranfering after <packets> packets\n");
 	printf("-u              Enable loopback on the remote end (no effect if -r and -t are the same device)");
 	printf("-h              Show this text\n");
 }
@@ -460,6 +460,7 @@ int main(int argc, char *argv[])
 	} else {
 		ctx.txdev = ctx.rxdev;
 		rcv_lbk_en = false;
+		remote_gen_en = false;
 	}
 
 	ret |= find_dev_bar_addrs(ctx.txdev, &ctx.tx_bars[0], &ctx.tx_bars[1]);
@@ -530,7 +531,7 @@ local_gen_start_fail:
 	}
 
 mfb_lbk_en_fail:
-	ret = disable_channels(&ctx, &index_range, rcv_lbk_en);
+	ret = disable_channels(&ctx, &index_range, rcv_lbk_en || remote_gen_en);
 	if (ret)
 		fprintf(stderr, "Failed to stop channels.");
 
