@@ -352,7 +352,12 @@ int check_boot_success(const char *path_by_pci, int cmd, const char *filename)
 
 	dev = nfb_open(path_by_pci);
 	if (dev == NULL) {
-		warnx("can't open device file after boot; can be caused by a corrupted configuration file or unsupported hotplug on this platform");
+		warnx(
+			"can't open device file after boot; "
+			"can be caused by a corrupted configuration file, "
+			"unsupported hotplug on this platform "
+			"or changed PCIe address of the main device"
+		);
 	} else {
 		if (cmd == CMD_WRITE_AND_BOOT) {
 			archive_read_first_file_with_extension(filename, ".dtb", &fdt);
