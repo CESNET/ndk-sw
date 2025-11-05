@@ -367,6 +367,23 @@ void test(void) {timer_delete_sync(NULL);}
 [AC_MSG_RESULT([no])])
 
 KERNEL_TRY_COMPILE([[
+#include <linux/timer.h>
+struct priv_device {
+	int stuff;
+	struct timer_list service_timer;
+};
+void test(void);
+void test(void) {
+	struct priv_device dev;
+	struct timer_list *t = &dev.service_timer;
+	struct priv_device *priv = timer_container_of(priv, t, service_timer);
+}
+]],
+[AC_MSG_CHECKING([whether kernel has timer_container_of])],
+[AC_DEFINE([CONFIG_HAS_TIMER_CONTAINER_OF], [1], [Define if kernel has timer_container_of]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
+KERNEL_TRY_COMPILE([[
 #include <linux/hrtimer.h>
 void test(void);
 void test(void) {hrtimer_setup(NULL, NULL, 0, 0);}

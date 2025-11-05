@@ -182,7 +182,11 @@ static void nfb_net_mac_off(struct net_device *netdev)
 #ifdef CONFIG_HAS_TIMER_SETUP
 static void nfb_net_service_timer(struct timer_list *t)
 {
+#ifdef CONFIG_HAS_TIMER_CONTAINER_OF
+	struct nfb_net_device *priv = timer_container_of(priv, t, service_timer);
+#else
 	struct nfb_net_device *priv = from_timer(priv, t, service_timer);
+#endif
 #else
 static void nfb_net_service_timer(unsigned long data)
 {
