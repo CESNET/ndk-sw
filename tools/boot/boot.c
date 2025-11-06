@@ -82,6 +82,7 @@ void usage(const char *me)
 	printf("-v              Be verbose\n");
 	printf("-l              Print list of available slots\n");
 	printf("-h              Print this help message\n");
+	printf("--force         Force writing bitstream to the card, USE WITH CAUTION!\n");
 	printf("\n");
 	printf("Quick boot:\n");
 	printf("Boot the device from selected slot and check if the signature\n");
@@ -351,7 +352,12 @@ int check_boot_success(const char *path_by_pci, int cmd, const char *filename)
 
 	dev = nfb_open(path_by_pci);
 	if (dev == NULL) {
-		warnx("can't open device file after boot; can be caused by a corrupted configuration file or unsupported hotplug on this platform");
+		warnx(
+			"can't open device file after boot; "
+			"can be caused by a corrupted configuration file, "
+			"unsupported hotplug on this platform "
+			"or changed PCIe address of the main device"
+		);
 	} else {
 		if (cmd == CMD_WRITE_AND_BOOT) {
 			archive_read_first_file_with_extension(filename, ".dtb", &fdt);
@@ -759,12 +765,24 @@ int main(int argc, char *argv[])
 	int flags = 0;
 	int verbose = 0;
 	enum commands cmd = CMD_UNKNOWN;
+	const struct option long_options[] = {
+		{"force", no_argument, 0, 0},
+		{0, 0, 0, 0}
+	};
+	int option_index = 0;
 
 	if (!isatty(fileno(stdout)))
 		flags |= FLAG_QUIET;
 
-	while ((c = getopt(argc, argv, ARGUMENTS)) != -1) {
+	while ((c = getopt_long(argc, argv, ARGUMENTS, long_options, &option_index)) >= 0) {
 		switch (c) {
+		case 0:
+			if (!strcmp(long_options[option_index].name, "force")) {
+				flags |= FLAG_FORCE;
+			} else {
+				errx(-1, "Unknown long option");
+			}
+			break;
 		case 'h':
 			cmd = CMD_USAGE;
 			break;
