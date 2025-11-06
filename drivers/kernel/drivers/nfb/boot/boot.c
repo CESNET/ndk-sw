@@ -373,6 +373,9 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	*priv = boot;
 
 	boot->nfb = nfb;
+
+	boot->reload_link_up_time = 600;
+
 	mutex_init(&boot->load_mutex);
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	ret = nfb_pmci_attach(boot);

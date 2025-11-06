@@ -59,6 +59,8 @@ struct nfb_boot {
 		unsigned current_op_progress_max;
 		unsigned current_op_progress;
 	} load;
+
+	unsigned int reload_link_up_time;
 };
 
 struct mtd_info *cfi_probe(struct map_info *map);
