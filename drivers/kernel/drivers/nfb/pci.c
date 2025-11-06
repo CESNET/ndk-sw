@@ -219,7 +219,7 @@ static void nfb_pci_fdt_update_endpoints(struct nfb_device *nfb)
  * nfb_fdt_fixups - Fix the FDT: Create missing nodes and properties
  * @nfb: NFB device
  */
-static void nfb_fdt_fixups(struct nfb_device *nfb)
+static int nfb_fdt_fixups(struct nfb_device *nfb)
 {
 	static const char *flag_fb_select_flash = "fb_select_flash";
 	static const char *flag_flash_set_async = "flash_set_async";
@@ -262,7 +262,7 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 	}
 
 	if (node < 0)
-		return;
+		return 0;
 
 	/* Add binary slots to DT for coresponding partitions for Flash access and booting */
 	/* TODO - move definition to firmware FDT */
@@ -394,17 +394,20 @@ static void nfb_fdt_fixups(struct nfb_device *nfb)
 			nfb_fdt_create_boot_type(fdt, node, "SPI", 4);
 		}
 	}
+	return 0;
 }
 /*
  * nfb_pci_create_fallback_fdt - Create empty DT with MI bus and boot controller for firmware with no DT support
  * @nfb: NFB device
  */
-static void nfb_pci_create_fallback_fdt(struct nfb_device *nfb)
+static int nfb_pci_create_fallback_fdt(struct nfb_device *nfb)
 {
 	int node;
 
 	if (nfb->fdt == NULL) {
 		nfb->fdt = kzalloc(NFB_FDT_MAXSIZE, GFP_KERNEL);
+		if (nfb->fdt == NULL)
+			return -ENOMEM;
 		fdt_create_empty_tree(nfb->fdt, NFB_FDT_MAXSIZE);
 	}
 
@@ -427,6 +430,7 @@ static void nfb_pci_create_fallback_fdt(struct nfb_device *nfb)
 		fdt_setprop_string(nfb->fdt, node, "compatible", "netcope,boot_controller");
 		fdt_setprop_u64(nfb->fdt, node, "reg", 0x0000200000000008l);
 	}
+	return 0;
 }
 
 /*
@@ -630,7 +634,7 @@ err_vsec_not_found:
 	return ERR_PTR(ret);
 }
 
-static void *nfb_pci_copy_fdt(struct nfb_pci_device *pci_device)
+static int nfb_pci_copy_fdt(struct nfb_pci_device *pci_device, void **fdtp)
 {
 	const int FDT_SIZE_MULTIPLIER = 4;
 
@@ -659,12 +663,13 @@ static void *nfb_pci_copy_fdt(struct nfb_pci_device *pci_device)
 
 	dev_info(&pci_device->pci->dev, "FDT loaded, size: %u, allocated buffer size: %zu\n", fdt_totalsize(fdt), len);
 	fdt_set_totalsize(fdt, len);
-	return fdt;
+	*fdtp = fdt;
+	return 0;
 
 err_fdt_malloc:
 err_no_fdtlen:
 err_no_fdt:
-	return ERR_PTR(ret);
+	return ret;
 }
 
 /*
@@ -1112,26 +1117,26 @@ static int nfb_pci_probe_main(struct nfb_pci_device *pci_device, const struct pc
 
 	nfb->dsn = pci_device->dsn;
 
-	nfb->fdt = nfb_dtb_inject;
-	if (nfb->fdt == NULL) {
-		/* Populate device tree */
-		nfb->fdt = nfb_pci_copy_fdt(pci_device);
-	}
-	if (IS_ERR(nfb->fdt)) {
-		ret = PTR_ERR(nfb->fdt);
-		dev_err(&pci->dev, "unable to read firmware description - DTB\n");
-
-		if (!fallback_fdt)
-			goto err_nfb_read_fdt;
-		else
-			nfb->fdt = NULL;
+	/* Populate device tree */
+	if (nfb_dtb_inject) {
+		nfb->fdt = nfb_dtb_inject;
+		ret = 0;
+	} else {
+		ret = nfb_pci_copy_fdt(pci_device, &nfb->fdt);
+		if (ret)
+			dev_err(&pci->dev, "unable to read firmware description - DTB\n");
 	}
 
 	/* Create fallback or modify existing FDT to support booting */
 	if (fallback_fdt)
-		nfb_pci_create_fallback_fdt(nfb);
+		ret = nfb_pci_create_fallback_fdt(nfb);
 
-	nfb_fdt_fixups(nfb);
+	if (nfb->fdt == NULL)
+		goto err_nfb_read_fdt;
+
+	ret = nfb_fdt_fixups(nfb);
+	if (ret)
+		goto err_nfb_fdt_fixups;
 
 	nfb_pci_attach_endpoint(nfb, pci_device, 0);
 
@@ -1163,13 +1168,14 @@ static int nfb_pci_probe_main(struct nfb_pci_device *pci_device, const struct pc
 	return 0;
 
 	/* Error handling */
+	//nfb_remove(nfb);
 err_nfb_probe:
-	kfree(nfb->fdt);
-err_nfb_read_fdt:
 	free_irq(pci->irq, nfb);
 	pci_disable_msi(pci);
-
 //err_pci_enable_msi:
+err_nfb_fdt_fixups:
+	kfree(nfb->fdt);
+err_nfb_read_fdt:
 	nfb_destroy(nfb);
 err_nfb_create:
 	return ret;
