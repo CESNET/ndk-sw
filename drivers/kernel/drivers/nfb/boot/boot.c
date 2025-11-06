@@ -461,11 +461,6 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 		nfb_boot_read_card_subtype(nfb, boot);
 	}
 
-	/* Backward compatibility with firmware, which doesn't have card-name property in DT */
-	fdt_offset = fdt_path_offset(nfb->fdt, "/firmware");
-	if (fdt_getprop(nfb->fdt, fdt_offset, "card-name", &len) == NULL)
-		fdt_setprop_string(nfb->fdt, fdt_offset, "card-name", nfb->pci_name);
-
 	fdt_offset = fdt_path_offset(nfb->fdt, "/board");
 	fdt_setprop_string(nfb->fdt, fdt_offset, "board-name", nfb->pci_name);
 	if (nfb->serial_str) {

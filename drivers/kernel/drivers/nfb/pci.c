@@ -252,8 +252,15 @@ static int nfb_fdt_fixups(struct nfb_device *nfb)
 	node = fdt_path_offset(fdt, "/firmware");
 
 	card_name = fdt_getprop(fdt, node, "card-name", &proplen);
-	if (proplen <= 0)
-		card_name = "";
+	if (card_name == NULL) {
+		/* Backward compatibility with firmware, which doesn't have card-name property in DT */
+		card_name = nfb->pci_name;
+		fdt_setprop_string(nfb->fdt, node, "card-name", card_name);
+	}
+
+	nfb->card_name = kstrdup(card_name, GFP_KERNEL);
+	if (nfb->card_name == NULL)
+		return -ENOMEM;
 
 	for (node = -1, i = 0; i < ARRAY_SIZE(boot_ctrl_compatibles); i++) {
 		node = fdt_node_offset_by_compatible(fdt, -1, boot_ctrl_compatibles[i]);
