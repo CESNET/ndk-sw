@@ -1,3 +1,8 @@
+* Wed Nov 12 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.6-1
+- [FEATURE] drivers: add support for newer kernels
+- [FIX] nfb-boot: add missing --force option
+- [FIX] ia-440i: increase PCIe Link up wait time on reload
+
 * Wed Oct 15 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.5-1
 - [FEATURE]: add support for fb2cdg1
 
