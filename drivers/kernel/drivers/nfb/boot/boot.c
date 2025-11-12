@@ -373,6 +373,9 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 	*priv = boot;
 
 	boot->nfb = nfb;
+
+	boot->reload_link_up_time = 600;
+
 	mutex_init(&boot->load_mutex);
 #ifdef CONFIG_NFB_ENABLE_PMCI
 	ret = nfb_pmci_attach(boot);
@@ -460,11 +463,6 @@ int nfb_boot_attach(struct nfb_device *nfb, void **priv)
 		/* Look for exact card type in Flash only for some cards */
 		nfb_boot_read_card_subtype(nfb, boot);
 	}
-
-	/* Backward compatibility with firmware, which doesn't have card-name property in DT */
-	fdt_offset = fdt_path_offset(nfb->fdt, "/firmware");
-	if (fdt_getprop(nfb->fdt, fdt_offset, "card-name", &len) == NULL)
-		fdt_setprop_string(nfb->fdt, fdt_offset, "card-name", nfb->pci_name);
 
 	fdt_offset = fdt_path_offset(nfb->fdt, "/board");
 	fdt_setprop_string(nfb->fdt, fdt_offset, "board-name", nfb->pci_name);

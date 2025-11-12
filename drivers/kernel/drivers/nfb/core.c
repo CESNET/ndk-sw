@@ -186,6 +186,8 @@ void nfb_destroy(struct nfb_device *nfb)
 {
 	if (nfb->serial_str)
 		kfree(nfb->serial_str);
+	if (nfb->card_name)
+		kfree(nfb->card_name);
 	kfree(nfb);
 }
 

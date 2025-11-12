@@ -306,7 +306,7 @@ int nfb_boot_reload(void *arg)
 	/*
 	 * Wait some time until the Link Up
 	 */
-	msleep(600);
+	msleep(boot->reload_link_up_time);
 
 	/* Rescan PCIe slaves */
 	for (i = 0; i < 2; i++) {

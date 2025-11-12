@@ -268,15 +268,13 @@ int nfb_hwmon_attach(struct nfb_device *nfb, void **priv)
 	int ret;
 	int i;
 
-	fdt = nfb_get_fdt(nfb);
-	fdt_offset = fdt_path_offset(fdt, "/firmware/");
-	prop = fdt_getprop(fdt, fdt_offset, "card-name", &name_len);
-	if(!strcmp(prop, "N5014")) {
+	if (!strcmp(nfb->card_name, "N5014")) {
 		dev_info(&nfb->pci->dev, "nfb_hwmon: Generic NFB hwmon skipped for N5014.\n");
 		*priv = NULL;
 		return 0;
 	}
     
+	fdt = nfb_get_fdt(nfb);
 	fdt_offset = fdt_path_offset(fdt, "/board/");
 	prop = fdt_getprop(fdt, fdt_offset, "board-name", &name_len);
 

@@ -291,6 +291,10 @@ int nfb_boot_bw_bmc_attach(struct nfb_boot* boot)
 
 	nfb_boot_bw_bmc_load_partition_table(boot);
 
+	if (strncmp(boot->nfb->card_name, "IA-440I", 7) == 0) {
+		boot->reload_link_up_time = 2500;
+	}
+
 	return 0;
 }
 
