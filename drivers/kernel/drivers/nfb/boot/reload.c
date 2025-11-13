@@ -359,4 +359,4 @@ err_reload_prepare_remove:
 
 
 module_param(boot_linkdown_enable, bool, S_IRUGO);
-MODULE_PARM_DESC(boot_linkdown_enable, "Shut the PCIe downstream link down during boot [yes]");
+MODULE_PARM_DESC(boot_linkdown_enable, "Shut the PCIe downstream link down during boot [no]");
