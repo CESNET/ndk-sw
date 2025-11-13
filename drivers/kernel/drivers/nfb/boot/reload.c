@@ -28,6 +28,7 @@
 #include "../pci.h"
 
 static bool boot_linkdown_enable = 0;
+extern struct mutex boot_reload_mutex;
 
 
 void nfb_boot_mtd_destroy(struct nfb_boot *nfb_boot);
@@ -229,6 +230,8 @@ int nfb_boot_reload(void *arg)
 
 	mbus_dev = &nfb->pci->bus->self->dev;
 
+	dev_info(mbus_dev, "acquiring mutex for reload on %s\n", pci_name(nfb->pci));
+	mutex_lock(&boot_reload_mutex);
 	dev_info(mbus_dev, "reloading firmware on %s\n", pci_name(nfb->pci));
 
 	INIT_LIST_HEAD(&slaves);
@@ -264,7 +267,8 @@ int nfb_boot_reload(void *arg)
 		reload_time_ms = 5000;
 	} else if (boot->m10bmc_spi) {
 		boot->m10bmc_spi->image_load[boot->num_image].load_image(boot->m10bmc_spi->sec);
-		return nfb_boot_n5014_reload_rescan(master);
+		ret = nfb_boot_n5014_reload_rescan(master);
+		goto alternative_reload_done;
 	} else if (boot->bw_bmc) {
 		nfb_boot_bw_bmc_reload(boot);
 	} else if (boot->sdm && boot->sdm_boot_en) {
@@ -327,12 +331,16 @@ int nfb_boot_reload(void *arg)
 		dev_err(mbus_dev, "unable to find master PCI device after FW reload!\n");
 	dev_info(mbus_dev, "firmware reload done\n");
 
-	return 0;
+	ret = 0;
+alternative_reload_done:
+	mutex_unlock(&boot_reload_mutex);
+	return ret;
 
 err_reload_prepare_remove:
 	list_for_each_entry_safe(slave, temp, &slaves, reload_list) {
 		list_del_init(&slave->reload_list);
 	}
+	mutex_unlock(&boot_reload_mutex);
 	return ret;
 }
 
