@@ -68,7 +68,7 @@ int txmac_execute_operation(struct ni_context *ctx, struct nc_txmac *txmac, stru
 			nc_txmac_disable(txmac);
 		break;
 	default:
-		warnx("TXMAC: Command not implemented");
+		warnx("TXMAC %d: Command not implemented; try to specify target unit, for example just RXMAC: -r", p->index);
 		break;
 	}
 	return 0;
