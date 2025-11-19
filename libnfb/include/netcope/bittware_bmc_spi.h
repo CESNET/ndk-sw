@@ -329,6 +329,11 @@ static inline int nc_bw_bmc_receive_i2c(struct nc_bw_bmc *spi, unsigned char* da
 	return 0;
 }
 
+static inline void nc_bw_bmc_buffer_init(struct nc_bw_bmc *spi)
+{
+	spi->pos = 0;
+}
+
 static inline int nc_bw_bmc_mctp_header_default(struct nc_bw_bmc *spi)
 {
 	int i = 0;

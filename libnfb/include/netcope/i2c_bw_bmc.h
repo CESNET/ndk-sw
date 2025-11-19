@@ -109,6 +109,7 @@ static inline int nc_i2c_bw_bmc_write_reg(void *p, uint8_t reg, const uint8_t *d
 	if (!nc_bw_bmc_lock(ctrl->bmc))
 		return -EAGAIN;
 
+	nc_bw_bmc_buffer_init(ctrl->bmc);
 	nc_bw_bmc_push_uint8(ctrl->bmc, ctrl->addr / 2);
 	nc_bw_bmc_push_uint8(ctrl->bmc, 0);
 	nc_bw_bmc_push_uint8(ctrl->bmc, reg);
