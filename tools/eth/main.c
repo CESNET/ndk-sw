@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <math.h>
+#include <errno.h>
 
 #include <nfb/nfb.h>
 #include <libfdt.h>
@@ -491,6 +492,7 @@ int main(int argc, char *argv[])
 	struct nfb_device *dev;
 	const char *query = NULL;
 	char *queries_index = NULL;
+	const char *errmsg = "";
 	int size = 0;
 	const void *fdt;
 
@@ -774,8 +776,16 @@ int main(int argc, char *argv[])
 				} else if (use & PCSPMA) {
 					used++;
 					ret = pcspma_execute_operation(ctx, dev, node, &p);
-					if (ret)
-						warnx("PCS/PMA command failed");
+					if (ret == -ENOTSUP) {
+						errmsg = "mode not supported by the current PCS/PMA";
+					} else if (ret == -EINVAL) {
+						errmsg = "unknown feature or PMA mode";
+					} else {
+						errmsg = strerror(-ret);
+					}
+					if (ret) {
+						warnx("PCS/PMA command failed: %s", errmsg);
+					}
 				}
 			}
 			ni_endsection(ctx, NI_SEC_ETH);

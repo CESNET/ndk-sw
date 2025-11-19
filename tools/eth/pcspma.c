@@ -110,7 +110,7 @@ int pcspma_set_feature(struct nc_mdio *mdio, int portaddr, struct eth_params *p)
 		pcs_item++;
 	}
 
-	return -1;
+	return -EINVAL;
 }
 
 static inline uint32_t nc_mdio_read_dword(struct nc_mdio *mdio, int prtad, int devad, uint16_t addr)

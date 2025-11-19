@@ -264,7 +264,7 @@ int rxmac_execute_operation(struct ni_context *ctx, struct nc_rxmac *rxmac, stru
 		nc_rxmac_mac_filter_enable(rxmac, p->param);
 		break;
 	default:
-		warnx("RXMAC: Command not implemented");
+		warnx("RXMAC %d: Command not implemented; try to specify target unit, for example just TXMAC: -t", p->index);
 		break;
 	}
 	return ret;
