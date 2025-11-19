@@ -1,3 +1,8 @@
+* Wed Nov 19 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.7-1
+- [FIX] boot: disable reloading more cards at same time
+- [FIX] libnfb/NDP: check version of DMA controllers
+- [FIX] nfb-eth: check PMA/PMD type compatibility
+
 * Wed Nov 12 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.6-1
 - [FEATURE] drivers: add support for newer kernels
 - [FIX] nfb-boot: add missing --force option
