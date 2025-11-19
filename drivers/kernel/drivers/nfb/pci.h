@@ -81,6 +81,7 @@ struct nfb_pci_device {
 	uint16_t bridge_command;
 	uint16_t bridge_devctl;
 	uint32_t bridge_root_aer_cmd;
+	uint32_t bridge_root_aer_mask;
 	void * fdt;
 	const char * card_name;
 };

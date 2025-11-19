@@ -28,6 +28,7 @@
 #include "../pci.h"
 
 static bool boot_linkdown_enable = 0;
+extern struct mutex boot_reload_mutex;
 
 
 void nfb_boot_mtd_destroy(struct nfb_boot *nfb_boot);
@@ -77,6 +78,7 @@ static void nfb_boot_reload_linkup(struct nfb_pci_device *card)
 static int nfb_boot_reload_rescan(struct nfb_pci_device *card)
 {
 	struct pci_dev *bus_dev;
+	int ext_cap_pos;
 
 	pci_lock_rescan_remove();
 	pci_rescan_bus(card->bus->parent);
@@ -93,6 +95,11 @@ static int nfb_boot_reload_rescan(struct nfb_pci_device *card)
 	pci_write_config_word(bus_dev, PCI_COMMAND, card->bridge_command);
 	pci_write_config_word(bus_dev, bus_dev->pcie_cap + PCI_EXP_DEVCTL, card->bridge_devctl);
 
+	ext_cap_pos = pci_find_ext_capability(bus_dev, PCI_EXT_CAP_ID_ERR);
+	if (ext_cap_pos) {
+		pci_write_config_dword(bus_dev, ext_cap_pos + PCI_ERR_UNCOR_MASK, card->bridge_root_aer_mask);
+	}
+
 	pci_dev_put(card->pci);
 	return 0;
 }
@@ -102,7 +109,7 @@ static int nfb_boot_n5014_reload_rescan(struct nfb_pci_device *card) {
 	struct pci_dev *bus_dev;
 	struct pci_bus *b = NULL;
 	int reload_time_ms = 5000;
-	int ext_cap_pos;
+	int root_ext_cap_pos;
 
 	root = pcie_find_root_port(card->pci);
 	if (root == NULL) {
@@ -145,11 +152,11 @@ static int nfb_boot_n5014_reload_rescan(struct nfb_pci_device *card) {
 
 	// Restore errors
 	dev_info(&bus_dev->dev, "nfb: restoring errors on PCI bridge\n");
-	ext_cap_pos = pci_find_ext_capability(root, PCI_EXT_CAP_ID_ERR);
+	root_ext_cap_pos = pci_find_ext_capability(root, PCI_EXT_CAP_ID_ERR);
 	pci_write_config_word(bus_dev, PCI_COMMAND, card->bridge_command);
 	pci_write_config_word(bus_dev, bus_dev->pcie_cap + PCI_EXP_DEVCTL, card->bridge_devctl);
-	if (ext_cap_pos) {
-		pci_write_config_dword(root, ext_cap_pos + PCI_ERR_ROOT_COMMAND, card->bridge_root_aer_cmd);
+	if (root_ext_cap_pos) {
+		pci_write_config_dword(root, root_ext_cap_pos + PCI_ERR_ROOT_COMMAND, card->bridge_root_aer_cmd);
 	}
 
 	pci_dev_put(card->pci);
@@ -166,30 +173,37 @@ static int nfb_pci_errors_disable(struct nfb_pci_device *card, int use_root_port
 {
 	struct pci_dev *bridge = card->bus->self;
 	struct pci_dev *root = pcie_find_root_port(bridge);
+	int root_ext_cap_pos = 0;
 	int ext_cap_pos = 0;
 
 	dev_info(&card->bus->self->dev, "disabling errors on PCI bridge\n");
+	if (use_root_port_cmds && root == NULL) {
+		dev_err(&card->bus->self->dev, "cannot find PCIe root port!\n");
+		return -ENODEV;
+	}
 
 	/* save state of error registers */
 	pci_read_config_word(bridge, PCI_COMMAND, &card->bridge_command);
 	pci_read_config_word(bridge, bridge->pcie_cap + PCI_EXP_DEVCTL, &card->bridge_devctl);
-	if (use_root_port_cmds) {
-		if (root == NULL) {
-			dev_err(&card->bus->self->dev, "Cannot find PCIE root port!\n");
-			return -ENODEV;
-		}
-		ext_cap_pos = pci_find_ext_capability(root, PCI_EXT_CAP_ID_ERR);
-	}
-	if (ext_cap_pos) {
-		pci_read_config_dword(root, ext_cap_pos + PCI_ERR_ROOT_COMMAND, &card->bridge_root_aer_cmd);
-	}
 
 	pci_write_config_word(bridge, PCI_COMMAND, card->bridge_command & ~PCI_COMMAND_SERR);
 	pci_write_config_word(bridge, bridge->pcie_cap + PCI_EXP_DEVCTL,
 			card->bridge_devctl & ~(PCI_EXP_DEVCTL_NFERE | PCI_EXP_DEVCTL_FERE));
+
+	ext_cap_pos = pci_find_ext_capability(bridge, PCI_EXT_CAP_ID_ERR);
 	if (ext_cap_pos) {
-		pci_write_config_dword(root, ext_cap_pos + PCI_ERR_ROOT_COMMAND, 0);
+		pci_read_config_dword(bridge, ext_cap_pos + PCI_ERR_UNCOR_MASK, &card->bridge_root_aer_mask);
+		pci_write_config_dword(bridge, ext_cap_pos + PCI_ERR_UNCOR_MASK, card->bridge_root_aer_mask | (PCI_ERR_UNC_SURPDN));
 	}
+
+	if (use_root_port_cmds) {
+		root_ext_cap_pos = pci_find_ext_capability(root, PCI_EXT_CAP_ID_ERR);
+		if (root_ext_cap_pos) {
+			pci_read_config_dword(root, root_ext_cap_pos + PCI_ERR_ROOT_COMMAND, &card->bridge_root_aer_cmd);
+			pci_write_config_dword(root, root_ext_cap_pos + PCI_ERR_ROOT_COMMAND, 0);
+		}
+	}
+
 	return 0;
 }
 
@@ -229,6 +243,8 @@ int nfb_boot_reload(void *arg)
 
 	mbus_dev = &nfb->pci->bus->self->dev;
 
+	dev_info(mbus_dev, "acquiring mutex for reload on %s\n", pci_name(nfb->pci));
+	mutex_lock(&boot_reload_mutex);
 	dev_info(mbus_dev, "reloading firmware on %s\n", pci_name(nfb->pci));
 
 	INIT_LIST_HEAD(&slaves);
@@ -264,7 +280,8 @@ int nfb_boot_reload(void *arg)
 		reload_time_ms = 5000;
 	} else if (boot->m10bmc_spi) {
 		boot->m10bmc_spi->image_load[boot->num_image].load_image(boot->m10bmc_spi->sec);
-		return nfb_boot_n5014_reload_rescan(master);
+		ret = nfb_boot_n5014_reload_rescan(master);
+		goto alternative_reload_done;
 	} else if (boot->bw_bmc) {
 		nfb_boot_bw_bmc_reload(boot);
 	} else if (boot->sdm && boot->sdm_boot_en) {
@@ -327,15 +344,19 @@ int nfb_boot_reload(void *arg)
 		dev_err(mbus_dev, "unable to find master PCI device after FW reload!\n");
 	dev_info(mbus_dev, "firmware reload done\n");
 
-	return 0;
+	ret = 0;
+alternative_reload_done:
+	mutex_unlock(&boot_reload_mutex);
+	return ret;
 
 err_reload_prepare_remove:
 	list_for_each_entry_safe(slave, temp, &slaves, reload_list) {
 		list_del_init(&slave->reload_list);
 	}
+	mutex_unlock(&boot_reload_mutex);
 	return ret;
 }
 
 
 module_param(boot_linkdown_enable, bool, S_IRUGO);
-MODULE_PARM_DESC(boot_linkdown_enable, "Shut the PCIe downstream link down during boot [yes]");
+MODULE_PARM_DESC(boot_linkdown_enable, "Shut the PCIe downstream link down during boot [no]");

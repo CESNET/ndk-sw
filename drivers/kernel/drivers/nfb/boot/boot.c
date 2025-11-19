@@ -47,6 +47,8 @@
 
 static bool boot_enable = 1;
 
+struct mutex boot_reload_mutex;
+
 extern const struct nfb_pci_dev nfb_device_infos [];
 
 /*
@@ -520,14 +522,15 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 
 int nfb_boot_init()
 {
+	mutex_init(&boot_reload_mutex);
 #ifdef CONFIG_NFB_ENABLE_PMCI
-    int ret;
+	int ret;
 	ret = nfb_pmci_init();
-    if (ret)
-        goto err_pmci;
-    ret = nfb_spi_init();
+	if (ret)
+		goto err_pmci;
+	ret = nfb_spi_init();
 err_pmci:
-    return ret;
+	return ret;
 #else
 	return 0;
 #endif
