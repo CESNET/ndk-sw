@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <linux/ethtool.h>
 
@@ -326,14 +327,14 @@ int ieee802_3_set_pma_pmd_type_string(struct mdio_if_info *if_info, const char *
 	const struct pma_pmd_type_t *table = ieee802_3_pma_pmd_type;
 
 	if (string == NULL)
-		return -1;
+		return -EINVAL;
 
 	table = _find_pma_pmd_type_by_string(table, string);
 	if (!table)
-		return -1;
+		return -EINVAL;
 
 	if (!check_supported_pma_pmd_type_string(if_info, table->name)) {
-		return -2;
+		return -ENOTSUP;
 	}
 
 	if_info->mdio_write(if_info->dev, if_info->prtad, 1, 7, table->nr);
@@ -489,6 +490,6 @@ int ieee802_3_get_fec_lines(const char *string)
 {
 	const struct pma_pmd_type_t *t = _find_pma_pmd_type_by_string(ieee802_3_pma_pmd_type, string);
 	if (!t)
-		return -1;
+		return -EINVAL;
 	return t->flags & IEEE802_3_FLAG_LINES_MASK;
 }
