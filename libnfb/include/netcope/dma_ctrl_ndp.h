@@ -290,6 +290,9 @@ static inline int nc_ndp_ctrl_open(struct nfb_device* nfb, int fdt_offset, struc
 {
 	int ret;
 	unsigned int i;
+	unsigned version = 0;
+	const fdt32_t *prop;
+	int proplen;
 
 	const char *compatible[] = {
 		COMP_NC_DMA_CTRL_NDP_RX,
@@ -311,10 +314,21 @@ static inline int nc_ndp_ctrl_open(struct nfb_device* nfb, int fdt_offset, struc
 	if (ret)
 		return -EINVAL;
 
-	if (i < 2)
+	prop = (const fdt32_t*) fdt_getprop(nfb_get_fdt(nfb), fdt_offset, "version", &proplen);
+	if (proplen != sizeof(*prop))
+		return -EBADF;
+
+	version = fdt32_to_cpu(*prop);
+
+	if (i < 2) {
 		ctrl->type = DMA_TYPE_MEDUSA;
-	else
+		if (version >= 0x00030000)
+			return -ENOSYS;
+	} else {
 		ctrl->type = DMA_TYPE_CALYPTE;
+		if (version >= 0x00020000)
+			return -ENOSYS;
+	}
 
 	ctrl->comp = nfb_comp_open(nfb, fdt_offset);
 	if (ctrl->comp == NULL) {

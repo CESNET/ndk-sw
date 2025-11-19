@@ -522,9 +522,9 @@ void nfb_boot_detach(struct nfb_device* nfb, void *priv)
 
 int nfb_boot_init()
 {
+	int ret = 0;
 	mutex_init(&boot_reload_mutex);
 #ifdef CONFIG_NFB_ENABLE_PMCI
-	int ret;
 	ret = nfb_pmci_init();
 	if (ret)
 		goto err_pmci;
@@ -532,7 +532,7 @@ int nfb_boot_init()
 err_pmci:
 	return ret;
 #else
-	return 0;
+	return ret;
 #endif
 }
 
