@@ -297,6 +297,29 @@ const char *ieee802_3_get_pma_pmd_type_string(struct mdio_if_info *if_info)
 	return "Unknown";
 }
 
+struct cb_match_pma_pmd_type_priv {
+	const char *name;
+	int matched;
+};
+
+static void match_pma_pmd_type(void *p, const char *str)
+{
+	struct cb_match_pma_pmd_type_priv *priv = p;
+	int matched = 0;
+	matched = !strcmp(str, priv->name);
+	priv->matched |= matched;
+}
+
+/* Check if requested mode is in list of supported PMA/PMD types */
+int check_supported_pma_pmd_type_string(struct mdio_if_info *if_info, const char *req)
+{
+	struct cb_match_pma_pmd_type_priv cb_mpptp;
+	cb_mpptp.name = req;
+	cb_mpptp.matched = 0;
+	ieee802_3_get_supported_pma_pmd_types_string(if_info, match_pma_pmd_type, &cb_mpptp);
+	return cb_mpptp.matched;
+}
+
 int ieee802_3_set_pma_pmd_type_string(struct mdio_if_info *if_info, const char *string)
 {
 	int reg = -1;
@@ -308,6 +331,10 @@ int ieee802_3_set_pma_pmd_type_string(struct mdio_if_info *if_info, const char *
 	table = _find_pma_pmd_type_by_string(table, string);
 	if (!table)
 		return -1;
+
+	if (!check_supported_pma_pmd_type_string(if_info, table->name)) {
+		return -2;
+	}
 
 	if_info->mdio_write(if_info->dev, if_info->prtad, 1, 7, table->nr);
 
