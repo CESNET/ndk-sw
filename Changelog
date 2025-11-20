@@ -1,3 +1,6 @@
+* Thu Nov 20 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.8-1
+- [FIX] BittWare BMC (ia-440i): initialize buffer for I2C write
+
 * Wed Nov 19 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.7-1
 - [FIX] boot: disable reloading more cards at same time
 - [FIX] libnfb/NDP: check version of DMA controllers
