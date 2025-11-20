@@ -326,7 +326,7 @@ static inline int nc_ndp_ctrl_open(struct nfb_device* nfb, int fdt_offset, struc
 			return -ENOSYS;
 	} else {
 		ctrl->type = DMA_TYPE_CALYPTE;
-		if (version >= 0x00020000)
+		if (version >= 0x00030000)
 			return -ENOSYS;
 	}
 
