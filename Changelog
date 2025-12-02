@@ -1,3 +1,7 @@
+* Tue Dec 2 2025 Martin Spinler <spinler@cesnet.cz> - 6.29.0-1
+- [FEATURE] add rx_stream to nc_ifc_eth_map_info
+- [OPT] dma-calypte: optimize performance for throughput/latency (compatible just with version 2.0)
+
 * Thu Nov 20 2025 Martin Spinler <spinler@cesnet.cz> - 6.28.8-1
 - [FIX] BittWare BMC (ia-440i): initialize buffer for I2C write
 
