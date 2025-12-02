@@ -177,6 +177,7 @@ struct nc_ifc_eth_map_info {
 	int node_rxmac; /* FDT node of RxMAC */
 	int node_txmac; /* FDT node of TxMAC */
 
+	int rx_stream;  /* Stream ID in NDK application core */
 	int port;       /* Port ID/index on card, -1 for virtual ifcs */
 	int channel;	/* Channel ID/index within port (first channel when Eth channel uses multiple lanes) */
 	int lane;       /* Channel ID/index within card (first lane when Eth channel uses multiple lanes) */
@@ -202,6 +203,8 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 	int i, q;
 	int ret;
 	const void *fdt;
+	const fdt32_t *prop32;
+	int proplen;
 	int node;
 
 	int ifc = 0;
@@ -286,6 +289,13 @@ static inline int nc_ifc_map_info_create_ordinary(struct nfb_device *nfb, struct
 				}
 			}
 		}
+
+		/* Fallback for not tagged firmware */
+		eth_info->rx_stream = eth_info->port;
+
+		prop32 = (const fdt32_t*) fdt_getprop(fdt, node, "rx_stream", &proplen);
+		if (proplen == sizeof(*prop32))
+			eth_info->rx_stream = fdt32_to_cpu(*prop32);
 	}
 
 	if (ifc == 0) {
