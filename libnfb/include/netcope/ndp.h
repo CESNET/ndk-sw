@@ -150,6 +150,8 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 
 #ifndef __KERNEL__
 	off_t hdr_mmap_offset = 0;
+	off_t upd_mmap_offset = 0;
+	size_t upd_mmap_size = 0;
 	int prot;
 	int ret;
 #endif
@@ -180,27 +182,41 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	if (q->channel.type == NDP_CHANNEL_TYPE_TX) {
 		ret |= fdt_getprop32(fdt, fdt_offset, "data_buff_size", &data_buff_size);
 		ret |= fdt_getprop32(fdt, fdt_offset, "hdr_buff_size", &hdr_buff_size);
+		ret |= fdt_getprop64(fdt, fdt_offset, "upd_mmap_size", &upd_mmap_size);
+		ret |= fdt_getprop64(fdt, fdt_offset, "upd_mmap_base", &upd_mmap_offset);
 	}
 	if (ret)
 		return -EBADFD;
 
-	prot = PROT_READ | PROT_WRITE;
+	prot = PROT_READ;
+	prot |= q->channel.type == NDP_CHANNEL_TYPE_TX ? PROT_WRITE : 0;
 
 	q->u.v3.hdrs = mmap(NULL, hdr_mmap_size, prot, MAP_FILE | MAP_SHARED, q->fd, hdr_mmap_offset);
 	if (q->u.v3.hdrs == MAP_FAILED) {
 		return -EBADFD;
 	}
 
+	if (q->channel.type == NDP_CHANNEL_TYPE_TX) {
+		q->u.v3.update_buff = mmap(NULL, upd_mmap_size, PROT_READ, MAP_SHARED, q->fd, upd_mmap_offset);
+		if (q->u.v3.update_buff == MAP_FAILED) {
+			ret = -EBADFD;
+			goto err_mmap_upd;
+		}
+	}
+
 	if (q->flags & NDP_CHANNEL_FLAG_EXCLUSIVE) {
 		q->u.v3.uspace_hdrs = q->u.v3.hdrs;
 
 		q->u.v3.comp = nfb_comp_open(q->dev, ctrl_offset);
-		if (q->u.v3.comp == NULL)
-			return -ENODEV;
+		if (q->u.v3.comp == NULL) {
+			ret = -ENODEV;
+			goto err_comp_open;
+		}
 	}
 #endif
 
 	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
+		q->u.v3.valid_flag = 1;
 		q->u.v3.hdr_ptr_mask = ((hdr_mmap_size / 2) / sizeof(struct ndp_v3_packethdr)) - 1; // "- 1" to create a mask for AND operations
 	} else {
 		q->u.v3.hdr_ptr_mask = hdr_buff_size / (2 * sizeof(struct ndp_v3_packethdr)) - 1;
@@ -217,6 +233,15 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	}
 
 	return 0;
+
+#ifndef __KERNEL__
+err_comp_open:
+	if (q->channel.type == NDP_CHANNEL_TYPE_TX)
+		munmap(q->u.v3.update_buff, upd_mmap_size);
+err_mmap_upd:
+	munmap(q->u.v3.hdrs, hdr_mmap_size);
+	return ret;
+#endif
 }
 
 static inline int nc_ndp_v3_close_queue(struct nc_ndp_queue *q)

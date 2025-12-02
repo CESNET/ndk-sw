@@ -32,14 +32,15 @@
 #define NDP_CTRL_REG_SHP                0x14
 #define NDP_CTRL_REG_HDP                0x18
 #define NDP_CTRL_REG_HHP                0x1C
+#define NDP_CTRL_REG_TIMEOUT            0x20
 #define NDP_CTRL_REG_DESC_BASE          0x40
 #define NDP_CTRL_REG_HDR_BASE           0x48
 #define NDP_CTRL_REG_UPDATE_BASE        0x50
 #define NDP_CTRL_REG_MDP                0x58
 #define NDP_CTRL_REG_MHP                0x5C
 
-// --------------- NDP specific registers --------------
-#define NDP_CTRL_REG_TIMEOUT            0x20
+// ---------------- Calypte specific registers -------
+#define NDP_CTRL_REG_EXPER              0x08
 
 // -------------- NDP/Calypte Counters -----------------
 // Processed packets on TX
@@ -201,45 +202,42 @@ static inline struct nc_ndp_desc nc_ndp_tx_desc2(uint64_t phys, uint16_t len, ui
 
 static inline void nc_ndp_ctrl_hdp_update(struct nc_ndp_ctrl *ctrl)
 {
-	if (ctrl->type == DMA_TYPE_MEDUSA) {
 #ifdef __KERNEL__
-		rmb();
+	rmb();
 #else
 #ifdef _RTE_CONFIG_H_
-		rte_rmb();
-		rte_wmb();
+	rte_rmb();
+	rte_wmb();
 #endif
 #endif
-		ctrl->hdp = ((uint32_t*) ctrl->update_buffer)[0];
-	} else if (ctrl->type == DMA_TYPE_CALYPTE) {
-		ctrl->hdp = (nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_HDP)) & ctrl->mdp;
-	}
+	ctrl->hdp = ((uint32_t*) ctrl->update_buffer)[0];
 }
 
 static inline void nc_ndp_ctrl_hhp_update(struct nc_ndp_ctrl *ctrl)
 {
-	if (ctrl->type == DMA_TYPE_MEDUSA) {
 #ifdef __KERNEL__
-		rmb();
+	rmb();
 #else
 #ifdef _RTE_CONFIG_H_
-		rte_rmb();
-		rte_wmb();
+	rte_rmb();
+	rte_wmb();
 #endif
 #endif
-		ctrl->hhp = ((uint32_t*) ctrl->update_buffer)[1];
-	} else if (ctrl->type == DMA_TYPE_CALYPTE) {
-		ctrl->hhp = nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_HHP);
-	}
+	ctrl->hhp = ((uint32_t*) ctrl->update_buffer)[1];
 }
 
 static inline void nc_ndp_ctrl_hp_update(struct nc_ndp_ctrl *ctrl)
 {
-	uint64_t hwpointers;
-
-	hwpointers = nfb_comp_read64(ctrl->comp, NDP_CTRL_REG_HDP);
-	ctrl->hdp = ((uint32_t)hwpointers) & ctrl->mdp;
-	ctrl->hhp = ((uint32_t)(hwpointers >> 32)) & ctrl->mhp;
+#ifdef __KERNEL__
+	rmb();
+#else
+#ifdef _RTE_CONFIG_H_
+	rte_rmb();
+	rte_wmb();
+#endif
+#endif
+	ctrl->hdp = ((uint32_t*) ctrl->update_buffer)[0];
+	ctrl->hhp = ((uint32_t*) ctrl->update_buffer)[1];
 }
 
 static inline void nc_ndp_ctrl_sp_flush(struct nc_ndp_ctrl *ctrl)
@@ -326,7 +324,7 @@ static inline int nc_ndp_ctrl_open(struct nfb_device* nfb, int fdt_offset, struc
 			return -ENOSYS;
 	} else {
 		ctrl->type = DMA_TYPE_CALYPTE;
-		if (version >= 0x00020000)
+		if (version < 0x00020000 || version >= 0x00030000)
 			return -ENOSYS;
 	}
 
@@ -373,8 +371,7 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 		goto err_comp_lock;
 	}
 
-	if (ctrl->type == DMA_TYPE_MEDUSA)
-		ctrl->update_buffer = sp->update_buffer_virt;
+	ctrl->update_buffer = sp->update_buffer_virt;
 
 	if (!(ctrl->type == DMA_TYPE_CALYPTE && ctrl->dir == 1)) {
 		ctrl->mdp = nb_d - 1;
@@ -391,11 +388,9 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 	ctrl->shp = 0;
 	ctrl->hhp = 0;
 
-	if (ctrl->type == DMA_TYPE_MEDUSA) {
-		ctrl->update_buffer[0] = 0;
-		if (ctrl->dir == 0)
-			ctrl->update_buffer[1] = 0;
-	}
+	ctrl->update_buffer[0] = 0;
+	if (ctrl->dir == 0 || ctrl->type == DMA_TYPE_CALYPTE)
+		ctrl->update_buffer[1] = 0;
 
 	/* INFO: driver must ensure first descriptor type is desc0 */
 	ctrl->last_upper_addr = 0xFFFFFFFFFFFFFFFFull;
@@ -412,8 +407,7 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 		nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_DESC_BASE, d_buffer);
 
 	/* Set address of RAM hwptr address */
-	if (ctrl->type == DMA_TYPE_MEDUSA)
-		nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_UPDATE_BASE, sp->update_buffer);
+	nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_UPDATE_BASE, sp->update_buffer);
 
 	if (ctrl->dir == 0)
 		nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_HDR_BASE, sp->hdr_buffer);
@@ -432,10 +426,13 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 	/* Zero both buffer ptrs */
 	nfb_comp_write64(ctrl->comp, NDP_CTRL_REG_SDP, 0);
 
+	// Since this is a software initializing the queue, the Peer-to-Peer mode has to be disabled
+	if (ctrl->type == DMA_TYPE_CALYPTE)
+		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_EXPER, 0);
+
 	/* Timeout */
 	/* TODO: let user to configure tihs value */
-	if (ctrl->type == DMA_TYPE_MEDUSA)
-		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_TIMEOUT, 0x4000);
+	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_TIMEOUT, 0x4000);
 
 	/* Start controller */
 	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_CONTROL, NDP_CTRL_REG_CONTROL_START);
@@ -460,6 +457,8 @@ static inline int _nc_ndp_ctrl_stop(struct nc_ndp_ctrl *ctrl, int force)
 	uint32_t status;
 	uint32_t hdp_new;
 
+	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_CONTROL, NDP_CTRL_REG_CONTROL_STOP);
+
 	if (ctrl->dir != 0) {
 		hdp_new = ctrl->hdp;
 		nc_ndp_ctrl_hdp_update(ctrl);
@@ -472,15 +471,11 @@ static inline int _nc_ndp_ctrl_stop(struct nc_ndp_ctrl *ctrl, int force)
 		}
 	}
 
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_CONTROL, NDP_CTRL_REG_CONTROL_STOP);
-
 	// Purpose: The RX DMA can pass some packets during the stop process. So HW pointers will surpass
 	// the SW pointers even when software is no longer accepting data.
 	if (ctrl->type == DMA_TYPE_CALYPTE && ctrl->dir == 0) {
-		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_SDP,
-			nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_HDP));
-		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_SHP,
-			nfb_comp_read32(ctrl->comp, NDP_CTRL_REG_HHP));
+		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_SDP, ctrl->hdp);
+		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_SHP, ctrl->hhp);
 	}
 
 	if (ret == 0)

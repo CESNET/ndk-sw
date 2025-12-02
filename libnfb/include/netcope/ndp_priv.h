@@ -85,9 +85,11 @@ struct nc_ndp_queue {
 			/* Store metadata for use in tx_burst_put */
 			void ** tx_pkts;
 			uint64_t tx_pkts_cnt; /* Number of tx_pkts items */
+			uint8_t valid_flag;
 #ifndef __KERNEL__
 			struct ndp_v3_packethdr *uspace_hdrs;
 			struct nfb_comp *comp;
+			uint32_t *update_buff;
 			uint32_t uspace_shp;
 			uint32_t uspace_hhp;
 			uint32_t uspace_sdp;
