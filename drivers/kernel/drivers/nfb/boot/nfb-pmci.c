@@ -337,7 +337,7 @@ int nfb_pmci_attach(struct nfb_boot *boot)
 	mutex_init(&pmci->flash_ops.mux_lock);
 
 	pmci->m10bmc.dev = &pmci->pd->dev;
-	pmci->m10bmc.type = !strcmp(boot->nfb->card_name, "FB2CDG1") ? M10_FB2CDG1 : M10_N6000;
+	pmci->m10bmc.type = !strncmp(boot->nfb->card_name, "FB2CDG1", 7) ? M10_FB2CDG1 : M10_N6000;
 	pmci->m10bmc.flash_ops = &pmci->flash_ops;
 
 	pmci->m10bmc.regmap = nfb_devm_regmap_init_indirect_register(&pmci->pd->dev,
