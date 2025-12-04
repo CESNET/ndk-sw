@@ -135,6 +135,7 @@ struct nc_ndp_ctrl_start_params {
 	uint32_t nb_data;
 	uint32_t nb_desc;
 	uint32_t nb_hdr;
+	uint32_t timeout;
 };
 
 static inline struct nc_ndp_desc nc_ndp_rx_desc0(uint64_t phys)
@@ -431,8 +432,7 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_EXPER, 0);
 
 	/* Timeout */
-	/* TODO: let user to configure tihs value */
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_TIMEOUT, 0x4000);
+	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_TIMEOUT, sp->timeout ? sp->timeout : 0x4000);
 
 	/* Start controller */
 	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_CONTROL, NDP_CTRL_REG_CONTROL_START);
