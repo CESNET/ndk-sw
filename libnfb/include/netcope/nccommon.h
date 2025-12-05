@@ -134,7 +134,7 @@ static inline int list_range_add_number(struct list_range *lr, int x)
 
 static inline int list_range_add_range(struct list_range *lr, int x, int y)
 {
-	if (y <= x)
+	if (y < x)
 		return -1;
 
 	lr->min = realloc(lr->min, (lr->items + 1) * sizeof(*lr->min));
