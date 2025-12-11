@@ -432,7 +432,7 @@ static inline int nc_ndp_ctrl_start(struct nc_ndp_ctrl *ctrl, struct nc_ndp_ctrl
 		nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_EXPER, 0);
 
 	/* Timeout */
-	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_TIMEOUT, sp->timeout ? sp->timeout : 0x4000);
+	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_TIMEOUT, sp->timeout ? sp->timeout : 0x800);
 
 	/* Start controller */
 	nfb_comp_write32(ctrl->comp, NDP_CTRL_REG_CONTROL, NDP_CTRL_REG_CONTROL_START);
