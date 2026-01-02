@@ -391,6 +391,44 @@ static int nfb_boot_bw_bmc_set_priority(struct nfb_boot *boot, struct nfb_boot_i
 	return ret;
 }
 
+static void set_fallback_priority(struct nfb_boot * boot)
+{
+	int ret;
+	void *fdt = nfb_get_fdt(boot->nfb);
+	int node;
+	int32_t id = -1;
+	int32_t priority = -1;
+
+	struct nfb_boot_ioc_load load;
+
+	uint64_t prio_data[2];
+
+	fdt_for_each_compatible_node(fdt, node, "netcope,binary_slot") {
+		ret = fdt_getprop32(fdt, node, "priority", &priority);
+		if (ret == 0 && priority != -1) {
+			break;
+		}
+		id = -1;
+
+		ret = fdt_getprop32(fdt, node, "id", &id);
+		if (ret == 0 && id == 1) {
+			break;
+		}
+	}
+
+	if (priority == -1) {
+		if (id == 1) {
+			prio_data[0] = id;
+			prio_data[1] = 0;
+			load.data_size = sizeof(prio_data);
+			load.data = (char*) prio_data;
+
+			ret = nfb_boot_bw_bmc_set_priority(boot, &load);
+			nfb_boot_bw_bmc_update_binary_slots(boot);
+		}
+	}
+}
+
 int nfb_boot_bw_bmc_load(struct nfb_boot *boot,
 		struct nfb_boot_ioc_load *load/*,
 		struct nfb_boot_app_priv * app_priv*/)
@@ -527,6 +565,8 @@ int nfb_boot_bw_bmc_load(struct nfb_boot *boot,
 
 	if (update_nodes)
 		nfb_boot_bw_bmc_update_binary_slots(boot);
+
+	set_fallback_priority(boot);
 
 	return 0;
 
