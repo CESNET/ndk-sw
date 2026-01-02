@@ -19,12 +19,13 @@
 
 #include "eth.h"
 
-void qsfpp_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node);
-void cfp2_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node);
+void qsfpp_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node, struct eth_params *p);
+void cfp2_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node, struct eth_params *p);
 
 int qsfpp_stxdisable(struct nfb_device *dev, int nodeoffset, int node_params, int disable, int channels);
+int qsfpp_set_feature(struct nfb_device *dev, int nodeoffset, int node_params, struct eth_params *p, int channels);
 
-typedef void transc_print_t(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node);
+typedef void transc_print_t(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node, struct eth_params *p);
 typedef int transc_plug_t(struct nfb_device *dev, int nodeoffset);
 
 struct transceiver_t {
@@ -110,7 +111,7 @@ void transceiver_print_short_info(struct ni_context *ctx, struct nfb_device *dev
 	}
 }
 
-int transceiver_print(struct ni_context *ctx, struct nfb_device *dev, int node_transceiver, int index)
+int transceiver_print(struct ni_context *ctx, struct nfb_device *dev, int node_transceiver, struct eth_params *p)
 {
 	const struct transceiver_t *transceiver;
 	const char *property;
@@ -132,7 +133,7 @@ int transceiver_print(struct ni_context *ctx, struct nfb_device *dev, int node_t
 	}
 
 	ni_item_str(ctx, NI_TRN_NAME, property);
-	ni_item_int(ctx, NI_TRN_INDEX, index);
+	ni_item_int(ctx, NI_TRN_INDEX, p->index);
 
 	present = transceiver_is_present(dev, node_transceiver);
 	if (present < 0)
@@ -149,7 +150,7 @@ int transceiver_print(struct ni_context *ctx, struct nfb_device *dev, int node_t
 		return -EOPNOTSUPP;
 	}
 
-	transceiver->print_status(ctx, dev, node_transceiver, fdt_subnode_offset(fdt, node_transceiver, "control-param"));
+	transceiver->print_status(ctx, dev, node_transceiver, fdt_subnode_offset(fdt, node_transceiver, "control-param"), p);
 	return 0;
 }
 
@@ -160,7 +161,7 @@ int _transceiver_execute_operation(struct nfb_device *dev, int node_transceiver,
 	uint8_t ch;
 
 	int proplen;
-	int node_params;
+	int node_params, off_ctrlparam;
 	const void *fdt;
 	const fdt32_t *prop32;
 	const char *property;
@@ -175,45 +176,49 @@ int _transceiver_execute_operation(struct nfb_device *dev, int node_transceiver,
 	if (!present)
 		return 0;
 
+	/* Select specific lane(s) in transceiver */
+	if (eth_node >= 0) {
+		node_params = fdt_subnode_offset(fdt, eth_node, "pmd-params");
+		if (node_params < 0) {
+			warnx("Transceiver: No pmd-params node in Device Tree");
+			return -1;
+		}
+
+		prop32 = fdt_getprop(fdt, node_params, "lines", &proplen);
+		if (!prop32) {
+			warnx("Transceiver: No lines property in Device Tree");
+			return -1;
+		}
+
+		ch = 0x0;
+		while (proplen > 0) {
+			ch |= (1 << fdt32_to_cpu(*prop32));
+			proplen -= sizeof(*prop32);
+			prop32++;
+		}
+	} else {
+		/* bitmask of all 4 QSFP channels */
+		ch = 0x0F;
+	}
+
+	off_ctrlparam = fdt_subnode_offset(fdt, node_transceiver, "control-param");
+
+	if (strcmp((char *)property, "QSFP") != 0 && strcmp((char *)property, "QSFP28") != 0) {
+		warnx("Transceiver: Command not implemented");
+		return -EOPNOTSUPP;
+	}
+
 	switch (p->command) {
 	case CMD_SET_PMA_FEATURE:
 		if (!strcmp(p->string, "Software TX disable")) {
-			if (strcmp((char *)property, "QSFP") != 0 && strcmp((char *)property, "QSFP28") != 0) {
-				warnx("Transceiver: Command not implemented");
-				return -EOPNOTSUPP;
-			}
-
-			if (eth_node >= 0) {
-				node_params = fdt_subnode_offset(fdt, eth_node, "pmd-params");
-				if (node_params < 0) {
-					warnx("Transceiver: No pmd-params node in Device Tree");
-					return -1;
-				}
-
-				prop32 = fdt_getprop(fdt, node_params, "lines", &proplen);
-				if (!prop32) {
-					warnx("Transceiver: No lines property in Device Tree");
-					return -1;
-				}
-
-				ch = 0x0;
-				while (proplen > 0) {
-					ch |= (1 << fdt32_to_cpu(*prop32));
-					proplen -= sizeof(*prop32);
-					prop32++;
-				}
-			} else {
-				/* bitmask of all 4 QSFP channels */
-				ch = 0x0F;
-			}
-
-			ret = qsfpp_stxdisable(dev, node_transceiver, fdt_subnode_offset(fdt, node_transceiver, "control-param"), p->param, ch);
-			if (ret) {
-				warnx("Transceiver: Command failed");
-				return ret;
-			}
+			ret = qsfpp_stxdisable(dev, node_transceiver, off_ctrlparam, p->param, ch);
 		} else {
 			warnx("Transceiver: Command not implemented");
+		}
+
+		if (ret) {
+			warnx("Transceiver: Command failed");
+			return ret;
 		}
 		break;
 

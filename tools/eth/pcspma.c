@@ -169,6 +169,7 @@ void pcspma_print_status(struct ni_context *ctx, struct nc_mdio *mdio, int porta
 
 		ni_list(ctx, NI_LIST_PMA_FEATS_AV);
 		for (item = pma_feature_table; item->name; item++) {
+			reg = 0;
 			if (item->ability_bit != -1) {
 				reg = nc_mdio_read(mdio, portaddr, 1, item->ability_reg);
 			}

@@ -22,6 +22,7 @@
 #define SFF8636_TEMPERATURE      22
 #define SFF8636_RX_INPUT_POWER   34
 #define SFF8636_STXDISABLE       86
+#define SFF8636_PAGE_SELECT     127
 #define SFF8636_CONNECTOR       130
 #define SFF8636_COMPLIANCE      131
 #define SFF8636_VENDOR_NAME     148
@@ -39,7 +40,6 @@
 #define CMIS_HOST_LANE_COUNT     88
 
 #define CMIS_BANK_SELECT        126
-#define CMIS_PAGE_SELECT        127
 
 /* PAGE 0x00 */
 #define CMIS_VENDOR_NAME        129
@@ -49,6 +49,8 @@
 
 /* PAGE 0x11 */
 #define CMIS_OPTICAL_POWER_RX   186
+
+#define SFF_ID_IS_CMIS(reg) (reg == 0x18)
 
 static inline uint16_t qsfp_i2c_read16(struct nc_i2c_ctrl *ctrl, uint8_t reg)
 {
@@ -387,8 +389,13 @@ int qsfp_present(struct nc_i2c_ctrl *i2c, int mdev __attribute__((unused)) )
 }
 #endif
 
-void sff8636_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl);
-void cmis_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl);
+static void sff_select_page(struct nc_i2c_ctrl *ctrl, uint8_t page)
+{
+	nc_i2c_write_reg(ctrl, SFF8636_PAGE_SELECT, &page, 1);
+}
+
+static void sff8636_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl, struct eth_params *p);
+static void cmis_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl, struct eth_params *p);
 
 struct nc_i2c_ctrl *qsfpp_i2c_open(struct nfb_device *dev, int nodeoffset, int node_params)
 {
@@ -425,8 +432,9 @@ struct nc_i2c_ctrl *qsfpp_i2c_open(struct nfb_device *dev, int nodeoffset, int n
  * @param ifc Interface device
  * @param space Interface space
  */
-void qsfpp_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int node_params)
+void qsfpp_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int node_params, struct eth_params *p)
 {
+	int ret;
 	uint8_t reg = 0xFF;
 	struct nc_i2c_ctrl *ctrl;
 
@@ -436,19 +444,21 @@ void qsfpp_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset,
 		return;
 	}
 
-	nc_i2c_read_reg(ctrl, SFF8636_IDENTIFIER, &reg, 1);
+	ret = nc_i2c_read_reg(ctrl, SFF8636_IDENTIFIER, &reg, 1);
+	if (ret <= 0)
+		return;
 	ni_item_str(ctx, NI_MOD_IDENT, qsfp_get_identifier(reg));
 
-	if (reg == 0x18) {
-		cmis_print(ctx, ctrl);
+	if (SFF_ID_IS_CMIS(reg)) {
+		cmis_print(ctx, ctrl, p);
 	} else {
-		sff8636_print(ctx, ctrl);
+		sff8636_print(ctx, ctrl, p);
 	}
 
 	nc_i2c_close(ctrl);
 }
 
-void sff8636_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl)
+static void sff8636_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl, struct eth_params *p)
 {
 	const char *text;
 	const int CHANNELS = 4;
@@ -459,6 +469,8 @@ void sff8636_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl)
 	int retries = 0;
 	int ret;
 	double pwr;
+
+	(void) p;
 
 	/* Wait for Data Ready (max 2 sec according specs) */
 	/* TODO: this should be done in qsfp_i2c_common functions */
@@ -513,16 +525,18 @@ void sff8636_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl)
 	ni_endlist(ctx, NI_LIST_TRN_STX_DIS);
 }
 
-void cmis_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl)
+static void cmis_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl, struct eth_params *p)
 {
 	int channel_cnt = 8;
 
 	uint8_t i;
-	uint8_t reg = 0;
+	uint8_t reg;
 	uint16_t reg16 = 0;
 	double pwr;
 
-	nc_i2c_write_reg(ctrl, CMIS_PAGE_SELECT, &reg, 1);
+	(void) p;
+
+	sff_select_page(ctrl, 0);
 
 	nc_i2c_read_reg(ctrl, CMIS_REVISION, &reg, 1);
 	ni_item_int(ctx, NI_TRN_CMIS_VER_MAJ, reg >> 4);
@@ -550,7 +564,7 @@ void cmis_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl)
 
 	ni_list(ctx, NI_LIST_TRN_RX_IN_PWR);
 	for (i = 0; i < channel_cnt; i++) {
-		reg = 0x11; nc_i2c_write_reg(ctrl, CMIS_PAGE_SELECT, &reg, 1);
+		sff_select_page(ctrl, 0x11);
 		reg16 = qsfp_i2c_read16(ctrl, CMIS_OPTICAL_POWER_RX + i * 2);
 		pwr = ((float)reg16) / 10000000;
 		ni_item_int(ctx, NI_TRANS_RX_IN_PWR_L, i + 1);
@@ -568,16 +582,24 @@ void cmis_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl)
 
 int qsfpp_stxdisable(struct nfb_device *dev, int nodeoffset, int node_params, int disable, int channels)
 {
-	int ret = 0;
-	uint8_t reg = 0x18;
+	int ret;
+	uint8_t reg;
 	struct nc_i2c_ctrl *ctrl = qsfpp_i2c_open(dev, nodeoffset, node_params);
 
 	if (ctrl == NULL)
 		return -ENODEV;
 
-	nc_i2c_read_reg(ctrl, SFF8636_IDENTIFIER, &reg, 1);
-	if (reg == 0x18) {
-		ret = -ENOTSUP;
+	ret = nc_i2c_read_reg(ctrl, SFF8636_IDENTIFIER, &reg, 1);
+	if (ret <= 0)
+		return ret;
+
+	ret = 0;
+	if (SFF_ID_IS_CMIS(reg)) {
+		/* This assumes OutputDisableTxSupported=1 and TxDisableIsModuleWide=1 */
+		sff_select_page(ctrl, 0x10);
+		nc_i2c_read_reg(ctrl, 130, &reg, 1);
+		reg = disable ? (reg | channels) : (reg & ~channels);
+		nc_i2c_write_reg(ctrl, 130, &reg, 1);
 	} else {
 		channels &= 0x0F;
 

@@ -802,7 +802,7 @@ int main(int argc, char *argv[])
 				ni_section(ctx, NI_SEC_TRN);
 				if (p.command == CMD_PRINT_STATUS) {
 					used++;
-					transceiver_print(ctx, dev, node, p.index);
+					transceiver_print(ctx, dev, node, &p);
 				} else {
 					used++;
 					ret = transceiver_execute_operation(dev, node, &p);

@@ -99,7 +99,7 @@ int txmac_execute_operation(struct ni_context *ctx, struct nc_txmac *txmac, stru
 int pcspma_execute_operation(struct ni_context *ctx, struct nfb_device *dev, int eth_node, struct eth_params *p);
 int transceiver_execute_operation(struct nfb_device *dev, int node_transceiver, struct eth_params *p);
 int transceiver_execute_operation_for_eth(struct nfb_device *dev, int node_eth, struct eth_params *p);
-int transceiver_print(struct ni_context *ctx, struct nfb_device *dev, int transceiver_node, int index);
+int transceiver_print(struct ni_context *ctx, struct nfb_device *dev, int transceiver_node, struct eth_params *p);
 void transceiver_print_short_info(struct ni_context *ctx, struct nfb_device *dev, int node, struct eth_params *p);
 
 int print_json_qsfp_i2c_text(void *, int item, struct nc_i2c_ctrl*);

@@ -152,9 +152,10 @@ int cfp_present(struct nfb_device *dev __attribute__((unused)), int nodeoffset _
  * @param ifc Interface device
  * @param space Interface space
  */
-void cfp2_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node)
+void cfp2_print(struct ni_context *ctx, struct nfb_device *dev, int nodeoffset, int control_params_node, struct eth_params *p)
 {
 	(void) control_params_node; /* unused */
+	(void) p;
 
 	int i, channels;
 	uint8_t reg8;
