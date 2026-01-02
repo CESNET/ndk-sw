@@ -75,6 +75,7 @@ static const struct ni_callbacks ni_cb_json = {
 
 static const struct ni_callbacks ni_cb_user = {
 	.init = ni_user_init,
+	.close = ni_user_close,
 	.section = ni_user_section,
 	.endsection = ni_user_endsection,
 	.list = ni_user_list,

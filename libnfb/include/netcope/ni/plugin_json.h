@@ -111,7 +111,7 @@ static inline int ni_json_init(void *init_params, struct ni_common_init_params *
 static inline void ni_json_close(void *priv)
 {
 	struct ni_json_priv *ctx = priv;
-	(void)ctx;
+	free(ctx);
 
 	printf("\n");
 }
