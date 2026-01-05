@@ -39,7 +39,7 @@ def main():
             n_mi.append(n_pmci)
             n_pmci.append(fdt.PropWords('reg', *pmci_reg))
             n_pmci.append(fdt.PropStrings("compatible", "cesnet,pmci"))
-    elif args.card in ['IA-440I']:
+    elif args.card in ['IA-440I', 'IA-860M']:
         reg = [0x2000, 0x44]
 
         n_bmc = fdt.Node('bmc')
