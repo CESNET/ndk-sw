@@ -178,7 +178,8 @@ static int nfb_boot_bw_bmc_load_partition_table(struct nfb_boot *boot)
 
 	if (card_name == NULL) {
 		return -ENODEV;
-	} else if (strncmp(card_name, "IA-440I", 7) == 0) {
+	} else if (strncmp(card_name, "IA-440I", 7) == 0 || 
+		   	strncmp(card_name, "IA-860M", 7) == 0) {
 		/* TODO: check Flash Configuration from VPD (I2C EEPROM @ 0x57, offset 50):
 		 * 0 means "Default" */
 		max_size = 0x10000000;
@@ -291,7 +292,8 @@ int nfb_boot_bw_bmc_attach(struct nfb_boot* boot)
 
 	nfb_boot_bw_bmc_load_partition_table(boot);
 
-	if (strncmp(boot->nfb->card_name, "IA-440I", 7) == 0) {
+	if (strncmp(boot->nfb->card_name, "IA-440I", 7) == 0 || 
+			strncmp(boot->nfb->card_name, "IA-860M", 7) == 0) {
 		boot->reload_link_up_time = 2500;
 	}
 
