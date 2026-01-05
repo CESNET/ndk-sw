@@ -52,6 +52,83 @@
 
 #define SFF_ID_IS_CMIS(reg) (reg == 0x18)
 
+struct trn_ability {
+	int page;
+	int byte;
+	int bit;
+	int bitlen;
+};
+
+#define COND_TYPE_STOP                  0
+#define COND_TYPE_INC                   1
+#define COND_TYPE_ABILITY_SET           2
+#define COND_TYPE_ABILITY_CLR           3
+#define COND_TYPE_COMP_VAL_COND_GE      4
+//#define COND_TYPE_COMP_VAL_ABIL_GE      5
+
+struct trn_feature_condition {
+	int type;
+	int next; /* index to feature_conds[] */
+
+	union {
+		int ability; /* index to trn_abilities[] */
+		//int value; /* value to compare */
+	} p;
+};
+
+struct trn_feature {
+	const char *name;
+	int control_page;
+	int control_byte;
+	int control_bit;
+
+	int condition;  /* index to *_feature_table[] */
+	int cond_value;
+};
+
+#define C_S .p.ability = 0
+
+struct trn_ability trn_abilities[] = {
+	[0x00]  = {0x01, 151,  0, 1}, /* TxDisableIsModuleWide */
+	[0x01]  = {0x01, 155,  0, 1}, /* OutputDisableTxSupported */
+	[0x02]  = {0x00, CMIS_HOST_LANE_COUNT, 0, 4},
+};
+
+static const struct trn_feature_condition feature_conds[] = {
+	[0x00]  = {0,    0, C_S},       /* Special node next-ref value: stop */
+	[0x01]  = {1,    0, C_S},       /* Special node next-ref value: continue to cur_index+1 */
+	[0x10]  = {2, 0x12, .p.ability = 0x00},
+	[0x11]  = {3, 0x12, .p.ability = 0x00},
+	[0x12]  = {2,    0, .p.ability = 0x01},
+	[0x13]  = {4, 0x11, .p.ability = 0x02},
+};
+
+#define FCN .cond_value = 0
+
+static const struct trn_feature sff8636_feature_table [] = {
+	{NULL,                             0,   0,  0, 0, FCN},
+};
+
+#if 0
+static const struct trn_feature cmis_feature_table_ro [] = {
+	{"TxDisableIsModuleWide",       0x01, 151, 0, 0},
+};
+#endif
+
+
+static const struct trn_feature cmis_feature_table [] = {
+	{"OutputDisableTx",             0x10, 130, 0, 0x10, FCN},
+	{"OutputDisableTx1",            0x10, 130, 0, 0x13, 1},
+	{"OutputDisableTx2",            0x10, 130, 1, 0x13, 2},
+	{"OutputDisableTx3",            0x10, 130, 2, 0x13, 3},
+	{"OutputDisableTx4",            0x10, 130, 3, 0x13, 4},
+	{"OutputDisableTx5",            0x10, 130, 4, 0x13, 5},
+	{"OutputDisableTx6",            0x10, 130, 5, 0x13, 6},
+	{"OutputDisableTx7",            0x10, 130, 6, 0x13, 7},
+	{"OutputDisableTx8",            0x10, 130, 7, 0x13, 8},
+	{NULL,                             0,   0, 0,    0, FCN},
+};
+
 static inline uint16_t qsfp_i2c_read16(struct nc_i2c_ctrl *ctrl, uint8_t reg)
 {
 	uint16_t reg16 = 0;
@@ -533,6 +610,11 @@ static void cmis_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl, struct 
 	uint8_t reg;
 	uint16_t reg16 = 0;
 	double pwr;
+	int cond_pass;
+
+	const struct trn_feature *item;
+	const struct trn_feature_condition * cond, *cond_next;
+	const struct trn_ability * ability;
 
 	(void) p;
 
@@ -571,6 +653,49 @@ static void cmis_print(struct ni_context *ctx, struct nc_i2c_ctrl *ctrl, struct 
 		ni_item_pwr(ctx, NI_TRANS_RX_IN_PWR_V, pwr);
 	}
 	ni_endlist(ctx, NI_LIST_TRN_RX_IN_PWR);
+
+	if (p->verbose) {
+		ni_list(ctx, NI_LIST_TRN_FEATS_AV);
+		for (item = cmis_feature_table; item->name; item++) {
+			reg = 0;
+			cond_next = &feature_conds[item->condition];
+			cond_pass = 1;
+			do {
+				cond = cond_next;
+				if (cond->type == COND_TYPE_ABILITY_SET || cond->type == COND_TYPE_ABILITY_CLR) {
+					ability = &trn_abilities[cond->p.ability];
+					sff_select_page(ctrl, ability->page);
+					nc_i2c_read_reg(ctrl, ability->byte, &reg, 1);
+					if (((reg & (1 << ability->bit)) == 0 && cond->type == COND_TYPE_ABILITY_SET) ||
+					    ((reg & (1 << ability->bit)) != 0 && cond->type == COND_TYPE_ABILITY_CLR))
+						cond_pass = 0;
+				} else if (cond->type == COND_TYPE_COMP_VAL_COND_GE) {
+					ability = &trn_abilities[cond->p.ability];
+					sff_select_page(ctrl, ability->page);
+					nc_i2c_read_reg(ctrl, ability->byte, &reg, 1);
+
+					reg >>= ability->bit;
+					reg &= (1 << (ability->bitlen)) - 1;
+
+					if (!(reg >= item->cond_value))
+						cond_pass = 0;
+				}
+
+				cond_next = cond->next == 0 ? NULL: (cond->next == 1 ? cond + 1 : &feature_conds[cond->next]);
+			} while (cond_pass == 1 && cond_next);
+
+			if (cond_pass) {
+				ni_section(ctx, NI_SEC_TRN_FEAT);
+				sff_select_page(ctrl, item->control_page);
+				nc_i2c_read_reg(ctrl, item->control_byte, &reg, 1);
+
+				ni_item_ctrl_reg(ctx, NI_TRN_FEAT_ACTIVE, reg & (1 << item->control_bit));
+				ni_item_str(ctx, NI_TRN_FEAT_NAME, item->name);
+				ni_endsection(ctx, NI_SEC_TRN_FEAT);
+			}
+		}
+		ni_endlist(ctx, NI_LIST_TRN_FEATS_AV);
+	}
 }
 
 /**
@@ -606,6 +731,46 @@ int qsfpp_stxdisable(struct nfb_device *dev, int nodeoffset, int node_params, in
 		nc_i2c_read_reg(ctrl, SFF8636_STXDISABLE, &reg, 1);
 		reg = disable ? (reg | channels) : (reg & ~channels);
 		nc_i2c_write_reg(ctrl, SFF8636_STXDISABLE, &reg, 1);
+	}
+
+	nc_i2c_close(ctrl);
+	return ret;
+}
+
+int qsfpp_set_feature(struct nfb_device *dev, int nodeoffset, int node_params, struct eth_params *p, int channels)
+{
+	int ret = -EINVAL;
+	uint8_t reg;
+
+	const struct trn_feature *item;
+
+	struct nc_i2c_ctrl *ctrl = qsfpp_i2c_open(dev, nodeoffset, node_params);
+
+	(void) channels;
+
+	if (ctrl == NULL)
+		return -ENODEV;
+
+	ret = nc_i2c_read_reg(ctrl, SFF8636_IDENTIFIER, &reg, 1);
+	if (ret <= 0)
+		return ret;
+
+	if (SFF_ID_IS_CMIS(reg)) {
+		item = cmis_feature_table;
+	} else {
+		item = sff8636_feature_table;
+	}
+
+	while (item->name) {
+		if (!strcmp(p->string, item->name)) {
+			sff_select_page(ctrl, item->control_page);
+			nc_i2c_read_reg(ctrl, item->control_byte, &reg, 1);
+			reg = p->param ? (reg | item->control_bit) : (reg & ~item->control_bit);
+			nc_i2c_write_reg(ctrl, item->control_byte, &reg, 1);
+			ret = 0;
+			break;
+		}
+		item++;
 	}
 
 	nc_i2c_close(ctrl);

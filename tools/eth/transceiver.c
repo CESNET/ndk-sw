@@ -213,7 +213,7 @@ int _transceiver_execute_operation(struct nfb_device *dev, int node_transceiver,
 		if (!strcmp(p->string, "Software TX disable")) {
 			ret = qsfpp_stxdisable(dev, node_transceiver, off_ctrlparam, p->param, ch);
 		} else {
-			warnx("Transceiver: Command not implemented");
+			ret = qsfpp_set_feature(dev, node_transceiver, off_ctrlparam, p, ch);
 		}
 
 		if (ret) {

@@ -225,6 +225,11 @@ static struct ni_context_item_default ni_items[] = {
 	[NI_MDIO_HW_REV]        = {ni_json_k("hw_spec_rev"),            ni_user_f("HW spec. rev.", NUFD(1))},
 	[NI_MDIO_MGMT_REV]      = {ni_json_k("mgmt_spec_rev"),          ni_user_f("Management ifc. spec. rev.", NUFD(1))},
 
+	[NI_LIST_TRN_FEATS_AV]  = {ni_json_k("available_features"),     ni_user_f("Supported transceiver features ->", 0)},
+	[NI_SEC_TRN_FEAT]       = {ni_json_e,                           ni_user_n},
+	[NI_TRN_FEAT_NAME]      = {ni_json_k("name"),                   ni_user_l("")},
+	[NI_TRN_FEAT_ACTIVE]    = {ni_json_k("active"),                 ni_user_f(" * ", NUF_NDA)},
+
 	[NI_SEC_RSFEC_STATUS]   = {ni_json_k("rsfec"),                  ni_user_l("RS-FEC status")},
 	[NI_SEC_RSFEC119_STATUS]= {ni_json_k("rsfec_cl119"),            ni_user_l("RS-FEC status")},
 	[NI_RSFEC_STATUS_BCA]   = {ni_json_k("bypass_correction"),      ni_user_l("RS-FEC bypass correction ability")},
@@ -322,6 +327,7 @@ int print_ctrl_reg_user(void *priv, int item, int val)
 
 	case NI_TRANS_STX_DIS_V:        res = val ? "active" : "inactive"; break;
 
+	case NI_TRN_FEAT_ACTIVE:
 	case NI_PMA_TYPES_ACTIVE:
 	case NI_PMA_FEAT_ACTIVE:        res = val ? "[active]" : ""; break;
 
