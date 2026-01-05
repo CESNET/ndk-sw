@@ -256,14 +256,25 @@ void print_version()
 #endif
 }
 
+int filter_nfbs(const struct dirent *dir)
+{
+	size_t i;
+	for (i = 0; i < strlen(dir->d_name); i++) {
+		if (!isdigit(dir->d_name[i]))
+			return 0;
+	}
+	return 1;
+}
+
 void print_device_list(struct ni_context *ctx)
 {
 	int ret;
 	int len;
-	int fdt_offset;
+	int fdt_offset, fdt_off_slot;
+	int cnt, i;
 
-	DIR * d;
 	struct dirent *dir;
+	struct dirent **namelist;
 	struct nc_composed_device_info info;
 	struct nfb_device *dev;
 
@@ -274,28 +285,25 @@ void print_device_list(struct ni_context *ctx)
 	const char *prop;
 	const uint32_t *prop32;
 
-	d = opendir(NFB_BASE_DEV_PATH "by-pci-slot/");
 	ni_list(ctx, NI_LIST_NFB);
-	while (d && (dir = readdir(d)) != NULL) {
-		ret = snprintf(path, NFB_PATH_MAXLEN, NFB_BASE_DEV_PATH "by-pci-slot/%s", dir->d_name);
-		if (ret <= 0 || ret >= NFB_PATH_MAXLEN) {
-			continue;
-		}
+	cnt = scandir("/dev/nfb/", &namelist, filter_nfbs, alphasort);
+	for (i = 0; i < cnt; i++) {
+		dir = namelist[i];
 
-		realpath(path, lpath);
-
-		dev = nfb_open(path);
+		snprintf(lpath, PATH_MAX, "/dev/nfb%s", dir->d_name);
+		dev = nfb_open(lpath);
 		if (dev) {
 			ni_section(ctx, NI_SEC_LIST_NFB);
 
 			fdt = nfb_get_fdt(dev);
 			fdt_offset = fdt_path_offset(fdt, "/firmware/");
+			fdt_off_slot = fdt_path_offset(fdt, "/system/device/endpoint0/");
 
 			ret = nc_get_composed_device_info_by_pci(dev, NULL, &info);
 
 			ni_item_int(ctx, NI_L_NFB_ID, ret == 0 ? info.nfb_id : -1);
 			ni_item_str(ctx, NI_L_LPATH, lpath);
-			ni_item_str(ctx, NI_L_BFN, dir->d_name);
+			ni_fdt_prop_str(ctx, NI_L_BFN, fdt, fdt_off_slot, "pci-slot", &len);
 			ni_fdt_prop_str(ctx, NI_L_CARD_NAME, fdt, fdt_offset, "card-name", &len);
 
 			fdt_offset = fdt_path_offset(fdt, "/board/");
@@ -320,7 +328,10 @@ void print_device_list(struct ni_context *ctx)
 
 			ni_endsection(ctx, NI_SEC_LIST_NFB);
 		}
+		free(dir);
 	}
+	if (cnt >= 0)
+		free(namelist);
 
 	ni_endlist(ctx, NI_LIST_NFB);
 }

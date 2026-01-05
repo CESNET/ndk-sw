@@ -46,7 +46,7 @@
 /*! -V version */
 
 
-#define ARGUMENTS			"d:i:q:rtRS:B:C:N:O:Tjvh"
+#define ARGUMENTS			"d:i:q:rtRS:B:C:N:O:I:Tjvh"
 
 enum commands {
 	CMD_PRINT_STATUS,
@@ -57,6 +57,7 @@ enum commands {
 	CMD_SET_BUFFER_SIZE,
 	CMD_SET_BUFFER_COUNT,
 	CMD_SET_INITIAL_OFFSET,
+	CMD_SET_TIMEOUT,
 	CMD_NETDEV,
 	CMD_QUERY,
 };
@@ -333,6 +334,7 @@ void usage(const char *me, int verbose)
 	printf("-B buffer_size  Set kernel buffer size (for single packet; DMA Medusa only)\n");
 	printf("-C buffer_count Set kernel buffer count (replacement for ring_size; DMA Medusa only)\n");
 	printf("-O initial_off  Set initial offset in ring buffer (first buffer offset; DMA Medusa only)\n");
+	printf("-I timeout      Set timeout value to DMA register\n");
 	printf("-q query        Get specific informations%s\n", verbose ? "" : " (-v for more info)");
 	if (verbose) {
 		for (unsigned i = 0; i < NC_ARRAY_SIZE(queries); i++) {
@@ -857,6 +859,10 @@ int main(int argc, char *argv[])
 			cmd = CMD_SET_INITIAL_OFFSET;
 			csize = optarg;
 			break;
+		case 'I':
+			cmd = CMD_SET_TIMEOUT;
+			csize = optarg;
+			break;
 		case 'N':
 			cmd = CMD_NETDEV;
 			netdev_cmd = optarg;
@@ -940,6 +946,9 @@ int main(int argc, char *argv[])
 							sum_rx.discarded += cntr_rx.discarded;
 							sum_rx.discarded_bytes += cntr_rx.discarded_bytes;
 							break;
+						case CMD_SET_TIMEOUT:
+							set_ring_size(dev, 0, i, csize, "timeout");
+							break;
 						case CMD_SET_RING_SIZE:
 							set_ring_size(dev, 0, i, csize, "ring_size");
 							break;
@@ -990,6 +999,9 @@ int main(int argc, char *argv[])
 							}
 							sum_tx.sent += cntr_tx.sent;
 							sum_tx.sent_bytes += cntr_tx.sent_bytes;
+							break;
+						case CMD_SET_TIMEOUT:
+							set_ring_size(dev, 1, i, csize, "timeout");
 							break;
 						case CMD_SET_RING_SIZE:
 							if (txq->type == QUEUE_TYPE_CALYPTE)

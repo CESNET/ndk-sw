@@ -98,6 +98,7 @@ struct ndp_ctrl {
 	uint32_t next_sdp;
 
 	uint32_t flags;
+	uint32_t timeout;
 
 	struct ndp_channel channel;
 	struct nfb_device *nfb;
@@ -296,6 +297,28 @@ static ssize_t ndp_ctrl_set_initial_offset(struct device *dev,
 	ret = ndp_ctrl_medusa_req_block_update(ctrl, 1, ctrl->cfg.buffer_size, ctrl->cfg.buffer_count, value);
 	if (ret)
 		return ret;
+
+	return size;
+}
+
+static ssize_t ndp_ctrl_get_timeout(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct ndp_channel *channel = dev_get_drvdata(dev);
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	return scnprintf(buf, PAGE_SIZE, "%u\n", ctrl->timeout);
+}
+
+static ssize_t ndp_ctrl_set_timeout(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	unsigned long long value;
+	struct ndp_channel *channel = dev_get_drvdata(dev);
+	struct ndp_ctrl *ctrl = container_of(channel, struct ndp_ctrl, channel);
+
+	value = memparse(buf, NULL);
+
+	ctrl->timeout = value;
 
 	return size;
 }
@@ -792,6 +815,7 @@ static int ndp_ctrl_medusa_start(struct ndp_channel *channel, uint64_t *hwptr)
 	sp.update_buffer = ctrl->update_buffer_phys;
 	sp.nb_desc = ctrl->desc_count;
 	sp.nb_hdr = ctrl->hdr_count;
+	sp.timeout = ctrl->timeout;
 
 	ret = ndp_ctrl_start(ctrl, &sp);
 	if (ret)
@@ -1493,6 +1517,7 @@ static DEVICE_ATTR(ring_size,   (S_IRUGO | S_IWGRP | S_IWUSR), ndp_ctrl_get_ring
 static DEVICE_ATTR(buffer_size, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_ctrl_get_buffer_size, ndp_ctrl_set_buffer_size);
 static DEVICE_ATTR(buffer_count, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_ctrl_get_buffer_count, ndp_ctrl_set_buffer_count);
 static DEVICE_ATTR(initial_offset, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_ctrl_get_initial_offset, ndp_ctrl_set_initial_offset);
+static DEVICE_ATTR(timeout, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_ctrl_get_timeout, ndp_ctrl_set_timeout);
 
 static struct device_attribute dev_attr_calypte_ring_size = __ATTR(ring_size, (S_IRUGO | S_IWGRP | S_IWUSR), ndp_channel_get_ring_size, ndp_channel_set_ring_size);
 
@@ -1501,6 +1526,7 @@ static struct attribute *ndp_ctrl_rx_attrs[] = {
 	&dev_attr_buffer_size.attr,
 	&dev_attr_buffer_count.attr,
 	&dev_attr_initial_offset.attr,
+	&dev_attr_timeout.attr,
 	NULL,
 };
 
@@ -1509,6 +1535,7 @@ static struct attribute *ndp_ctrl_tx_attrs[] = {
 	&dev_attr_buffer_size.attr,
 	&dev_attr_buffer_count.attr,
 	&dev_attr_initial_offset.attr,
+	&dev_attr_timeout.attr,
 	NULL,
 };
 

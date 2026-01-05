@@ -96,7 +96,7 @@ static inline int ni_user_init(void *init_params, struct ni_common_init_params *
 	if(cip->get == NULL || cip->items == NULL)
 		return -EINVAL;
 
-	ctx = malloc(sizeof(struct ni_user_priv) + sizeof(struct ni_user_stack_state) * stack_size + 4096);
+	ctx = malloc(sizeof(struct ni_user_priv) + sizeof(struct ni_user_stack_state) * stack_size);
 	if (ctx == NULL)
 		return -ENOMEM;
 
@@ -104,9 +104,6 @@ static inline int ni_user_init(void *init_params, struct ni_common_init_params *
 	ctx->ip = *cip;
 
 	ctx->clo = 0;
-
-	ctx->buffer = (void*) (ctx + 1);
-	ctx->buffer += sizeof(struct ni_user_stack_state) * stack_size;
 
 	ctx->fb = open_memstream(&ctx->buffer, &ctx->buffer_size);
 	ctx->fo = stdout;
@@ -141,6 +138,14 @@ static inline void ni_user_flush_f(struct ni_user_priv *ctx)
 	}
 
 	ctx->f = ctx->fo;
+}
+
+static inline void ni_user_close(void *priv)
+{
+	struct ni_user_priv *ctx = priv;
+	fclose(ctx->fb);
+	free(ctx->buffer);
+	free(ctx);
 }
 
 static inline void ni_user_section(void *priv, int item_index)

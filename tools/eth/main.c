@@ -280,7 +280,7 @@ int print_ctrl_reg_json(void *priv, int item, int val)
 		res = val ? "true": "false";
 		break;
 	}
-	return fprintf(p->f, res);
+	return fprintf(p->f, "%s", res);
 }
 
 int print_ctrl_reg_user(void *priv, int item, int val)
