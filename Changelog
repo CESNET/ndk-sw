@@ -1,3 +1,11 @@
+* Mon Jan 5 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.0-1
+- [FEATURE]: add support for different varians of FB2CDG1 card
+- [FEATURE]: introduce support for BittWare IA-860m card
+- [FEATURE]: set fallback boot priority for first image in BittWare BMC
+- [FEATURE]: show or set features of transceiver (experimental; currently OutputDisableTx for QSFP-DD only)
+- [FEATURE]: allow to set custom timeout for DMA Medusa
+- [OPT]: set better timeout value for DMA Medusa
+
 * Tue Dec 2 2025 Martin Spinler <spinler@cesnet.cz> - 6.29.0-1
 - [FEATURE] add rx_stream to nc_ifc_eth_map_info
 - [OPT] dma-calypte: optimize performance for throughput/latency (compatible just with version 2.0)
