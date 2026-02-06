@@ -62,7 +62,17 @@ static inline bool nfb_bus_mi_memcopy_simple(void *dst, const void *src, size_t 
 		*(uint32_t *) dst = *(const uint32_t *) src;
 		return true;
 	} else if (nbyte == 8) {
+#if defined(__arm__) || defined(__aarch64__)
+		if ((((uintptr_t)src) & 0x3F) == ((((uintptr_t)src) + 4) & 0x3F)) {
+			*(uint64_t *)dst = *(const uint64_t *)src;
+		} else {
+			/* Unaligned access */
+			*(((uint32_t *)dst) + 0) = *(((const uint32_t *) src) + 0);
+			*(((uint32_t *)dst) + 1) = *(((const uint32_t *) src) + 1);
+		}
+#else
 		*(uint64_t *) dst = *(const uint64_t *) src;
+#endif
 		return true;
 	}
 	return false;
