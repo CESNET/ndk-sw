@@ -159,8 +159,10 @@ int nfb_bus_open_mi(void *dev_priv, int bus_node, int comp_node, void **bus_priv
 			__builtin_cpu_supports("avx") &&
 			__builtin_cpu_supports("avx2") &&
 			__builtin_cpu_supports("sse2") &&
+#else
+			0 &&
 #endif
-			1 ) {
+			1) {
 		ops->read = nfb_bus_mi_read;
 		ops->write = nfb_bus_mi_write;
 	}
