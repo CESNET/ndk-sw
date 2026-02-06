@@ -1,3 +1,7 @@
+* Fri Feb 6 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.1-1
+- [FEATURE] drivers: add support for newer kernels
+- [FIX] libnfb: do not use optimized bus functions on unsupported platforms
+
 * Mon Jan 5 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.0-1
 - [FEATURE]: add support for different varians of FB2CDG1 card
 - [FEATURE]: introduce support for BittWare IA-860m card
