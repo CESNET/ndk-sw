@@ -16,6 +16,27 @@ extern "C" {
 
 #define COMP_CESNET_NIC_RSS "cesnet,nic_rss"
 
+#define NC_NIC_RSS_BIT(nr) (1 << (nr))
+
+#define NC_NIC_RSS_HF_IPV4                      NC_NIC_RSS_BIT(2)
+#define NC_NIC_RSS_HF_FRAG_IPV4                 NC_NIC_RSS_BIT(3)
+#define NC_NIC_RSS_HF_NONFRAG_IPV4_TCP          NC_NIC_RSS_BIT(4)
+#define NC_NIC_RSS_HF_NONFRAG_IPV4_UDP          NC_NIC_RSS_BIT(5)
+#define NC_NIC_RSS_HF_NONFRAG_IPV4_SCTP         NC_NIC_RSS_BIT(6)
+#define NC_NIC_RSS_HF_NONFRAG_IPV4_OTHER        NC_NIC_RSS_BIT(7)
+#define NC_NIC_RSS_HF_IPV6                      NC_NIC_RSS_BIT(8)
+#define NC_NIC_RSS_HF_FRAG_IPV6                 NC_NIC_RSS_BIT(9)
+#define NC_NIC_RSS_HF_NONFRAG_IPV6_TCP          NC_NIC_RSS_BIT(10)
+#define NC_NIC_RSS_HF_NONFRAG_IPV6_UDP          NC_NIC_RSS_BIT(11)
+#define NC_NIC_RSS_HF_NONFRAG_IPV6_SCTP         NC_NIC_RSS_BIT(12)
+#define NC_NIC_RSS_HF_NONFRAG_IPV6_OTHER        NC_NIC_RSS_BIT(13)
+#define NC_NIC_RSS_HF_C_VLAN                    NC_NIC_RSS_BIT(26)
+#define NC_NIC_RSS_HF_ESP                       NC_NIC_RSS_BIT(27)
+#define NC_NIC_RSS_HF_AH                        NC_NIC_RSS_BIT(28)
+#define NC_NIC_RSS_HF_L2TPV3                    NC_NIC_RSS_BIT(29)
+#define NC_NIC_RSS_HF_PFCP                      NC_NIC_RSS_BIT(30)
+#define NC_NIC_RSS_HF_PPPOE                     NC_NIC_RSS_BIT(31)
+
 struct nc_nic_rss {
 	int reta_capacity;
 	int key_size;
@@ -100,7 +121,7 @@ static inline int nc_nic_rss_read_key(struct nc_nic_rss *rss, int channel, unsig
 	return 0;
 }
 
-static inline int nc_nic_rss_set_input(struct nc_nic_rss *rss, int channel, int fn)
+static inline int nc_nic_rss_set_input(struct nc_nic_rss *rss, int channel, uint32_t fn)
 {
 	struct nfb_comp *comp = nfb_user_to_comp(rss);
 	uint32_t val = 0;
@@ -117,7 +138,7 @@ static inline int nc_nic_rss_set_input(struct nc_nic_rss *rss, int channel, int 
 	return 0;
 }
 
-static inline int nc_nic_rss_get_input(struct nc_nic_rss *rss, int channel, int *fn)
+static inline int nc_nic_rss_get_input(struct nc_nic_rss *rss, int channel, uint32_t *fn)
 {
 	struct nfb_comp *comp = nfb_user_to_comp(rss);
 	uint32_t val = 0;
