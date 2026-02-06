@@ -437,7 +437,11 @@ int nfb_char_create(struct nfb_device *nfb)
 {
 	int ret = -ENOMEM;
 
+#ifdef CONFIG_HAVE_IDA_SIMPLE_GET
 	nfb->minor = ret = ida_simple_get(&nfb_minor, 0, NFB_CARD_COUNT_MAX, GFP_KERNEL);
+#else
+	nfb->minor = ret = ida_alloc(&nfb_minor, GFP_KERNEL);
+#endif
 	if (nfb->minor < 0) {
 		printk("NFB driver: unable to allocate new minor: %d\n", ret);
 		goto err_ida_simple_get;
@@ -445,7 +449,7 @@ int nfb_char_create(struct nfb_device *nfb)
 	return 0;
 
 	/* Error handling */
-//	ida_simple_remove(&nfb_minor, nfb->minor);
+//	ida_free(&nfb_minor, nfb->minor);
 err_ida_simple_get:
 	return ret;
 }
@@ -478,7 +482,11 @@ err_device_create:
 void nfb_char_remove(struct nfb_device* nfb)
 {
 	device_destroy(nfb_class, MKDEV(nfb_major, nfb->minor));
+#ifdef CONFIG_HAVE_IDA_SIMPLE_GET
 	ida_simple_remove(&nfb_minor, nfb->minor);
+#else
+	ida_free(&nfb_minor, nfb->minor);
+#endif
 }
 
 /*

@@ -59,7 +59,7 @@ else
 	$4 # result no
 fi
 echo '^^^^^^^^^^^^^^^^^^^^^^^^^^^^end test parallel^^^^^^^^^^^^^^^^^^^^^^^^^^^' >&AS_MESSAGE_LOG_FD
-flock -u 200 
+flock -u 200
 # cleanup
 rm -rf .test${test_cnt}/ >/dev/null 2>/dev/null
 )
@@ -425,7 +425,7 @@ void test(void) {
 KERNEL_TRY_COMPILE([[
 #include <net/xdp_sock_drv.h>
 void test(void);
-void test(void) { 
+void test(void) {
 	struct bpf_redirect_info *ri;
 	ri = bpf_net_ctx_get_ri();
 }
@@ -437,12 +437,24 @@ void test(void) {
 KERNEL_TRY_COMPILE([[
 #include <net/xdp_sock_drv.h>
 void test(void);
-void test(void) { 
+void test(void) {
 	xsk_buff_add_frag(NULL);
 }
 ]],
 [AC_MSG_CHECKING([whether kernel has one arg xsk_buff_add_frag])],
 [AC_DEFINE([CONFIG_HAVE_ONE_ARG_XSK_BUFF_ADD_FRAG], [1], [Define if kernel has one arg xsk_buff_add_frag]) AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])])
+
+KERNEL_TRY_COMPILE([[
+#include <linux/idr.h>
+void test(void);
+void test(void) {
+	struct ida ida;
+	ida_simple_get(&ida, 0, 0, GFP_KERNEL);
+}
+]],
+[AC_MSG_CHECKING([whether kernel has ida_simple_get])],
+[AC_DEFINE([CONFIG_HAVE_IDA_SIMPLE_GET], [1], [Define if kernel has ida_simple_get]) AC_MSG_RESULT([yes])],
 [AC_MSG_RESULT([no])])
 
 # wait for the jobs to finnish, remove file used for locking if it exists
