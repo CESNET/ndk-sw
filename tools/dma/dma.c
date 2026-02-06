@@ -787,7 +787,7 @@ int main(int argc, char *argv[])
 	char *queries_index;
 	int size;
 
-	char c;
+	int c;
 	const char *file = nfb_default_dev_path();
 	const char *netdev_cmd = "";
 

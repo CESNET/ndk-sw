@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
 	int use_32b = 1;
 	int index = 0;
 	long count = 1;
-	char xc1, xc2;
+	int xc1, xc2;
 	/* print newline each N bytes in read dword mode */
 	unsigned newline_span = 32;
 	char spacer;

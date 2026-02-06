@@ -429,7 +429,7 @@ void usage()
 int main(int argc, char *argv[])
 {
 	const char *path = nfb_default_dev_path();
-	char c;
+	int c;
 	long param;
 	int index = 0;
 
