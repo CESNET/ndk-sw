@@ -110,6 +110,7 @@ int inject_fdt(const char *device, const char *dtb_filename, int flags)
 	/* Read DTB */
 	f = fopen(dtb_filename, "r");
 	if (f == NULL) {
+		warnx("can't read device tree file");
 		ret = -ENOENT;
 		goto err_dtb_open;
 	}
