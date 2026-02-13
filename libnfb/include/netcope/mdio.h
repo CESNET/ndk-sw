@@ -1155,38 +1155,105 @@ static inline void nc_mdio_etile_adapt_wait(struct nc_mdio *mdio, int prtad, int
 	do {
 		nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x0126, 0x0b00);
 		ret = nc_mdio_etile_pma_attribute_read(mdio, prtad, lane);
-	} while (((ret & 0xff) != result) && (++retries < 100000));
+	} while (((ret & 0xff) != result) && (++retries < 1000000));
+}
+
+/* Reload PMA settings (call PMA attribute sequencer) on all lanes */
+static inline void nc_mdio_etile_pma_reload(struct nc_mdio *mdio, int prtad)
+{
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+	uint32_t ret;
+	int i;
+	int retries = 0;
+
+	for (i = 0; i < mdio->pma_lanes; i++) {
+		nc_mdio_dmap_drp_write(comp, prtad, i+1, 0x91, 0x01); /* Load initial PMA configuration */
+		do {
+			ret = nc_mdio_dmap_drp_read(comp, prtad, i+1, 0x91); /* Wait until the PMA is loaded */
+		} while (((ret & 0x01) != 0x0) && (++retries < 100000));
+	}
 }
 
 /* Perform PMA analog reset on selected lane and load initial configuration */
-static inline void nc_mdio_etile_areset(struct nfb_comp *comp, int prtad, int lane)
+static inline void nc_mdio_etile_areset(struct nc_mdio *mdio, int prtad)
 {
-	const uint32_t DRP_PAGE = lane + 1;
+	uint32_t drp_page;
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
 	uint32_t ret;
 	int retries = 0;
+	int i;
 
-	/* See https://www.intel.com/content/www/us/en/docs/programmable/683723/current/pma-analog-reset-92001.html */
-	/* See https://www.intel.com/content/www/us/en/docs/programmable/683723/current/reconfiguring-pma-settings.html */
-	nc_mdio_dmap_drp_write(comp, prtad, DRP_PAGE, 0x200, 0x00); 	/* Write 0x200[7:0] = 0x00. */
-	nc_mdio_dmap_drp_write(comp, prtad, DRP_PAGE, 0x201, 0x00); 	/* Write 0x201[7:0] = 0x00. */
-	nc_mdio_dmap_drp_write(comp, prtad, DRP_PAGE, 0x202, 0x00); 	/* Write 0x202[7:0] = 0x00. */
-	nc_mdio_dmap_drp_write(comp, prtad, DRP_PAGE, 0x203, 0x81); 	/* Write 0x203[7:0] = 0x81. */
-	/* Read 0x207 until it becomes 0x80. This indicates that the operation completed successfully. */
-	do {
-		ret = nc_mdio_dmap_drp_read(comp, prtad, DRP_PAGE, 0x207); /* Wait until the PMA is loaded */
-	} while (((ret & 0xff) != 0x80) && (++retries < 100000));
-	/* Reload PMA settings (call PMA attribute sequencer) on all lanes */
-	retries = 0;
-	nc_mdio_dmap_drp_write(comp, prtad, DRP_PAGE, 0x91, 0x01); /* Load initial PMA configuration */
-	do {
-		ret = nc_mdio_dmap_drp_read(comp, prtad, DRP_PAGE, 0x91); /* Wait until the PMA is loaded */
-	} while (((ret & 0x01) != 0x0) && (++retries < 100000));
+	for (i = 0; i < mdio->pma_lanes; i++) {
+		drp_page = i + 1;
+		/* See https://www.intel.com/content/www/us/en/docs/programmable/683723/current/pma-analog-reset-92001.html */
+		/* See https://www.intel.com/content/www/us/en/docs/programmable/683723/current/reconfiguring-pma-settings.html */
+		nc_mdio_dmap_drp_write(comp, prtad, drp_page, 0x200, 0x00); 	/* Write 0x200[7:0] = 0x00. */
+		nc_mdio_dmap_drp_write(comp, prtad, drp_page, 0x201, 0x00); 	/* Write 0x201[7:0] = 0x00. */
+		nc_mdio_dmap_drp_write(comp, prtad, drp_page, 0x202, 0x00); 	/* Write 0x202[7:0] = 0x00. */
+		nc_mdio_dmap_drp_write(comp, prtad, drp_page, 0x203, 0x81); 	/* Write 0x203[7:0] = 0x81. */
+		/* Read 0x207 until it becomes 0x80. This indicates that the operation completed successfully. */
+		do {
+			ret = nc_mdio_dmap_drp_read(comp, prtad, drp_page, 0x207); /* Wait until the PMA is loaded */
+		} while (((ret & 0xff) != 0x80) && (++retries < 100000));
+		/* Reload PMA settings (call PMA attribute sequencer) */
+		nc_mdio_etile_pma_reload(mdio, prtad);
+	}
 }
 
+/* Perform E-Tile PMA eq reset on all lanes */
+/* See https://docs.altera.com/r/LEDjdyYU7FsuGYiol85v1g/IRveQVjlH8J4wwpJ6PwiWg */
+static inline void nc_mdio_etile_eq_reset(struct nc_mdio *mdio, int prtad)
+{
+	int i;
+	for (i = 0; i < mdio->pma_lanes; i++) {
+		/* Reset the receiver (RX) tuning DFE taps */
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x000a, 0xffff);
+		/* Reset RF_P2, RF_P1, and RF_P0 to default values. */
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x002c, 0x0d00);
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x006c, 0x0000);
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x002c, 0x0d01);
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x006c, 0x0000);
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x002c, 0x0d02);
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x006c, 0x0000);
+	}
+}
+
+/* Enable E-tile PMA loopback and perform the initial adaptation */
+static inline void nc_mdio_etile_loopback_enable(struct nc_mdio *mdio, int prtad)
+{
+	int i;
+	/* Enable loopback and start the initial adaptation on all channels */
+	for (i = 0; i < mdio->pma_lanes; i++) {
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, 0x0301); /* Enable the loopback */
+		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL);
+	}
+	/*  Check adaptation status on all channels */
+	for (i = 0; i < mdio->pma_lanes; i++) {
+		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80);
+	}
+}
+
+/* Bring the E-Tile PMA into the mission (non-loopback) mode */
+static inline void nc_mdio_etile_mission_mode(struct nc_mdio *mdio, int prtad)
+{
+	int i;
+	for (i = 0; i < mdio->pma_lanes; i++) {
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, 0x0300); /* Disable the loopback */
+		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL); /* Start the initial adaptation */
+	}
+	for (i = 0; i < mdio->pma_lanes; i++) {
+		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80);  /* Check initial adaptation status */
+		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_CONTINUOUS);  /* Start the continuous adaptation */
+	}
+	for (i = 0; i < mdio->pma_lanes; i++) {
+		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0xE2);  /* Check continuous adaptation status */
+	}
+}
+
+/* Enable/disable E-Tile PMA loopback and initialize the link */
+/* See https://docs.altera.com/r/docs/683468/23.2/e-tile-hard-ip-user-guide-e-tile-hard-ip-for-ethernet-and-e-tile-cpri-phy-ips/ethernet-adaptation-flow-with-non-external-aib-clocking */
 static inline int nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
 {
-	/* See https://www.intel.com/content/www/us/en/docs/programmable/683468/23-2/ethernet-adaptation-flow-with-non-external.html */
-	int i;
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
 	int retries = 0;
 	uint32_t ret;
@@ -1198,9 +1265,8 @@ static inline int nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prt
 	/* 1. Assert RX/TX reset ports of the EHIP */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); // soft rx rst + soft tx rst
 	/* 2 + 3. Trigger PMA analog reset and reload PMA settings */
-	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_areset(comp, prtad, i);
-	}
+	/* Note: to avoid PMA reset which disturbs all channels in the quad, EQ reset is performed instead */
+	nc_mdio_etile_eq_reset(mdio, prtad);
 	/* 4. Apply CSR reset */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x7); // eio_sys_rst set
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); // eio_sys_rst clear
@@ -1209,33 +1275,28 @@ static inline int nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prt
 	/* 5b. Wait for TX ready */
 	do {
 		ret = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x322);
-	} while (((ret & 0x01) != 0x1) && (++retries < 100000));
+	} while (((ret & 0x01) != 0x1) && (++retries < 1000000));
 	/* 6. skipped (PMA configuration not used) */
-	/* 7a. Enable loopback and start the initial adaptation on all channels */
-	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, 0x0301); /* Enable the loopback */
-		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL);
-	}
-	/* 7b. Check adaptation status on all channels */
-	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80);
-	}
+	/* 7. Enable loopback (and perform the adaptation) */
+	nc_mdio_etile_loopback_enable(mdio, prtad);
 	/* 8-11. In mission mode, run the initial and continuous equalization */
 	if (!enable) {
-		for (i = 0; i < mdio->pma_lanes; i++) {
-			nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, 0x0300); /* Disable the loopback */
-			nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL); /* Start the initial adaptation */
-		}
-		for (i = 0; i < mdio->pma_lanes; i++) {
-			nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80);  /* Check initial adaptation status */
-			nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_CONTINUOUS);  /* Start the continuous adaptation */
-		}
-		for (i = 0; i < mdio->pma_lanes; i++) {
-			nc_mdio_etile_adapt_wait(mdio, prtad, i, 0xE2);  /* Check continuous adaptation status */
-		}
+		nc_mdio_etile_mission_mode(mdio, prtad);
 	}
 	/* 12. Deassert RX reset ports of the EHIP (using mgmt) */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x0);
+	/* Check RX status and restore PMA configuration, if the link is still down in loopback mode */
+	if (enable) {
+		retries = 0;
+		do {
+			ret = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x326);
+		} while (((ret & 0x01) != 0x1) && (++retries < 100000));
+		if ((ret & 0x01) == 0x0) {
+			/* RX still not ready - reload the PMA configuration */
+			nc_mdio_etile_pma_reload(mdio, prtad);
+			nc_mdio_etile_loopback_enable(mdio, prtad);
+		}
+	}
 	/* Get current PMA mode from mgmt */
 	ret = mdio->mdio_read(comp, prtad, 1, 7);
 	/* Apply the mode (turn the RS-FEC on or off) */
