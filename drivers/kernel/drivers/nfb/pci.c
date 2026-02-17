@@ -387,7 +387,8 @@ static int nfb_fdt_fixups(struct nfb_device *nfb)
 			fdt_appendprop(fdt, node, "num_flash", &prop32, sizeof(prop32));
 			prop32 = cpu_to_fdt32(256 * 1024 * 1024);
 			fdt_appendprop(fdt, node, "mtd_size", &prop32, sizeof(prop32));
-			nfb_fdt_create_binary_slot(fdt, node, "image0", "application0" , 0, 0, 0, 0x01002000, 0x04000000);
+			nfb_fdt_create_binary_slot(fdt, node, "image1", "recovery"     , 1, 0, 0, 0x01002000, 0x04000000);
+			nfb_fdt_create_binary_slot(fdt, node, "image0", "application0" , 0, 1, 0, 0x08000000, 0x04000000);
 
 			nfb_fdt_create_boot_type(fdt, node, "SPI", 4);
 		} else if (!strcmp(card_name, "NT200A02")) {
