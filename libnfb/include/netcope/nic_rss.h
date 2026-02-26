@@ -131,7 +131,7 @@ static inline int nc_nic_rss_set_input(struct nc_nic_rss *rss, int channel, uint
 
 	val |= channel << 16;
 
-	nfb_comp_write32(comp, 0x00, channel);
+	nfb_comp_write32(comp, 0x00, val);
 	nfb_comp_write32(comp, 0x10, fn);
 
 	nfb_comp_unlock(comp, 1);
@@ -148,7 +148,7 @@ static inline int nc_nic_rss_get_input(struct nc_nic_rss *rss, int channel, uint
 
 	val |= channel << 16;
 
-	nfb_comp_write32(comp, 0x00, channel);
+	nfb_comp_write32(comp, 0x00, val);
 	val = nfb_comp_read32(comp, 0x10);
 	if (fn)
 		*fn = val;
