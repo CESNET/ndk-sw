@@ -541,8 +541,9 @@ static inline int nc_ndp_v3_tx_burst_put(void *priv)
 
 		nfb_comp_write(q->u.v3.tx_data_buff, q->u.v3.tx_pkts[i], hdr[i].frame_len, hdr[i].frame_ptr);
 		q->u.v3.bytes_available -= frame_len_ceil;
-
-
+#ifdef __KERNEL__
+		wmb();
+#endif
 		nfb_comp_write(q->u.v3.tx_hdr_buff, &hdr[i], 8, (uint64_t)shp*8);
 		// This below line needs to updated somewhere
 		shp = (shp + 1) & (q->u.v3.hdr_ptr_mask);
