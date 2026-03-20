@@ -340,7 +340,7 @@ static inline unsigned nc_ndp_v3_rx_burst_get(void *priv, struct ndp_packet *pac
 
 		hdr = hdr_base + i;
 
-		if ((q->u.v3.shp + i) > q->u.v3.hdr_ptr_mask) {
+		if ((q->u.v3.shp + i) == (q->u.v3.hdr_ptr_mask + 1)) {
 			vld_flag ^= 1;
 		}
 
