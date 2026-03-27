@@ -28,6 +28,8 @@
 static bool ndp_netdev_enable = 0;
 static bool ndp_netdev_carrier = 0;
 
+extern unsigned int net_rx_thread_nodata_check_interval_us;
+
 
 /**
  * nfb_ndp_netdev_rx_thread - thread function for receiving data, works in a poll mode
@@ -53,7 +55,8 @@ static int nfb_ndp_netdev_rx_thread(void *data)
 
 		/* no new data, sleep and then try again */
 		if (cnt == 0) {
-			usleep_range(995, 1005);
+			usleep_range(net_rx_thread_nodata_check_interval_us+1,
+					net_rx_thread_nodata_check_interval_us+2);
 			continue;
 		}
 

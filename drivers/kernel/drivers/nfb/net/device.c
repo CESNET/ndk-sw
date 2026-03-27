@@ -65,6 +65,10 @@ static int net_txqs_offset = 0;
 module_param(net_txqs_offset, int, S_IRUGO);
 MODULE_PARM_DESC(net_txqs_offset, "Default TX DMA queues offset [0]");
 
+unsigned int net_rx_thread_nodata_check_interval_us = 1000;
+module_param(net_rx_thread_nodata_check_interval_us, uint, S_IRUGO);
+MODULE_PARM_DESC(net_rx_thread_nodata_check_interval_us, "Default TX DMA queues offset [1000]us");
+
 
 static void nfb_net_link_status(struct net_device *netdev)
 {
@@ -425,7 +429,8 @@ static int nfb_net_rx_thread(void *rxqptr)
 
 		// If no data, sleep and try again
 		if (received == 0) {
-			usleep_range(995, 1005);
+			usleep_range(net_rx_thread_nodata_check_interval_us+1,
+					net_rx_thread_nodata_check_interval_us+2);
 			continue;
 		}
 
