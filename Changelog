@@ -1,3 +1,11 @@
+* Fri Mar 27 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.2-1
+- [FEATURE] Alveo UL3524 and X3522: enable recovery flash partition
+- [FEATURE] netdev: add net_rx_thread_nodata_check_interval_us module parameter
+- [FIX] dma-calypte: use memory barier between data and header write
+- [FIX] dma-calypte: fix valid_flag logic
+- [FIX] mdio: rework E-tile PMA loopback
+- [FIX] libnetcope-rss: use shifted channel ID
+
 * Fri Feb 6 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.1-1
 - [FEATURE] drivers: add support for newer kernels
 - [FIX] libnfb: do not use optimized bus functions on unsupported platforms
