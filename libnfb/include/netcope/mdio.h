@@ -1278,14 +1278,20 @@ static inline int nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prt
 
 	/* 1. Assert RX/TX reset ports of the EHIP */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); // soft rx rst + soft tx rst
+	_drp_wait_until(comp, prtad, 0x32c, 0x6, 0x6, 100000); /* Wait until bits[2:1] of 0x32c becomes 0x06 */
 	/* 2 + 3. Trigger PMA analog reset and reload PMA settings */
 	/* Note: to avoid PMA reset which disturbs all channels in the quad, EQ reset is performed instead */
 	nc_mdio_etile_eq_reset(mdio, prtad);
 	/* 4. Apply CSR reset */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x7); // eio_sys_rst set
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); // eio_sys_rst clear
+	/* Wait until the reset sequence starts */
+	_drp_wait_until(comp, prtad, 0x32c, 0x01, 1, 10000); /* Wait until bit[0] of 0x32c becomes 1 */
+	/* Wait until the reset sequence finishes */
+	_drp_wait_until(comp, prtad, 0x32c, 0x01, 0, 100000); /* Wait until bit[0] of 0x32c becomes 0 */
 	/* 5a. Deassert TX reset */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x4); // soft rx rst only
+	_drp_wait_until(comp, prtad, 0x32c, 0x12, 0, 1000000); /* Wait until bits[4,1] of 0x32c become 0 */
 	/* 5b. Wait for TX ready */
 	_drp_wait_until(comp, prtad, 0x322, 0x01, 1, 1000000); /* Wait until bit[0] of 0x322 becomes 1 */
 	/* 6. skipped (PMA configuration not used) */
@@ -1297,6 +1303,7 @@ static inline int nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prt
 	}
 	/* 12. Deassert RX reset ports of the EHIP (using mgmt) */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x0);
+	_drp_wait_until(comp, prtad, 0x32c, 0x3f, 0, 100000); /* Wait until bits[5:0] of 0x32c -> 0x00 */
 	/* Check RX status and restore PMA configuration, if the link is still down in loopback mode */
 	if (enable) {
 		retries = 0;
