@@ -1035,13 +1035,27 @@ static inline uint16_t nc_mdio_etile_pma_attribute_read(struct nc_mdio *mdio, in
 	return rcode;
 }
 
+/* Wait until the value of the "reg" register reaches "val". DRP page 0 only! */
+static inline int _drp_wait_until(struct nfb_comp *comp, int prtad, uint32_t reg, uint32_t mask, uint32_t val, int max_retries)
+{
+	uint32_t ret;
+	int retries = 0;
+	do {
+		ret = nc_mdio_dmap_drp_read(comp, prtad, 0, reg); // read the requested DRP register
+	} while (((ret & mask) != val) && (++retries < max_retries));
+	return (ret & mask) == val;
+}
+
 /* Perform RX+TX reset of E-tile Ethernet PHY */
 static inline void nc_mdio_etile_reset(struct nfb_comp *comp, int prtad)
 {
 	/* see https://www.intel.com/content/www/us/en/docs/programmable/683468/23-2/phy-configuration.html */
 	/* see https://www.intel.com/content/www/us/en/docs/programmable/683468/23-2/reset.html */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); // soft rx rst + soft tx rst
+	_drp_wait_until(comp, prtad, 0x32c, 0x6, 0x6, 100000); /* Wait until bits[2:1] of 0x32c -> 0x06 */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x0);
+	_drp_wait_until(comp, prtad, 0x32c, 0x3f, 0, 100000); /* Wait until bits[5:0] of 0x32c -> 0x00 */
+
 }
 
 static inline void nc_mdio_etile_rsfec_off(struct nfb_comp *comp, int prtad, int lanes)
@@ -1273,9 +1287,7 @@ static inline int nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prt
 	/* 5a. Deassert TX reset */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x4); // soft rx rst only
 	/* 5b. Wait for TX ready */
-	do {
-		ret = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x322);
-	} while (((ret & 0x01) != 0x1) && (++retries < 1000000));
+	_drp_wait_until(comp, prtad, 0x322, 0x01, 1, 1000000); /* Wait until bit[0] of 0x322 becomes 1 */
 	/* 6. skipped (PMA configuration not used) */
 	/* 7. Enable loopback (and perform the adaptation) */
 	nc_mdio_etile_loopback_enable(mdio, prtad);
