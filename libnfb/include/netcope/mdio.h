@@ -1264,6 +1264,24 @@ static inline void nc_mdio_etile_mission_mode(struct nc_mdio *mdio, int prtad)
 	}
 }
 
+/* Performs Eth system reset */
+static inline void nc_mdio_etile_eth_sysrst(struct nc_mdio *mdio, int prtad)
+{
+	int i;
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
+
+	for (i = 0; i < mdio->pma_lanes; i++) {
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0011, 0x0003); /* Recalibrate the PMA on next enable */
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0001, 0x0000); /* Disable the PMA */
+		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0001, 0x0007); /* Enable the PMA */
+	}
+	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x7); // eio_sys_rst set
+	/* Wait until the reset sequence starts */
+	_drp_wait_until(comp, prtad, 0x32c, 0x01, 1, 10000); /* Wait until bit[0] of 0x32c becomes 1 */
+	/* Wait until the reset sequence finishes */
+	_drp_wait_until(comp, prtad, 0x32c, 0x01, 0, 100000); /* Wait until bit[0] of 0x32c -> 0 */
+}
+
 /* Enable/disable E-Tile PMA loopback and initialize the link */
 /* See https://docs.altera.com/r/docs/683468/23.2/e-tile-hard-ip-user-guide-e-tile-hard-ip-for-ethernet-and-e-tile-cpri-phy-ips/ethernet-adaptation-flow-with-non-external-aib-clocking */
 static inline int nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
@@ -1271,11 +1289,12 @@ static inline int nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prt
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
 	int retries = 0;
 	uint32_t ret;
+	uint32_t status_reg = (mdio->rsfec_supported ? 0x329 : 0x326); /* RX status register */
 
 	/* Lock access to PCS registers (reset active) */
 	if (!nfb_comp_lock(comp, ATTR_IFC))
 		return -EAGAIN;
-
+retry:
 	/* 1. Assert RX/TX reset ports of the EHIP */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); // soft rx rst + soft tx rst
 	_drp_wait_until(comp, prtad, 0x32c, 0x6, 0x6, 100000); /* Wait until bits[2:1] of 0x32c becomes 0x06 */
@@ -1304,22 +1323,18 @@ static inline int nc_mdio_fixup_etile_set_loopback(struct nc_mdio *mdio, int prt
 	/* 12. Deassert RX reset ports of the EHIP (using mgmt) */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x0);
 	_drp_wait_until(comp, prtad, 0x32c, 0x3f, 0, 100000); /* Wait until bits[5:0] of 0x32c -> 0x00 */
-	/* Check RX status and restore PMA configuration, if the link is still down in loopback mode */
-	if (enable) {
-		retries = 0;
-		do {
-			ret = nc_mdio_dmap_drp_read(comp, prtad, 0, 0x326);
-		} while (((ret & 0x01) != 0x1) && (++retries < 100000));
-		if ((ret & 0x01) == 0x0) {
-			/* RX still not ready - reload the PMA configuration */
-			nc_mdio_etile_pma_reload(mdio, prtad);
-			nc_mdio_etile_loopback_enable(mdio, prtad);
-		}
-	}
 	/* Get current PMA mode from mgmt */
 	ret = mdio->mdio_read(comp, prtad, 1, 7);
 	/* Apply the mode (turn the RS-FEC on or off) */
 	nc_mdio_fixup_etile_set_mode(mdio, prtad, ret);
+	/* In the loopback mode, check link status and retry the process, if the link is still down */
+	if (enable && (++retries < 3)) {
+		if (!_drp_wait_until(comp, prtad, status_reg, 0x01, 1, 1000000)) {
+			/* RX still not ready - perform hard reset and retry */
+			nc_mdio_etile_eth_sysrst(mdio, prtad);
+			goto retry;
+		}
+	}
 	nfb_comp_unlock(comp, PCS_IFC);
 	return 0;
 }
