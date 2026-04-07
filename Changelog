@@ -1,3 +1,6 @@
+* Wed Apr 7 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.3-1
+- [FIX] mdio: fix E-tile PMA loopback on 100G
+
 * Fri Mar 27 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.2-1
 - [FEATURE] Alveo UL3524 and X3522: enable recovery flash partition
 - [FEATURE] netdev: add net_rx_thread_nodata_check_interval_us module parameter
