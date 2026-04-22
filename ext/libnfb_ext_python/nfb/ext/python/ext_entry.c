@@ -12,8 +12,17 @@ struct libnfb_ext_abi_version libnfb_ext_abi_version = libnfb_ext_abi_version_cu
 
 int libnfb_ext_get_ops(const char *devname, struct libnfb_ext_ops *ops)
 {
-	if (import_shim())
-		return 0;
+	int ret;
+	PyGILState_STATE gstate = PyGILState_Ensure();
 
-	return pynfb_ext_get_ops(devname, ops);
+	ret = import_shim();
+	if (ret) {
+		ret = -EBADFD;
+		goto out;
+	}
+
+	ret = pynfb_ext_get_ops(devname, ops);
+out:
+	PyGILState_Release(gstate);
+	return ret;
 }
