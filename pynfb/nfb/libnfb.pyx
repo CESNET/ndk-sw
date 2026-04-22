@@ -6,7 +6,7 @@ from itertools import islice
 from typing import Union, Optional, List, Tuple, Iterable
 
 from libc.stdlib cimport malloc
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t, int32_t, uintptr_t
 from libcpp cimport bool
 from libc.errno cimport EBUSY, ETIMEDOUT, EAGAIN
 
@@ -69,6 +69,30 @@ cdef class NfbDeviceHandle:
         self._close_cbs.append(cb)
 
 
+cdef class CContextNfbDeviceHandle:
+    cdef NfbDeviceHandle _nfb_dev
+    cdef int _inside_ctx
+
+    def __cinit__(self, Nfb nfb_dev):
+        self._nfb_dev = nfb_dev._handle
+        self._nfb_dev.check_handle()
+        self._inside_ctx = 0
+        self._nfb_dev.add_close_cb(self._close_handle_cb)
+
+    def _close_handle_cb(self):
+        if self._inside_ctx != 0:
+            # Context was active when the nfb_close happend
+            raise ReferenceError
+
+    def __enter__(self) -> uintptr_t:
+        self._nfb_dev.check_handle()
+        self._inside_ctx += 1
+        return <uintptr_t>self._nfb_dev._dev
+
+    def __exit__(self, *exc):
+        self._inside_ctx -= 1
+
+
 cdef class Nfb:
     """
     Nfb class instance represents handle to NFB device in system
@@ -102,6 +126,8 @@ cdef class Nfb:
         self.ndp = QueueManager(self)
         # TODO: use Nfb.dma only for statistic, not for transfers
         self.dma = self.ndp
+
+        self.libnfb_handle = CContextNfbDeviceHandle(self)
 
     def __enter__(self):
         self._handle.check_handle()
