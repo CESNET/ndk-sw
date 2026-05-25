@@ -48,7 +48,7 @@
 #include <linux/spi/spi.h>
 
 #include "../../spi/altera.h"
-#include "../../base/regmap/regmap.h"
+#include "../../base/regmap/nfb_regmap.h"
 
 #include "nfb-spi.h"
 
@@ -279,7 +279,7 @@ int nfb_spi_attach(struct nfb_boot *boot)
 			__func__, board_info.modalias);
 	}
 
-	m10bmc_spi->m10bmc.regmap = devm_regmap_init_spi_avmm(spi_dev, &m10bmc_spi_regmap_config);
+	m10bmc_spi->m10bmc.regmap = nfb_devm_regmap_init_spi_avmm(spi_dev, &m10bmc_spi_regmap_config);
 	if (IS_ERR(m10bmc_spi->m10bmc.regmap)) {
 		ret = PTR_ERR(m10bmc_spi->m10bmc.regmap);
 		dev_err(&m10bmc_spi->pd->dev, "%s Failed to allocate regmap: %d\n", __func__, ret);

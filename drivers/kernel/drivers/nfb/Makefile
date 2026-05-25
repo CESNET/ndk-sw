@@ -20,9 +20,7 @@ nfb-y += mi/mi.o
 nfb-y += ndp/ctrl.o ndp/ctrl_ndp.o ndp/channel.o ndp/subscription.o ndp/subscriber.o ndp/ring.o ndp/char.o ndp/driver.o ndp/kndp.o
 nfb-y += ndp_netdev/core.o
 nfb-y += boot/flash.o boot/reload.o boot/boot.o boot/gecko.o boot/sdm.o boot/bw-bmc.o
-ifndef CONFIG_REGMAP_SPI_AVMM
 nfb-y += ../base/regmap/regmap-spi-avmm.o
-endif
 ifndef CONFIG_SPI_ALTERA_CORE
 nfb-y += ../spi/spi-altera-core.o
 endif
