@@ -1,0 +1,3 @@
+# Include Cython source and C headers in sdist
+recursive-include nfb/ext/python *.pyx *.pxd *.h *.c
+include readme.rst LICENSE

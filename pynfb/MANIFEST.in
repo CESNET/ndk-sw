@@ -1,0 +1,3 @@
+# Include Cython source files in sdist
+recursive-include nfb *.pyx *.pxd *.pyi py.typed
+include README.md LICENSE

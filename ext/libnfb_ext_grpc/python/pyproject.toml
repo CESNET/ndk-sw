@@ -4,20 +4,39 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "libnfb_ext_grpc"
-version = "0.1.0"
-authors = [{name = "Martin Spinler", email="spinler@cesnet.cz"}]
+version = "0.1.1"
 description = "Python wrapper for libnfb gRPC extension"
-classifiers=[
-	"Programming Language :: Python :: 3",
-	"Operating System :: OS Independent",
-]
+readme = "readme.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [{name = "Martin Spinler", email = "spinler@cesnet.cz"}]
+requires-python = ">=3.8"
 dependencies = [
 	"protobuf",
 	"grpcio",
+	"nfb",
 ]
+classifiers = [
+	"Development Status :: 3 - Alpha",
+	"Intended Audience :: Developers",
+	"Operating System :: POSIX :: Linux",
+	"Programming Language :: Python :: 3",
+	"Topic :: System :: Hardware",
+	"Topic :: System :: Networking",
+]
+
+[project.urls]
+Homepage = "https://github.com/CESNET/ndk-sw"
+Documentation = "https://cesnet.github.io/ndk-sw/"
+Repository = "https://github.com/CESNET/ndk-sw"
+"Bug Tracker" = "https://github.com/CESNET/ndk-sw/issues"
 
 [project.scripts]
 nfb-python-grpc-server = "nfb.ext.grpc.server:main"
 
-[tool.setuptools.packages.find]
-include = ["nfb*"]
+[tool.setuptools]
+packages = [
+    "nfb.ext.grpc",
+    "nfb.ext.protobuf",
+    "nfb.ext.protobuf.v1",
+]

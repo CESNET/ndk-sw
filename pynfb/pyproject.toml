@@ -5,6 +5,37 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "nfb"
+version = "0.3.0"
+description = "Python API for control of the CESNET NDK based FPGA acceleration cards"
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Martin Spinler", email = "spinler@cesnet.cz" },
+]
+requires-python = ">=3.8"
+dependencies = [
+    "fdt",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Cython",
+    "Topic :: System :: Hardware",
+    "Topic :: System :: Hardware :: Hardware Drivers",
+    "Topic :: System :: Networking",
+]
+
+[project.urls]
+Homepage = "https://github.com/CESNET/ndk-sw"
+Documentation = "https://cesnet.github.io/ndk-sw/"
+Repository = "https://github.com/CESNET/ndk-sw"
+"Bug Tracker" = "https://github.com/CESNET/ndk-sw/issues"
+
 [[tool.mypy.overrides]]
 module = "fdt"
 ignore_missing_imports = true
