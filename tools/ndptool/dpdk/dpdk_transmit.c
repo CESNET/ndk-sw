@@ -212,10 +212,10 @@ int dpdk_transmit_loop(void *params)
 		ret = rte_pktmbuf_alloc_bulk(pool, packets, pkts_ready);
 		if (ret < 0){
 			cnt = 0;
-			RTE_LOG(DEBUG, MBUF, "rte_pktmbuf_alloc_bulk() failed\n");
+			fprintf(stderr, "rte_pktmbuf_alloc_bulk() failed\n");
 			while(rte_pktmbuf_alloc_bulk(pool, packets, pkts_ready)) {
 				if (cnt > 100) {
-					RTE_LOG(CRIT, MBUF, "THREAD %d: rte_pktmbuf_alloc_bulk() failed 100 times in a row, killing the thread\n", rte_lcore_id());
+					fprintf(stderr, "THREAD %d: rte_pktmbuf_alloc_bulk() failed 100 times in a row, killing the thread\n", rte_lcore_id());
 					goto alloc_fail;
 				}
 				++cnt;
@@ -226,7 +226,7 @@ int dpdk_transmit_loop(void *params)
 		for (i = 0; i < (unsigned) pkts_ready; i++) {
 			pckt_address = (unsigned char *) rte_pktmbuf_append(packets[i], statpackets[i].data_length);
 			if (pckt_address == NULL) {
-				RTE_LOG(CRIT, MBUF, "THREAD %d: rte_pktmbuf_append() failed, killing the thread\n", rte_lcore_id());
+				fprintf(stderr, "THREAD %d: rte_pktmbuf_append() failed, killing the thread\n", rte_lcore_id());
 				goto alloc_fail;
 			}
 			statpackets[i].data = pckt_address;
