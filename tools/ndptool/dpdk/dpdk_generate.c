@@ -159,10 +159,10 @@ int dpdk_generate_loop(void *params)
 		ret = rte_pktmbuf_alloc_bulk(pool, packets, brst_size);
 		if (ret < 0){
 			cnt = 0;
-			RTE_LOG(DEBUG, MBUF, "rte_pktmbuf_alloc_bulk() failed\n");
+			fprintf(stderr, "rte_pktmbuf_alloc_bulk() failed\n");
 			while(rte_pktmbuf_alloc_bulk(pool, packets, brst_size)) {
 				if (cnt > 100) {
-					RTE_LOG(CRIT, MBUF, "THREAD %d: rte_pktmbuf_alloc_bulk() failed 100 times in a row, killing the thread\n", rte_lcore_id());
+					fprintf(stderr, "THREAD %d: rte_pktmbuf_alloc_bulk() failed 100 times in a row, killing the thread\n", rte_lcore_id());
 					goto alloc_fail;
 				}
 				++cnt;
