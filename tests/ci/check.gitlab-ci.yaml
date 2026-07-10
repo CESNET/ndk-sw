@@ -8,7 +8,7 @@ workflow:
         BASE_COMMIT_SHA: $CI_MERGE_REQUEST_DIFF_BASE_SHA
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       variables:
-        BASE_COMMIT_SHA: $CI_COMMIT_SHA
+        BASE_COMMIT_SHA: $CI_COMMIT_BEFORE_SHA
 
 editorconfig:
   stage: check
@@ -37,4 +37,11 @@ commitlint:
     - apk add --no-cache git
     - npm install --save-dev @commitlint/config-conventional @commitlint/cli
   script:
-    - npx commitlint --extends '@commitlint/config-conventional' --from "${BASE_COMMIT_SHA}" --to "${CI_COMMIT_SHA}"
+    - |
+      if [ -z "${BASE_COMMIT_SHA}" ] || \
+         [ "${BASE_COMMIT_SHA}" = "0000000000000000000000000000000000000000" ] || \
+         [ "${BASE_COMMIT_SHA}" = "${CI_COMMIT_SHA}" ]; then
+        npx commitlint --extends '@commitlint/config-conventional' --from "${CI_COMMIT_SHA}^" --to "${CI_COMMIT_SHA}"
+      else
+        npx commitlint --extends '@commitlint/config-conventional' --from "${BASE_COMMIT_SHA}" --to "${CI_COMMIT_SHA}"
+      fi
