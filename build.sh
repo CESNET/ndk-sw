@@ -16,6 +16,7 @@ URL_3RDPARTY="https://github.com/CESNET/ndk-sw/releases/download/$SRC_3RDPARTY_V
 
 EPEL8_DPDK_NFB_REPO_REMOTE="https://copr.fedorainfracloud.org/coprs/g/CESNET/dpdk-nfb/repo/epel-8/group_CESNET-dpdk-nfb-epel-8.repo"
 EPEL9_DPDK_NFB_REPO_REMOTE="https://copr.fedorainfracloud.org/coprs/g/CESNET/dpdk-nfb/repo/epel-9/group_CESNET-dpdk-nfb-epel-9.repo"
+EPEL10_DPDK_NFB_REPO_REMOTE="https://copr.fedorainfracloud.org/coprs/g/CESNET/dpdk-nfb/repo/epel-10/group_CESNET-dpdk-nfb-epel-10.repo"
 DPDK_NFB_REPO_LOCAL="/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:group_CESNET:dpdk-nfb.repo"
 
 # ----[ USEFUL VARIABLES ]---------------------------------------------------- #
@@ -196,7 +197,7 @@ get_dpdk_dependencies()
     os_number=$(get_os_number)
 
     if item_in_list "$os" "centos scientific fedora ol rocky"; then
-        if  item_in_list "$os_number" "8 9" ; then
+        if  item_in_list "$os_number" "8 9 10" ; then
             if [ "$os_number" = "8" ] ; then
                 if ! wget "${EPEL8_DPDK_NFB_REPO_REMOTE}" -O "${DPDK_NFB_REPO_LOCAL}"; then
                     echo >&2 "Could not obtain repository ${EPEL8_DPDK_NFB_REPO_REMOTE}"
@@ -206,7 +207,12 @@ get_dpdk_dependencies()
                 if ! wget "${EPEL9_DPDK_NFB_REPO_REMOTE}" -O "${DPDK_NFB_REPO_LOCAL}"; then
                     echo >&2 "Could not obtain repository ${EPEL9_DPDK_NFB_REPO_REMOTE}"
                     return 1
-                fi  
+                fi
+            elif [ "$os_number" = "10" ] ; then
+                if ! wget "${EPEL10_DPDK_NFB_REPO_REMOTE}" -O "${DPDK_NFB_REPO_LOCAL}"; then
+                    echo >&2 "Could not obtain repository ${EPEL10_DPDK_NFB_REPO_REMOTE}"
+                    return 1
+                fi
             fi
             ret=""
             ret="$ret dpdk-nfb"
@@ -214,8 +220,8 @@ get_dpdk_dependencies()
             ret="$ret dpdk-nfb-tools"
             echo $ret
         fi
-    else 
-        echo >&2 "ERROR: NFB DPDK libraries only exist for redhat 8 and redhat 9 derived linux"
+    else
+        echo >&2 "ERROR: NFB DPDK libraries only exist for redhat 8/9/10 derived linux"
         exit 1
     fi
 }

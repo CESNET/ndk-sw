@@ -105,7 +105,7 @@ if(USE_DPDK)
 
 	set(DPDK_TARGETS dpdk-generate dpdk-read dpdk-loopback dpdk-receive dpdk-transmit)
 
-	target_compile_options(ndp-tool-dpdk PRIVATE -O3 -funroll-loops ${DPDK_CFLAGS})
+	target_compile_options(ndp-tool-dpdk PRIVATE -O3 -funroll-loops -Wno-pedantic ${DPDK_CFLAGS})
 	target_link_libraries(ndp-tool-dpdk
 	PRIVATE ${NUMA_LIBRARIES} ${NCURSES_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${DPDK_LDFLAGS}
 	)
