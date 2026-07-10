@@ -1,3 +1,11 @@
+* Wed Jul 15 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.5-1
+- [FEATURE] python: add distribution files and upload to pip
+- [FIX] ndp-tool: handle better TX speed limitation
+
+* Mon May 25 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.4-1
+- [FEATURE] drivers: add support for newer kernels
+- [FEATURE] python: use 'with gil' in callback functions
+
 * Wed Apr 7 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.3-1
 - [FIX] mdio: fix E-tile PMA loopback on 100G
 
