@@ -103,6 +103,7 @@ static int ndp_mode_generate_loop(struct ndp_tool_params *p)
 
 	/* Check throughput only every N cycles */
 	unsigned status_num_of_loops = p->mode.generate.mbps / 10000u;
+	si->status_loop = status_num_of_loops;
 
 	/* Clear length of packet header */
 	for (i = 0; i < burst_size; i++) {

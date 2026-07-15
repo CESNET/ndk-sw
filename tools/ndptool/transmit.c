@@ -168,6 +168,7 @@ static int ndp_mode_transmit_loop(struct ndp_tool_params *p, struct pcap_src *sr
 	}
 
 	si->thread_total_bytes_cnt = 0;
+	si->status_loop = status_num_of_loops;
 	while (!stop) {
 		/* check limits if there is one (0 means loop forever) */
 		if (p->limit_packets > 0) {

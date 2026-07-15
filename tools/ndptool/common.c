@@ -60,16 +60,15 @@ retry:
 void adjust_tx_throughput(unsigned status_num_of_loops, unsigned long long throughput_mbps,
 			bool use_delay_nsec, struct stats_info *si, struct ndp_queue *tx)
 {
-	unsigned status_loop = status_num_of_loops;
 	struct timeval status_time;
 
 	/* zero Mbps = unlimited throughput */
 	if (throughput_mbps != 0) {
 		/* Check throughput only every N cycles */
-		if (status_loop != 0) {
-			status_loop--;
+		if (si->status_loop != 0) {
+			si->status_loop--;
 		} else {
-			status_loop = status_num_of_loops;
+			si->status_loop = status_num_of_loops;
 			do {
 				/* calculate elapsed time and expected bits */
 				gettimeofday(&status_time, NULL);

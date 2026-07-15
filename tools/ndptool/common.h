@@ -57,6 +57,7 @@ struct stats_info {
 	unsigned long long thread_packet_cnt;
 	unsigned long long thread_bytes_cnt;
 	unsigned long long thread_total_bytes_cnt;
+	unsigned status_loop;
 	void *priv;
 
 	char progress_letter;
