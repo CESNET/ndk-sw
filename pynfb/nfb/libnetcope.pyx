@@ -443,6 +443,7 @@ cdef class DmaCtrlNdp:
         sp.nb_desc = nb_desc
         sp.nb_hdr = nb_hdr
         sp.nb_data = 0
+        sp.timeout = 0
 
         self._ctrl.shp = 0
         self._ctrl.sdp = 0

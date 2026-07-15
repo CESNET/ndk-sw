@@ -664,7 +664,13 @@ static inline int nc_bw_bmc_send_reload(struct nc_bw_bmc * spi, const char *file
 	ret |= nc_bw_bmc_push(spi, target_path, strlen(target_path));
 	ret |= nc_bw_bmc_push(spi, filename, strlen(filename) + 1);
 
-	nc_bw_bmc_send_mctp_ext(spi, spi->buffer, spi->pos, 1, 0);
+	if (ret)
+		return -ENOMEM;
+
+	ret = nc_bw_bmc_send_mctp_ext(spi, spi->buffer, spi->pos, 1, 0);
+	if (ret)
+		return -EBADF;
+
 	return 0;
 }
 

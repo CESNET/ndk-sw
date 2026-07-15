@@ -79,7 +79,7 @@ static inline unsigned nc_ndp_v1_tx_burst_get(void *priv, struct ndp_packet *pac
 	uint16_t packet_size;
 	uint16_t header_size;
 	unsigned cnt = 0;
-	size_t burst_size = 0;
+	/*size_t burst_size = 0;*/
 
 	unsigned long long bytes;
 	unsigned char *data;
@@ -135,7 +135,7 @@ static inline unsigned nc_ndp_v1_tx_burst_get(void *priv, struct ndp_packet *pac
 		swptr += packet_size;
 		bytes -= packet_size;
 
-		burst_size += packet_size;
+		/*burst_size += packet_size;*/
 		cnt++;
 	}
 	q->u.v1.data  = data;
