@@ -189,6 +189,7 @@ cdef extern from "<netcope/dma_ctrl_ndp.h>":
         uint32_t nb_data;
         uint32_t nb_desc
         uint32_t nb_hdr
+        uint32_t timeout;
 
     cdef struct nc_ndp_ctrl:
         uint64_t last_upper_addr
