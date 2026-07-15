@@ -1,3 +1,6 @@
+* Wed Jul 15 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.6-1
+- [FIX] pynfb: add missing timeout field
+
 * Wed Jul 15 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.5-1
 - [FEATURE] python: add distribution files and upload to pip
 - [FIX] ndp-tool: handle better TX speed limitation
