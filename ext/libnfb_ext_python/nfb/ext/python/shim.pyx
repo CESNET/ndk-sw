@@ -62,8 +62,12 @@ cdef ssize_t nfb_pynfb_bus_read(void *p, void *buf, size_t nbyte, off_t offset) 
     cdef bytes data
     cdef ssize_t ret
 
-    nfb, comp_node, bus_node = bus
-    data = nfb.read(bus_node, comp_node, offset, nbyte)
+    try:
+        nfb, comp_node, bus_node = bus
+        data = nfb.read(bus_node, comp_node, offset, nbyte)
+    except BaseException:
+        return -1
+
     ret = len(data)
     if ret > int(nbyte):
         ret = -1
@@ -79,8 +83,11 @@ cdef ssize_t nfb_pynfb_bus_write(void *p, const void *buf, size_t nbyte, off_t o
     cdef const char* c_data = <const char*> buf
     cdef bytes data = c_data[:nbyte]
 
-    nfb, comp_node, bus_node = bus
-    nfb.write(bus_node, comp_node, offset, data)
+    try:
+        nfb, comp_node, bus_node = bus
+        nfb.write(bus_node, comp_node, offset, data)
+    except BaseException:
+        return -1
 
     return nbyte
 
@@ -127,16 +134,22 @@ cdef void nfb_pynfb_bus_close(void *priv) noexcept with gil:
 cdef int pyndp_start(void *priv) noexcept with gil:
     cdef object t = <object>priv
 
-    queue, temp = t
-    queue.start()
+    try:
+        queue, temp = t
+        queue.start()
+    except BaseException:
+        return -1
 
     return 0
 
 cdef int pyndp_stop(void *priv) noexcept with gil:
     cdef object t = <object>priv
 
-    queue, temp = t
-    queue.stop()
+    try:
+        queue, temp = t
+        queue.stop()
+    except BaseException:
+        return -1
 
     return 0
 
@@ -146,9 +159,17 @@ cdef unsigned pyndp_rx_burst_get(void *priv, ndp_packet *packets, unsigned count
     cdef uint8_t* c_data
     cdef uint8_t* c_hdr
 
-    queue, temp = t
+    cdef object queue
+    cdef object pkts
+    cdef unsigned cnt
+    cdef unsigned i
 
-    pkts = queue.burst_get(count)
+    try:
+        queue, temp = t
+        pkts = queue.burst_get(count)
+    except BaseException:
+        return 0
+
     cnt = min(len(pkts), count)
     for i in range(cnt):
         pkt, hdr, flags = pkts[i]
@@ -166,23 +187,33 @@ cdef unsigned pyndp_rx_burst_get(void *priv, ndp_packet *packets, unsigned count
 cdef int pyndp_rx_burst_put(void *priv) noexcept with gil:
     cdef object t = <object>priv
 
-    queue, temp = t
-    queue.burst_put()
+    try:
+        queue, temp = t
+        queue.burst_put()
+    except BaseException:
+        return -1
 
     return 0
 
 cdef unsigned pyndp_tx_burst_get(void *priv, ndp_packet *packets, unsigned count) noexcept with gil:
     cdef object t = <object>priv
-    queue, temp = t
+    cdef object queue
+    cdef object pkts
+    cdef object prep
+    cdef unsigned i
 
-    pkts = []
-    for i in range(count):
-        pkts.append((
-            int(packets[i].data_length),
-            int(packets[i].header_length),
-            int(packets[i].flags),
-        ))
-    prep = queue.burst_get(pkts)
+    try:
+        queue, temp = t
+        pkts = []
+        for i in range(count):
+            pkts.append((
+                int(packets[i].data_length),
+                int(packets[i].header_length),
+                int(packets[i].flags),
+            ))
+        prep = queue.burst_get(pkts)
+    except BaseException:
+        return 0
 
     for i in range(len(prep)):
         packets[i].data = <unsigned char*>prep[i][0]
@@ -193,16 +224,23 @@ cdef unsigned pyndp_tx_burst_get(void *priv, ndp_packet *packets, unsigned count
 cdef int pyndp_tx_burst_put(void *priv) noexcept with gil:
     cdef object t = <object>priv
 
-    queue, temp = t
-    queue.burst_put()
+    try:
+        queue, temp = t
+        queue.burst_put()
+    except BaseException:
+        return -1
 
     return 0
 
 cdef int pyndp_tx_burst_flush(void *priv) noexcept with gil:
     cdef object t = <object>priv
 
-    queue, temp = t
-    queue.burst_flush()
+    try:
+        queue, temp = t
+        queue.burst_flush()
+    except BaseException:
+        return -1
+
     return 0
 
 

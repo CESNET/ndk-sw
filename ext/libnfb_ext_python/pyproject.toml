@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "libnfb-ext-python"
-version = "0.1.1"
+version = "0.1.2"
 description = "Python extension for libnfb — implement NFB device backends in Python"
 readme = "readme.rst"
 license = "BSD-3-Clause"
