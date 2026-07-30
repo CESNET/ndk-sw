@@ -11,7 +11,7 @@ from cpython.exc cimport PyErr_SetFromErrno
 import libnfb
 cimport libnfb
 
-from libnfb cimport NfbDeviceHandle, nfb_comp_open, nfb_comp_close
+from libnfb cimport NfbDeviceHandle, nfb_comp_open, nfb_comp_close, nfb_comp_read
 
 
 cdef class RxMac:
@@ -427,6 +427,33 @@ cdef class DmaCtrlNdp:
         else:
             return self.__desc2uint(nc_ndp_tx_desc2(phys, length, ((meta & 0xF) << 8) | (hdr_length & 0xFF), 1 if next else 0))
 
+    def calypte_hdr_decode(self, data: bytes):
+        """Decode a DMA Calypte RX/TX ring header (struct nc_calypte_hdr) from its raw bytes.
+
+        Returns (valid, frame_len, frame_ptr, metadata). The caller is responsible for
+        tracking/toggling the expected valid-bit polarity across ring wraps.
+        """
+        cdef bytes b
+        cdef nc_calypte_hdr *hdr
+
+        b = bytes(data)
+        if len(b) != sizeof(nc_calypte_hdr):
+            raise ValueError(f"expected {sizeof(nc_calypte_hdr)} bytes, got {len(b)}")
+        hdr = <nc_calypte_hdr*> <char*> b
+        return (hdr.valid != 0, hdr.frame_len, hdr.frame_ptr, hdr.metadata)
+
+    def read_hdp(self) -> int:
+        """Read NDP_CTRL_REG_HDP directly via MI on this controller's own component.
+
+        nc_ndp_ctrl_hdp_update() (exposed as update_hdp()) only ever reads the
+        RAM-pushed copy of this pointer. TX Calypte free-space tracking
+        needs a live read of this register instead.
+        """
+        cdef uint32_t val = 0
+        self._check_handle()
+        nfb_comp_read(self._ctrl.comp, &val, sizeof(val), NDP_CTRL_REG_HDP)
+        return val
+
     def start(self, desc_buffer: dma_addr_t, hdr_buffer: dma_addr_t, update_buffer: dma_addr_t,
               update_buffer_p: memoryview,
               nb_desc: uint32_t, nb_hdr: uint32_t):
@@ -435,14 +462,16 @@ cdef class DmaCtrlNdp:
         self.ub_view = update_buffer_p
         ub_ptr = <uint32_t*>&self.ub_view[0]
 
-        sp.data_buffer = 0
+        # the data_buffer is used similarly (Medusa: desc_buffer, Calypte: data_buffer)
+        sp.data_buffer = desc_buffer
         sp.desc_buffer = desc_buffer
         sp.hdr_buffer = hdr_buffer
         sp.update_buffer = update_buffer
         sp.update_buffer_virt = ub_ptr
         sp.nb_desc = nb_desc
         sp.nb_hdr = nb_hdr
-        sp.nb_data = 0
+        # the nb_data is used similarly (Medusa: nb_desc, Calypte: nb_data)
+        sp.nb_data = nb_desc
         sp.timeout = 0
 
         self._ctrl.shp = 0

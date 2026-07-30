@@ -180,6 +180,13 @@ cdef extern from "<netcope/dma_ctrl_ndp.h>":
         unsigned reserved
         unsigned free_desc
 
+    cdef struct nc_calypte_hdr:
+        uint16_t frame_len
+        uint16_t frame_ptr
+        unsigned valid
+        unsigned reserved
+        unsigned metadata
+
     cdef struct nc_ndp_ctrl_start_params:
         dma_addr_t desc_buffer
         dma_addr_t data_buffer;
@@ -203,6 +210,8 @@ cdef extern from "<netcope/dma_ctrl_ndp.h>":
         nfb_comp *comp
         uint32_t *update_buffer
         uint32_t dir
+
+    unsigned int NDP_CTRL_REG_HDP
 
     nc_ndp_desc nc_ndp_rx_desc0(dma_addr_t phys)
     nc_ndp_desc nc_ndp_rx_desc2(dma_addr_t phys, uint16_t len, int next)
