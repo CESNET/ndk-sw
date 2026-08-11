@@ -1165,7 +1165,7 @@ static inline void nc_mdio_etile_adapt_start(struct nc_mdio *mdio, int prtad, in
 }
 
 /* Beware, this is internal function and must be accessed with ATTR_IFC feature already locked! */
-static inline void nc_mdio_etile_adapt_wait(struct nc_mdio *mdio, int prtad, int lane, uint8_t result)
+static inline int nc_mdio_etile_adapt_wait(struct nc_mdio *mdio, int prtad, int lane, uint8_t result, int max_retries)
 {
 	uint16_t ret;
 	int retries = 0;
@@ -1174,7 +1174,8 @@ static inline void nc_mdio_etile_adapt_wait(struct nc_mdio *mdio, int prtad, int
 	do {
 		nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x0126, 0x0b00);
 		ret = nc_mdio_etile_pma_attribute_read(mdio, prtad, lane);
-	} while (((ret & 0xff) != result) && (++retries < 1000000));
+	} while (((ret & 0xff) != result) && (++retries < max_retries));
+	return ((ret & 0xff) == result);
 }
 
 /* Reload PMA settings (call PMA attribute sequencer) on all lanes */
@@ -1248,7 +1249,7 @@ static inline void nc_mdio_etile_loopback_enable(struct nc_mdio *mdio, int prtad
 	}
 	/*  Check adaptation status on all channels */
 	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80);
+		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80, 10000);
 	}
 }
 
@@ -1261,11 +1262,11 @@ static inline void nc_mdio_etile_mission_mode(struct nc_mdio *mdio, int prtad)
 		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL, ETILE_ADAPT_EFFORT_FULL); /* Start the initial adaptation */
 	}
 	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80);  /* Check initial adaptation status */
+		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80, 400000);  /* Check initial adaptation status */
 		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_CONTINUOUS, ETILE_ADAPT_EFFORT_FULL);  /* Start the continuous adaptation */
 	}
 	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0xE2);  /* Check continuous adaptation status */
+		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0xE2, 1000);  /* Check continuous adaptation status */
 	}
 }
 
