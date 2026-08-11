@@ -760,6 +760,9 @@ static inline int nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int prt
 #define ETILE_ADAPT_MODE_INITIAL	0x1
 #define ETILE_ADAPT_MODE_ONESHOT	0x2
 #define ETILE_ADAPT_MODE_CONTINUOUS	0x6
+#define ETILE_ADAPT_EFFORT_LOW   	0x0000
+#define ETILE_ADAPT_EFFORT_MEDIUM  	0x0010
+#define ETILE_ADAPT_EFFORT_FULL  	0x0001
 
 /* 32-bit read operation from the RS-FEC registers */
 static inline uint32_t nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr)
@@ -1151,11 +1154,11 @@ static inline void nc_mdio_fixup_etile_set_mode(struct nc_mdio *mdio, int prtad,
 /* Starts PMA adaptation on a lane. */
 /* Adaptation mode: 0x1 - initial; 0x2 = One shot; 0x6 = continuous (mission) */
 /* Beware, this is internal function and must be accessed with ATTR_IFC feature already locked! */
-static inline void nc_mdio_etile_adapt_start(struct nc_mdio *mdio, int prtad, int lane, uint16_t mode)
+static inline void nc_mdio_etile_adapt_start(struct nc_mdio *mdio, int prtad, int lane, uint16_t mode, uint16_t effort)
 {
 	/* Set Adaptation Effort Level to full effort */
 	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x002c, 0x0118); /*  */
-	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x006c, 0x0001); /*  */
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x006c, effort); /*  */
 	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x000a, mode); /* Run the adaptation */
 }
 
@@ -1239,7 +1242,7 @@ static inline void nc_mdio_etile_loopback_enable(struct nc_mdio *mdio, int prtad
 	/* Enable loopback and start the initial adaptation on all channels */
 	for (i = 0; i < mdio->pma_lanes; i++) {
 		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, 0x0301); /* Enable the loopback */
-		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL);
+		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL, ETILE_ADAPT_EFFORT_FULL);
 	}
 	/*  Check adaptation status on all channels */
 	for (i = 0; i < mdio->pma_lanes; i++) {
@@ -1253,11 +1256,11 @@ static inline void nc_mdio_etile_mission_mode(struct nc_mdio *mdio, int prtad)
 	int i;
 	for (i = 0; i < mdio->pma_lanes; i++) {
 		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, 0x0300); /* Disable the loopback */
-		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL); /* Start the initial adaptation */
+		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL, ETILE_ADAPT_EFFORT_FULL); /* Start the initial adaptation */
 	}
 	for (i = 0; i < mdio->pma_lanes; i++) {
 		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80);  /* Check initial adaptation status */
-		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_CONTINUOUS);  /* Start the continuous adaptation */
+		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_CONTINUOUS, ETILE_ADAPT_EFFORT_FULL);  /* Start the continuous adaptation */
 	}
 	for (i = 0; i < mdio->pma_lanes; i++) {
 		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0xE2);  /* Check continuous adaptation status */
