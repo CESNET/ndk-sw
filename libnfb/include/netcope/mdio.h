@@ -1004,8 +1004,9 @@ static inline int nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int pr
 	int sent = 0;
 
 	/* Clear PMA attribute code request sent flag */
-	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
-	while (!sent) {
+	retries = 0;
+	while (!sent && retries++ < 1000000) {
+		nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
 		/* Set PMA attribute code address and data */
 		nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_VAL_L, code_val_l);
 		nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_VAL_H, code_val_h);
@@ -1016,6 +1017,7 @@ static inline int nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int pr
 		/* Verify that PMA attribute code request has been sent */
 		sent = ((nc_mdio_dmap_drp_read(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L) >> 7) & 0x01);
 	}
+	/* TODO: error return code should return here if !sent */
 	/* Wait until PMA attribute code request is completed */
 	retries = 0;
 	do {
