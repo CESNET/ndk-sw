@@ -1357,12 +1357,7 @@ retry:
 	/* Note: to avoid PMA reset which disturbs all channels in the quad, EQ reset is performed instead */
 	nc_mdio_etile_eq_reset(mdio, prtad);
 	/* 4. Apply CSR reset */
-	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x7); // eio_sys_rst set
-	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); // eio_sys_rst clear
-	/* Wait until the reset sequence starts */
-	_drp_wait_until(comp, prtad, 0x32c, 0x01, 1, 10000); /* Wait until bit[0] of 0x32c becomes 1 */
-	/* Wait until the reset sequence finishes */
-	_drp_wait_until(comp, prtad, 0x32c, 0x01, 0, 100000); /* Wait until bit[0] of 0x32c becomes 0 */
+	nc_mdio_etile_eth_sysrst(mdio, prtad);
 	/* 5a. Deassert TX reset */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x4); // soft rx rst only
 	_drp_wait_until(comp, prtad, 0x32c, 0x12, 0, 1000000); /* Wait until bits[4,1] of 0x32c become 0 */
@@ -1386,7 +1381,6 @@ retry:
 	if (enable && (++retries < 3)) {
 		if (!_drp_wait_until(comp, prtad, status_reg, 0x01, 1, 1000000)) {
 			/* RX still not ready - perform hard reset and retry */
-			nc_mdio_etile_eth_sysrst(mdio, prtad);
 			goto retry;
 		}
 	}
