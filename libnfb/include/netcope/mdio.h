@@ -760,6 +760,9 @@ static inline int nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int prt
 #define ETILE_ADAPT_MODE_INITIAL	0x1
 #define ETILE_ADAPT_MODE_ONESHOT	0x2
 #define ETILE_ADAPT_MODE_CONTINUOUS	0x6
+#define ETILE_ADAPT_EFFORT_LOW   	0x0000
+#define ETILE_ADAPT_EFFORT_MEDIUM  	0x0010
+#define ETILE_ADAPT_EFFORT_FULL  	0x0001
 
 /* 32-bit read operation from the RS-FEC registers */
 static inline uint32_t nc_mdio_etile_rsfec_read(struct nfb_comp *comp, int prtad, uint32_t addr)
@@ -1001,8 +1004,9 @@ static inline int nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int pr
 	int sent = 0;
 
 	/* Clear PMA attribute code request sent flag */
-	nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
-	while (!sent) {
+	retries = 0;
+	while (!sent && retries++ < 1000000) {
+		nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L, 0x80);
 		/* Set PMA attribute code address and data */
 		nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_VAL_L, code_val_l);
 		nc_mdio_dmap_drp_write(comp, prtad, page, PMA_ATTR_CODE_VAL_H, code_val_h);
@@ -1013,6 +1017,7 @@ static inline int nc_mdio_etile_pma_attribute_write(struct nc_mdio *mdio, int pr
 		/* Verify that PMA attribute code request has been sent */
 		sent = ((nc_mdio_dmap_drp_read(comp, prtad, page, PMA_ATTR_CODE_REQ_STATUS_L) >> 7) & 0x01);
 	}
+	/* TODO: error return code should return here if !sent */
 	/* Wait until PMA attribute code request is completed */
 	retries = 0;
 	do {
@@ -1151,16 +1156,16 @@ static inline void nc_mdio_fixup_etile_set_mode(struct nc_mdio *mdio, int prtad,
 /* Starts PMA adaptation on a lane. */
 /* Adaptation mode: 0x1 - initial; 0x2 = One shot; 0x6 = continuous (mission) */
 /* Beware, this is internal function and must be accessed with ATTR_IFC feature already locked! */
-static inline void nc_mdio_etile_adapt_start(struct nc_mdio *mdio, int prtad, int lane, uint16_t mode)
+static inline void nc_mdio_etile_adapt_start(struct nc_mdio *mdio, int prtad, int lane, uint16_t mode, uint16_t effort)
 {
 	/* Set Adaptation Effort Level to full effort */
 	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x002c, 0x0118); /*  */
-	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x006c, 0x0001); /*  */
+	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x006c, effort); /*  */
 	nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x000a, mode); /* Run the adaptation */
 }
 
 /* Beware, this is internal function and must be accessed with ATTR_IFC feature already locked! */
-static inline void nc_mdio_etile_adapt_wait(struct nc_mdio *mdio, int prtad, int lane, uint8_t result)
+static inline int nc_mdio_etile_adapt_wait(struct nc_mdio *mdio, int prtad, int lane, uint8_t result, int max_retries)
 {
 	uint16_t ret;
 	int retries = 0;
@@ -1169,7 +1174,8 @@ static inline void nc_mdio_etile_adapt_wait(struct nc_mdio *mdio, int prtad, int
 	do {
 		nc_mdio_etile_pma_attribute_write(mdio, prtad, lane, 0x0126, 0x0b00);
 		ret = nc_mdio_etile_pma_attribute_read(mdio, prtad, lane);
-	} while (((ret & 0xff) != result) && (++retries < 1000000));
+	} while (((ret & 0xff) != result) && (++retries < max_retries));
+	return ((ret & 0xff) == result);
 }
 
 /* Reload PMA settings (call PMA attribute sequencer) on all lanes */
@@ -1239,11 +1245,11 @@ static inline void nc_mdio_etile_loopback_enable(struct nc_mdio *mdio, int prtad
 	/* Enable loopback and start the initial adaptation on all channels */
 	for (i = 0; i < mdio->pma_lanes; i++) {
 		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, 0x0301); /* Enable the loopback */
-		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL);
+		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL, ETILE_ADAPT_EFFORT_FULL);
 	}
 	/*  Check adaptation status on all channels */
 	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80);
+		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80, 10000);
 	}
 }
 
@@ -1253,33 +1259,82 @@ static inline void nc_mdio_etile_mission_mode(struct nc_mdio *mdio, int prtad)
 	int i;
 	for (i = 0; i < mdio->pma_lanes; i++) {
 		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0008, 0x0300); /* Disable the loopback */
-		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL); /* Start the initial adaptation */
+		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_INITIAL, ETILE_ADAPT_EFFORT_FULL); /* Start the initial adaptation */
 	}
 	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80);  /* Check initial adaptation status */
-		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_CONTINUOUS);  /* Start the continuous adaptation */
+		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80, 400000);  /* Check initial adaptation status */
+		nc_mdio_etile_adapt_start(mdio, prtad, i, ETILE_ADAPT_MODE_CONTINUOUS, ETILE_ADAPT_EFFORT_FULL);  /* Start the continuous adaptation */
 	}
 	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0xE2);  /* Check continuous adaptation status */
+		nc_mdio_etile_adapt_wait(mdio, prtad, i, 0xE2, 1000);  /* Check continuous adaptation status */
 	}
 }
 
-/* Performs Eth system reset */
+/* Performs Eth system reset and initialization */
 static inline void nc_mdio_etile_eth_sysrst(struct nc_mdio *mdio, int prtad)
 {
-	int i;
+	int i, res;
+	uint16_t stat;
+	char pending[mdio->pma_lanes];   /* Lanes that still need adaptation */
+	int pending_cnt = mdio->pma_lanes;
+	int retries = 0;
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
 
-	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0011, 0x0003); /* Recalibrate the PMA on next enable */
-		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0001, 0x0000); /* Disable the PMA */
-		nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0001, 0x0007); /* Enable the PMA */
+	/* Initially all lanes are pending */
+	for (i = 0; i < mdio->pma_lanes; i++)
+		pending[i] = 1;
+
+	/* Step 1: reset (disable + enable) all PMA lanes (this also forces the initial adaptation) */
+	while (pending_cnt && retries++ < 3) {
+		/* Reset (disable + enable) lanes that still need adaptation */
+		for (i = 0; i < mdio->pma_lanes; i++) {
+			if (!pending[i])
+				continue;
+			nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0001, 0x0000); /* Disable the PMA */
+			stat = nc_mdio_etile_pma_attribute_read(mdio, prtad, i); /* Get operation status*/
+			nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0001, 0x0007); /* Enable the PMA */
+			stat = nc_mdio_etile_pma_attribute_read(mdio, prtad, i); /* Get operation status*/
+		}
+		/* Check adaptation of the pending lanes only */
+		for (i = 0; i < mdio->pma_lanes; i++) {
+			if (!pending[i])
+				continue;
+			res = nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80, 200000);  /* Get adaptation status */
+			if (res) {
+				pending[i] = 0;
+				pending_cnt--;
+			}
+		}
 	}
-	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x7); // eio_sys_rst set
-	/* Wait until the reset sequence starts */
-	_drp_wait_until(comp, prtad, 0x32c, 0x01, 1, 10000); /* Wait until bit[0] of 0x32c becomes 1 */
-	/* Wait until the reset sequence finishes */
-	_drp_wait_until(comp, prtad, 0x32c, 0x01, 0, 100000); /* Wait until bit[0] of 0x32c -> 0 */
+	/* TODO: if (pending_cnt) -> adaptation failed. Not observed in hardware */
+
+	/* Step 2: Force Eth IP system reset (eio_sys_rst) */
+	retries = 0;
+	res = 0;
+	while ((retries++ < 3) && !res) {
+		/* When the eio_sys_rst is asserted, the access to any other registers is forbidden */
+		/* This reset leads to deassertion of the o_tx_lanes_stable and o_rx_pcs_ready output signals */
+		nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x7); /* eio_sys_rst set */
+		nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); /* eio_sys_rst clear */
+		/* Wait a short time until the reset sequence starts */
+		_drp_wait_until(comp, prtad, 0x32c, 0x01, 1, 10); /* Wait until bit[0] of 0x32c becomes 1 */
+		/* Wait until the reset sequence finishes */
+		res = _drp_wait_until(comp, prtad, 0x32c, 0x01, 0, 1000); /* Wait until bit[0] of 0x32c -> 0 */
+
+		/* Sometimes the reset remains active forever due to a stucked PMA lane. */
+		/* This problematic PMA lanes require reset */
+		if (!res) {
+			/* Find and reset stucked PMA lanes */
+			for (i = 0; i < mdio->pma_lanes; i++) {
+				stat = nc_mdio_dmap_drp_read(comp, prtad, i+1, 0x40082); /* Check PMA transfer ready flags */
+				/* Re-enable the PMA if not Transfer ready set */
+				if ((stat & 0x3) != 0x3) {
+					nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0001, 0x0000); /* Disable the PMA */
+					nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0001, 0x0007); /* Enable the PMA */
+				}
+			}
+		}
+	}
 }
 
 /* Enable/disable E-Tile PMA loopback and initialize the link */
@@ -1302,12 +1357,7 @@ retry:
 	/* Note: to avoid PMA reset which disturbs all channels in the quad, EQ reset is performed instead */
 	nc_mdio_etile_eq_reset(mdio, prtad);
 	/* 4. Apply CSR reset */
-	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x7); // eio_sys_rst set
-	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x6); // eio_sys_rst clear
-	/* Wait until the reset sequence starts */
-	_drp_wait_until(comp, prtad, 0x32c, 0x01, 1, 10000); /* Wait until bit[0] of 0x32c becomes 1 */
-	/* Wait until the reset sequence finishes */
-	_drp_wait_until(comp, prtad, 0x32c, 0x01, 0, 100000); /* Wait until bit[0] of 0x32c becomes 0 */
+	nc_mdio_etile_eth_sysrst(mdio, prtad);
 	/* 5a. Deassert TX reset */
 	nc_mdio_dmap_drp_write(comp, prtad, 0, 0x310, 0x4); // soft rx rst only
 	_drp_wait_until(comp, prtad, 0x32c, 0x12, 0, 1000000); /* Wait until bits[4,1] of 0x32c become 0 */
@@ -1331,7 +1381,6 @@ retry:
 	if (enable && (++retries < 3)) {
 		if (!_drp_wait_until(comp, prtad, status_reg, 0x01, 1, 1000000)) {
 			/* RX still not ready - perform hard reset and retry */
-			nc_mdio_etile_eth_sysrst(mdio, prtad);
 			goto retry;
 		}
 	}
