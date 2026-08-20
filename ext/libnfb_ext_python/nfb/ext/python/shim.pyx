@@ -1,5 +1,35 @@
 cdef api const char *libnfb_ext_compatible_pattern = "libnfb-ext-compat_pattern:"
 
+import logging
+
+_log = logging.getLogger(__name__)
+
+# Optional hook implementing ExceptionBridgeBase (or pending/intercept duck type).
+_exception_bridge = None
+
+
+def set_exception_bridge(bridge):
+    """Register/clear a bridge for BaseException crossing C callbacks.
+
+    *bridge* should implement :class:`nfb.ext.python.ExceptionBridgeBase`
+    (or the same ``pending`` / ``intercept`` interface).
+    """
+    global _exception_bridge
+    _exception_bridge = bridge
+
+
+def get_exception_bridge():
+    return _exception_bridge
+
+
+cdef bint _bridge_pending():
+    return _exception_bridge is not None and <bint>bool(_exception_bridge.pending())
+
+
+cdef bint _bridge_intercept(object exc):
+    return _exception_bridge is not None and <bint>bool(_exception_bridge.intercept(exc))
+
+
 def get_libnfb_ext_path(nfb):
     # early version of libnfb relies on a pattern "libnfb-ext-" somewhere in device string/path
     base = __file__ + ":" + libnfb_ext_compatible_pattern.decode()
@@ -56,16 +86,28 @@ cdef void nfb_ext_python_close(void *priv) noexcept with gil:
     #free(wrap.fdt)
     Py_DECREF(wrap)
 
+# Backend callbacks return to libnfb C, which does not check PyErr.
+# Ordinary Python errors and unhandled BaseExceptions return a C error code.
+# A registered exception bridge may intercept a BaseException to stash it
+# for re-raise after the bridged call, and fail-fast while pending.
+
 cdef ssize_t nfb_pynfb_bus_read(void *p, void *buf, size_t nbyte, off_t offset) noexcept with gil:
     cdef PyObject* _bus = <PyObject *> p
     cdef object bus = <object> _bus
     cdef bytes data
     cdef ssize_t ret
 
+    if _bridge_pending():
+        return -1
+
     try:
         nfb, comp_node, bus_node = bus
         data = nfb.read(bus_node, comp_node, offset, nbyte)
-    except BaseException:
+    except Exception:
+        _log.exception("MI bus read callback failed")
+        return -1
+    except BaseException as e:
+        _bridge_intercept(e)
         return -1
 
     ret = len(data)
@@ -83,10 +125,17 @@ cdef ssize_t nfb_pynfb_bus_write(void *p, const void *buf, size_t nbyte, off_t o
     cdef const char* c_data = <const char*> buf
     cdef bytes data = c_data[:nbyte]
 
+    if _bridge_pending():
+        return -1
+
     try:
         nfb, comp_node, bus_node = bus
         nfb.write(bus_node, comp_node, offset, data)
-    except BaseException:
+    except Exception:
+        _log.exception("MI bus write callback failed")
+        return -1
+    except BaseException as e:
+        _bridge_intercept(e)
         return -1
 
     return nbyte
@@ -134,10 +183,17 @@ cdef void nfb_pynfb_bus_close(void *priv) noexcept with gil:
 cdef int pyndp_start(void *priv) noexcept with gil:
     cdef object t = <object>priv
 
+    if _bridge_pending():
+        return -1
+
     try:
         queue, temp = t
         queue.start()
-    except BaseException:
+    except Exception:
+        _log.exception("NDP queue start callback failed")
+        return -1
+    except BaseException as e:
+        _bridge_intercept(e)
         return -1
 
     return 0
@@ -145,10 +201,17 @@ cdef int pyndp_start(void *priv) noexcept with gil:
 cdef int pyndp_stop(void *priv) noexcept with gil:
     cdef object t = <object>priv
 
+    if _bridge_pending():
+        return -1
+
     try:
         queue, temp = t
         queue.stop()
-    except BaseException:
+    except Exception:
+        _log.exception("NDP queue stop callback failed")
+        return -1
+    except BaseException as e:
+        _bridge_intercept(e)
         return -1
 
     return 0
@@ -164,10 +227,17 @@ cdef unsigned pyndp_rx_burst_get(void *priv, ndp_packet *packets, unsigned count
     cdef unsigned cnt
     cdef unsigned i
 
+    if _bridge_pending():
+        return 0
+
     try:
         queue, temp = t
         pkts = queue.burst_get(count)
-    except BaseException:
+    except Exception:
+        _log.exception("NDP RX burst_get callback failed")
+        return 0
+    except BaseException as e:
+        _bridge_intercept(e)
         return 0
 
     cnt = min(len(pkts), count)
@@ -187,10 +257,17 @@ cdef unsigned pyndp_rx_burst_get(void *priv, ndp_packet *packets, unsigned count
 cdef int pyndp_rx_burst_put(void *priv) noexcept with gil:
     cdef object t = <object>priv
 
+    if _bridge_pending():
+        return -1
+
     try:
         queue, temp = t
         queue.burst_put()
-    except BaseException:
+    except Exception:
+        _log.exception("NDP RX burst_put callback failed")
+        return -1
+    except BaseException as e:
+        _bridge_intercept(e)
         return -1
 
     return 0
@@ -202,6 +279,9 @@ cdef unsigned pyndp_tx_burst_get(void *priv, ndp_packet *packets, unsigned count
     cdef object prep
     cdef unsigned i
 
+    if _bridge_pending():
+        return 0
+
     try:
         queue, temp = t
         pkts = []
@@ -212,7 +292,11 @@ cdef unsigned pyndp_tx_burst_get(void *priv, ndp_packet *packets, unsigned count
                 int(packets[i].flags),
             ))
         prep = queue.burst_get(pkts)
-    except BaseException:
+    except Exception:
+        _log.exception("NDP TX burst_get callback failed")
+        return 0
+    except BaseException as e:
+        _bridge_intercept(e)
         return 0
 
     for i in range(len(prep)):
@@ -224,10 +308,17 @@ cdef unsigned pyndp_tx_burst_get(void *priv, ndp_packet *packets, unsigned count
 cdef int pyndp_tx_burst_put(void *priv) noexcept with gil:
     cdef object t = <object>priv
 
+    if _bridge_pending():
+        return -1
+
     try:
         queue, temp = t
         queue.burst_put()
-    except BaseException:
+    except Exception:
+        _log.exception("NDP TX burst_put callback failed")
+        return -1
+    except BaseException as e:
+        _bridge_intercept(e)
         return -1
 
     return 0
@@ -235,10 +326,17 @@ cdef int pyndp_tx_burst_put(void *priv) noexcept with gil:
 cdef int pyndp_tx_burst_flush(void *priv) noexcept with gil:
     cdef object t = <object>priv
 
+    if _bridge_pending():
+        return -1
+
     try:
         queue, temp = t
         queue.burst_flush()
-    except BaseException:
+    except Exception:
+        _log.exception("NDP TX burst_flush callback failed")
+        return -1
+    except BaseException as e:
+        _bridge_intercept(e)
         return -1
 
     return 0

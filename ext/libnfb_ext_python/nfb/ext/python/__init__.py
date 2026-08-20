@@ -4,6 +4,20 @@ from abc import ABC, abstractmethod
 import fdt
 
 from . import shim
+from .exception_bridge import ExceptionBridgeBase
+from .shim import get_exception_bridge, get_libnfb_ext_path, set_exception_bridge
+
+__all__ = [
+    "AbstractNdpQueue",
+    "AbstractNdpQueueRx",
+    "AbstractNdpQueueTx",
+    "AbstractNfb",
+    "ExceptionBridgeBase",
+    "get_exception_bridge",
+    "get_libnfb_ext_path",
+    "set_exception_bridge",
+    "shim",
+]
 
 
 class AbstractNdpQueue(ABC):
