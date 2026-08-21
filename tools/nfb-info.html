@@ -126,6 +126,11 @@
 <p>It shows board name and its serial number,
 firmware project name and build details, number of RX/TX DMA queues and number of Ethernet channels.
 It also shows PCIe endpoint configuration (slot number, speed and link width) and their NUMA node.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">-l</span></code>, it lists all NFB devices in the system. Each row includes an overall design and PCIe info.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">-p</span></code>, it prints a PCI-centric endpoint table instead: one row per PCIe endpoint,
+including endpoints whose card isn’t otherwise listed (e.g. still unbound from the
+<code class="docutils literal notranslate"><span class="pre">nfb</span></code> driver).</p>
+<p><code class="docutils literal notranslate"><span class="pre">-l</span></code> and <code class="docutils literal notranslate"><span class="pre">-p</span></code> can be combined (<code class="docutils literal notranslate"><span class="pre">-lp</span></code>) to print both.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>Verbose mode shows also temperature of primary FPGA.</p>
@@ -201,9 +206,15 @@ firmware with unequal card-name.</p>
         <span class="p">]</span>
     <span class="p">},</span>
     <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;pcie_overall_state&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">,</span>
         <span class="s2">&quot;pci&quot;</span><span class="p">:</span> <span class="p">[</span>                    <span class="c1"># list of PCI endpoints</span>
             <span class="p">{</span>
                 <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;state_degraded&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+                <span class="s2">&quot;state_mapped&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+                <span class="s2">&quot;state_bound&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+                <span class="s2">&quot;state_attached&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+                <span class="s2">&quot;state_orphan&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
                 <span class="s2">&quot;pci_bdf&quot;</span><span class="p">:</span> <span class="s2">&quot;0000:03:00.0&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;pci_link_speed_str&quot;</span><span class="p">:</span> <span class="s2">&quot;8 GT/s&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;pci_link_width&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
@@ -223,19 +234,40 @@ firmware with unequal card-name.</p>
     <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="p">[</span>                                   <span class="c1"># only present in card list mode</span>
-    <span class="p">{</span>
-        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;/dev/nfb2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;pci_bdf&quot;</span><span class="p">:</span> <span class="s2">&quot;0000:81:00.0&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;card_name&quot;</span><span class="p">:</span> <span class="s2">&quot;FB2CGHH&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;serial_number&quot;</span><span class="p">:</span> <span class="s2">&quot;144&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;project_name&quot;</span><span class="p">:</span> <span class="s2">&quot;NDK_MINIMAL&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;project_variant&quot;</span><span class="p">:</span> <span class="s2">&quot;100G2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;project_version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.5.6&quot;</span>
-    <span class="p">},</span>
-    <span class="o">...</span>
-<span class="p">]</span>
+<span class="p">{</span>                                   <span class="c1"># only present with -l and/or -p; each key is</span>
+                                    <span class="c1"># present only when the matching flag was given</span>
+    <span class="s2">&quot;nfb&quot;</span><span class="p">:</span> <span class="p">[</span>                        <span class="c1"># -l: one entry per NFB device</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;/dev/nfb2&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pci_bdf&quot;</span><span class="p">:</span> <span class="s2">&quot;0000:81:00.0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;card_name&quot;</span><span class="p">:</span> <span class="s2">&quot;FB2CGHH&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;serial_number&quot;</span><span class="p">:</span> <span class="s2">&quot;144&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;project_name&quot;</span><span class="p">:</span> <span class="s2">&quot;NDK_MINIMAL&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;project_variant&quot;</span><span class="p">:</span> <span class="s2">&quot;100G2&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;project_version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.5.6&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pcie_overall_state&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span>
+        <span class="p">},</span>
+        <span class="o">...</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;pci&quot;</span><span class="p">:</span> <span class="p">[</span>                        <span class="c1"># -p: one entry per PCIe endpoint</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;pci_bdf&quot;</span><span class="p">:</span> <span class="s2">&quot;0000:81:00.0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;nfb_id&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">&quot;ep_index&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;pcie_link_speed&quot;</span><span class="p">:</span> <span class="s2">&quot;16 GT/s&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pcie_link_max_speed&quot;</span><span class="p">:</span> <span class="s2">&quot;16 GT/s&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pcie_link_width&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
+            <span class="s2">&quot;pcie_link_max_width&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
+            <span class="s2">&quot;state_degraded&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+            <span class="s2">&quot;state_mapped&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+            <span class="s2">&quot;state_bound&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+            <span class="s2">&quot;state_attached&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+            <span class="s2">&quot;state_orphan&quot;</span><span class="p">:</span> <span class="n">false</span>
+        <span class="p">},</span>
+        <span class="o">...</span>
+    <span class="p">]</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>

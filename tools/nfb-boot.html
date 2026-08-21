@@ -150,6 +150,12 @@ If signature differs, do entire write + reload process.</p></li>
 <li><p><strong>-l</strong> (list) Print list of available slots.</p></li>
 <li><p><strong>-q</strong> (quiet) Do not show progress</p></li>
 </ul>
+<p>When writing a firmware image, <code class="docutils literal notranslate"><span class="pre">nfb-boot</span></code> warns if the new
+firmware’s number of PCIe endpoints differs from what’s currently running - typically
+a sign of a PCIe bifurcation change. After such a reload, some PCIe devices may
+disappear from the system until it is rebooted or its PCIe bus is rescanned. The write
+proceeds either way; check the warning before continuing if you weren’t expecting the
+endpoint layout to change.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>The firmware.nfw is a TAR archive packed by GZIP, one can change the file suffix to <cite>.tar.gz</cite> and extract raw bitstream or the Device Tree.</p>
