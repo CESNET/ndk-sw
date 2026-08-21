@@ -1,3 +1,9 @@
+* Fri Aug 21 2026 Martin Spinler <spinler@cesnet.cz> - 6.31.0-1
+- [FEATURE] warn on PCIe endpoint mismatch when writing firmware with nfb-boot
+- [FEATURE] add PCI-centric view in nfb-info
+- [FEATURE] add ExceptionBridge to libnfb-ext-python
+- [FIX] fix unstable loopback configuration on E-TILE
+
 * Wed Jul 15 2026 Martin Spinler <spinler@cesnet.cz> - 6.30.7-1
 - [FIX] use cmake instead of cmake3 for COPR build
 
@@ -215,7 +221,7 @@
 
 * Tue Dec 19 2023 Martin Spinler <spinler@cesnet.cz> - 6.20.1-1
 - [BUGFIX] fixes pynfb circular reference in Nfb class
-- [BUGFIX] fixes E-Tile RX EQ adaptation on return from loopback  
+- [BUGFIX] fixes E-Tile RX EQ adaptation on return from loopback
 - [BUGFIX] convert types explicitly for c++ build without -fpermissive
 
 * Tue Nov 14 2023 Martin Spinler <spinler@cesnet.cz> - 6.20.0-1
