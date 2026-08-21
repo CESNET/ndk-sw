@@ -40,7 +40,8 @@ commitlint:
     - |
       if [ -z "${BASE_COMMIT_SHA}" ] || \
          [ "${BASE_COMMIT_SHA}" = "0000000000000000000000000000000000000000" ] || \
-         [ "${BASE_COMMIT_SHA}" = "${CI_COMMIT_SHA}" ]; then
+         [ "${BASE_COMMIT_SHA}" = "${CI_COMMIT_SHA}" ] || \
+         ! git cat-file -e "${BASE_COMMIT_SHA}^{commit}" 2>/dev/null; then
         npx commitlint --extends '@commitlint/config-conventional' --from "${CI_COMMIT_SHA}^" --to "${CI_COMMIT_SHA}"
       else
         npx commitlint --extends '@commitlint/config-conventional' --from "${BASE_COMMIT_SHA}" --to "${CI_COMMIT_SHA}"
