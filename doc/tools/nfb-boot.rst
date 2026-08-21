@@ -40,6 +40,13 @@ As the system starts up, user can reload existing FPGA configuration from the `c
 
 - **-q** (quiet) Do not show progress
 
+When writing a firmware image, ``nfb-boot`` warns if the new
+firmware's number of PCIe endpoints differs from what's currently running - typically
+a sign of a PCIe bifurcation change. After such a reload, some PCIe devices may
+disappear from the system until it is rebooted or its PCIe bus is rescanned. The write
+proceeds either way; check the warning before continuing if you weren't expecting the
+endpoint layout to change.
+
 
 .. tip::
    The firmware.nfw is a TAR archive packed by GZIP, one can change the file suffix to `.tar.gz` and extract raw bitstream or the Device Tree.

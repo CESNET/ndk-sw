@@ -23,13 +23,15 @@ find_package(PkgConfig)
 
 pkg_check_modules(NCURSES REQUIRED ncurses)
 pkg_check_modules(ARCHIVE REQUIRED libarchive)
+pkg_check_modules(PCI REQUIRED libpci)
 ndk_check_build_dependency(FDT_LIBRARIES fdt FDT_INCLUDE_DIRS libfdt.h libfdt)
 ndk_check_build_dependency(NUMA_LIBRARIES numa NUMA_INCLUDE_DIRS numa.h)
 
 link_libraries(nfb ${FDT_LIBRARIES})
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../drivers/kernel/include)
 
-add_executable(nfb-info info/info.c)
+add_executable(nfb-info info/info.c info/pci.c)
+target_link_libraries(nfb-info PRIVATE ${PCI_LIBRARIES})
 target_compile_definitions(nfb-info PRIVATE PACKAGE_VERSION="${PACKAGE_VERSION}-${GIT_VERSION_RELEASE}")
 
 add_executable(nfb-boot boot/boot.c)

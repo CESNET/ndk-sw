@@ -26,6 +26,7 @@
 #include <zlib.h>
 
 #include <netcope/nccommon.h>
+#include <netcope/pci_ep.h>
 
 /* define input arguments of tool */
 #define ARGUMENTS	"d:D:P:w:f:b:F:i:I:lqvh"
@@ -33,6 +34,7 @@
 #define PRINT_WARNING_WHEN_USING_BITSTREAM 0
 #define REQUIRE_FORCE_WHEN_USING_BITSTREAM 0
 #define REQUIRE_FORCE_WHEN_CARD_MISMATCH   1
+#define REQUIRE_FORCE_WHEN_PCI_MISMATCH    0
 
 #define FLAG_QUIET      1
 #define FLAG_FORCE      2
@@ -567,10 +569,25 @@ int do_write_with_dev(struct nfb_device *dev, int slot, const char *filename, co
 			goto err_no_force;
 		}
 	} else if (!(flags & FLAG_FORCE)) {
+		int cur_eps, new_eps;
+
 		if (firmware_diff(nfb_get_fdt(dev), fdt) == DIFF_CARD) {
 			warnx("firmware file doesn't match card type");
 			if (REQUIRE_FORCE_WHEN_CARD_MISMATCH) {
-				warnx("if you want still use thie firmware file, use --force parameter");
+				warnx("if you want still use this firmware file, use --force parameter");
+				ret = EBADF;
+				goto err_no_force;
+			}
+		}
+
+		cur_eps = nfb_pci_ep_count_by_mi_bus_nodes(nfb_get_fdt(dev));
+		new_eps = nfb_pci_ep_count_by_mi_bus_nodes(fdt);
+		if (cur_eps > 0 && new_eps > 0 && cur_eps != new_eps) {
+			warnx("firmware PCIe endpoint count differs from the running design "
+			      "(%d -> %d); endpoints or devices may disappear after boot",
+			      cur_eps, new_eps);
+			if (REQUIRE_FORCE_WHEN_PCI_MISMATCH) {
+				warnx("if you still want to use this firmware file, use --force parameter");
 				ret = EBADF;
 				goto err_no_force;
 			}

@@ -9,6 +9,14 @@ It shows board name and its serial number,
 firmware project name and build details, number of RX/TX DMA queues and number of Ethernet channels.
 It also shows PCIe endpoint configuration (slot number, speed and link width) and their NUMA node.
 
+With ``-l``, it lists all NFB devices in the system. Each row includes an overall design and PCIe info.
+
+With ``-p``, it prints a PCI-centric endpoint table instead: one row per PCIe endpoint,
+including endpoints whose card isn't otherwise listed (e.g. still unbound from the
+``nfb`` driver).
+
+``-l`` and ``-p`` can be combined (``-lp``) to print both.
+
 .. tip::
    Verbose mode shows also temperature of primary FPGA.
 
@@ -90,9 +98,15 @@ JSON output
             ]
         },
         "system": {
+            "pcie_overall_state": "ok",
             "pci": [                    # list of PCI endpoints
                 {
                     "id": 0,
+                    "state_degraded": false,
+                    "state_mapped": true,
+                    "state_bound": true,
+                    "state_attached": true,
+                    "state_orphan": false,
                     "pci_bdf": "0000:03:00.0",
                     "pci_link_speed_str": "8 GT/s",
                     "pci_link_width": 8,
@@ -112,16 +126,37 @@ JSON output
         }
     }
 
-    [                                   # only present in card list mode
-        {
-            "id": 2,
-            "path": "/dev/nfb2",
-            "pci_bdf": "0000:81:00.0",
-            "card_name": "FB2CGHH",
-            "serial_number": "144",
-            "project_name": "NDK_MINIMAL",
-            "project_variant": "100G2",
-            "project_version": "0.5.6"
-        },
-        ...
-    ]
+    {                                   # only present with -l and/or -p; each key is
+                                        # present only when the matching flag was given
+        "nfb": [                        # -l: one entry per NFB device
+            {
+                "id": 2,
+                "path": "/dev/nfb2",
+                "pci_bdf": "0000:81:00.0",
+                "card_name": "FB2CGHH",
+                "serial_number": "144",
+                "project_name": "NDK_MINIMAL",
+                "project_variant": "100G2",
+                "project_version": "0.5.6",
+                "pcie_overall_state": "ok"
+            },
+            ...
+        ],
+        "pci": [                        # -p: one entry per PCIe endpoint
+            {
+                "pci_bdf": "0000:81:00.0",
+                "nfb_id": 2,
+                "ep_index": 0,
+                "pcie_link_speed": "16 GT/s",
+                "pcie_link_max_speed": "16 GT/s",
+                "pcie_link_width": 16,
+                "pcie_link_max_width": 16,
+                "state_degraded": false,
+                "state_mapped": true,
+                "state_bound": true,
+                "state_attached": true,
+                "state_orphan": false
+            },
+            ...
+        ]
+    }
