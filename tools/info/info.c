@@ -16,6 +16,7 @@
 #include <time.h>
 #include <inttypes.h>
 #include <dirent.h>
+#include <string.h>
 
 #include <libfdt.h>
 #include <nfb/nfb.h>
@@ -26,10 +27,14 @@
 #include <netcope/adc_sensors.h>
 #include <netcope/eth.h>
 #include <netcope/nccommon.h>
+#include <netcope/pci_ep.h>
 
 #include <netcope/ni.h>
+#include <pci/pci.h>
 
-#define ARGUMENTS "d:q:hjlvV"
+#include "pci.h"
+
+#define ARGUMENTS "d:q:hjlpvV"
 
 #define BUFFER_SIZE 64
 
@@ -101,13 +106,39 @@ void usage(const char *progname, int verbose)
 		printf(" example of usage: '-q project,build,card'\n");
 	}
 	printf("-l              Print list of available devices\n");
+	printf("-p              Print PCI endpoint table (can be combined with -l, e.g. -lp)\n");
 	printf("-j              Print output in JSON\n");
 	printf("-v              Increase verbosity\n");
 	printf("-V              Show version\n");
 	printf("-h              Show this text\n");
 }
 
-NI_DEFAULT_ITEMS(ni_common_item_callbacks, )
+/* JSON booleans for the state_* fields; unused in user mode (text-suppressed). */
+static int ni_print_bool_json(void *priv, int item, int val)
+{
+	struct ni_json_cbp *p = priv;
+	(void) item;
+	return fprintf(p->f, val ? "true" : "false");
+}
+
+struct ni_info_item_f_t {
+	struct ni_common_item_callbacks c;
+	int (*print_bool)(void *, int, int);
+};
+
+struct ni_info_item_f_t ni_info_item_f[] = {
+	[NI_DRC_USER] = {
+		.c = ni_common_item_callbacks[NI_DRC_USER],
+		.print_bool = ni_def_print_int_user,
+	},
+	[NI_DRC_JSON] = {
+		.c = ni_common_item_callbacks[NI_DRC_JSON],
+		.print_bool = ni_print_bool_json,
+	},
+};
+
+NI_DEFAULT_ITEMS(ni_info_item_f_t, c.)
+NI_ITEM_CB(bool, int, ni_info_item_f_t, print_bool)
 
 
 enum NI_ITEMS {
@@ -144,9 +175,16 @@ enum NI_ITEMS {
 	NI_ETH_CHANNEL_ID,
 	NI_ETH_CHANNEL_TYPE,
 	NI_SEC0_SYSTEM,
+	NI_SYSTEM_PCI_STATE,    /* overall PCIe state (text + JSON string) */
 	NI_SEC1_PCIEP,
 	NI_LIST_PCIEP,
 	NI_PCI_ID,
+	NI_PCI_STATE_T,         /* combined state text */
+	NI_PCI_STATE_DEGRADED,  /* JSON only */
+	NI_PCI_STATE_MAPPED,    /* JSON only */
+	NI_PCI_STATE_BOUND,     /* JSON only */
+	NI_PCI_STATE_ATTACHED,  /* JSON only */
+	NI_PCI_STATE_ORPHAN,    /* JSON only */
 	NI_PCI_SLOT,
 	NI_PCI_LINK_SPEED,
 	NI_PCI_LINK_WIDTH,
@@ -168,7 +206,28 @@ enum NI_ITEMS {
 	NI_L_PROJECT_NAME,
 	NI_L_PROJECT_VAR,
 	NI_L_PROJECT_VER,
+	NI_L_PCI_STATE,
 	NI_L_PROJECT_END,
+
+	/* PCI device list (-p, PCI-centric) */
+	NI_LIST_PCI,
+	NI_SEC_LIST_PCI,
+	NI_PL_PCI_BDF,
+	NI_PL_NFB_ID,
+	NI_PL_EP_INDEX,
+	NI_PL_LINK_SPEED,       /* current link speed       (JSON only) */
+	NI_PL_LINK_SPEED_MAX,   /* max link speed           (JSON only) */
+	NI_PL_LINK_SPEED_T,     /* combined "cur/max" speed (text only) */
+	NI_PL_LINK_WIDTH,       /* current link width       (JSON only) */
+	NI_PL_LINK_WIDTH_MAX,   /* max link width           (JSON only) */
+	NI_PL_LINK_WIDTH_T,     /* combined "cur/max" width (text only) */
+	NI_PL_STATE_T,          /* combined state text */
+	NI_PL_STATE_DEGRADED,   /* JSON only */
+	NI_PL_STATE_MAPPED,     /* JSON only */
+	NI_PL_STATE_BOUND,      /* JSON only */
+	NI_PL_STATE_ATTACHED,   /* JSON only */
+	NI_PL_STATE_ORPHAN,     /* JSON only */
+	NI_PL_END,              /* text-only: row newline */
 };
 
 #define NUF_N   (NI_USER_ITEM_F_NO_NEWLINE)
@@ -219,9 +278,16 @@ struct ni_context_item_default ni_items[] = {
 	[NI_ETH_CHANNEL_TYPE]   = {ni_json_k("type"),                   ni_user_l("")},
 
 	[NI_SEC0_SYSTEM]        = {ni_json_k("system"),                 ni_user_l("System info")},
+	[NI_SYSTEM_PCI_STATE]   = {ni_json_k("pcie_overall_state"),     ni_user_l("Overall PCIe state")},
 	[NI_SEC1_PCIEP]         = {ni_json_e,                           ni_user_l(NULL)},
 	[NI_LIST_PCIEP]         = {ni_json_k("pci"),                    ni_user_l(NULL)},
 	[NI_PCI_ID]             = {ni_json_k("id"),                     ni_user_v("PCIe Endpoint ", NUF_DA, NULL, ":")},
+	[NI_PCI_STATE_T]        = {ni_json_n,                           ni_user_l(" * state")},
+	[NI_PCI_STATE_DEGRADED] = {ni_json_k("state_degraded"),         ni_user_n},
+	[NI_PCI_STATE_MAPPED]   = {ni_json_k("state_mapped"),           ni_user_n},
+	[NI_PCI_STATE_BOUND]    = {ni_json_k("state_bound"),            ni_user_n},
+	[NI_PCI_STATE_ATTACHED] = {ni_json_k("state_attached"),         ni_user_n},
+	[NI_PCI_STATE_ORPHAN]   = {ni_json_k("state_orphan"),           ni_user_n},
 	[NI_PCI_SLOT]           = {ni_json_k("pci_bdf"),                ni_user_l(" * PCI slot")},
 	[NI_PCI_LINK_SPEED]     = {ni_json_k("pci_link_speed_str"),     ni_user_l(" * PCI link speed")},
 	[NI_PCI_LINK_WIDTH]     = {ni_json_k("pci_link_width"),         ni_user_v(" * PCI link width", 0, "x", NULL)},
@@ -233,19 +299,42 @@ struct ni_context_item_default ni_items[] = {
 	[NI_BAR_SIZE]           = {ni_json_k("size"),                   ni_user_n},
 
 	/* Card list */
-	[NI_LIST_NFB]           = {ni_json_k("card_list"),
-		ni_user_v("ID  Base path   PCI address   Card name         Serial number   Firmware info - project", 0, NULL, "\n")},
+	[NI_LIST_NFB]           = {ni_json_k("nfb"),
+		ni_user_v("ID  Base path   PCI address   Card name         Serial number   PCIe          Firmware info - project", 0, NULL, "\n")},
 	[NI_SEC_LIST_NFB]       = {ni_json_e,                           ni_user_v(NULL, 0, NULL, "  ")},
 	[NI_L_NFB_ID]           = {ni_json_k("id"),                     ni_user_f("", NUF_NDA | NUFW(2))},
 	[NI_L_LPATH]            = {ni_json_k("path"),                   ni_user_v("", NUF_NDA | NUFA(-10), "  ", NULL)},
 	[NI_L_BFN]              = {ni_json_k("pci_bdf"),                ni_user_v("", NUF_NDA | NUFA(-12), "  ", NULL)},
 	[NI_L_CARD_NAME]        = {ni_json_k("card_name"),              ni_user_v("", NUF_NDA | NUFA(-16), "  ", NULL)},
 	[NI_L_SN]               = {ni_json_k("serial_number"),          ni_user_v("", NUF_NDA | NUFA(-14), "  ", NULL)},
+	[NI_L_PCI_STATE]        = {ni_json_k("pcie_overall_state"),     ni_user_v("", NUF_NDA | NUFA(-12), "  ", NULL)},
 	[NI_L_PROJECT_NAME]     = {ni_json_k("project_name"),           ni_user_v("", NUF_NDA | NUFA(0), "  ", NULL)},
 	[NI_L_PROJECT_VAR]      = {ni_json_k("project_variant"),        ni_user_v("", NUF_NDA | NUFA(0), "  ", NULL)},
 	[NI_L_PROJECT_VER]      = {ni_json_k("project_version"),        ni_user_v("", NUF_NDA | NUFA(0), "  ", NULL)},
 	[NI_L_PROJECT_END]      = {ni_json_n,                           ni_user_f("", NUF_DAV)},
+
+	/* PCI device list */
+	[NI_LIST_PCI]           = {ni_json_k("pci"),
+		ni_user_v("PCI address    NFB  EP ID  Speed cur/max  Width cur/max  State", 0, NULL, "\n")},
+	[NI_SEC_LIST_PCI]       = {ni_json_e,                           ni_user_v(NULL, 0, NULL, "  ")},
+	[NI_PL_PCI_BDF]         = {ni_json_k("pci_bdf"),                ni_user_v("", NUF_NDA | NUFA(-12), "", NULL)},
+	[NI_PL_NFB_ID]          = {ni_json_k("nfb_id"),                 ni_user_v("", NUF_NDA | NUFA(4), "  ", NULL)},
+	[NI_PL_EP_INDEX]        = {ni_json_k("ep_index"),               ni_user_v("", NUF_NDA | NUFA(5), "  ", NULL)},
+	[NI_PL_LINK_SPEED]      = {ni_json_k("pcie_link_speed"),        ni_user_n},
+	[NI_PL_LINK_SPEED_MAX]  = {ni_json_k("pcie_link_max_speed"),    ni_user_n},
+	[NI_PL_LINK_SPEED_T]    = {ni_json_n,                           ni_user_v("", NUF_NDA | NUFA(13), "  ", NULL)},
+	[NI_PL_LINK_WIDTH]      = {ni_json_k("pcie_link_width"),        ni_user_n},
+	[NI_PL_LINK_WIDTH_MAX]  = {ni_json_k("pcie_link_max_width"),    ni_user_n},
+	[NI_PL_LINK_WIDTH_T]    = {ni_json_n,                           ni_user_v("", NUF_NDA | NUFA(13), "  ", NULL)},
+	[NI_PL_STATE_T]         = {ni_json_n,                           ni_user_v("", NUF_NDA | NUFA(-24), "  ", NULL)},
+	[NI_PL_STATE_DEGRADED]  = {ni_json_k("state_degraded"),         ni_user_n},
+	[NI_PL_STATE_MAPPED]    = {ni_json_k("state_mapped"),           ni_user_n},
+	[NI_PL_STATE_BOUND]     = {ni_json_k("state_bound"),            ni_user_n},
+	[NI_PL_STATE_ATTACHED]  = {ni_json_k("state_attached"),         ni_user_n},
+	[NI_PL_STATE_ORPHAN]    = {ni_json_k("state_orphan"),           ni_user_n},
+	[NI_PL_END]             = {ni_json_n,                           ni_user_f("", NUF_DAV)},
 };
+
 
 void print_version()
 {
@@ -266,26 +355,136 @@ int filter_nfbs(const struct dirent *dir)
 	return 1;
 }
 
-void print_device_list(struct ni_context *ctx)
+struct paired_ep {
+	char bdf[16];
+	int nfb_id;
+	int ep_index;
+	int state;
+	int listed;
+};
+
+static void ni_emit_state_flags(struct ni_context *ctx, int flags,
+		int item_text, int item_degraded, int item_mapped,
+		int item_bound, int item_attached, int item_orphan)
+{
+	char buf[64];
+	int attached = !(flags & EP_ST_NOT_ATTACHED);
+	int bound = attached && !(flags & EP_ST_NOT_BOUND);
+	int mapped = bound && !(flags & EP_ST_UNMAPPED);
+
+	ep_state_format(flags, buf, sizeof(buf));
+	ni_item_str(ctx, item_text, buf);
+	ni_item_bool(ctx, item_degraded, !!(flags & EP_ST_DEGRADED));
+	ni_item_bool(ctx, item_mapped, mapped);
+	ni_item_bool(ctx, item_bound, bound);
+	ni_item_bool(ctx, item_attached, attached);
+	ni_item_bool(ctx, item_orphan, !!(flags & EP_ST_ORPHAN));
+}
+
+static void print_pci_list_row(struct ni_context *ctx, struct pci_access *pacc,
+		const char *bdf, int nfb_id, int ep_index, int state)
+{
+	struct ep_state_link_info li;
+	char speed_text[24], width_text[16];
+	char cur_num[8], max_num[8];
+	char cur_tok[8], max_tok[8];
+	char id_str[16];
+	int ep_id;
+
+	ni_section(ctx, NI_SEC_LIST_PCI);
+
+	ni_item_str(ctx, NI_PL_PCI_BDF, bdf && bdf[0] ? bdf : "?");
+
+	if (nfb_id >= 0) {
+		snprintf(id_str, sizeof(id_str), "%d", nfb_id);
+		ni_item_str(ctx, NI_PL_NFB_ID, id_str);
+	} else {
+		ni_item_str(ctx, NI_PL_NFB_ID, "-");
+	}
+
+	ep_id = ep_index;
+	if (ep_id < 0 && pacc && bdf && bdf[0])
+		ep_id = ep_state_read_endpoint_id(pacc, bdf);
+	if (ep_id >= 0) {
+		snprintf(id_str, sizeof(id_str), "%d", ep_id);
+		ni_item_str(ctx, NI_PL_EP_INDEX, id_str);
+	} else {
+		ni_item_str(ctx, NI_PL_EP_INDEX, "?");
+	}
+
+	memset(&li, 0, sizeof(li));
+	if (bdf && bdf[0] && !(state & EP_ST_NOT_ATTACHED))
+		ep_state_fill_link(pacc, bdf, &li);
+
+	ni_item_str(ctx, NI_PL_LINK_SPEED, li.speed);
+	ni_item_str(ctx, NI_PL_LINK_SPEED_MAX, li.max_speed);
+	ni_item_int(ctx, NI_PL_LINK_WIDTH, li.width[0] ? atoi(li.width) : -1);
+	ni_item_int(ctx, NI_PL_LINK_WIDTH_MAX, li.max_width[0] ? atoi(li.max_width) : -1);
+
+	if (li.speed[0] || li.max_speed[0] || li.width[0] || li.max_width[0]) {
+		snprintf(speed_text, sizeof(speed_text), "%2s/%2s GT/s",
+		         ep_state_link_number(li.speed, cur_num, sizeof(cur_num)),
+		         ep_state_link_number(li.max_speed, max_num, sizeof(max_num)));
+		ni_item_str(ctx, NI_PL_LINK_SPEED_T, speed_text);
+
+		snprintf(cur_tok, sizeof(cur_tok), "x%.6s", ep_state_str_or_unknown(li.width));
+		snprintf(max_tok, sizeof(max_tok), "x%.6s", ep_state_str_or_unknown(li.max_width));
+		snprintf(width_text, sizeof(width_text), "%s/%3s", cur_tok, max_tok);
+		ni_item_str(ctx, NI_PL_LINK_WIDTH_T, width_text);
+	} else {
+		ni_item_str(ctx, NI_PL_LINK_SPEED_T, "-");
+		ni_item_str(ctx, NI_PL_LINK_WIDTH_T, "-");
+	}
+
+	ni_emit_state_flags(ctx, state,
+	                    NI_PL_STATE_T, NI_PL_STATE_DEGRADED, NI_PL_STATE_MAPPED,
+	                    NI_PL_STATE_BOUND, NI_PL_STATE_ATTACHED, NI_PL_STATE_ORPHAN);
+
+	ni_item_int(ctx, NI_PL_END, 0);
+	ni_endsection(ctx, NI_SEC_LIST_PCI);
+}
+
+/* Returns 1 if any PCIe endpoint looks incomplete. Endpoint discovery always
+ * runs, even with show_nfb off, since show_pci needs the nfb-id pairing. */
+int print_device_list(struct ni_context *ctx, int js, int show_nfb, int show_pci)
 {
 	int ret;
 	int len;
 	int fdt_offset, fdt_off_slot;
-	int cnt, i;
+	int cnt, i, j;
+	int incomplete_pci = 0;
+	int pci_scanned;
 
 	struct dirent *dir;
 	struct dirent **namelist;
+	struct dirent **pcinamelist;
 	struct nc_composed_device_info info;
 	struct nfb_device *dev;
+	struct pci_access *pacc = NULL;
 
 	char path[NFB_PATH_MAXLEN];
 	char lpath[PATH_MAX];
+	char state_buf[64];
 
 	const void *fdt;
-	const char *prop;
+	const char *cprop;
 	const uint32_t *prop32;
 
-	ni_list(ctx, NI_LIST_NFB);
+	struct paired_ep *paired = NULL;
+	int paired_cnt = 0;
+	int paired_cap = 0;
+
+	struct ep_state_desc eps[NFB_PCI_EP_MAX];
+	int ep_cnt;
+	int card_overall;
+
+	if (access("/sys/module/nfb", F_OK) != 0)
+		warnx("NFB kernel module is not loaded (/sys/module/nfb not found)");
+
+	ni_section(ctx, NI_SEC_ROOT);
+
+	if (show_nfb)
+		ni_list(ctx, NI_LIST_NFB);
 	cnt = scandir("/dev/nfb/", &namelist, filter_nfbs, alphasort);
 	for (i = 0; i < cnt; i++) {
 		dir = namelist[i];
@@ -293,47 +492,174 @@ void print_device_list(struct ni_context *ctx)
 		snprintf(lpath, PATH_MAX, "/dev/nfb%s", dir->d_name);
 		dev = nfb_open(lpath);
 		if (dev) {
-			ni_section(ctx, NI_SEC_LIST_NFB);
+			if (show_nfb)
+				ni_section(ctx, NI_SEC_LIST_NFB);
 
 			fdt = nfb_get_fdt(dev);
 			fdt_offset = fdt_path_offset(fdt, "/firmware/");
 			fdt_off_slot = fdt_path_offset(fdt, "/system/device/endpoint0/");
 
+			/* nfb_id is needed even without show_nfb, for paired[].nfb_id */
 			ret = nc_get_composed_device_info_by_pci(dev, NULL, &info);
 
-			ni_item_int(ctx, NI_L_NFB_ID, ret == 0 ? info.nfb_id : -1);
-			ni_item_str(ctx, NI_L_LPATH, lpath);
-			ni_fdt_prop_str(ctx, NI_L_BFN, fdt, fdt_off_slot, "pci-slot", &len);
-			ni_fdt_prop_str(ctx, NI_L_CARD_NAME, fdt, fdt_offset, "card-name", &len);
+			if (show_nfb) {
+				ni_item_int(ctx, NI_L_NFB_ID, ret == 0 ? info.nfb_id : -1);
+				ni_item_str(ctx, NI_L_LPATH, lpath);
+				ni_fdt_prop_str(ctx, NI_L_BFN, fdt, fdt_off_slot, "pci-slot", &len);
+				ni_fdt_prop_str(ctx, NI_L_CARD_NAME, fdt, fdt_offset, "card-name", &len);
+			}
 
 			fdt_offset = fdt_path_offset(fdt, "/board/");
 
-			prop = NULL;
+			cprop = NULL;
 			prop32 = fdt_getprop(fdt, fdt_offset, "serial-number", &len);
 			if (len == sizeof(*prop32)) {
 				snprintf(path, NFB_PATH_MAXLEN, "%d", fdt32_to_cpu(*prop32));
-				prop = path;
+				cprop = path;
 			} else {
-				prop = fdt_getprop(fdt, fdt_offset, "serial-number-string", &len);
+				cprop = fdt_getprop(fdt, fdt_offset, "serial-number-string", &len);
 			}
-			if (prop)
-				ni_item_str(ctx, NI_L_SN, prop);
+			if (show_nfb && cprop)
+				ni_item_str(ctx, NI_L_SN, cprop);
 
-			fdt_offset = fdt_path_offset(fdt, "/firmware/");
-			ni_fdt_prop_str(ctx, NI_L_PROJECT_NAME, fdt, fdt_offset, "project-name", &len);
-			ni_fdt_prop_str(ctx, NI_L_PROJECT_VAR, fdt, fdt_offset, "project-variant", &len);
-			ni_fdt_prop_str(ctx, NI_L_PROJECT_VER, fdt, fdt_offset, "project-version", &len);
-			ni_item_int(ctx, NI_L_PROJECT_END, 0);
+			card_overall = 0;
+			ep_cnt = 0;
+			if (ret == 0) {
+				ep_cnt = ep_state_collect(fdt, eps, NFB_PCI_EP_MAX, &card_overall);
+				if (ep_state_is_structural(card_overall))
+					incomplete_pci = 1;
+
+				for (j = 0; j < ep_cnt; j++) {
+					if (paired_cnt == paired_cap) {
+						struct paired_ep *tmp;
+						int new_cap = paired_cap ? paired_cap * 2 : 8;
+
+						tmp = realloc(paired, new_cap * sizeof(*paired));
+						if (tmp == NULL) {
+							warnx("out of memory while collecting PCI endpoints");
+						} else {
+							paired = tmp;
+							paired_cap = new_cap;
+						}
+					}
+					if (paired_cnt < paired_cap) {
+						snprintf(paired[paired_cnt].bdf, sizeof(paired[0].bdf),
+						         "%s", eps[j].bdf);
+						paired[paired_cnt].nfb_id = info.nfb_id;
+						paired[paired_cnt].ep_index = eps[j].index;
+						paired[paired_cnt].state = eps[j].state;
+						paired[paired_cnt].listed = 0;
+						paired_cnt++;
+					}
+				}
+			}
+
+			if (show_nfb) {
+				ep_state_format(card_overall, state_buf, sizeof(state_buf));
+				ni_item_str(ctx, NI_L_PCI_STATE, state_buf);
+
+				fdt_offset = fdt_path_offset(fdt, "/firmware/");
+				ni_fdt_prop_str(ctx, NI_L_PROJECT_NAME, fdt, fdt_offset, "project-name", &len);
+				ni_fdt_prop_str(ctx, NI_L_PROJECT_VAR, fdt, fdt_offset, "project-variant", &len);
+				ni_fdt_prop_str(ctx, NI_L_PROJECT_VER, fdt, fdt_offset, "project-version", &len);
+				ni_item_int(ctx, NI_L_PROJECT_END, 0);
+			}
+
 			nfb_close(dev);
 
-			ni_endsection(ctx, NI_SEC_LIST_NFB);
+			if (show_nfb)
+				ni_endsection(ctx, NI_SEC_LIST_NFB);
 		}
 		free(dir);
 	}
 	if (cnt >= 0)
 		free(namelist);
 
-	ni_endlist(ctx, NI_LIST_NFB);
+	if (show_nfb)
+		ni_endlist(ctx, NI_LIST_NFB);
+
+	/* PCI devices: driver-bound + FDT-known but unbound */
+	if (show_pci) {
+		pacc = pci_alloc();
+		if (pacc)
+			pci_init(pacc);
+	}
+
+	pci_scanned = scandir(NFB_PCI_DRIVER_DIR, &pcinamelist, ep_state_bdf_filter, alphasort);
+	cnt = pci_scanned < 0 ? 0 : pci_scanned;
+
+	if (show_pci) {
+		/* Separate from the nfb list above; standalone -p needs no lead-in. */
+		if (show_nfb && js == NI_DRC_USER)
+			printf("\n");
+		ni_list(ctx, NI_LIST_PCI);
+	}
+
+	for (i = 0; i < cnt; i++) {
+		int found = -1;
+		int state;
+
+		dir = pcinamelist[i];
+
+		for (j = 0; j < paired_cnt; j++) {
+			if (paired[j].bdf[0] && strcmp(paired[j].bdf, dir->d_name) == 0) {
+				found = j;
+				break;
+			}
+		}
+
+		if (found >= 0) {
+			state = paired[found].state;
+			paired[found].listed = 1;
+		} else {
+			state = ep_state_classify(NULL, -1, dir->d_name, 1);
+			if (ep_state_is_structural(state))
+				incomplete_pci = 1;
+		}
+
+		if (ep_state_is_structural(state))
+			incomplete_pci = 1;
+
+		if (show_pci) {
+			print_pci_list_row(ctx, pacc, dir->d_name,
+			                   found >= 0 ? paired[found].nfb_id : -1,
+			                   found >= 0 ? paired[found].ep_index : -1,
+			                   state);
+		}
+		free(dir);
+	}
+	if (pci_scanned >= 0)
+		free(pcinamelist);
+
+	/* FDT endpoints not present in the driver directory */
+	if (show_pci) {
+		for (j = 0; j < paired_cnt; j++) {
+			if (paired[j].listed)
+				continue;
+			if (ep_state_is_structural(paired[j].state))
+				incomplete_pci = 1;
+			print_pci_list_row(ctx, pacc,
+			                   paired[j].bdf[0] ? paired[j].bdf : "?",
+			                   paired[j].nfb_id, paired[j].ep_index,
+			                   paired[j].state);
+		}
+	} else {
+		for (j = 0; j < paired_cnt; j++) {
+			if (ep_state_is_structural(paired[j].state))
+				incomplete_pci = 1;
+		}
+	}
+
+	if (show_pci)
+		ni_endlist(ctx, NI_LIST_PCI);
+
+	if (pacc)
+		pci_cleanup(pacc);
+
+	free(paired);
+
+	ni_endsection(ctx, NI_SEC_ROOT);
+	return incomplete_pci;
 }
 
 int print_specific_info(struct nfb_device *dev, int query)
@@ -463,28 +789,32 @@ void sprint_size(char *str, unsigned long size)
 	sprintf(str, "%lu %s", size, units[i]);
 }
 
-void print_endpoint_info(struct nfb_device *dev, int fdt_offset, struct ni_context *ctx)
+void print_endpoint_info(struct nfb_device *dev, int fdt_offset, int ep_index,
+		int state_flags, struct ni_context *ctx)
 {
 	int len;
 	int bar;
-	int dev_id = -1;
 	uint64_t bar_size;
 	const uint32_t *prop32;
 	const uint64_t *prop64;
 	const void *fdt;
-	const char* node_name;
 	char nodename[64];
+	const char *bdf = NULL;
 
 	fdt = nfb_get_fdt(dev);
 
-	node_name = fdt_get_name(fdt, fdt_offset, NULL);
-	if (node_name && strlen(node_name) > 8 && strncmp(node_name, "endpoint", 8) == 0) {
-		dev_id = strtoul(node_name+8, NULL, 10);
-	}
+	ni_item_int(ctx, NI_PCI_ID, ep_index);
+	ni_emit_state_flags(ctx, state_flags,
+	                    NI_PCI_STATE_T, NI_PCI_STATE_DEGRADED, NI_PCI_STATE_MAPPED,
+	                    NI_PCI_STATE_BOUND, NI_PCI_STATE_ATTACHED, NI_PCI_STATE_ORPHAN);
 
-	ni_item_int(ctx, NI_PCI_ID, dev_id);
+	if (fdt_offset < 0)
+		return;
 
-	ni_fdt_prop_str(ctx, NI_PCI_SLOT, fdt, fdt_offset, "pci-slot", &len);
+	bdf = fdt_getprop(fdt, fdt_offset, "pci-slot", &len);
+	if (bdf)
+		ni_item_str(ctx, NI_PCI_SLOT, bdf);
+
 	prop32 = fdt_getprop(fdt, fdt_offset, "pci-speed", &len);
 	if (prop32)
 		ni_item_str(ctx, NI_PCI_LINK_SPEED, pci_speed_string(fdt32_to_cpu(*prop32)));
@@ -493,7 +823,7 @@ void print_endpoint_info(struct nfb_device *dev, int fdt_offset, struct ni_conte
 
 	ni_list(ctx, NI_LIST_PCI_BAR);
 	for (bar = 0; bar < 6; bar++) {
-		snprintf(nodename, sizeof(nodename), "/drivers/mi/PCI%d,BAR%d", dev_id, bar);
+		snprintf(nodename, sizeof(nodename), "/drivers/mi/PCI%d,BAR%d", ep_index, bar);
 		fdt_offset = fdt_path_offset(fdt, nodename);
 		if (fdt_offset >= 0) {
 			ni_section(ctx, NI_SEC2_PCI_BAR);
@@ -525,6 +855,10 @@ void print_common_info(struct nfb_device *dev, int verbose, struct ni_context *c
 	const void *prop;
 	const uint32_t *prop32;
 	const void *fdt;
+	int overall;
+	int ep_cnt;
+	struct ep_state_desc eps[NFB_PCI_EP_MAX];
+	char state_buf[64];
 
 	char buffer[BUFFER_SIZE];
 	time_t build_time;
@@ -632,12 +966,15 @@ void print_common_info(struct nfb_device *dev, int verbose, struct ni_context *c
 	ni_endsection(ctx, NI_SEC0_FIRMWARE);
 
 	ni_section(ctx, NI_SEC0_SYSTEM);
-	fdt_offset = fdt_path_offset(fdt, "/system/device/");
+
+	ep_cnt = ep_state_collect(fdt, eps, NFB_PCI_EP_MAX, &overall);
+	ep_state_format(overall, state_buf, sizeof(state_buf));
+	ni_item_str(ctx, NI_SYSTEM_PCI_STATE, state_buf);
 
 	ni_list(ctx, NI_LIST_PCIEP);
-	fdt_for_each_subnode(node, fdt, fdt_offset) {
+	for (i = 0; i < ep_cnt; i++) {
 		ni_section(ctx, NI_SEC1_PCIEP);
-		print_endpoint_info(dev, node, ctx);
+		print_endpoint_info(dev, eps[i].fdt_offset, eps[i].index, eps[i].state, ctx);
 		ni_endsection(ctx, NI_SEC1_PCIEP);
 	}
 	ni_endlist(ctx, NI_LIST_PCIEP);
@@ -659,6 +996,8 @@ int main(int argc, char *argv[])
 
 	enum commands command = CMD_PRINT_STATUS;
 	int verbose = 0;
+	int show_nfb = 0;
+	int show_pci = 0;
 
 	while ((c = getopt(argc, argv, ARGUMENTS)) != -1) {
 		switch (c) {
@@ -670,6 +1009,11 @@ int main(int argc, char *argv[])
 			break;
 		case 'l':
 			command = CMD_LIST;
+			show_nfb = 1;
+			break;
+		case 'p':
+			command = CMD_LIST;
+			show_pci = 1;
 			break;
 		case 'v':
 			verbose++;
@@ -696,9 +1040,15 @@ int main(int argc, char *argv[])
 		return 0;
 	} else if (command == CMD_LIST) {
 		struct ni_context *ctx;
-		ctx = ni_init_root_context_default(js, ni_items, &ni_common_item_callbacks[js]);
-		print_device_list(ctx);
+		int incomplete_pci;
+
+		ctx = ni_init_root_context_default(js, ni_items, &ni_info_item_f[js]);
+		incomplete_pci = print_device_list(ctx, js, show_nfb, show_pci);
 		ni_close_root_context(ctx);
+		if (incomplete_pci && !show_pci && js == NI_DRC_USER) {
+			warnx("some PCIe endpoints are not covered in the table; "
+			      "pass -p to list PCI endpoints");
+		}
 		return 0;
 	}
 
@@ -730,7 +1080,7 @@ int main(int argc, char *argv[])
 		free(index);
 	} else {
 		struct ni_context *ctx;
-		ctx = ni_init_root_context_default(js, ni_items, &ni_common_item_callbacks[js]);
+		ctx = ni_init_root_context_default(js, ni_items, &ni_info_item_f[js]);
 
 		ni_section(ctx, NI_SEC_ROOT);
 		print_common_info(dev, verbose, ctx);
