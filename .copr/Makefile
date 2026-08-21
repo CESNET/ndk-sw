@@ -1,5 +1,5 @@
 srpm:
-	dnf -y install cmake git curl gcc  make rpm-build libfdt-devel numactl-devel ncurses-devel libarchive-devel libconfig libconfig-devel
+	dnf -y install cmake git curl gcc  make rpm-build libfdt-devel numactl-devel ncurses-devel libarchive-devel libconfig libconfig-devel pciutils-devel pciutils-libs
 	./build.sh --prepare; mkdir build; cd build; cmake ..; cpack -G RPM --config ./CPackSourceConfig.cmake; cp *.src.rpm $(outdir)
 
 srpm-dpdk:

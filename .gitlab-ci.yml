@@ -14,7 +14,7 @@ pages:
   image: python:3.9-alpine
   script:
   - apk add -U make doxygen musl-dev py3-setuptools
-  - apk add -U gcc cmake dtc-dev numactl-dev ncurses-dev libarchive-dev libconfig libconfig-dev automake autoconf curl git cython python3-dev dtc-dev linux-headers zlib-dev
+  - apk add -U gcc cmake dtc-dev numactl-dev ncurses-dev libarchive-dev libconfig libconfig-dev automake autoconf curl git cython python3-dev dtc-dev linux-headers zlib-dev pciutils-dev
   - pip install -U sphinx
   - pip install -U sphinx-rtd-theme
   - pip install -U breathe

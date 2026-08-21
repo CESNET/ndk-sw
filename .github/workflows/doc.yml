@@ -17,7 +17,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install python3-pip doxygen git cmake rsync graphviz
-          sudo apt-get -y install autoconf automake libfdt-dev libnuma-dev libncurses-dev libarchive-dev libconfig-dev python3-dev python3-setuptools cython3
+          sudo apt-get -y install autoconf automake libfdt-dev libnuma-dev libncurses-dev libarchive-dev libconfig-dev libpci-dev python3-dev python3-setuptools cython3
           pip3 install sphinx sphinx_rtd_theme breathe fdt
           bash build.sh --prepare
           (mkdir cmake-build; cd cmake-build; cmake --install-prefix=/usr/ ..; make; sudo make install)
