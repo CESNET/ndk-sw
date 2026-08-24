@@ -1,3 +1,6 @@
+* Mon Aug 24 2026 Martin Spinler <spinler@cesnet.cz> - 6.31.2-1
+- [FIX] fix mdio compilation issue in driver
+
 * Fri Aug 21 2026 Martin Spinler <spinler@cesnet.cz> - 6.31.0-1
 - [FEATURE] warn on PCIe endpoint mismatch when writing firmware with nfb-boot
 - [FEATURE] add PCI-centric view in nfb-info
