@@ -1275,20 +1275,18 @@ static inline void nc_mdio_etile_eth_sysrst(struct nc_mdio *mdio, int prtad)
 {
 	int i, res;
 	uint16_t stat;
-	char pending[mdio->pma_lanes];   /* Lanes that still need adaptation */
-	int pending_cnt = mdio->pma_lanes;
+	uint64_t pending;                /* Bitmask of lanes that still need adaptation */
 	int retries = 0;
 	struct nfb_comp *comp = nfb_user_to_comp(mdio);
 
 	/* Initially all lanes are pending */
-	for (i = 0; i < mdio->pma_lanes; i++)
-		pending[i] = 1;
+	pending = (mdio->pma_lanes == 64) ? ~(uint64_t) 0 : ((uint64_t) 1 << mdio->pma_lanes) - 1;
 
 	/* Step 1: reset (disable + enable) all PMA lanes (this also forces the initial adaptation) */
-	while (pending_cnt && retries++ < 3) {
+	while (pending && retries++ < 3) {
 		/* Reset (disable + enable) lanes that still need adaptation */
 		for (i = 0; i < mdio->pma_lanes; i++) {
-			if (!pending[i])
+			if (!(pending & ((uint64_t) 1 << i)))
 				continue;
 			nc_mdio_etile_pma_attribute_write(mdio, prtad, i, 0x0001, 0x0000); /* Disable the PMA */
 			stat = nc_mdio_etile_pma_attribute_read(mdio, prtad, i); /* Get operation status*/
@@ -1297,16 +1295,15 @@ static inline void nc_mdio_etile_eth_sysrst(struct nc_mdio *mdio, int prtad)
 		}
 		/* Check adaptation of the pending lanes only */
 		for (i = 0; i < mdio->pma_lanes; i++) {
-			if (!pending[i])
+			if (!(pending & ((uint64_t) 1 << i)))
 				continue;
 			res = nc_mdio_etile_adapt_wait(mdio, prtad, i, 0x80, 200000);  /* Get adaptation status */
 			if (res) {
-				pending[i] = 0;
-				pending_cnt--;
+				pending &= ~((uint64_t) 1 << i);
 			}
 		}
 	}
-	/* TODO: if (pending_cnt) -> adaptation failed. Not observed in hardware */
+	/* TODO: if (pending) -> adaptation failed. Not observed in hardware */
 
 	/* Step 2: Force Eth IP system reset (eio_sys_rst) */
 	retries = 0;
