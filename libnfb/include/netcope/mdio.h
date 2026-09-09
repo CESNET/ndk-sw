@@ -742,16 +742,35 @@ static inline uint16_t nc_mdio_fixup_ftile_pcs_read(struct nc_mdio *mdio, int pr
 
 static inline int nc_mdio_fixup_ftile_set_loopback(struct nc_mdio *mdio, int prtad, int enable)
 {
-	int i;
+	const int EHIP_STATUS_REG = (0x118 >> 2);
+	const int EHIP_RX_READY = (1 << 3);
+	struct nfb_comp *comp = nfb_user_to_comp(mdio);
 	uint16_t data = enable ? 0x6 : 0x0; // enable or disable loopback?
+	int retries;
+	int polls;
+	int i;
 
-	nc_mdio_ftile_reset(mdio, prtad, 1, 1); // assert RX reset
+	/* The RX datapath may not come up after the loopback is turned on,
+	 * repeat the whole setup until the RX ready flag is set. */
+	for (retries = 0; retries < 10; retries++) {
+		nc_mdio_ftile_reset(mdio, prtad, 1, 1); // assert RX reset
 
-	for (i = 0; i < mdio->pma_lanes; i++) {
-		nc_mdio_ftile_fgt_attribute_write(mdio, prtad, data, i, 0x40);
+		for (i = 0; i < mdio->pma_lanes; i++) {
+			nc_mdio_ftile_fgt_attribute_write(mdio, prtad, data, i, 0x40);
+		}
+		nc_mdio_ftile_reset(mdio, prtad, 1, 0); // deassert RX reset
+
+		if (!enable)
+			return 0;
+
+		for (polls = 0; polls < 100000; polls++) {
+			if (nc_mdio_dmap_drp_read(comp, prtad, 0, EHIP_STATUS_REG) & EHIP_RX_READY) {
+				return 0;
+			}
+		}
 	}
-	nc_mdio_ftile_reset(mdio, prtad, 1, 0); // deassert RX reset
-	return 0;
+
+	return -ETIMEDOUT;
 }
 
 /* ~~~~[ Intel E-Tile  ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
