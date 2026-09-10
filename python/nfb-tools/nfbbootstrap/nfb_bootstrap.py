@@ -11,7 +11,7 @@ def main():
 
     parser.add_argument('-d', '--device', help='Device specifier, e.g. 0000:03:00.0')
     parser.add_argument('-c', '--card', help='Card name, e.g. "N6010"')
-    parser.add_argument('--dtb', action='store', default='nfb-bootstrap.dtb', help='Output DTB filename')
+    parser.add_argument('--dtb', action='store', default=None, help='Output DTB filename')
     parser.add_argument('-v', '--verbose', action='store_true')
 
     args = parser.parse_args()
@@ -39,6 +39,13 @@ def main():
             n_mi.append(n_pmci)
             n_pmci.append(fdt.PropWords('reg', *pmci_reg))
             n_pmci.append(fdt.PropStrings("compatible", "cesnet,pmci"))
+
+    elif args.card in ['FB2CDG1-VAR1']:
+        n_pmci = fdt.Node('pmci')
+        n_mi.append(n_pmci)
+        n_pmci.append(fdt.PropWords('reg', 0x4000, 0x1000))
+        n_pmci.append(fdt.PropStrings("compatible", "cesnet,pmci"))
+
     elif args.card in ['IA-440I', 'IA-860M']:
         reg = [0x2000, 0x44]
 
@@ -47,6 +54,9 @@ def main():
         n_bmc.append(fdt.PropWords('reg', *reg))
         n_bmc.append(fdt.PropStrings("compatible", "bittware,bmc"))
         n_bmc.append(fdt.Property("throttle_write"))
+
+    if args.dtb is None:
+        args.dtb = f'nfb-bootstrap-{args.card}.dtb'
 
     with open(args.dtb, "wb") as f:
         f.write(dt.to_dtb(version=17))
