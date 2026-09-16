@@ -364,11 +364,14 @@ int nfb_pmci_attach(struct nfb_boot *boot)
 
 	/* Read SN */
 	if (pmci->m10bmc.ops.flash_read) {
+		const u32 bom_info_addr = pmci->m10bmc.type == M10_FB2CDG1 ?
+			PMCI_BOM_INFO_ADDR_FB2CDG1 : PMCI_BOM_INFO_ADDR;
+
 		pmci_bom_info = kzalloc(PMCI_BOM_INFO_SIZE+1+1, GFP_KERNEL);
 		if (pmci_bom_info) {
 			pmci_bom_info[0] = '\n';
 			pmci_bom_info[PMCI_BOM_INFO_SIZE+1] = 0;
-			pmci->m10bmc.ops.flash_read(&pmci->m10bmc, pmci_bom_info+1, PMCI_BOM_INFO_ADDR, PMCI_BOM_INFO_SIZE);
+			pmci->m10bmc.ops.flash_read(&pmci->m10bmc, pmci_bom_info+1, bom_info_addr, PMCI_BOM_INFO_SIZE);
 			if ((snc = strstr(pmci_bom_info, "\nSN,"))) {
 				if (sscanf(snc, "\nSN,%d\n", &sn) == 1) {
 					boot->nfb->serial = sn;
