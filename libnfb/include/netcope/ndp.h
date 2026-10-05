@@ -166,7 +166,7 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 #ifdef __KERNEL__
 	ndp_ctrl_v3_get_vmaps(
 			q->sub->channel, (void**)&q->u.v3.hdrs,
-			&hdr_mmap_size, &hdr_buff_size, &data_buff_size);
+			&hdr_mmap_size, &data_buff_size, &hdr_buff_size);
 
 #else
 	q->u.v3.uspace_shp = 0;
