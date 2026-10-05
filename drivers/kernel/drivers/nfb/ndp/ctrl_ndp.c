@@ -1273,7 +1273,16 @@ static int ndp_ctrl_tx_calypte_attach_ring(struct ndp_channel *channel)
 
 
 	/* Allocate header area */
-	ctrl->hdr_buffer_size = fdt32_to_cpu(prop[1]);
+	/*
+	 * The header window in the FPGA is two rings long.
+	 * The shadow buffer holds one ring, so its double mapping repeats after each ring.
+	 */
+	ctrl->hdr_buffer_size = fdt32_to_cpu(prop[1]) / 2;
+	/* The double mapping of the shadow buffer works on whole pages */
+	if (ctrl->hdr_buffer_size == 0 || ctrl->hdr_buffer_size % PAGE_SIZE) {
+		ret = -EINVAL;
+		goto err_alloc_hdr;
+	}
 	ctrl->hdr_buffer = dma_alloc_coherent(dev, ctrl->hdr_buffer_size, &ctrl->hdr_buffer_phys, GFP_KERNEL);
 	if (ctrl->hdr_buffer == NULL) {
 		goto err_alloc_hdr;
@@ -1291,7 +1300,7 @@ static int ndp_ctrl_tx_calypte_attach_ring(struct ndp_channel *channel)
 
 	// Store read values of buffer sizes to structure variables
 	ctrl->c.mdp = (ctrl->data_buffer_size/2 -1) & 0x0000FFFFul;
-	ctrl->c.mhp = (ctrl->hdr_buffer_size/(2*NDP_CTRL_RX_CALYPTE_HDR_SIZE) -1) & 0x0000FFFFul;
+	ctrl->c.mhp = (ctrl->hdr_buffer_size/NDP_CTRL_RX_CALYPTE_HDR_SIZE -1) & 0x0000FFFFul;
 	channel->ptrmask = ctrl->c.mhp;
 
 	fdt_setprop_u32(fdt, node_offset, "protocol", 3);
