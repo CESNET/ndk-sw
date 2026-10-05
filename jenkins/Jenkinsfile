@@ -47,7 +47,7 @@ node('docker') {
 					}
 					sh "mkdir -p ${osname}-${osreleasever}"
 					sh "mv *.${pkg} ${osname}-${osreleasever}/"
-					archiveArtifacts artifacts: "${osname}-${osreleasever}/*.${pkg}"
+					archiveArtifacts artifacts: "${osname}-${osreleasever}/*.${pkg}", fingerprint: true
 					sh 'find . -maxdepth 1 -type f -delete'
 				}
 			}
@@ -69,12 +69,12 @@ node('docker') {
 						}
 						sh "mkdir -p ${osname}-${osreleasever}"
 						sh "mv *.${pkg} ${osname}-${osreleasever}/"
-						archiveArtifacts artifacts: "${osname}-${osreleasever}/*.${pkg}"
+						archiveArtifacts artifacts: "${osname}-${osreleasever}/*.${pkg}", fingerprint: true
 						sh 'find . -maxdepth 1 -type f -delete'
 					}
 				}
 			}
-			
+
 			if (osreleasever == 'jammy') {
 				// ubuntu 22.04 lts doesnt have libxdp in its repositories
 			} else {
@@ -94,7 +94,7 @@ node('docker') {
 						}
 						sh "mkdir -p ${osname}-${osreleasever}"
 						sh "mv *.${pkg} ${osname}-${osreleasever}/"
-						archiveArtifacts artifacts: "${osname}-${osreleasever}/*.${pkg}"
+						archiveArtifacts artifacts: "${osname}-${osreleasever}/*.${pkg}", fingerprint: true
 						sh 'find . -maxdepth 1 -type f -delete'
 					}
 				}
