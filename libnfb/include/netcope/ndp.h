@@ -145,7 +145,6 @@ err_fdt_getprop:
 static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt,  int fdt_offset, int ctrl_offset, int dir)
 {
 	size_t hdr_mmap_size = 0;
-	size_t hdr_buff_size = 0;
 	size_t data_buff_size = 0;
 
 #ifndef __KERNEL__
@@ -154,6 +153,8 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	size_t upd_mmap_size = 0;
 	int prot;
 	int ret;
+#else
+	size_t hdr_buff_size = 0;
 #endif
 	struct ndp_queue_ops *ops = ndp_queue_get_ops(q->q);
 
@@ -166,7 +167,7 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 #ifdef __KERNEL__
 	ndp_ctrl_v3_get_vmaps(
 			q->sub->channel, (void**)&q->u.v3.hdrs,
-			&hdr_mmap_size, &hdr_buff_size, &data_buff_size);
+			&hdr_mmap_size, &data_buff_size, &hdr_buff_size);
 
 #else
 	q->u.v3.uspace_shp = 0;
@@ -181,7 +182,6 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	ret |= fdt_getprop64(fdt, fdt_offset, "hdr_mmap_base", &hdr_mmap_offset);
 	if (q->channel.type == NDP_CHANNEL_TYPE_TX) {
 		ret |= fdt_getprop32(fdt, fdt_offset, "data_buff_size", &data_buff_size);
-		ret |= fdt_getprop32(fdt, fdt_offset, "hdr_buff_size", &hdr_buff_size);
 		ret |= fdt_getprop64(fdt, fdt_offset, "upd_mmap_size", &upd_mmap_size);
 		ret |= fdt_getprop64(fdt, fdt_offset, "upd_mmap_base", &upd_mmap_offset);
 	}
@@ -215,11 +215,10 @@ static inline int nc_ndp_v3_open_queue(struct nc_ndp_queue *q, const void *fdt, 
 	}
 #endif
 
+	q->u.v3.hdr_ptr_mask = ((hdr_mmap_size / 2) / sizeof(struct ndp_v3_packethdr)) - 1; // "- 1" to create a mask for AND operations
 	if (q->channel.type == NDP_CHANNEL_TYPE_RX) {
 		q->u.v3.valid_flag = 1;
-		q->u.v3.hdr_ptr_mask = ((hdr_mmap_size / 2) / sizeof(struct ndp_v3_packethdr)) - 1; // "- 1" to create a mask for AND operations
 	} else {
-		q->u.v3.hdr_ptr_mask = hdr_buff_size / (2 * sizeof(struct ndp_v3_packethdr)) - 1;
 		q->u.v3.data_ptr_mask = data_buff_size / 2 - 1;
 	}
 
