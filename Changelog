@@ -1,3 +1,9 @@
+* Wed Oct 7 2026 Martin Spinler <spinler@cesnet.cz> - 6.32.0-1
+- [FEATURE] libnfb: add nfb_fdt_rxhdr_hash function
+- [FEATURE] nfb-bootstrap: support FB2CDG1 card
+- [FIX] read BOM (SN) for FB2CDG1 from correct offset
+- [FIX] mdio: retry loopback enable operation when the link does not start on F-TILE
+
 * Mon Aug 24 2026 Martin Spinler <spinler@cesnet.cz> - 6.31.2-1
 - [FIX] fix mdio compilation issue in driver
 
