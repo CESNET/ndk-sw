@@ -140,21 +140,21 @@ static inline char *nfb_fdt_rxhdr_hash(const void *fdt, int offset)
 		return NULL;
 	}
 
-	const char *names = fdt_getprop(fdt, offset, "item-name", &proplen);
+	const char *names = (const char *) fdt_getprop(fdt, offset, "item-name", &proplen);
 	if (!names || proplen <= 0) {
 		errno = EBADFD;
 		return NULL;
 	}
 
 	size_t serial_cap = 128;
-	char *serialized = malloc(serial_cap);
+	char *serialized = (char *) malloc(serial_cap);
 	if (!serialized) {
 		errno = ENOMEM;
 		return NULL;
 	}
 	char *serial_out = serialized;
 
-	int n = snprintf(serialized, serial_cap, "%"PRIu32";", header_id);
+	int n = snprintf(serialized, serial_cap, "%" PRIu32 ";", header_id);
 	if (n < 0 || (size_t)n >= serial_cap) {
 		errno = EOVERFLOW;
 		free(serialized);
@@ -172,7 +172,7 @@ static inline char *nfb_fdt_rxhdr_hash(const void *fdt, int offset)
 
 		size_t out_offset = (size_t)(serial_out - serialized);
 		size_t remaining_cap = (size_t)serial_cap - out_offset;
-		n = snprintf(serial_out, remaining_cap, "%s:%"PRIi16":%"PRIi16";", item.name,
+		n = snprintf(serial_out, remaining_cap, "%s:%" PRIi16 ":%" PRIi16 ";", item.name,
 			     item.width, item.offset);
 		if (n < 0) {
 			errno = EOVERFLOW;
@@ -188,7 +188,7 @@ static inline char *nfb_fdt_rxhdr_hash(const void *fdt, int offset)
 				return NULL;
 			}
 			serial_cap *= 2;
-			char *new_serialized = realloc(serialized, serial_cap);
+			char *new_serialized = (char *) realloc(serialized, serial_cap);
 			if (!new_serialized) {
 				errno = ENOMEM;
 				free(serialized);
@@ -210,7 +210,7 @@ static inline char *nfb_fdt_rxhdr_hash(const void *fdt, int offset)
 		hash_val *= 0x100000001b3ULL;
 	}
 
-	char *hash = malloc(hash_size);
+	char *hash = (char *) malloc(hash_size);
 	if (!hash) {
 		errno = ENOMEM;
 		free(serialized);
