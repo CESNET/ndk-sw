@@ -192,7 +192,7 @@ void nfb_comp_close(struct nfb_comp *component);
  *
  * Return path of component in Device Tree.
  */
-const char *nfb_comp_path(struct nfb_comp *component);
+const char *nfb_comp_path(const struct nfb_comp *component);
 
 /*!
  * \brief Get pointer to nfb_device structure
@@ -200,7 +200,7 @@ const char *nfb_comp_path(struct nfb_comp *component);
  *
  * Return pointer to struct nfb_device
  */
-const struct nfb_device *nfb_comp_get_device(struct nfb_comp *component);
+const struct nfb_device *nfb_comp_get_device(const struct nfb_comp *component);
 
 /*!
  * \brief Lock a component feature, prevent access in other process
