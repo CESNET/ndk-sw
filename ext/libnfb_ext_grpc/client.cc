@@ -2,6 +2,7 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <random>
 #include <string>
 #include <thread>
@@ -21,6 +22,9 @@ extern "C" {
 #include <nfb/nfb.h>
 #include <nfb/ext.h>
 
+/* not in libnfb older than the component locks: then the extension has no locks */
+#pragma weak nfb_ext_get_priv
+
 #include "client_dma_vas.hh"
 
 
@@ -39,6 +43,8 @@ using nfb::ext::protobuf::v1::ReadCompRequest;
 using nfb::ext::protobuf::v1::WriteCompRequest;
 using nfb::ext::protobuf::v1::ReadCompResponse;
 using nfb::ext::protobuf::v1::WriteCompResponse;
+using nfb::ext::protobuf::v1::LockRequest;
+using nfb::ext::protobuf::v1::LockResponse;
 
 
 class NfbClient
@@ -204,10 +210,81 @@ int parse_devname(const char *devname, int *flags)
 }
 
 
+/*
+ * Component lock session of one opened device: the server holds the locks for this session
+ * (the lock owner) and releases them when the stream ends (closed device, dead process).
+ */
+class NfbLockSession
+{
+	ClientContext m_context;
+	std::unique_ptr<ClientReaderWriter<LockRequest, LockResponse>> m_stream;
+	std::mutex m_mutex;
+	bool m_finished;
+	bool m_unsupported;
+
+	/* stream broken: get its status, an older server doesn't know LockSession */
+	void finish()
+	{
+		Status status = m_stream->Finish();
+		m_finished = true;
+		if (status.error_code() == grpc::StatusCode::UNIMPLEMENTED) {
+			m_unsupported = true;
+			std::cerr << "libnfb-ext-grpc: server doesn't support component locks, "
+					"nfb_comp_lock always succeeds" << std::endl;
+		}
+	}
+
+public:
+	NfbLockSession(Nfb::Stub *stub) : m_finished(false), m_unsupported(false)
+	{
+		m_stream = stub->LockSession(&m_context);
+	}
+
+	~NfbLockSession()
+	{
+		if (!m_finished) {
+			m_stream->WritesDone();
+			m_stream->Finish();
+		}
+	}
+
+	int request(LockRequest::Operation op, const char *path, uint32_t features)
+	{
+		std::lock_guard<std::mutex> guard(m_mutex);
+		LockRequest req;
+		LockResponse resp;
+
+		if (!m_finished) {
+			req.set_op(op);
+			req.set_path(path);
+			req.set_features(features);
+			if (m_stream->Write(req) && m_stream->Read(&resp))
+				return resp.status();
+			finish();
+		}
+
+		if (m_unsupported)
+			return op == LockRequest::LOCK ? 1 : 0;
+		return -ECONNRESET;
+	}
+};
+
 struct nfb_grpc_dev {
 	std::shared_ptr<NfbClient> nfb;
 	std::shared_ptr<NfbDmaClient> dma;
 	std::string path;
+
+	/* created on the first lock: devices without locks don't open a session */
+	std::mutex lock_mutex;
+	std::unique_ptr<NfbLockSession> lock_session;
+
+	NfbLockSession *get_lock_session()
+	{
+		std::lock_guard<std::mutex> guard(lock_mutex);
+		if (!lock_session)
+			lock_session = std::make_unique<NfbLockSession>(nfb->stub_.get());
+		return lock_session.get();
+	}
 };
 
 static std::map<std::string, std::weak_ptr<NfbDmaClient>> nfb_grpc_dma_clients;
@@ -309,15 +386,48 @@ static void nfb_grpc_bus_close(void *bus_priv)
 	delete bus;
 }
 
+/* the opened device of the component (the lock owner), NULL with an older libnfb */
+static struct nfb_grpc_dev *nfb_grpc_comp_dev(const struct nfb_comp *comp)
+{
+	static std::once_flag warned;
+
+	if (nfb_ext_get_priv == NULL) {
+		std::call_once(warned, [] {
+			std::cerr << "libnfb-ext-grpc: libnfb without nfb_ext_get_priv, "
+					"nfb_comp_lock always succeeds" << std::endl;
+		});
+		return NULL;
+	}
+	return (struct nfb_grpc_dev *) nfb_ext_get_priv(nfb_comp_get_device(comp));
+}
+
 static int nfb_grpc_comp_lock(const struct nfb_comp *comp, uint32_t features)
 {
-	/* TODO */
-	return 1;
+	struct nfb_grpc_dev *dev = nfb_grpc_comp_dev(comp);
+	const char *path = nfb_comp_path(comp);
+
+	if (dev == NULL)
+		return 1;
+
+	try {
+		return dev->get_lock_session()->request(LockRequest::LOCK, path, features);
+	} catch (...) {
+		return -EIO;
+	}
 }
 
 static void nfb_grpc_comp_unlock(const struct nfb_comp *comp, uint32_t features)
 {
-	/* TODO */
+	struct nfb_grpc_dev *dev = nfb_grpc_comp_dev(comp);
+	const char *path = nfb_comp_path(comp);
+
+	if (dev == NULL)
+		return;
+
+	try {
+		dev->get_lock_session()->request(LockRequest::UNLOCK, path, features);
+	} catch (...) {
+	}
 }
 
 struct libnfb_ext_abi_version libnfb_ext_abi_version = libnfb_ext_abi_version_current;

@@ -12,6 +12,9 @@ service Nfb {
 	rpc ReadComp(ReadCompRequest) returns (ReadCompResponse) {}
 	// Write data to a component
 	rpc WriteComp(WriteCompRequest) returns (WriteCompResponse) {}
+	// Component lock session of one opened device (nfb_open): the session is the lock owner,
+	// all its locks are released when the stream ends (closed device, disconnected client)
+	rpc LockSession(stream LockRequest) returns (stream LockResponse) {}
 }
 
 // Initial request for the FDT
@@ -54,5 +57,25 @@ message WriteCompRequest {
 // Component data write response
 message WriteCompResponse {
 	// Status of the write operation
+	int32 status = 1;
+}
+
+// Component lock request (nfb_comp_lock / nfb_comp_unlock)
+message LockRequest {
+	enum Operation {
+		LOCK = 0;
+		UNLOCK = 1;
+	}
+	Operation op = 1;
+	// FDT path of the locked component
+	string path = 2;
+	// Bitmask of the locked features
+	uint32 features = 3;
+}
+
+// Component lock response, one for each request
+message LockResponse {
+	// LOCK: 1 when locked, -EBUSY when a feature is already locked, other negative errno on error
+	// UNLOCK: 0, negative errno on error
 	int32 status = 1;
 }
