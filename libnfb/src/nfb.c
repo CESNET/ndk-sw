@@ -56,6 +56,11 @@ const void *nfb_get_fdt(const struct nfb_device *dev)
 	return dev->fdt;
 }
 
+void *nfb_ext_get_priv(const struct nfb_device *dev)
+{
+	return dev->priv;
+}
+
 struct nfb_comp *nfb_user_to_comp(void *ptr)
 {
 	return ((struct nfb_comp *) ptr) - 1;
