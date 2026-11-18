@@ -36,6 +36,10 @@
 #define REQUIRE_FORCE_WHEN_CARD_MISMATCH   1
 #define REQUIRE_FORCE_WHEN_PCI_MISMATCH    0
 
+/* Max time to wait for the device file (udev symlinks) to appear after boot */
+#define BOOT_REOPEN_TIMEOUT_MS  10000
+#define BOOT_REOPEN_INTERVAL_MS 100
+
 #define FLAG_QUIET      1
 #define FLAG_FORCE      2
 #define FLAG_BITSTREAM  4
@@ -346,6 +350,23 @@ int get_path_by_pci_slot(const char *path, char *path_by_pci_slot, size_t size)
 	return ret;
 }
 
+/*
+ * Open the device after boot. The device file (and especially the udev
+ * symlinks like /dev/nfb/by-pci-slot/...) are created asynchronously after
+ * the card is probed again, so retry for a while.
+ */
+static struct nfb_device *nfb_open_after_boot(const char *path)
+{
+	struct nfb_device *dev;
+	int elapsed_ms = 0;
+
+	while ((dev = nfb_open(path)) == NULL && elapsed_ms < BOOT_REOPEN_TIMEOUT_MS) {
+		usleep(BOOT_REOPEN_INTERVAL_MS * 1000);
+		elapsed_ms += BOOT_REOPEN_INTERVAL_MS;
+	}
+	return dev;
+}
+
 int check_boot_success(const char *path_by_pci, int cmd, const char *filename)
 {
 	int ret = 0;
@@ -353,13 +374,14 @@ int check_boot_success(const char *path_by_pci, int cmd, const char *filename)
 	void *fdt = NULL;
 	int diff;
 
-	dev = nfb_open(path_by_pci);
+	dev = nfb_open_after_boot(path_by_pci);
 	if (dev == NULL) {
-		warnx(
-			"can't open device file after boot; "
+		warn(
+			"can't open device file %s after boot; "
 			"can be caused by a corrupted configuration file, "
 			"unsupported hotplug on this platform "
-			"or changed PCIe address of the main device"
+			"or changed PCIe address of the main device",
+			path_by_pci
 		);
 	} else {
 		if (cmd == CMD_WRITE_AND_BOOT) {
@@ -735,7 +757,7 @@ int do_quick_boot(const char *path, int slot, const char *filename, int flags)
 		goto err_boot;
 	}
 
-	dev = nfb_open(path);
+	dev = nfb_open_after_boot(path);
 	if (dev == NULL) {
 		ret = ENODEV;
 		warn("can't open device file after boot");
