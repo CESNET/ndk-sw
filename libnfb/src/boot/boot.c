@@ -296,6 +296,47 @@ int nfb_fw_load(const struct nfb_device *dev, unsigned int image, void *data, si
 	return nfb_fw_load_ext(dev, image, data, size, NFB_FW_LOAD_FLAG_VERBOSE);
 }
 
+/* Translate fpga_image_status.err_code (FPGA_IMAGE_ERR_*) into errno value */
+static int nfb_fw_fpga_image_err_to_errno(uint32_t err_code)
+{
+	switch (err_code) {
+	case FPGA_IMAGE_ERR_HW_ERROR:     return EIO;
+	case FPGA_IMAGE_ERR_TIMEOUT:      return ETIMEDOUT;
+	case FPGA_IMAGE_ERR_CANCELED:     return ECANCELED;
+	case FPGA_IMAGE_ERR_BUSY:         return EBUSY;
+	case FPGA_IMAGE_ERR_INVALID_SIZE: return EFBIG;
+	case FPGA_IMAGE_ERR_RW_ERROR:     return EIO;
+	case FPGA_IMAGE_ERR_WEAROUT:      return ENOSPC;
+	default:                          return EIO;
+	}
+}
+
+static const char *nfb_fw_fpga_image_err_str(uint32_t err_code)
+{
+	switch (err_code) {
+	case FPGA_IMAGE_ERR_HW_ERROR:     return "hardware error";
+	case FPGA_IMAGE_ERR_TIMEOUT:      return "timeout";
+	case FPGA_IMAGE_ERR_CANCELED:     return "canceled";
+	case FPGA_IMAGE_ERR_BUSY:         return "device busy";
+	case FPGA_IMAGE_ERR_INVALID_SIZE: return "invalid image size";
+	case FPGA_IMAGE_ERR_RW_ERROR:     return "register/flash access error";
+	case FPGA_IMAGE_ERR_WEAROUT:      return "flash wearout";
+	default:                          return "unknown error";
+	}
+}
+
+static const char *nfb_fw_fpga_image_prog_str(uint32_t progress)
+{
+	switch (progress) {
+	case FPGA_IMAGE_PROG_IDLE:        return "idle";
+	case FPGA_IMAGE_PROG_STARTING:    return "starting";
+	case FPGA_IMAGE_PROG_PREPARING:   return "erasing";
+	case FPGA_IMAGE_PROG_WRITING:     return "writing";
+	case FPGA_IMAGE_PROG_PROGRAMMING: return "staging";
+	default:                          return "unknown";
+	}
+}
+
 int nfb_fw_load_fpga_image_load(const struct nfb_device *dev, void *data, size_t size, int flags, int slot_fdt_offset)
 {
 	int i;
@@ -325,7 +366,7 @@ int nfb_fw_load_fpga_image_load(const struct nfb_device *dev, void *data, size_t
 	}
 
 	if (fs.progress != FPGA_IMAGE_PROG_IDLE)
-		return -EBUSY;
+		return EBUSY;
 
 	efd = eventfd(0, 0);
 
@@ -377,7 +418,15 @@ int nfb_fw_load_fpga_image_load(const struct nfb_device *dev, void *data, size_t
 			goto err_ioctl_status;
 		}
 		if (fs.err_code != 0) {
-			ret = fs.err_code;
+			ret = nfb_fw_fpga_image_err_to_errno(fs.err_code);
+			if (flags & NFB_FW_LOAD_FLAG_VERBOSE) {
+				/* Finish the unterminated progress bar line */
+				if (text)
+					putchar('\n');
+				warnx("FPGA image load failed in %s phase: %s (code %u)",
+						nfb_fw_fpga_image_prog_str(fs.err_progress),
+						nfb_fw_fpga_image_err_str(fs.err_code), fs.err_code);
+			}
 			goto err_ioctl_status;
 		}
 		if (flags & NFB_FW_LOAD_FLAG_VERBOSE) {
