@@ -719,8 +719,6 @@ int do_boot(const char *path, int slot)
 		break;
 	}
 
-	/* Let settle links in the /dev/ */
-	usleep(100000);
 	return ret;
 }
 
