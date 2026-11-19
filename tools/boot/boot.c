@@ -724,6 +724,30 @@ int do_boot(const char *path, int slot)
 	return ret;
 }
 
+/*
+ * Boot the device and perform the after-boot checks
+ * (wait for the device file, for CMD_WRITE_AND_BOOT compare the firmware)
+ * path_by_pci: persistent device path, NULL if unavailable (checks skipped)
+ */
+int do_boot_and_check(const char *path, int slot, const char *path_by_pci, int cmd, const char *filename)
+{
+	int ret;
+
+	ret = do_boot(path, slot);
+	if (ret) {
+		if (cmd == CMD_WRITE_AND_BOOT)
+			warnx("however, the configuration was successfully written into device slot");
+		return ret;
+	}
+
+	if (path_by_pci == NULL) {
+		warnx("can't get device path by PCI slot, after-boot checks skipped");
+		return 0;
+	}
+
+	return check_boot_success(path_by_pci, cmd, filename);
+}
+
 int card_requires_sleep(const void *fdt) {
 	int fdt_offset;
 	const void *prop;
@@ -742,9 +766,11 @@ int card_requires_sleep(const void *fdt) {
 int do_quick_boot(const char *path, int slot, const char *filename, int flags)
 {
 	int ret;
+	int c;
 	enum fw_diff_values diff;
 	void *fdt = NULL;
 	struct nfb_device *dev;
+	char path_by_pci[PATH_MAX];
 
 	archive_read_first_file_with_extension(filename, ".dtb", &fdt);
 	if (fdt == NULL) {
@@ -752,6 +778,9 @@ int do_quick_boot(const char *path, int slot, const char *filename, int flags)
 		ret = EBADF;
 		goto err_read_archive;
 	}
+
+	/* Get the persistent path before boot, used for the after-boot check */
+	c = get_path_by_pci_slot(path, path_by_pci, sizeof(path_by_pci));
 
 	ret = do_boot(path, slot);
 	if (ret) {
@@ -780,7 +809,9 @@ int do_quick_boot(const char *path, int slot, const char *filename, int flags)
 			goto err_do_write;
 		}
 		nfb_close(dev);
-		ret = do_boot(path, slot);
+		/* Check that the written firmware runs */
+		ret = do_boot_and_check(path, slot, c < 0 ? NULL : path_by_pci,
+				CMD_WRITE_AND_BOOT, filename);
 	} else {
 		nfb_close(dev);
 	}
@@ -934,18 +965,7 @@ int main(int argc, char *argv[])
 
 	if (cmd == CMD_WRITE_AND_BOOT || cmd == CMD_BOOT) {
 		c = get_path_by_pci_slot(path, path_by_pci, sizeof(path_by_pci));
-		ret = do_boot(path, slot);
-		if (ret) {
-			if (cmd == CMD_WRITE_AND_BOOT)
-				warnx("however, the configuration was successfully written into device slot");
-			goto err;
-		}
-
-		if (c < 0) {
-			warnx("can't get device path by PCI slot, after-boot checks skipped");
-		} else {
-			ret = check_boot_success(path_by_pci, cmd, filename);
-		}
+		ret = do_boot_and_check(path, slot, c < 0 ? NULL : path_by_pci, cmd, filename);
 	}
 
 err:
