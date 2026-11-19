@@ -397,6 +397,7 @@ int check_boot_success(const char *path_by_pci, int cmd, const char *filename)
 					warnx("boot failed: the signature of running firmware is not equal to signature of written configuration file");
 					ret = EBADF;
 				}
+				free(fdt);
 			}
 		}
 		nfb_close(dev);
