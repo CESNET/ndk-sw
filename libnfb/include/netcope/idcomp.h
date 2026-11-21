@@ -29,6 +29,30 @@ enum nc_idcomp_repeater {
 
 #define IDCOMP_SYSMON_OFFSET            0x80
 #define SYSMON_REG2TEMP(value) ((value) * 769 / 100 - 273150)
+/* UltraScale+ SYSMONE4 transfer function with the internal reference (UG580), in mdeg C */
+#define SYSMON_USP_REG2TEMP(value) ((int32_t) ((int64_t) (value) * 509314 / 65536 - 280231))
+
+/* The ID component's DT node does not name the FPGA family, so the card decides: these carry an UltraScale+ device. */
+static inline int nc_idcomp_sysmon_is_usp(const void *fdt)
+{
+	static const char *const usp_cards[] = {
+		"ALVEO_U200", "ALVEO_U250", "ALVEO_U55C", "VCU118", "FB2CGHH", "FB2CGG3", "FB4CGG3", "NT200A02",
+	};
+	const char *card;
+	unsigned i;
+	int node;
+
+	node = fdt_path_offset(fdt, "/firmware");
+	card = (const char *) fdt_getprop(fdt, node, "card-name", NULL);
+	if (card == NULL)
+		return 0;
+
+	for (i = 0; i < sizeof(usp_cards) / sizeof(usp_cards[0]); i++) {
+		if (!strcmp(card, usp_cards[i]))
+			return 1;
+	}
+	return 0;
+}
 
 static inline int nc_idcomp_sysmon_get_temp(struct nfb_device *dev, int32_t *val)
 {
@@ -47,7 +71,7 @@ static inline int nc_idcomp_sysmon_get_temp(struct nfb_device *dev, int32_t *val
 
 	nfb_comp_close(comp);
 
-	*val = SYSMON_REG2TEMP(temp);
+	*val = nc_idcomp_sysmon_is_usp(nfb_get_fdt(dev)) ? SYSMON_USP_REG2TEMP(temp) : SYSMON_REG2TEMP(temp);
 
 	return 0;
 }
