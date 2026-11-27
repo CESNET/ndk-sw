@@ -7,7 +7,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Base API &mdash; NFB Software User Guide 6.16.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
@@ -73,7 +73,6 @@
 <li class="toctree-l2"><a class="reference internal" href="#component-functions">Component functions</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#_CPPv413nfb_comp_openPK10nfb_devicei"><code class="docutils literal notranslate"><span class="pre">nfb_comp_open()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#_CPPv414nfb_comp_closeP8nfb_comp"><code class="docutils literal notranslate"><span class="pre">nfb_comp_close()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#_CPPv413nfb_comp_readPK8nfb_compPv6size_t5off_t"><code class="docutils literal notranslate"><span class="pre">nfb_comp_read()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#_CPPv414nfb_comp_writePK8nfb_compPKv6size_t5off_t"><code class="docutils literal notranslate"><span class="pre">nfb_comp_write()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#c.nfb_comp_read32"><code class="docutils literal notranslate"><span class="pre">nfb_comp_read32()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#c.nfb_comp_write32"><code class="docutils literal notranslate"><span class="pre">nfb_comp_write32()</span></code></a></li>
@@ -298,13 +297,20 @@ Call this function when your work with the component is finished. After it retur
 </dl>
 </dd></dl>
 
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>doxygenfunction: Cannot find function “nfb_comp_read” in doxygen xml output for project “libnfb” from directory: ../libnfb/doc/xml/</p>
+</div>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv413nfb_comp_readPK8nfb_compPv6size_t5off_t">
-<span id="_CPPv313nfb_comp_readPK8nfb_compPv6size_t5off_t"></span><span id="_CPPv213nfb_comp_readPK8nfb_compPv6size_t5off_t"></span><span id="nfb_comp_read__nfb_compCP.voidP.s.off_t"></span><span class="target" id="nfb_8h_1a71027db2bc45fbeaf7e8245acf3cade5"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_read</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">comp</span></span>, <span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">buf</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nbyte</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv413nfb_comp_readPK8nfb_compPv6size_t5off_t" title="Link to this definition"></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv414nfb_comp_writePK8nfb_compPKv6size_t5off_t">
+<span id="_CPPv314nfb_comp_writePK8nfb_compPKv6size_t5off_t"></span><span id="_CPPv214nfb_comp_writePK8nfb_compPKv6size_t5off_t"></span><span id="nfb_comp_write__nfb_compCP.voidCP.s.off_t"></span><span class="target" id="nfb_8h_1ac0124581d1e1b7ff50a6df15eaac541e"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_write</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">comp</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">buf</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nbyte</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414nfb_comp_writePK8nfb_compPKv6size_t5off_t" title="Link to this definition"></a><br /></dt>
 <dd><p>Read data from specific offset in the component. </p>
+<p>
+/*!</p>
+<p>Write data to a specific offset in the component </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>See ‘man 2 pread’ on Linux </p>
+<p>See `man 2 pread’ on Linux */ ssize_t nfb_comp_read(const struct nfb_comp *comp, void *buf, size_t nbyte, off_t offset);</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -312,6 +318,10 @@ Call this function when your work with the component is finished. After it retur
 <li><p><strong>comp</strong> – <strong>[in]</strong> Component handle </p></li>
 <li><p><strong>buf</strong> – <strong>[in]</strong> Buffer to store the data to </p></li>
 <li><p><strong>nbyte</strong> – <strong>[in]</strong> Number of bytes to read </p></li>
+<li><p><strong>offset</strong> – <strong>[in]</strong> Offset in the component </p></li>
+<li><p><strong>comp</strong> – <strong>[in]</strong> Component handle </p></li>
+<li><p><strong>buf</strong> – <strong>[in]</strong> Buffer containing the data to be written </p></li>
+<li><p><strong>nbyte</strong> – <strong>[in]</strong> Number of bytes to write </p></li>
 <li><p><strong>offset</strong> – <strong>[in]</strong> Offset in the component </p></li>
 </ul>
 </dd>
@@ -322,24 +332,8 @@ Call this function when your work with the component is finished. After it retur
 </ul>
 </p>
 </dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv414nfb_comp_writePK8nfb_compPKv6size_t5off_t">
-<span id="_CPPv314nfb_comp_writePK8nfb_compPKv6size_t5off_t"></span><span id="_CPPv214nfb_comp_writePK8nfb_compPKv6size_t5off_t"></span><span id="nfb_comp_write__nfb_compCP.voidCP.s.off_t"></span><span class="target" id="nfb_8h_1ac0124581d1e1b7ff50a6df15eaac541e"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">nfb_comp_write</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">nfb_comp</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">comp</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">buf</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nbyte</span></span>, <span class="n"><span class="pre">off_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414nfb_comp_writePK8nfb_compPKv6size_t5off_t" title="Link to this definition"></a><br /></dt>
-<dd><p>Write data to a specific offset in the component. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>comp</strong> – <strong>[in]</strong> Component handle </p></li>
-<li><p><strong>buf</strong> – <strong>[in]</strong> Buffer containing the data to be written </p></li>
-<li><p><strong>nbyte</strong> – <strong>[in]</strong> Number of bytes to write </p></li>
-<li><p><strong>offset</strong> – <strong>[in]</strong> Offset in the component </p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><ul class="simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
 <li><p>The amount of bytes successfully written on success</p></li>
 <li><p>Negative error code on error (errno is set) </p></li>
 </ul>
