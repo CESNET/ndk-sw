@@ -49,6 +49,72 @@ static int nfb_boot_reload_prepare_remove(struct nfb_pci_device *card)
 	return 0;
 }
 
+/* Function of an endpoint's slot that another driver owns (e.g. uio_pci_generic on a P2P BAR) */
+struct nfb_boot_sibling {
+	struct pci_bus *bus;
+	u8 devfn;
+	u16 command;
+};
+
+#define NFB_BOOT_RELOAD_SIBLINGS_MAX 16
+
+static bool nfb_boot_pci_is_endpoint(struct nfb_device *nfb, struct pci_dev *pci)
+{
+	struct nfb_pci_device *pd;
+
+	list_for_each_entry(pd, &nfb->pci_devices, pci_device_list) {
+		if (pd->pci == pci)
+			return true;
+	}
+	return false;
+}
+
+/* Two endpoints in one slot share their foreign functions */
+static bool nfb_boot_sibling_is_recorded(const struct nfb_boot_sibling *sibs, int n_sib, struct pci_dev *pci)
+{
+	int i;
+
+	for (i = 0; i < n_sib; i++) {
+		if (sibs[i].bus == pci->bus && sibs[i].devfn == pci->devfn)
+			return true;
+	}
+	return false;
+}
+
+/* A reload wipes the BARs of every function of the card; one the nfb driver does not manage would stay unusable until a host reboot. */
+static int nfb_boot_reload_record_siblings(struct nfb_device *nfb, struct nfb_pci_device *card,
+		struct nfb_boot_sibling *sibs, int n_sib, struct device *mbus_dev)
+{
+	struct pci_dev *sib;
+	int fn;
+
+	for (fn = 0; fn < 8; fn++) {
+		if (fn == PCI_FUNC(card->devfn))
+			continue;
+		sib = pci_get_slot(card->bus, PCI_DEVFN(PCI_SLOT(card->devfn), fn));
+		if (sib == NULL)
+			continue;
+		if (nfb_boot_pci_is_endpoint(nfb, sib) || nfb_boot_sibling_is_recorded(sibs, n_sib, sib)) {
+			pci_dev_put(sib);
+			continue;
+		}
+		if (n_sib == NFB_BOOT_RELOAD_SIBLINGS_MAX) {
+			dev_warn(mbus_dev, "reload: too many foreign functions, %s keeps its stale BARs\n", pci_name(sib));
+		} else {
+			sibs[n_sib].bus = card->bus;
+			sibs[n_sib].devfn = sib->devfn;
+			if (pci_read_config_word(sib, PCI_COMMAND, &sibs[n_sib].command))
+				sibs[n_sib].command = 0;
+			sibs[n_sib].command &= PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER;
+			dev_info(mbus_dev, "reload: will re-enumerate foreign sibling %s (command 0x%04x)\n",
+				pci_name(sib), sibs[n_sib].command);
+			n_sib++;
+		}
+		pci_dev_put(sib);
+	}
+	return n_sib;
+}
+
 static void nfb_boot_reload_shutdown(struct nfb_pci_device *card)
 {
 	u16 reg;
@@ -236,6 +302,11 @@ int nfb_boot_reload(void *arg)
 	struct nfb_pci_device *slave, *temp;
 	struct device *mbus_dev;
 
+	struct nfb_boot_sibling sibs[NFB_BOOT_RELOAD_SIBLINGS_MAX];
+	struct pci_dev *sib;
+	int n_sib = 0;
+	u16 command;
+
 	int reload_time_ms;
 
 	boot = arg;
@@ -268,6 +339,13 @@ int nfb_boot_reload(void *arg)
 	ret = nfb_boot_reload_prepare_remove(master);
 	if (ret)
 		goto err_reload_prepare_remove;
+
+	/* The N5014 path removes and rescans the whole root port, foreign functions included */
+	if (!boot->m10bmc_spi) {
+		n_sib = nfb_boot_reload_record_siblings(nfb, master, sibs, n_sib, mbus_dev);
+		list_for_each_entry(slave, &slaves, reload_list)
+			n_sib = nfb_boot_reload_record_siblings(nfb, slave, sibs, n_sib, mbus_dev);
+	}
 
 	/* Workaround: Close all MTDs within BootFPGA */
 	nfb_boot_mtd_destroy(boot);
@@ -312,6 +390,16 @@ int nfb_boot_reload(void *arg)
 		nfb_boot_reload_shutdown(slave);
 	}
 
+	/* Removed like the endpoints, so the rescans below re-enumerate them with fresh BARs */
+	for (i = 0; i < n_sib; i++) {
+		sib = pci_get_slot(sibs[i].bus, sibs[i].devfn);
+		if (sib) {
+			dev_info(mbus_dev, "reload: removing foreign sibling %s\n", pci_name(sib));
+			pci_stop_and_remove_bus_device_locked(sib);
+			pci_dev_put(sib);
+		}
+	}
+
 	/* Wait some time before FPGA reboots */
 	msleep(reload_time_ms);
 
@@ -342,6 +430,21 @@ int nfb_boot_reload(void *arg)
 	ret = nfb_boot_reload_rescan(master);
 	if (ret)
 		dev_err(mbus_dev, "unable to find master PCI device after FW reload!\n");
+
+	/* Re-enumeration clears the decode and bus-master enables the other driver set; anything a re-probe set stays */
+	for (i = 0; i < n_sib; i++) {
+		sib = pci_get_slot(sibs[i].bus, sibs[i].devfn);
+		if (sib) {
+			pci_read_config_word(sib, PCI_COMMAND, &command);
+			pci_write_config_word(sib, PCI_COMMAND, command | sibs[i].command);
+			dev_info(mbus_dev, "reload: restored foreign sibling %s command 0x%04x\n",
+				pci_name(sib), sibs[i].command);
+			pci_dev_put(sib);
+		} else {
+			dev_warn(mbus_dev, "reload: foreign sibling %02x:%02x.%x missing after reload\n",
+				sibs[i].bus->number, PCI_SLOT(sibs[i].devfn), PCI_FUNC(sibs[i].devfn));
+		}
+	}
 	dev_info(mbus_dev, "firmware reload done\n");
 
 	ret = 0;
