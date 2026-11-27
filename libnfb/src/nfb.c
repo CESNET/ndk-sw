@@ -56,6 +56,11 @@ const void *nfb_get_fdt(const struct nfb_device *dev)
 	return dev->fdt;
 }
 
+void *nfb_ext_get_priv(const struct nfb_device *dev)
+{
+	return dev->priv;
+}
+
 struct nfb_comp *nfb_user_to_comp(void *ptr)
 {
 	return ((struct nfb_comp *) ptr) - 1;
@@ -630,12 +635,12 @@ int nfb_comp_get_version(const struct nfb_comp *comp)
 	return fdt32_to_cpu(*prop);
 }
 
-const char *nfb_comp_path(struct nfb_comp *comp)
+const char *nfb_comp_path(const struct nfb_comp *comp)
 {
 	return comp->path;
 }
 
-const struct nfb_device *nfb_comp_get_device(struct nfb_comp *comp)
+const struct nfb_device *nfb_comp_get_device(const struct nfb_comp *comp)
 {
 	return comp->dev;
 }

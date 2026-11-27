@@ -1,7 +1,9 @@
 #include <algorithm>
+#include <cerrno>
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <string>
 
@@ -35,14 +37,17 @@ using nfb::ext::protobuf::v1::ReadCompRequest;
 using nfb::ext::protobuf::v1::WriteCompRequest;
 using nfb::ext::protobuf::v1::ReadCompResponse;
 using nfb::ext::protobuf::v1::WriteCompResponse;
+using nfb::ext::protobuf::v1::LockRequest;
+using nfb::ext::protobuf::v1::LockResponse;
 
 class NfbServerImpl final : public Nfb::Service
 {
 	struct nfb_device * m_dev;
 	const void *m_fdt;
+	std::string m_path;
 
 public:
-	explicit NfbServerImpl(const std::string& path)
+	explicit NfbServerImpl(const std::string& path) : m_path(path)
 	{
 		m_dev = nfb_open(path.c_str());
 		if (m_dev == NULL) {
@@ -95,6 +100,61 @@ public:
 		resp->set_status(nbyte);
 		nfb_comp_close(comp);
 		
+		return Status::OK;
+	}
+
+	/*
+	 * Component locks of one client session (one opened device on the client side).
+	 * The session gets its own opened device, so the driver is the only lock table:
+	 * the session is a separate lock owner, also against local processes, and closing
+	 * its device at the end of the session (also a disconnected client) releases its locks.
+	 */
+	Status LockSession(ServerContext* context, ServerReaderWriter<LockResponse, LockRequest>* stream) override
+	{
+		LockRequest req;
+		struct nfb_device *dev = NULL;
+		std::map<std::string, struct nfb_comp *> comps;
+
+		while (stream->Read(&req)) {
+			LockResponse resp;
+			struct nfb_comp *comp = NULL;
+			int ret;
+
+			if (dev == NULL)
+				dev = nfb_open(m_path.c_str());
+
+			if (dev != NULL) {
+				auto it = comps.find(req.path());
+				if (it != comps.end()) {
+					comp = it->second;
+				} else {
+					comp = nfb_comp_open(dev, fdt_path_offset(nfb_get_fdt(dev), req.path().c_str()));
+					if (comp != NULL)
+						comps[req.path()] = comp;
+				}
+			}
+
+			if (comp == NULL) {
+				ret = -ENODEV;
+			} else if (req.op() == LockRequest::LOCK) {
+				ret = nfb_comp_trylock(comp, req.features(), 0);
+				if (ret == 0)
+					ret = 1;
+			} else {
+				nfb_comp_unlock(comp, req.features());
+				ret = 0;
+			}
+
+			resp.set_status(ret);
+			if (!stream->Write(resp))
+				break;
+		}
+
+		for (auto &c : comps)
+			nfb_comp_close(c.second);
+		if (dev != NULL)
+			nfb_close(dev);
+
 		return Status::OK;
 	}
 

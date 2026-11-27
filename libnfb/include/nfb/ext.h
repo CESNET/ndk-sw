@@ -56,6 +56,20 @@ struct libnfb_ext_ops {
 
 typedef int libnfb_ext_get_ops_t(const char *devname, struct libnfb_ext_ops *ops);
 
+/*!
+ * \brief Get the priv of an opened device (as set by the open op of the extension)
+ * \param[in] dev  Device handle
+ * \return The priv pointer of the device
+ *
+ * For ops which don't get the priv as an argument, e.g. in comp_lock:
+ * nfb_ext_get_priv(nfb_comp_get_device(comp)).
+ *
+ * Added later than the extension ABI 1.0: an extension which should work also
+ * with an older libnfb declares it weak (#pragma weak nfb_ext_get_priv)
+ * and checks it for NULL before the call.
+ */
+void *nfb_ext_get_priv(const struct nfb_device *dev);
+
 /* NDP extensions */
 
 struct ndp_packet;

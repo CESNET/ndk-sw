@@ -82,6 +82,14 @@ cdef void nfb_ext_python_close(void *priv) noexcept with gil:
     _wrap = <PyObject*> priv
     wrap = <object> _wrap
 
+    # The closed device is the lock owner: release its component locks
+    try:
+        wrap.nfb.comp_release(wrap)
+    except Exception:
+        _log.exception("Component lock release failed")
+    except BaseException as e:
+        _bridge_intercept(e)
+
     # The libnfb is responsible for freeing fdt
     #free(wrap.fdt)
     Py_DECREF(wrap)
@@ -389,12 +397,60 @@ cdef int nfb_pyndp_queue_close(ndp_queue *q) noexcept with gil:
     Py_DECREF(t)
     return 0
 
+cdef bint _comp_lock_unsupported_warned = False
+
+cdef bint _comp_lock_unsupported():
+    """libnfb without nfb_ext_get_priv: the lock owner isn't known, locks always succeed"""
+    global _comp_lock_unsupported_warned
+    if not _comp_lock_unsupported_warned:
+        _comp_lock_unsupported_warned = True
+        _log.warning("libnfb without nfb_ext_get_priv, nfb_comp_lock always succeeds")
+    return True
+
 cdef int nfb_pynfb_comp_lock(const nfb_comp *comp, uint32_t features) noexcept with gil:
-    # TODO
-    return 1;
+    cdef void *dev_priv = pynfb_comp_dev_priv(comp)
+    cdef __NfbWrapper wrap
+    cdef str path = nfb_comp_path(comp).decode()
+
+    if dev_priv == NULL and _comp_lock_unsupported():
+        return 1
+
+    if _bridge_pending():
+        return -1
+
+    wrap = <__NfbWrapper> <PyObject*> dev_priv
+
+    # the opened device (wrapper) is the lock owner
+    try:
+        locked = wrap.nfb.comp_lock(wrap, path, features)
+    except Exception:
+        _log.exception("Component lock callback failed")
+        return -libc.errno.EIO
+    except BaseException as e:
+        _bridge_intercept(e)
+        return -libc.errno.EIO
+
+    return 1 if locked else -libc.errno.EBUSY
 
 cdef void nfb_pynfb_comp_unlock(const nfb_comp *comp, uint32_t features) noexcept with gil:
-    pass
+    cdef void *dev_priv = pynfb_comp_dev_priv(comp)
+    cdef __NfbWrapper wrap
+    cdef str path = nfb_comp_path(comp).decode()
+
+    if dev_priv == NULL:
+        return
+
+    if _bridge_pending():
+        return
+
+    wrap = <__NfbWrapper> <PyObject*> dev_priv
+
+    try:
+        wrap.nfb.comp_unlock(wrap, path, features)
+    except Exception:
+        _log.exception("Component unlock callback failed")
+    except BaseException as e:
+        _bridge_intercept(e)
 
 cdef int pynfb_ext_get_ops(const char *devname, libnfb_ext_ops* ops) noexcept:
     ops.open = nfb_ext_python_open

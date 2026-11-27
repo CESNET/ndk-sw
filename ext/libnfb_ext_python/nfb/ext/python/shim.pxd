@@ -30,6 +30,12 @@ cdef extern from "<nfb/ndp.h>":
     cdef struct ndp_queue:
         pass
 
+cdef extern from "<nfb/nfb.h>":
+    const char *nfb_comp_path(const nfb_comp *component)
+
+cdef extern from "ext_priv.h":
+    void *pynfb_comp_dev_priv(const nfb_comp *comp)
+
 cdef extern from "<nfb/ext.h>":
     ctypedef ssize_t nfb_bus_read_func(void *p, void *buf, size_t nbyte, off_t offset)
     ctypedef ssize_t nfb_bus_write_func(void *p, const void *buf, size_t nbyte, off_t offset)
